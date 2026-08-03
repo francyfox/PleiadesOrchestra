@@ -19,6 +19,7 @@ exec llama-server \
     --host 0.0.0.0 \
     --port "${PORT:-8080}" \
     --ctx-size "${CTX_SIZE:-2048}" \
+    --parallel "${PARALLEL:-1}" \
     --threads "${THREADS:-2}" \
     --temp "${TEMP:-0.3}" \
     --api-key "$LLM_API_KEY"

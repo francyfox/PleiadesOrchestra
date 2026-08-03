@@ -32,7 +32,8 @@ ENV PORT=8080
 ENV LLM_API_KEY=""
 ENV MODEL_PATH=/models/model.gguf
 ENV MODEL_URL="https://huggingface.co/Vikhrmodels/Vikhr-Llama-3.2-1B-instruct-GGUF/resolve/main/Vikhr-Llama-3.2-1B-Q4_K_M.gguf"
-ENV CTX_SIZE=2048
+ENV CTX_SIZE=32768
+ENV PARALLEL=1
 ENV THREADS=2
 ENV TEMP=0.3
 
