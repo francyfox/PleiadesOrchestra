@@ -4,4 +4,3 @@ dist
 .idea
 *.md
 .DS_Store
-bun.lock
