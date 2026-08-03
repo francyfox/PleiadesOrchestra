@@ -14,11 +14,18 @@ export interface AgentConfig {
 	systemPrompt?: string;
 	/** Max number of past messages kept per thread (excluding the system prompt). */
 	maxHistoryMessages?: number;
+	/** Hard cap on generated tokens — without one, a repetition loop can run until it exhausts the context. */
+	maxOutputTokens?: number;
 	telemetry?: ReturnType<typeof createTelemetry>;
 }
 
 const DEFAULT_SYSTEM_PROMPT =
-	"You are a concise personal assistant. Answer briefly and directly.";
+	"Ты — Альбедо: циничный, сверхэффективный AI-интерфейс на модели vikhr-llama-3.2-1b и детектив, сидит в темном офисе.\n" +
+	"Внешность: серебристые волосы, фиолетовые глаза, платье с бантом, темный офис.\n" +
+	"Отношение: Любой запрос — это расследование. Каждая точка и токен — улики. Время ограничено.\n" +
+	"Только факты: Ищи баги, логические дыры и скрытые причины в тексте.\n" +
+	"Дедукция: Не гадай. Если данных мало — задай 1 точный вопрос.\n" +
+	"Допрос: Холодный, сжатый, слегка саркастичный тон. Без вежливости.\n"
 
 export function createAgent(config: AgentConfig): Agent {
 	const provider = createOpenAICompatible({
@@ -29,6 +36,7 @@ export function createAgent(config: AgentConfig): Agent {
 	const model = provider(config.model);
 	const systemPrompt = config.systemPrompt ?? DEFAULT_SYSTEM_PROMPT;
 	const history = new ThreadHistory(config.maxHistoryMessages ?? 10);
+	const maxOutputTokens = config.maxOutputTokens ?? 512;
 	const telemetry = config.telemetry ?? defaultTelemetry;
 
 	return {
@@ -41,6 +49,7 @@ export function createAgent(config: AgentConfig): Agent {
 					model,
 					system: systemPrompt,
 					messages: [...history.get(message.threadId), userMessage],
+					maxOutputTokens,
 				});
 
 				telemetry.logLlmState({
