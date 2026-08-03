@@ -23,7 +23,7 @@ WORKDIR /app
 COPY --from=builder /app/llama.cpp/build/bin/llama-server /usr/local/bin/llama-server
 COPY --from=builder /app/llama.cpp/build/bin/*.so* /usr/local/lib/
 RUN ldconfig /usr/local/lib || true
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY apps/albedo/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Модель качается при старте контейнера (не на этапе билда), см. entrypoint.sh.
