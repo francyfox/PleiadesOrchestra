@@ -32,14 +32,14 @@ ENV PORT=8080
 ENV LLM_API_KEY=""
 ENV MODEL_PATH=/models/model.gguf
 ENV MODEL_URL="https://huggingface.co/Vikhrmodels/Vikhr-Llama-3.2-1B-instruct-GGUF/resolve/main/Vikhr-Llama-3.2-1B-Q4_K_M.gguf"
-ENV CTX_SIZE=32768
+ENV CTX_SIZE=16384
 ENV PARALLEL=1
 ENV THREADS=2
 ENV TEMP=0.3
 
 EXPOSE 8080
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=20s --start-period=60s --retries=5 \
     CMD curl -fsS "http://localhost:${PORT}/health" || exit 1
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
