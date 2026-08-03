@@ -21,7 +21,7 @@ async function waitForHealth(timeoutMs: number) {
 
 beforeAll(
 	async () => {
-		// @ts-ignore
+		// @ts-expect-error
 		await $`docker build -f ${import.meta.dir}/Dockerfile -t ${IMAGE} ${import.meta.dir}/../..`;
 		await $`docker rm -f ${CONTAINER}`.nothrow();
 		await $`docker run -d --name ${CONTAINER} -p ${HOST_PORT}:8080 -e LLM_API_KEY=${API_KEY} -e CTX_SIZE=512 ${IMAGE}`;

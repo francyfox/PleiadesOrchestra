@@ -1,8 +1,10 @@
-import { telemetry } from "@repo/core";
+import { telemetry, withTimeout } from "@repo/core";
 import { Composer } from "gramio";
 import { agent } from "../agent.ts";
 import { config } from "../env.ts";
 import { composer } from "../plugins/index.ts";
+
+const LLM_TIMEOUT_MS = 45_000;
 
 export const messageComposer = new Composer()
 	.extend(composer)
@@ -21,12 +23,15 @@ export const messageComposer = new Composer()
 		const userId = String(context.from.id);
 		const startedAt = Date.now();
 
+		// Never let a handler error/rethrow escape this block: an uncaught
+		// rejection here has previously wedged GramIO's polling loop, so the
+		// bot stops receiving *any* further messages until manually restarted.
 		try {
-			const reply = await agent.handleMessage({
-				threadId,
-				userId,
-				text: context.text,
-			});
+			const reply = await withTimeout(
+				agent.handleMessage({ threadId, userId, text: context.text }),
+				LLM_TIMEOUT_MS,
+				"LLM request timed out",
+			);
 
 			telemetry.logMessageEvent({
 				threadId,
@@ -39,6 +44,7 @@ export const messageComposer = new Composer()
 
 			await context.send(reply.text);
 		} catch (error) {
+			console.error("Failed to handle message:", error);
 			telemetry.logMessageEvent({
 				threadId,
 				userId,
@@ -47,6 +53,9 @@ export const messageComposer = new Composer()
 				latencyMs: Date.now() - startedAt,
 				ok: false,
 			});
-			throw error;
+
+			await context
+				.send("Извините, что-то пошло не так. Попробуйте ещё раз.")
+				.catch(() => {});
 		}
 	});
