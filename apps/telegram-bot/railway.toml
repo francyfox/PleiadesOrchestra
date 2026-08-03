@@ -1,0 +1,7 @@
+[build]
+dockerfilePath = "apps/telegram-bot/Dockerfile"
+dockerContextDir = "."
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10

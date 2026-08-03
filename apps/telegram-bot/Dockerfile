@@ -1,4 +1,5 @@
 # Собирается с корнем монорепо как build context (нужен доступ к packages/core).
+# force-rebuild: 2026-08-03
 FROM oven/bun:1-alpine AS install
 WORKDIR /app
 COPY package.json bun.lock ./
