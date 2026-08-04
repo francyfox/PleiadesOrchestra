@@ -18,6 +18,11 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			LLM_BASE_URL: z.url(),
 			LLM_API_KEY: z.string().min(1),
 			LLM_MODEL: z.string().default("vikhr-llama-3.2-1b"),
+
+			// Railway private-network hostname of the VictoriaMetrics service telemetry is pushed to.
+			VICTORIA_METRICS_URL: z
+				.url()
+				.default("http://victoriametrics.railway.internal:8428"),
 		},
 		runtimeEnv: env,
 	});
