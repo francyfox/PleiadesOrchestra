@@ -92,16 +92,27 @@ function escapeLabelValue(value: string): string {
 		.replace(/\n/g, "\\n");
 }
 
+export interface VictoriaMetricsAuth {
+	username: string;
+	password: string;
+}
+
 /**
  * Pushes telemetry events as Prometheus-format metrics to VictoriaMetrics'
  * `/api/v1/import/prometheus` endpoint. Fire-and-forget: never awaited by the
  * caller and never throws, so an unreachable VM instance can't affect the app.
+ * Failures (network errors or non-2xx responses) are logged via console.error
+ * so they're visible in service logs instead of disappearing silently.
  */
 export function createVictoriaMetricsReporter(
 	baseUrl: string,
+	auth?: VictoriaMetricsAuth,
 	fetchImpl: typeof fetch = fetch,
 ): ConsolaReporter {
 	const importUrl = `${baseUrl}/api/v1/import/prometheus`;
+	const headers: Record<string, string> = auth
+		? { Authorization: `Basic ${btoa(`${auth.username}:${auth.password}`)}` }
+		: {};
 
 	return {
 		log(logObj: LogObject) {
@@ -145,10 +156,19 @@ export function createVictoriaMetricsReporter(
 
 			fetchImpl(importUrl, {
 				method: "POST",
+				headers,
 				body: lines.join("\n"),
-			}).catch(() => {
-				// Swallow: telemetry delivery failures must never surface to the caller.
-			});
+			})
+				.then((response) => {
+					if (!response.ok) {
+						console.error(
+							`[telemetry] VictoriaMetrics push failed: ${response.status} ${response.statusText}`,
+						);
+					}
+				})
+				.catch((error) => {
+					console.error("[telemetry] VictoriaMetrics push failed:", error);
+				});
 		},
 	};
 }

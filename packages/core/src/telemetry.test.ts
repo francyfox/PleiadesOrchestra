@@ -80,11 +80,15 @@ describe("createTelemetry", () => {
 });
 
 describe("createVictoriaMetricsReporter", () => {
-	function fakeFetch() {
-		const calls: { url: string; body: string }[] = [];
+	function fakeFetch(status = 204) {
+		const calls: { url: string; body: string; headers: Headers }[] = [];
 		const fetchImpl = (async (url: string, init?: RequestInit) => {
-			calls.push({ url, body: String(init?.body ?? "") });
-			return new Response(null, { status: 204 });
+			calls.push({
+				url,
+				body: String(init?.body ?? ""),
+				headers: new Headers(init?.headers),
+			});
+			return new Response(null, { status });
 		}) as typeof fetch;
 		return { calls, fetchImpl };
 	}
@@ -93,6 +97,7 @@ describe("createVictoriaMetricsReporter", () => {
 		const { calls, fetchImpl } = fakeFetch();
 		const reporter = createVictoriaMetricsReporter(
 			"http://victoriametrics.railway.internal:8428",
+			undefined,
 			fetchImpl,
 		);
 		const telemetry = createTelemetry([reporter]);
@@ -129,6 +134,7 @@ describe("createVictoriaMetricsReporter", () => {
 		const { calls, fetchImpl } = fakeFetch();
 		const reporter = createVictoriaMetricsReporter(
 			"http://victoriametrics.railway.internal:8428",
+			undefined,
 			fetchImpl,
 		);
 		const telemetry = createTelemetry([reporter]);
@@ -151,6 +157,7 @@ describe("createVictoriaMetricsReporter", () => {
 		const { calls, fetchImpl } = fakeFetch();
 		const reporter = createVictoriaMetricsReporter(
 			"http://victoriametrics.railway.internal:8428",
+			undefined,
 			fetchImpl,
 		);
 
@@ -170,5 +177,84 @@ describe("createVictoriaMetricsReporter", () => {
 		await Promise.resolve();
 
 		expect(calls.length).toBe(0);
+	});
+
+	test("sends a Basic Auth header when credentials are provided, omits it otherwise", async () => {
+		const { calls, fetchImpl } = fakeFetch();
+		const reporter = createVictoriaMetricsReporter(
+			"http://victoriametrics.railway.internal:8428",
+			{ username: "admin", password: "secret" },
+			fetchImpl,
+		);
+		const telemetry = createTelemetry([reporter]);
+
+		telemetry.logMessageEvent({
+			threadId: "chat-1",
+			userId: "42",
+			messageLength: 1,
+			latencyMs: 1,
+			ok: true,
+		});
+
+		await Promise.resolve();
+		await Promise.resolve();
+
+		expect(calls[0]?.headers.get("authorization")).toBe(
+			`Basic ${btoa("admin:secret")}`,
+		);
+
+		const { calls: callsNoAuth, fetchImpl: fetchImplNoAuth } = fakeFetch();
+		const reporterNoAuth = createVictoriaMetricsReporter(
+			"http://victoriametrics.railway.internal:8428",
+			undefined,
+			fetchImplNoAuth,
+		);
+		createTelemetry([reporterNoAuth]).logMessageEvent({
+			threadId: "chat-1",
+			userId: "42",
+			messageLength: 1,
+			latencyMs: 1,
+			ok: true,
+		});
+
+		await Promise.resolve();
+		await Promise.resolve();
+
+		expect(callsNoAuth[0]?.headers.has("authorization")).toBe(false);
+	});
+
+	test("logs to console.error when the response is not ok, without throwing", async () => {
+		const { fetchImpl } = fakeFetch(401);
+		const reporter = createVictoriaMetricsReporter(
+			"http://victoriametrics.railway.internal:8428",
+			undefined,
+			fetchImpl,
+		);
+		const telemetry = createTelemetry([reporter]);
+
+		const originalConsoleError = console.error;
+		const errors: unknown[][] = [];
+		console.error = (...args: unknown[]) => {
+			errors.push(args);
+		};
+
+		try {
+			telemetry.logMessageEvent({
+				threadId: "chat-1",
+				userId: "42",
+				messageLength: 1,
+				latencyMs: 1,
+				ok: true,
+			});
+
+			await Promise.resolve();
+			await Promise.resolve();
+			await Promise.resolve();
+		} finally {
+			console.error = originalConsoleError;
+		}
+
+		expect(errors.length).toBe(1);
+		expect(String(errors[0]?.[0])).toContain("401");
 	});
 });

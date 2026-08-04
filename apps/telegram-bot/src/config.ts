@@ -19,10 +19,14 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			LLM_API_KEY: z.string().min(1),
 			LLM_MODEL: z.string().default("vikhr-llama-3.2-1b"),
 
-			// Railway private-network hostname of the VictoriaMetrics service telemetry is pushed to.
+			// VictoriaMetrics lives in a separate Railway project ("metrics"), so it's
+			// only reachable over its public domain, not *.railway.internal.
 			VICTORIA_METRICS_URL: z
 				.url()
-				.default("http://victoriametrics.railway.internal:8428"),
+				.default("https://victoriametrics-production-7636.up.railway.app"),
+			// Basic Auth credentials for the endpoint above — omit both to disable the push.
+			VICTORIA_METRICS_USERNAME: z.string().optional(),
+			VICTORIA_METRICS_PASSWORD: z.string().optional(),
 		},
 		runtimeEnv: env,
 	});
