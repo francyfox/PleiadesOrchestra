@@ -6,6 +6,8 @@ const validEnv = {
 	ALLOWED_TELEGRAM_USER_IDS: "1,2,3",
 	LLM_BASE_URL: "https://example.com/v1",
 	LLM_API_KEY: "key",
+	TELEGRAM_WEBHOOK_URL: "https://example.com/webhook",
+	TELEGRAM_WEBHOOK_SECRET: "secret",
 };
 
 describe("buildConfig", () => {

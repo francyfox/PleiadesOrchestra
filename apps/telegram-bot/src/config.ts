@@ -19,6 +19,12 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			LLM_API_KEY: z.string().min(1),
 			LLM_MODEL: z.string().default("vikhr-llama-3.2-1b"),
 
+			// Webhook mode (replaces long-polling — avoids "Conflict: terminated by
+			// other getUpdates request" during Railway rolling deploys).
+			PORT: z.coerce.number().default(3000),
+			TELEGRAM_WEBHOOK_URL: z.url(),
+			TELEGRAM_WEBHOOK_SECRET: z.string().min(1),
+
 			// VictoriaMetrics lives in a separate Railway project ("metrics"), so it's
 			// only reachable over its public domain, not *.railway.internal.
 			VICTORIA_METRICS_URL: z

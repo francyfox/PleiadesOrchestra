@@ -18,4 +18,7 @@ FROM alpine:3.20
 RUN apk add --no-cache libstdc++ libgcc
 COPY --from=build /tmp/telegram-bot /usr/local/bin/telegram-bot
 
+ENV PORT=3000
+EXPOSE 3000
+
 ENTRYPOINT ["/usr/local/bin/telegram-bot"]

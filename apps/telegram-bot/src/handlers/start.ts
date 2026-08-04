@@ -11,4 +11,5 @@ export const startComposer = new Composer()
 		)
 			return;
 		return context.send("Привет! Пиши что угодно.");
-	});
+	})
+;

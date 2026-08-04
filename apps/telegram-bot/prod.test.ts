@@ -18,8 +18,8 @@ async function getServices(): Promise<ServiceInstance[]> {
 }
 
 describe("telegram-bot (prod)", () => {
-	// No HTTP surface (long polling) — the only externally observable signal
-	// is Railway's own deployment/instance status.
+	// Webhook-based, so the /health endpoint would also work, but Railway's own
+	// deployment/instance status is a simpler externally observable signal.
 	test("latest Railway deployment is running", async () => {
 		const services = await getServices();
 		const service = services.find((s) => s.serviceName === "telegram-bot");
