@@ -14,6 +14,10 @@ else
     echo "Using cached model at $MODEL_PATH"
 fi
 
+# llama-server logs everything (including plain INFO lines) to stderr, with
+# no flag to change that. Railway (and most log viewers) classify by stream,
+# not content, so left alone every line shows up flagged as an error. Merge
+# stderr into stdout so normal operational logs aren't misclassified.
 exec llama-server \
     --model "$MODEL_PATH" \
     --host 0.0.0.0 \
@@ -22,4 +26,5 @@ exec llama-server \
     --parallel "${PARALLEL:-1}" \
     --threads "${THREADS:-2}" \
     --temp "${TEMP:-0.3}" \
-    --api-key "$LLM_API_KEY"
+    --api-key "$LLM_API_KEY" \
+    2>&1
