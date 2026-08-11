@@ -27,10 +27,18 @@ export type AgentStreamEvent =
 			contextChars: number;
 	  }
 	| { type: "delta"; text: string }
-	| { type: "done" };
+	| {
+			type: "done";
+			/** Time spent on the final generation call only — excludes any earlier ingest-chunk passes. */
+			elapsedMs: number;
+			inputTokens?: number;
+			outputTokens?: number;
+	  };
 
 /** Port implemented by the core, called by every transport adapter. */
 export interface Agent {
-	handleMessageStream(message: IncomingMessage): AsyncIterable<AgentStreamEvent>;
+	handleMessageStream(
+		message: IncomingMessage,
+	): AsyncIterable<AgentStreamEvent>;
 	resetThread(threadId: string): void;
 }

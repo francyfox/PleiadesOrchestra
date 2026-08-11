@@ -48,7 +48,7 @@ describe("createHarnessClient", () => {
 				return ndjsonResponse([
 					'{"type":"progress","chunkIndex":0,"totalChunks":1,"elapsedMs":5,"contextChars":2}',
 					'{"type":"delta","text":"hi"}',
-					'{"type":"done"}',
+					'{"type":"done","elapsedMs":12,"inputTokens":10,"outputTokens":2}',
 				]);
 			}),
 		});
@@ -63,9 +63,15 @@ describe("createHarnessClient", () => {
 		}
 
 		expect(events).toEqual([
-			{ type: "progress", chunkIndex: 0, totalChunks: 1, elapsedMs: 5, contextChars: 2 },
+			{
+				type: "progress",
+				chunkIndex: 0,
+				totalChunks: 1,
+				elapsedMs: 5,
+				contextChars: 2,
+			},
 			{ type: "delta", text: "hi" },
-			{ type: "done" },
+			{ type: "done", elapsedMs: 12, inputTokens: 10, outputTokens: 2 },
 		]);
 		expect(capturedUrl).toBe(`${BASE_URL}/v1/messages`);
 		expect(capturedInit?.method).toBe("POST");

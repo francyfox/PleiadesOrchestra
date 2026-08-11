@@ -1,22 +1,19 @@
 import { agent } from "./agent.ts";
 import { config } from "./env.ts";
-import { createFetchHandler } from "./server.ts";
+import { createApp } from "./server.ts";
 
-const server = Bun.serve({
-	port: config.PORT,
-	fetch: createFetchHandler({
-		agent,
-		apiKey: config.HARNESS_API_KEY,
-		maxChunkChars: config.HARNESS_MAX_CHUNK_CHARS,
-	}),
-});
+const app = createApp({
+	agent,
+	apiKey: config.HARNESS_API_KEY,
+	maxChunkChars: config.HARNESS_MAX_CHUNK_CHARS,
+}).listen(config.PORT);
 
 const signals = ["SIGINT", "SIGTERM"];
 
 for (const signal of signals) {
 	process.on(signal, () => {
 		console.log(`Received ${signal}. Shutting down...`);
-		server.stop();
+		app.stop();
 		process.exit(0);
 	});
 }

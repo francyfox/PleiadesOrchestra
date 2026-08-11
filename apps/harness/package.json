@@ -13,6 +13,7 @@
 	"dependencies": {
 		"@repo/core": "workspace:*",
 		"@t3-oss/env-core": "^0.13.11",
+		"elysia": "^1.4.29",
 		"transferum": "^1.7.0",
 		"zod": "^4.4.3"
 	},

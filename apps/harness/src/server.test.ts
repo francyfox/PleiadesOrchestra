@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { Agent, AgentStreamEvent, IncomingMessage } from "@repo/core";
-import { createFetchHandler } from "./server.ts";
+import { createApp } from "./server.ts";
 
 const API_KEY = "test-api-key";
 const MAX_CHUNK_CHARS = 20;
@@ -23,7 +23,7 @@ async function* singleDeltaStream(
 		contextChars: message.chunks[0]?.length ?? 0,
 	};
 	yield { type: "delta", text: `echo: ${message.chunks[0] ?? ""}` };
-	yield { type: "done" };
+	yield { type: "done", elapsedMs: 3, inputTokens: 10, outputTokens: 2 };
 }
 
 function authedRequest(url: string, init: RequestInit = {}): Request {
@@ -41,26 +41,28 @@ async function readNdjson(response: Response): Promise<unknown[]> {
 		.map((line) => JSON.parse(line));
 }
 
-describe("createFetchHandler", () => {
+describe("createApp", () => {
 	test("GET /health responds ok without auth", async () => {
-		const handler = createFetchHandler({
+		const app = createApp({
 			agent: fakeAgent(singleDeltaStream),
 			apiKey: API_KEY,
 			maxChunkChars: MAX_CHUNK_CHARS,
 		});
-		const response = await handler(new Request("http://harness.local/health"));
+		const response = await app.handle(
+			new Request("http://harness.local/health"),
+		);
 
 		expect(response.status).toBe(200);
 		expect(await response.text()).toBe("ok");
 	});
 
 	test("rejects requests without a valid bearer token", async () => {
-		const handler = createFetchHandler({
+		const app = createApp({
 			agent: fakeAgent(singleDeltaStream),
 			apiKey: API_KEY,
 			maxChunkChars: MAX_CHUNK_CHARS,
 		});
-		const response = await handler(
+		const response = await app.handle(
 			new Request("http://harness.local/v1/messages", { method: "POST" }),
 		);
 
@@ -69,7 +71,7 @@ describe("createFetchHandler", () => {
 
 	test("POST /v1/messages normalizes text and streams NDJSON events from the agent", async () => {
 		let receivedMessage: IncomingMessage | undefined;
-		const handler = createFetchHandler({
+		const app = createApp({
 			agent: fakeAgent(async function* (message) {
 				receivedMessage = message;
 				yield* singleDeltaStream(message);
@@ -78,7 +80,7 @@ describe("createFetchHandler", () => {
 			maxChunkChars: MAX_CHUNK_CHARS,
 		});
 
-		const response = await handler(
+		const response = await app.handle(
 			authedRequest("http://harness.local/v1/messages", {
 				method: "POST",
 				headers: { "content-type": "application/json" },
@@ -100,18 +102,24 @@ describe("createFetchHandler", () => {
 
 		const events = await readNdjson(response);
 		expect(events).toEqual([
-			{ type: "progress", chunkIndex: 0, totalChunks: 1, elapsedMs: 1, contextChars: 8 },
+			{
+				type: "progress",
+				chunkIndex: 0,
+				totalChunks: 1,
+				elapsedMs: 1,
+				contextChars: 8,
+			},
 			{ type: "delta", text: "echo: hi there" },
-			{ type: "done" },
+			{ type: "done", elapsedMs: 3, inputTokens: 10, outputTokens: 2 },
 		]);
 	});
 
 	test("POST /v1/messages splits long text into multiple chunks", async () => {
 		let receivedMessage: IncomingMessage | undefined;
-		const handler = createFetchHandler({
+		const app = createApp({
 			agent: fakeAgent(async function* (message) {
 				receivedMessage = message;
-				yield { type: "done" };
+				yield { type: "done", elapsedMs: 3 };
 			}),
 			apiKey: API_KEY,
 			maxChunkChars: MAX_CHUNK_CHARS,
@@ -120,7 +128,7 @@ describe("createFetchHandler", () => {
 		const longText =
 			"this message is deliberately longer than the configured chunk budget so it must be split";
 
-		await handler(
+		await app.handle(
 			authedRequest("http://harness.local/v1/messages", {
 				method: "POST",
 				headers: { "content-type": "application/json" },
@@ -136,7 +144,7 @@ describe("createFetchHandler", () => {
 	});
 
 	test("POST /v1/messages emits a trailing error event when the agent throws mid-stream", async () => {
-		const handler = createFetchHandler({
+		const app = createApp({
 			agent: fakeAgent(async function* () {
 				yield { type: "delta", text: "partial" } as const;
 				throw new Error("boom");
@@ -145,7 +153,7 @@ describe("createFetchHandler", () => {
 			maxChunkChars: MAX_CHUNK_CHARS,
 		});
 
-		const response = await handler(
+		const response = await app.handle(
 			authedRequest("http://harness.local/v1/messages", {
 				method: "POST",
 				headers: { "content-type": "application/json" },
@@ -162,16 +170,35 @@ describe("createFetchHandler", () => {
 	});
 
 	test("POST /v1/messages rejects a malformed body", async () => {
-		const handler = createFetchHandler({
+		const app = createApp({
 			agent: fakeAgent(singleDeltaStream),
 			apiKey: API_KEY,
 			maxChunkChars: MAX_CHUNK_CHARS,
 		});
-		const response = await handler(
+		const response = await app.handle(
 			authedRequest("http://harness.local/v1/messages", {
 				method: "POST",
 				headers: { "content-type": "application/json" },
 				body: JSON.stringify({ threadId: "t1" }),
+			}),
+		);
+
+		// Elysia's own schema-validation error (422, not a hand-rolled 400) —
+		// no consumer branches on the exact code, just `response.ok`.
+		expect(response.status).toBe(422);
+	});
+
+	test("POST /v1/messages rejects unparseable JSON", async () => {
+		const app = createApp({
+			agent: fakeAgent(singleDeltaStream),
+			apiKey: API_KEY,
+			maxChunkChars: MAX_CHUNK_CHARS,
+		});
+		const response = await app.handle(
+			authedRequest("http://harness.local/v1/messages", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: "not json",
 			}),
 		);
 
@@ -180,7 +207,7 @@ describe("createFetchHandler", () => {
 
 	test("POST /v1/threads/:id/reset resets the thread and returns 204", async () => {
 		let resetThreadId: string | undefined;
-		const handler = createFetchHandler({
+		const app = createApp({
 			agent: fakeAgent(singleDeltaStream, (threadId) => {
 				resetThreadId = threadId;
 			}),
@@ -188,7 +215,7 @@ describe("createFetchHandler", () => {
 			maxChunkChars: MAX_CHUNK_CHARS,
 		});
 
-		const response = await handler(
+		const response = await app.handle(
 			authedRequest("http://harness.local/v1/threads/t1/reset", {
 				method: "POST",
 			}),
@@ -198,13 +225,36 @@ describe("createFetchHandler", () => {
 		expect(resetThreadId).toBe("t1");
 	});
 
+	test("POST /v1/threads/:id/reset decodes a URL-encoded thread id", async () => {
+		let resetThreadId: string | undefined;
+		const app = createApp({
+			agent: fakeAgent(singleDeltaStream, (threadId) => {
+				resetThreadId = threadId;
+			}),
+			apiKey: API_KEY,
+			maxChunkChars: MAX_CHUNK_CHARS,
+		});
+
+		const encoded = encodeURIComponent("thread/with slash");
+		const response = await app.handle(
+			authedRequest(`http://harness.local/v1/threads/${encoded}/reset`, {
+				method: "POST",
+			}),
+		);
+
+		expect(response.status).toBe(204);
+		expect(resetThreadId).toBe("thread/with slash");
+	});
+
 	test("unknown routes return 404", async () => {
-		const handler = createFetchHandler({
+		const app = createApp({
 			agent: fakeAgent(singleDeltaStream),
 			apiKey: API_KEY,
 			maxChunkChars: MAX_CHUNK_CHARS,
 		});
-		const response = await handler(authedRequest("http://harness.local/nope"));
+		const response = await app.handle(
+			authedRequest("http://harness.local/nope"),
+		);
 
 		expect(response.status).toBe(404);
 	});

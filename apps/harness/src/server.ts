@@ -1,4 +1,5 @@
 import type { Agent } from "@repo/core";
+import { Elysia, t } from "elysia";
 import { chunkText } from "./chunk.ts";
 import { normalizeText } from "./normalize.ts";
 
@@ -8,27 +9,11 @@ export interface ServerDeps {
 	maxChunkChars: number;
 }
 
-interface MessageRequestBody {
-	threadId: string;
-	userId: string;
-	text: string;
-}
-
-function isMessageRequestBody(value: unknown): value is MessageRequestBody {
-	if (typeof value !== "object" || value === null) return false;
-	const body = value as Record<string, unknown>;
-	return (
-		typeof body.threadId === "string" &&
-		typeof body.userId === "string" &&
-		typeof body.text === "string"
-	);
-}
-
-function isAuthorized(request: Request, apiKey: string): boolean {
-	return request.headers.get("authorization") === `Bearer ${apiKey}`;
-}
-
-const RESET_THREAD_PATH = /^\/v1\/threads\/([^/]+)\/reset$/;
+const MessageBody = t.Object({
+	threadId: t.String(),
+	userId: t.String(),
+	text: t.String(),
+});
 
 function ndjsonLine(value: unknown): Uint8Array {
 	return new TextEncoder().encode(`${JSON.stringify(value)}\n`);
@@ -65,56 +50,44 @@ function streamAgentEvents(
 }
 
 /**
- * Plain (request: Request) => Promise<Response> handler — same shape Bun.serve's
- * `fetch` option expects. Kept separate from index.ts so tests can call it
- * directly against a fake `Agent`, without an actual listening port or LLM call.
+ * Builds the Elysia app. Kept separate from index.ts so tests can call
+ * `app.handle(request)` directly, without an actual listening port or LLM call.
  */
-export function createFetchHandler(deps: ServerDeps) {
-	return async function handleRequest(request: Request): Promise<Response> {
-		const url = new URL(request.url);
+export function createApp(deps: ServerDeps) {
+	return new Elysia()
+		.onRequest(({ request, set }) => {
+			// Health checks stay unauthenticated — Railway (and anyone else
+			// polling liveness) shouldn't need the shared secret for that.
+			if (new URL(request.url).pathname === "/health") return;
 
-		if (request.method === "GET" && url.pathname === "/health") {
-			return new Response("ok");
-		}
-
-		if (!isAuthorized(request, deps.apiKey)) {
-			return new Response("Unauthorized", { status: 401 });
-		}
-
-		if (request.method === "POST" && url.pathname === "/v1/messages") {
-			let body: unknown;
-			try {
-				body = await request.json();
-			} catch {
-				return new Response("Invalid JSON", { status: 400 });
+			if (request.headers.get("authorization") !== `Bearer ${deps.apiKey}`) {
+				set.status = 401;
+				return "Unauthorized";
 			}
+		})
+		.get("/health", () => "ok")
+		.post(
+			"/v1/messages",
+			({ body }) => {
+				const chunks = chunkText(
+					normalizeText.apply(body.text),
+					deps.maxChunkChars,
+				);
 
-			if (!isMessageRequestBody(body)) {
-				return new Response("Invalid body", { status: 400 });
-			}
+				const stream = streamAgentEvents(deps.agent, {
+					threadId: body.threadId,
+					userId: body.userId,
+					chunks,
+				});
 
-			const chunks = chunkText(
-				normalizeText.apply(body.text),
-				deps.maxChunkChars,
-			);
-
-			const stream = streamAgentEvents(deps.agent, {
-				threadId: body.threadId,
-				userId: body.userId,
-				chunks,
-			});
-
-			return new Response(stream, {
-				headers: { "content-type": "application/x-ndjson" },
-			});
-		}
-
-		const resetMatch = url.pathname.match(RESET_THREAD_PATH);
-		if (request.method === "POST" && resetMatch?.[1]) {
-			deps.agent.resetThread(decodeURIComponent(resetMatch[1]));
+				return new Response(stream, {
+					headers: { "content-type": "application/x-ndjson" },
+				});
+			},
+			{ body: MessageBody },
+		)
+		.post("/v1/threads/:id/reset", ({ params }) => {
+			deps.agent.resetThread(params.id);
 			return new Response(null, { status: 204 });
-		}
-
-		return new Response("Not found", { status: 404 });
-	};
+		});
 }

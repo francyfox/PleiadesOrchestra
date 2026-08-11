@@ -14,11 +14,18 @@ describe("chunkText", () => {
 		const text = "one two three four five six seven eight";
 		const chunks = chunkText(text, 12);
 
-		expect(chunks).toEqual(["one two", "three four", "five six", "seven eight"]);
+		expect(chunks).toEqual([
+			"one two",
+			"three four",
+			"five six",
+			"seven eight",
+		]);
 	});
 
 	test("every chunk fits within maxChunkSize when the text has word breaks", () => {
-		const text = "the quick brown fox jumps over the lazy dog ".repeat(10).trim();
+		const text = "the quick brown fox jumps over the lazy dog "
+			.repeat(10)
+			.trim();
 		const chunks = chunkText(text, 20);
 
 		for (const chunk of chunks) {

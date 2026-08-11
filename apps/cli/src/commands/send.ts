@@ -1,6 +1,7 @@
 import { defineCommand, option } from "@bunli/core";
 import { z } from "zod";
 import { createHarnessClient } from "../harness-client.ts";
+import { formatUsageSummary } from "../usage-summary.ts";
 
 export default defineCommand({
 	name: "send",
@@ -33,9 +34,15 @@ export default defineCommand({
 		}
 
 		const client = createHarnessClient({ baseURL: flags.url, apiKey });
+		const contextWindowTokens = process.env.LLM_CONTEXT_SIZE
+			? Number(process.env.LLM_CONTEXT_SIZE)
+			: undefined;
 
 		try {
+			const requestStartedAt = Date.now();
+			let firstDeltaAt: number | undefined;
 			let progressCleared = false;
+
 			for await (const event of client.streamMessage({
 				threadId: flags.thread,
 				userId: flags.user,
@@ -52,11 +59,22 @@ export default defineCommand({
 							process.stderr.write("\r\x1b[K");
 							progressCleared = true;
 						}
+						firstDeltaAt ??= Date.now();
 						process.stdout.write(event.text);
 						break;
-					case "done":
+					case "done": {
 						process.stdout.write("\n");
+						const ttftMs = firstDeltaAt
+							? firstDeltaAt - requestStartedAt
+							: undefined;
+						const usageLine = formatUsageSummary(event, contextWindowTokens);
+						process.stderr.write(
+							ttftMs !== undefined
+								? `TTFT ${ttftMs}ms · ${usageLine}\n`
+								: `${usageLine}\n`,
+						);
 						break;
+					}
 				}
 			}
 		} catch (error) {

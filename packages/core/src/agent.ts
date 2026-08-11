@@ -1,5 +1,5 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { generateText, streamText, type ModelMessage } from "ai";
+import { generateText, type ModelMessage, streamText } from "ai";
 import { ThreadHistory } from "./history";
 import {
 	type createTelemetry,
@@ -39,6 +39,10 @@ export function createAgent(config: AgentConfig): Agent {
 		name: "albedo",
 		baseURL: config.baseURL,
 		apiKey: config.apiKey,
+		// Without this, a streamed response never carries token usage (needs
+		// `stream_options: { include_usage: true }` on the wire) — `usage.inputTokens`/
+		// `outputTokens` silently come back undefined instead of erroring.
+		includeUsage: true,
 	});
 	const model = provider(config.model);
 	const systemPrompt = config.systemPrompt ?? DEFAULT_SYSTEM_PROMPT;
@@ -110,6 +114,7 @@ export function createAgent(config: AgentConfig): Agent {
 					content: finalContent,
 				};
 
+				const generationStartedAt = Date.now();
 				const result = streamText({
 					model,
 					system: systemPrompt,
@@ -141,7 +146,12 @@ export function createAgent(config: AgentConfig): Agent {
 					{ role: "assistant", content: fullText },
 				);
 
-				yield { type: "done" };
+				yield {
+					type: "done",
+					elapsedMs: Date.now() - generationStartedAt,
+					inputTokens: usage.inputTokens,
+					outputTokens: usage.outputTokens,
+				};
 			} catch (error) {
 				telemetry.logLlmState({
 					provider: "albedo",
