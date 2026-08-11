@@ -1,21 +1,18 @@
 {
-	"name": "telegram-bot",
+	"name": "harness",
 	"private": true,
 	"type": "module",
 	"scripts": {
 		"dev": "bun --watch src/index.ts",
 		"start": "bun src/index.ts",
-		"build": "bun build ./src/index.ts --compile --target=bun-linux-x64-musl --outfile dist/telegram-bot",
+		"build": "bun build ./src/index.ts --compile --target=bun-linux-x64-musl --outfile dist/harness",
 		"test": "bun test",
 		"check-types": "tsc --noEmit",
 		"lint": "biome check ."
 	},
 	"dependencies": {
-		"@gramio/auto-answer-callback-query": "^0.0.3",
-		"@gramio/auto-retry": "^0.0.3",
 		"@repo/core": "workspace:*",
 		"@t3-oss/env-core": "^0.13.11",
-		"gramio": "^0.9.0",
 		"transferum": "^1.7.0",
 		"zod": "^4.4.3"
 	},

@@ -8,4 +8,4 @@ export {
 	telemetry,
 } from "./telemetry";
 export { withTimeout } from "./timeout";
-export type { Agent, IncomingMessage, OutgoingMessage } from "./types";
+export type { Agent, AgentStreamEvent, IncomingMessage } from "./types";

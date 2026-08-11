@@ -8,7 +8,7 @@ mkdir -p "$(dirname "$MODEL_PATH")"
 
 if [ ! -f "$MODEL_PATH" ]; then
     echo "Model not found at $MODEL_PATH, downloading from $MODEL_URL"
-    curl -fL --retry 3 "$MODEL_URL" -o "$MODEL_PATH.tmp"
+    curl -fL --retry 10 --retry-all-errors --retry-delay 2 -C - "$MODEL_URL" -o "$MODEL_PATH.tmp"
     mv "$MODEL_PATH.tmp" "$MODEL_PATH"
 else
     echo "Using cached model at $MODEL_PATH"
