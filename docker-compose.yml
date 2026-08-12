@@ -31,6 +31,16 @@ services:
       albedo:
         condition: service_healthy
 
+  memory:
+    build:
+      context: .
+      dockerfile: apps/memory/Dockerfile
+    ports:
+      - "6666:6666"
+      - "8082:8080"
+    volumes:
+      - turingdb-data:/data
+
   telegram-bot:
     build:
       context: .
@@ -54,3 +64,4 @@ services:
 
 volumes:
   albedo-models:
+  turingdb-data:
