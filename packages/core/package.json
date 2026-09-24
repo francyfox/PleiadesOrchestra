@@ -14,9 +14,11 @@
 	},
 	"dependencies": {
 		"@ai-sdk/openai-compatible": "^3.0.20",
+		"@modelcontextprotocol/client": "^2.0.0",
 		"ai": "^7.0.48"
 	},
 	"devDependencies": {
+		"@modelcontextprotocol/server": "^2.0.0",
 		"@types/bun": "latest",
 		"consola": "^3.4.2"
 	},

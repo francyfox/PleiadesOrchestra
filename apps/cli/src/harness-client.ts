@@ -34,7 +34,7 @@ export function createHarnessClient(config: HarnessClientConfig) {
 			const response = await fetchImpl(`${config.baseURL}/v1/messages`, {
 				method: "POST",
 				headers,
-				body: JSON.stringify(message),
+				body: JSON.stringify({ ...message, channel: "cli" }),
 			});
 
 			if (!response.ok) {
@@ -54,19 +54,25 @@ export function createHarnessClient(config: HarnessClientConfig) {
 				const { done, value } = await reader.read();
 				if (value) buffer += decoder.decode(value, { stream: true });
 
-				let newlineIndex = buffer.indexOf("\n");
+				// Index into `buffer` rather than `.slice()`-ing off each
+				// consumed line — the old version copied the entire
+				// remaining buffer on every line, not just once per read.
+				let lineStart = 0;
+				let newlineIndex = buffer.indexOf("\n", lineStart);
 				while (newlineIndex !== -1) {
-					const line = buffer.slice(0, newlineIndex);
-					buffer = buffer.slice(newlineIndex + 1);
-					newlineIndex = buffer.indexOf("\n");
+					const line = buffer.slice(lineStart, newlineIndex);
+					lineStart = newlineIndex + 1;
+					newlineIndex = buffer.indexOf("\n", lineStart);
 
-					if (line.length === 0) continue;
-					const event = JSON.parse(line) as HarnessStreamLine;
-					if (event.type === "error") {
-						throw new Error(event.message);
+					if (line.length > 0) {
+						const event = JSON.parse(line) as HarnessStreamLine;
+						if (event.type === "error") {
+							throw new Error(event.message);
+						}
+						yield event;
 					}
-					yield event;
 				}
+				buffer = buffer.slice(lineStart);
 
 				if (done) break;
 			}

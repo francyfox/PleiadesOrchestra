@@ -82,6 +82,7 @@ describe("createHarnessClient", () => {
 			threadId: "t1",
 			userId: "u1",
 			text: "hi",
+			channel: "cli",
 		});
 	});
 

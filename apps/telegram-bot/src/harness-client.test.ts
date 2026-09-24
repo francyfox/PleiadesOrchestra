@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { createHarnessClient } from "./harness-client.ts";
+import {
+	createHarnessClient,
+	HarnessForbiddenError,
+} from "./harness-client.ts";
 
 const BASE_URL = "https://harness.internal";
 const API_KEY = "test-api-key";
@@ -58,6 +61,8 @@ describe("createHarnessClient", () => {
 			threadId: "t1",
 			userId: "u1",
 			text: "hi",
+			channel: "telegram",
+			displayName: "Ivan",
 		})) {
 			events.push(event);
 		}
@@ -82,6 +87,8 @@ describe("createHarnessClient", () => {
 			threadId: "t1",
 			userId: "u1",
 			text: "hi",
+			channel: "telegram",
+			displayName: "Ivan",
 		});
 	});
 
@@ -98,6 +105,7 @@ describe("createHarnessClient", () => {
 			threadId: "t1",
 			userId: "u1",
 			text: "hi",
+			channel: "telegram",
 		})) {
 			events.push(event);
 		}
@@ -123,6 +131,7 @@ describe("createHarnessClient", () => {
 				threadId: "t1",
 				userId: "u1",
 				text: "hi",
+				channel: "telegram",
 			})) {
 				events.push(event);
 			}
@@ -147,6 +156,7 @@ describe("createHarnessClient", () => {
 				threadId: "t1",
 				userId: "u1",
 				text: "hi",
+				channel: "telegram",
 			})) {
 				events.push(event);
 			}
@@ -154,6 +164,71 @@ describe("createHarnessClient", () => {
 		}
 
 		await expect(collect()).rejects.toThrow(/500/);
+	});
+
+	test("streamMessage throws HarnessForbiddenError on 403, so the caller can stay silent", async () => {
+		const client = createHarnessClient({
+			baseURL: BASE_URL,
+			apiKey: API_KEY,
+			fetchImpl: fakeFetch(() => new Response(null, { status: 403 })),
+		});
+
+		async function collect() {
+			for await (const _ of client.streamMessage({
+				threadId: "t1",
+				userId: "u1",
+				text: "hi",
+				channel: "telegram",
+			})) {
+			}
+		}
+
+		await expect(collect()).rejects.toBeInstanceOf(HarnessForbiddenError);
+	});
+
+	test("checkAccess posts to /v1/access with a bearer token and returns the verdict", async () => {
+		let capturedUrl: string | undefined;
+		let capturedInit: RequestInit | undefined;
+
+		const client = createHarnessClient({
+			baseURL: BASE_URL,
+			apiKey: API_KEY,
+			fetchImpl: fakeFetch((input, init) => {
+				capturedUrl = String(input);
+				capturedInit = init;
+				return Response.json({ allowed: false, userId: "uuid-1" });
+			}),
+		});
+
+		const result = await client.checkAccess({
+			channel: "telegram",
+			externalUserId: "42",
+			displayName: "Ivan",
+		});
+
+		expect(result).toEqual({ allowed: false, userId: "uuid-1" });
+		expect(capturedUrl).toBe(`${BASE_URL}/v1/access`);
+		expect(capturedInit?.method).toBe("POST");
+		expect(new Headers(capturedInit?.headers).get("authorization")).toBe(
+			`Bearer ${API_KEY}`,
+		);
+		expect(JSON.parse(String(capturedInit?.body))).toEqual({
+			channel: "telegram",
+			externalUserId: "42",
+			displayName: "Ivan",
+		});
+	});
+
+	test("checkAccess throws on a non-ok response", async () => {
+		const client = createHarnessClient({
+			baseURL: BASE_URL,
+			apiKey: API_KEY,
+			fetchImpl: fakeFetch(() => new Response("nope", { status: 500 })),
+		});
+
+		await expect(
+			client.checkAccess({ channel: "telegram", externalUserId: "42" }),
+		).rejects.toThrow(/500/);
 	});
 
 	test("resetThread posts to /v1/threads/:id/reset with the thread id encoded", async () => {

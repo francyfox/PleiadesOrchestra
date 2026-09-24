@@ -1,28 +1,30 @@
 import type { ModelMessage } from "ai";
+import type { CallContext, HistoryStore } from "./types";
 
 /**
- * Bounded in-memory conversation history, keyed by thread.
+ * Bounded in-memory `HistoryStore`, keyed by thread — the default when no
+ * persistent store is injected, and the test double for everything else.
  *
  * Capped by message count rather than tokens: the model here has a small,
  * fixed context budget, so history depth must stay predictable regardless
  * of provider-side prompt bloat.
  */
-export class ThreadHistory {
+export class InMemoryHistoryStore implements HistoryStore {
 	private readonly threads = new Map<string, ModelMessage[]>();
 
 	constructor(private readonly maxMessages: number) {}
 
-	get(threadId: string): ModelMessage[] {
-		return this.threads.get(threadId) ?? [];
+	async get(threadId: string, limit: number): Promise<ModelMessage[]> {
+		return (this.threads.get(threadId) ?? []).slice(-limit);
 	}
 
-	append(threadId: string, ...messages: ModelMessage[]): void {
-		const existing = this.threads.get(threadId) ?? [];
+	async append(ctx: CallContext, messages: ModelMessage[]): Promise<void> {
+		const existing = this.threads.get(ctx.threadId) ?? [];
 		const updated = [...existing, ...messages].slice(-this.maxMessages);
-		this.threads.set(threadId, updated);
+		this.threads.set(ctx.threadId, updated);
 	}
 
-	reset(threadId: string): void {
+	async reset(threadId: string): Promise<void> {
 		this.threads.delete(threadId);
 	}
 }

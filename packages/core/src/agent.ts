@@ -1,11 +1,19 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { generateText, type ModelMessage, streamText } from "ai";
-import { ThreadHistory } from "./history";
+import { InMemoryHistoryStore } from "./history";
 import {
 	type createTelemetry,
 	telemetry as defaultTelemetry,
 } from "./telemetry";
-import type { Agent, AgentStreamEvent, IncomingMessage } from "./types";
+import type {
+	Agent,
+	AgentStreamEvent,
+	CallContext,
+	HistoryStore,
+	IncomingMessage,
+	LlmCallKind,
+	UsageRecorder,
+} from "./types";
 
 export interface AgentConfig {
 	baseURL: string;
@@ -19,6 +27,10 @@ export interface AgentConfig {
 	/** Token cap for the lightweight per-chunk "ingest" pass used on all but the last chunk of a multi-chunk message. */
 	maxIngestTokens?: number;
 	telemetry?: ReturnType<typeof createTelemetry>;
+	/** Defaults to an in-memory store. */
+	historyStore?: HistoryStore;
+	/** Called for every model call, including ingest passes. */
+	usageRecorder?: UsageRecorder;
 }
 
 const DEFAULT_SYSTEM_PROMPT =
@@ -46,10 +58,40 @@ export function createAgent(config: AgentConfig): Agent {
 	});
 	const model = provider(config.model);
 	const systemPrompt = config.systemPrompt ?? DEFAULT_SYSTEM_PROMPT;
-	const history = new ThreadHistory(config.maxHistoryMessages ?? 10);
+	const maxHistoryMessages = config.maxHistoryMessages ?? 10;
+	const history =
+		config.historyStore ?? new InMemoryHistoryStore(maxHistoryMessages);
 	const maxOutputTokens = config.maxOutputTokens ?? 512;
 	const maxIngestTokens = config.maxIngestTokens ?? 96;
 	const telemetry = config.telemetry ?? defaultTelemetry;
+	const usageRecorder = config.usageRecorder;
+
+	/** Every model call goes through here: telemetry (stdout) plus the usage port. */
+	function reportCall(
+		callContext: CallContext,
+		kind: LlmCallKind,
+		startedAt: number,
+		outcome:
+			| { ok: true; inputTokens?: number; outputTokens?: number }
+			| { ok: false; error: string },
+	) {
+		const latencyMs = Date.now() - startedAt;
+		telemetry.logLlmState({
+			provider: "albedo",
+			model: config.model,
+			latencyMs,
+			...outcome,
+		});
+		usageRecorder?.record({
+			...callContext,
+			kind,
+			provider: "albedo",
+			model: config.model,
+			latencyMs,
+			at: Date.now(),
+			...outcome,
+		});
+	}
 
 	return {
 		async *handleMessageStream(
@@ -60,6 +102,33 @@ export function createAgent(config: AgentConfig): Agent {
 			const lastIndex = totalChunks - 1;
 			const digests: string[] = [];
 			let processedChars = 0;
+			const callContext: CallContext = {
+				threadId: message.threadId,
+				userId: message.userId,
+				planRunId: message.planRunId,
+				actionName: message.actionName,
+			};
+			// Running totals across ingest passes + the final generation;
+			// `undefined` as soon as any call didn't report usage.
+			let totalInputTokens: number | undefined = 0;
+			let totalOutputTokens: number | undefined = 0;
+			const addUsage = (usage: {
+				inputTokens?: number;
+				outputTokens?: number;
+			}) => {
+				totalInputTokens =
+					totalInputTokens === undefined || usage.inputTokens === undefined
+						? undefined
+						: totalInputTokens + usage.inputTokens;
+				totalOutputTokens =
+					totalOutputTokens === undefined || usage.outputTokens === undefined
+						? undefined
+						: totalOutputTokens + usage.outputTokens;
+			};
+			// The model call currently in flight, if any — so the catch below
+			// reports a failure against the right call, and doesn't report a
+			// failed history write as a failed model call.
+			let inFlight: { kind: LlmCallKind; startedAt: number } | undefined;
 
 			try {
 				for (let chunkIndex = 0; chunkIndex < lastIndex; chunkIndex++) {
@@ -75,6 +144,7 @@ export function createAgent(config: AgentConfig): Agent {
 						contextChars: processedChars,
 					};
 
+					inFlight = { kind: "ingest", startedAt: Date.now() };
 					const { text: digest, usage } = await generateText({
 						model,
 						system: INGEST_SYSTEM_PROMPT,
@@ -82,14 +152,13 @@ export function createAgent(config: AgentConfig): Agent {
 						maxOutputTokens: maxIngestTokens,
 					});
 
-					telemetry.logLlmState({
-						provider: "albedo",
-						model: config.model,
+					reportCall(callContext, "ingest", inFlight.startedAt, {
+						ok: true,
 						inputTokens: usage.inputTokens,
 						outputTokens: usage.outputTokens,
-						latencyMs: Date.now() - startedAt,
-						ok: true,
 					});
+					addUsage(usage);
+					inFlight = undefined;
 
 					digests.push(digest);
 				}
@@ -114,11 +183,13 @@ export function createAgent(config: AgentConfig): Agent {
 					content: finalContent,
 				};
 
+				const past = await history.get(message.threadId, maxHistoryMessages);
 				const generationStartedAt = Date.now();
+				inFlight = { kind: "generate", startedAt: generationStartedAt };
 				const result = streamText({
 					model,
 					system: systemPrompt,
-					messages: [...history.get(message.threadId), userMessage],
+					messages: [...past, userMessage],
 					maxOutputTokens,
 				});
 
@@ -131,41 +202,40 @@ export function createAgent(config: AgentConfig): Agent {
 					result.usage,
 				]);
 
-				telemetry.logLlmState({
-					provider: "albedo",
-					model: config.model,
+				reportCall(callContext, "generate", generationStartedAt, {
+					ok: true,
 					inputTokens: usage.inputTokens,
 					outputTokens: usage.outputTokens,
-					latencyMs: Date.now() - startedAt,
-					ok: true,
 				});
+				addUsage(usage);
+				inFlight = undefined;
 
-				history.append(
-					message.threadId,
+				await history.append(callContext, [
 					{ role: "user", content: message.chunks.join(" ") },
 					{ role: "assistant", content: fullText },
-				);
+				]);
 
 				yield {
 					type: "done",
 					elapsedMs: Date.now() - generationStartedAt,
 					inputTokens: usage.inputTokens,
 					outputTokens: usage.outputTokens,
+					totalInputTokens,
+					totalOutputTokens,
 				};
 			} catch (error) {
-				telemetry.logLlmState({
-					provider: "albedo",
-					model: config.model,
-					latencyMs: Date.now() - startedAt,
-					ok: false,
-					error: error instanceof Error ? error.message : String(error),
-				});
+				if (inFlight) {
+					reportCall(callContext, inFlight.kind, inFlight.startedAt, {
+						ok: false,
+						error: error instanceof Error ? error.message : String(error),
+					});
+				}
 				throw error;
 			}
 		},
 
-		resetThread(threadId: string): void {
-			history.reset(threadId);
+		async resetThread(threadId: string): Promise<void> {
+			await history.reset(threadId);
 		},
 	};
 }

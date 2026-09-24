@@ -1,5 +1,5 @@
 {
-	"name": "albedo",
+	"name": "pleiades-orchestra",
 	"private": true,
 	"scripts": {
 		"build": "turbo run build",
@@ -9,8 +9,7 @@
 		"format": "biome format --write .",
 		"check-types": "turbo run check-types",
 		"test": "turbo run test",
-		"test:albedo": "bun test apps/albedo/docker.test.ts",
-		"test:prod": "bun test apps/albedo/prod.test.ts apps/telegram-bot/prod.test.ts"
+		"test:beta-text": "bun test apps/beta-text/docker.test.ts"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.7",

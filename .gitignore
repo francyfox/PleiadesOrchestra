@@ -13,3 +13,8 @@ dist
 .turbo
 
 .vscode/*
+
+# SQLite databases (alpha-orchestrator's data/, apps/admin's auth DB)
+*.db
+*.db-wal
+*.db-shm

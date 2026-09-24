@@ -1,0 +1,111 @@
+name: pleiades-orchestra
+
+services:
+  alpha-orchestrator:
+    build:
+      context: .
+      dockerfile: apps/alpha-orchestrator/Dockerfile
+    env_file:
+      - apps/alpha-orchestrator/.env
+    environment:
+      # Talk to the beta-text/gamma-decision services over the compose network —
+      # apps/alpha-orchestrator/.env(.example) defaults to localhost ports, for
+      # running alpha-orchestrator standalone outside compose.
+      LLM_BASE_URL: http://beta-text:8080/v1
+      LLM_API_KEY: ${LLM_API_KEY:?set LLM_API_KEY in .env (same value as beta-text)}
+      LAYA_API_BASE_URL: http://gamma-decision:8080
+      LAYA_API_KEY: ${LAYA_API_KEY:?set LAYA_API_KEY in .env (same value as gamma-decision)}
+      # Shared secret with telegram-bot — sourced from the root .env so both
+      # services always agree on it, instead of syncing it by hand across
+      # apps/alpha-orchestrator/.env and apps/telegram-bot/.env.
+      HARNESS_API_KEY: ${HARNESS_API_KEY:?set HARNESS_API_KEY in .env (same value as telegram-bot)}
+      # Shared with the admin service — same root-.env pattern as HARNESS_API_KEY.
+      ADMIN_API_KEY: ${ADMIN_API_KEY:?set ADMIN_API_KEY in .env (same value as admin)}
+      DATABASE_PATH: /data/orchestrator.db
+    volumes:
+      - alpha-orchestrator-data:/data
+    ports:
+      - "3000:3000"
+    depends_on:
+      beta-text:
+        condition: service_healthy
+      gamma-decision:
+        condition: service_healthy
+
+  beta-text:
+    build:
+      context: .
+      dockerfile: apps/beta-text/Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "8181:8080"
+    volumes:
+      - beta-text-models:/models
+
+  gamma-decision:
+    build:
+      context: .
+      dockerfile: apps/gamma-decision/Dockerfile
+    env_file:
+      - apps/gamma-decision/.env
+    ports:
+      - "8090:8080"
+    volumes:
+      - gamma-decision-models:/root/.cache/receptron-laya
+
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+    env_file:
+      - apps/admin/.env
+    environment:
+      HARNESS_BASE_URL: http://alpha-orchestrator:3000
+      ADMIN_API_KEY: ${ADMIN_API_KEY:?set ADMIN_API_KEY in .env (same value as alpha-orchestrator)}
+      # SvelteKit's CSRF check and better-auth both compare against the URL the
+      # panel is actually opened at.
+      ORIGIN: http://localhost:3002
+      BETTER_AUTH_URL: http://localhost:3002
+    volumes:
+      - admin-data:/data
+    # Loopback only — the admin panel is never exposed beyond this machine.
+    ports:
+      - "127.0.0.1:3002:3000"
+    depends_on:
+      - alpha-orchestrator
+
+#  memory:
+#    build:
+#      context: .
+#      dockerfile: apps/memory/Dockerfile
+#    ports:
+#      - "6666:6666"
+#      - "8082:8080"
+#    volumes:
+#      - turingdb-data:/data
+
+  telegram-bot:
+    build:
+      context: .
+      dockerfile: apps/telegram-bot/Dockerfile
+    env_file:
+      - apps/telegram-bot/.env
+    environment:
+      # Talk to the alpha-orchestrator service over the compose network — same
+      # localhost-default idea as alpha-orchestrator's own env above.
+      HARNESS_BASE_URL: http://alpha-orchestrator:3000
+      HARNESS_API_KEY: ${HARNESS_API_KEY:?set HARNESS_API_KEY in .env (same value as alpha-orchestrator)}
+    ports:
+      - "3001:3000"
+    depends_on:
+      - alpha-orchestrator
+    # Webhook mode: TELEGRAM_WEBHOOK_URL must be a publicly reachable tunnel
+    # (cloudflared/ngrok) to localhost:3001, or updates never arrive.
+
+volumes:
+  beta-text-models:
+  gamma-decision-models:
+  alpha-orchestrator-data:
+  admin-data:
+#  turingdb-data:

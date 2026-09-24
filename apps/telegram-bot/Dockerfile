@@ -4,8 +4,10 @@ FROM oven/bun:1-alpine AS install
 WORKDIR /app
 COPY package.json bun.lock ./
 COPY apps/telegram-bot/package.json apps/telegram-bot/package.json
-COPY apps/harness/package.json apps/harness/package.json
+COPY apps/alpha-orchestrator/package.json apps/alpha-orchestrator/package.json
 COPY apps/cli/package.json apps/cli/package.json
+COPY apps/gamma-decision/package.json apps/gamma-decision/package.json
+COPY apps/admin/package.json apps/admin/package.json
 COPY packages/core/package.json packages/core/package.json
 RUN bun install --frozen-lockfile
 

@@ -1,6 +1,6 @@
 ---
 name: transferum
-description: Use whenever writing or editing code that depends on the `transferum` npm package in this repo (e.g. `apps/harness`) — building data-transformation pipelines, normalization steps, reactive channels, polling, or debounce/throttle logic. Also load before adding a *new* transferum dependency elsewhere in the monorepo. Covers the right-sized pattern for pure synchronous transforms (operators only, no transfer graph) vs. when an actual transfer/bridge pipeline is warranted.
+description: Use whenever writing or editing code that depends on the `transferum` npm package in this repo (e.g. `apps/alpha-orchestrator`) — building data-transformation pipelines, normalization steps, reactive channels, polling, or debounce/throttle logic. Also load before adding a *new* transferum dependency elsewhere in the monorepo. Covers the right-sized pattern for pure synchronous transforms (operators only, no transfer graph) vs. when an actual transfer/bridge pipeline is warranted.
 ---
 
 # transferum

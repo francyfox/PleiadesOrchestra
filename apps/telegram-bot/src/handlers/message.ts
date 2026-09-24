@@ -1,8 +1,9 @@
 import { telemetry, withTimeout } from "@repo/core";
 import { Composer } from "gramio";
 import { createThrottleTransfer } from "transferum";
-import { config } from "../env.ts";
+import { displayNameOf, isUserAllowed, TELEGRAM_CHANNEL } from "../access.ts";
 import { harnessClient } from "../harness.ts";
+import { HarnessForbiddenError } from "../harness-client.ts";
 import { composer } from "../plugins/index.ts";
 import { renderStatusText, type StatusProgress } from "../status-message.ts";
 
@@ -14,21 +15,28 @@ const NO_ANSWER_TEXT = "Модель не вернула ответ. Попро�
 export const messageComposer = new Composer()
 	.extend(composer)
 	.on("message", async (context) => {
-		if (!context.text) return;
-		if (
-			!context.from ||
-			!config.ALLOWED_TELEGRAM_USER_IDS.includes(context.from.id)
-		) {
-			// Not paired/whitelisted — silently ignore, same intent as IronClaw's
-			// pairing model but as an explicit allowlist instead of a chat flow.
-			return;
-		}
+		if (!context.text || !context.from) return;
 
 		const text = context.text;
 		const chatId = context.chat.id;
 		const threadId = String(chatId);
 		const userId = String(context.from.id);
 		const startedAt = Date.now();
+
+		// Not whitelisted/blocked (or the check itself failed) — silently
+		// ignore, before any status message goes out. The whitelist lives in
+		// the orchestrator's DB, managed from the admin panel.
+		const allowed = await isUserAllowed(harnessClient, context.from, () =>
+			telemetry.logMessageEvent({
+				threadId,
+				userId,
+				username: context.from?.username,
+				messageLength: text.length,
+				latencyMs: Date.now() - startedAt,
+				ok: false,
+			}),
+		);
+		if (!allowed) return;
 
 		// Talk to messages by numeric id via the raw bot API rather than
 		// holding on to MessageContext instances — the answer message doesn't
@@ -120,6 +128,8 @@ export const messageComposer = new Composer()
 						threadId,
 						userId,
 						text,
+						channel: TELEGRAM_CHANNEL,
+						displayName: displayNameOf(context.from),
 					})) {
 						if (event.type === "progress") {
 							latestProgress = event;
@@ -163,6 +173,14 @@ export const messageComposer = new Composer()
 			});
 		} catch (error) {
 			clearInterval(animationTimer);
+			if (error instanceof HarnessForbiddenError) {
+				// Blocked between the access check and the message — stay
+				// silent, just drop the status message already shown.
+				await answerRenderQueue;
+				await deleteMessage(statusMessageId);
+				if (answerMessageId !== null) await deleteMessage(answerMessageId);
+				return;
+			}
 			console.error("Failed to handle message:", error);
 			telemetry.logMessageEvent({
 				threadId,
