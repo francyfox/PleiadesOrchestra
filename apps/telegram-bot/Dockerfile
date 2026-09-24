@@ -8,6 +8,7 @@ COPY apps/alpha-orchestrator/package.json apps/alpha-orchestrator/package.json
 COPY apps/cli/package.json apps/cli/package.json
 COPY apps/gamma-decision/package.json apps/gamma-decision/package.json
 COPY apps/admin/package.json apps/admin/package.json
+COPY apps/snake-benchmark/package.json apps/snake-benchmark/package.json
 COPY packages/core/package.json packages/core/package.json
 RUN bun install --frozen-lockfile
 

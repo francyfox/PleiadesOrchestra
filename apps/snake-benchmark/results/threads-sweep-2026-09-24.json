@@ -1,0 +1,201 @@
+{
+	"createdAt": "2026-09-24T13:50:32.091Z",
+	"hardware": {
+		"cpu": "AMD Ryzen 5 5600H with Radeon Graphics",
+		"logicalCores": 12,
+		"totalMemGb": 31
+	},
+	"runtime": {
+		"bun": "1.4.2",
+		"transport": "in-process onnxruntime-node"
+	},
+	"config": {
+		"width": 24,
+		"height": 16,
+		"seed": 7,
+		"initialLength": 6,
+		"steps": 100,
+		"warmup": 5,
+		"threads": [
+			0,
+			1,
+			2,
+			4,
+			6,
+			12
+		],
+		"prompt": "compact",
+		"guarded": true,
+		"repo": "receptron/laya-onnx"
+	},
+	"results": [
+		{
+			"threads": 0,
+			"loadMs": 4370,
+			"steps": 100,
+			"inferenceMs": {
+				"count": 100,
+				"mean": 624.4031174300002,
+				"p50": 619.3319159999992,
+				"p90": 800.8818360000005,
+				"p99": 987.4090910000014,
+				"max": 1075.0301049999998,
+				"decisionsPerSecond": 1.6015294800511732
+			},
+			"decisionMs": {
+				"count": 100,
+				"mean": 625.0007084499998,
+				"p50": 619.7234800000006,
+				"p90": 801.359973999999,
+				"p99": 987.8406000000032,
+				"max": 1075.5152870000002,
+				"decisionsPerSecond": 1.5999981863700563
+			},
+			"stepsPerSecond": 1.5999138147162895,
+			"interventions": 0,
+			"deaths": 0,
+			"wins": 0,
+			"foodEaten": 2
+		},
+		{
+			"threads": 1,
+			"loadMs": 4124,
+			"steps": 100,
+			"inferenceMs": {
+				"count": 100,
+				"mean": 1494.8845139600005,
+				"p50": 1487.203256000008,
+				"p90": 1536.817955000006,
+				"p99": 1555.3027709999878,
+				"max": 1632.878528000001,
+				"decisionsPerSecond": 0.6689479960903238
+			},
+			"decisionMs": {
+				"count": 100,
+				"mean": 1495.094720839999,
+				"p50": 1487.4077349999861,
+				"p90": 1537.016021000003,
+				"p99": 1555.5150450000074,
+				"max": 1633.070372999995,
+				"decisionsPerSecond": 0.6688539435402215
+			},
+			"stepsPerSecond": 0.6688431770238477,
+			"interventions": 0,
+			"deaths": 0,
+			"wins": 0,
+			"foodEaten": 2
+		},
+		{
+			"threads": 2,
+			"loadMs": 4121,
+			"steps": 100,
+			"inferenceMs": {
+				"count": 100,
+				"mean": 811.5945810800036,
+				"p50": 807.1956939999945,
+				"p90": 834.4664400000474,
+				"p99": 864.843309000018,
+				"max": 883.2254040000262,
+				"decisionsPerSecond": 1.2321422829971116
+			},
+			"decisionMs": {
+				"count": 100,
+				"mean": 811.8082192700016,
+				"p50": 807.410652999999,
+				"p90": 834.688702000014,
+				"p99": 865.0520259999903,
+				"max": 883.4446110000135,
+				"decisionsPerSecond": 1.2318180282767095
+			},
+			"stepsPerSecond": 1.2317894635382074,
+			"interventions": 0,
+			"deaths": 0,
+			"wins": 0,
+			"foodEaten": 2
+		},
+		{
+			"threads": 4,
+			"loadMs": 4148,
+			"steps": 100,
+			"inferenceMs": {
+				"count": 100,
+				"mean": 478.55999392000086,
+				"p50": 474.1324940000195,
+				"p90": 497.50614700000733,
+				"p99": 530.4843770000152,
+				"max": 562.4248640000005,
+				"decisionsPerSecond": 2.089602166300525
+			},
+			"decisionMs": {
+				"count": 100,
+				"mean": 478.8172863600007,
+				"p50": 474.3965560000506,
+				"p90": 497.8464329999988,
+				"p99": 530.7353740000399,
+				"max": 562.6595090000192,
+				"decisionsPerSecond": 2.088479318702262
+			},
+			"stepsPerSecond": 2.0883981210248135,
+			"interventions": 0,
+			"deaths": 0,
+			"wins": 0,
+			"foodEaten": 2
+		},
+		{
+			"threads": 6,
+			"loadMs": 3791,
+			"steps": 100,
+			"inferenceMs": {
+				"count": 100,
+				"mean": 387.61994537000544,
+				"p50": 382.2881200000411,
+				"p90": 416.75690500001656,
+				"p99": 440.19516900001327,
+				"max": 518.0001630000188,
+				"decisionsPerSecond": 2.5798466047598314
+			},
+			"decisionMs": {
+				"count": 100,
+				"mean": 387.9498102000076,
+				"p50": 382.5626720000291,
+				"p90": 417.1462140000076,
+				"p99": 440.5670650000102,
+				"max": 518.3702550000162,
+				"decisionsPerSecond": 2.577653020333867
+			},
+			"stepsPerSecond": 2.577507790803981,
+			"interventions": 0,
+			"deaths": 0,
+			"wins": 0,
+			"foodEaten": 2
+		},
+		{
+			"threads": 12,
+			"loadMs": 3889,
+			"steps": 100,
+			"inferenceMs": {
+				"count": 100,
+				"mean": 638.2581726700032,
+				"p50": 564.0253319999902,
+				"p90": 867.9632109999657,
+				"p99": 975.0534160000389,
+				"max": 1007.8515570000163,
+				"decisionsPerSecond": 1.5667641133629904
+			},
+			"decisionMs": {
+				"count": 100,
+				"mean": 638.6355468800007,
+				"p50": 564.4208140000119,
+				"p90": 868.3004020000226,
+				"p99": 975.353856999951,
+				"max": 1008.1957709999988,
+				"decisionsPerSecond": 1.565838301493574
+			},
+			"stepsPerSecond": 1.565774198254841,
+			"interventions": 0,
+			"deaths": 0,
+			"wins": 0,
+			"foodEaten": 2
+		}
+	]
+}

@@ -150,7 +150,11 @@ describe("SqliteHistoryStore", () => {
 		);
 
 		expect(
-			db.select({ id: planRuns.id }).from(planRuns).all().map((r) => r.id),
+			db
+				.select({ id: planRuns.id })
+				.from(planRuns)
+				.all()
+				.map((r) => r.id),
 		).toEqual(["first", "second"]);
 	});
 });

@@ -3,6 +3,7 @@ FROM oven/bun:1-alpine AS install
 WORKDIR /app
 COPY package.json bun.lock ./
 COPY apps/admin/package.json apps/admin/package.json
+COPY apps/snake-benchmark/package.json apps/snake-benchmark/package.json
 COPY apps/alpha-orchestrator/package.json apps/alpha-orchestrator/package.json
 COPY apps/telegram-bot/package.json apps/telegram-bot/package.json
 COPY apps/cli/package.json apps/cli/package.json
