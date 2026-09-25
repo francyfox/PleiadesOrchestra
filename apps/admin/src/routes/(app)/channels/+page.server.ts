@@ -26,10 +26,7 @@ export const actions: Actions = {
 		const accessMode =
 			ACCESS_MODES.find((mode) => mode === form.get("accessMode")) ?? "open";
 		if (!/^[a-z0-9-]+$/.test(slug) || !name) {
-			return fail(400, {
-				message:
-					"Slug — строчные латинские буквы, цифры и дефис; имя обязательно",
-			});
+			return fail(400, { error: "invalid_channel" as const });
 		}
 		const result = await orFail(
 			orchestratorAs(locals).createChannel({

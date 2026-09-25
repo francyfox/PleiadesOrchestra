@@ -5,6 +5,7 @@
 		type Table,
 		type TableFeatures,
 	} from "@tanstack/svelte-table";
+	import { useIntlayer } from "svelte-intlayer";
 	import * as UiTable from "$lib/components/ui/table/index.js";
 
 	/**
@@ -14,14 +15,16 @@
 	 */
 	let {
 		table,
-		emptyText = "Нет данных",
+		emptyText,
 		rowClass,
 	}: {
 		table: Table<TFeatures, TData>;
+		/** Defaults to the common "No data". */
 		emptyText?: string;
 		rowClass?: (row: TData) => string;
 	} = $props();
 
+	const common = useIntlayer("common");
 	const rows = $derived(table.getRowModel().rows);
 </script>
 
@@ -51,7 +54,7 @@
 						colspan={table.getAllLeafColumns().length}
 						class="h-24 text-center text-muted-foreground"
 					>
-						{emptyText}
+						{emptyText ?? $common.emptyTable.value}
 					</UiTable.Cell>
 				</UiTable.Row>
 			{/each}

@@ -18,13 +18,14 @@ fi
 # no flag to change that. Railway (and most log viewers) classify by stream,
 # not content, so left alone every line shows up flagged as an error. Merge
 # stderr into stdout so normal operational logs aren't misclassified.
-exec llama-server \
+exec /app/llama-server \
     --model "$MODEL_PATH" \
     --host 0.0.0.0 \
     --port "${PORT:-8080}" \
     --ctx-size "${CTX_SIZE:-2048}" \
     --parallel "${PARALLEL:-1}" \
     --threads "${THREADS:-2}" \
+    --n-gpu-layers "${N_GPU_LAYERS:-99}" \
     --temp "${TEMP:-0.3}" \
     --api-key "$LLM_API_KEY" \
     2>&1

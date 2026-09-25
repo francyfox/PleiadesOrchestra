@@ -170,6 +170,23 @@ Query: `channel` (slug), `kind`, `status`, `q` (поиск по displayName/exte
   "usage": { "today": UsageTotals, "last7d": UsageTotals, "last30d": UsageTotals } }
 ```
 
+### Производительность
+
+`GET /v1/admin/performance?from&to` (по умолчанию последние 30 дней) — задержки вызовов моделей
+из журнала `llm_calls`:
+
+```json
+{
+  "rows":    [{ "day": "2026-09-24", "kind": "generate", "calls": 3, "failed": 1, "p50": 4000, "p90": 9000, "p99": 9000, "max": 9000, "tokensPerSecond": 37.5 }],
+  "overall": [{ "kind": "generate", "calls": 3, "failed": 1, "p50": 4000, "p90": 9000, "p99": 9000, "max": 9000, "tokensPerSecond": 37.5 }]
+}
+```
+
+- `rows` — по дням (UTC) × `kind` (`ingest` / `generate` / `decision`), `overall` — по `kind` за весь период.
+- Перцентили — nearest-rank по `latencyMs` всех вызовов, включая упавшие (`failed` — их число).
+- `tokensPerSecond` — медиана `outputTokens / latency` по успешным вызовам с usage; `null`, если
+  таких нет (у Laya токенов нет).
+
 ### GOAP
 
 `GET /v1/admin/runs/:id` →

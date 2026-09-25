@@ -17,7 +17,8 @@ export const actions: Actions = {
 			return fail(400, {
 				name,
 				email,
-				message: `Почта обязательна, пароль — не короче ${MIN_PASSWORD} символов`,
+				error: "weak_credentials" as const,
+				min: MIN_PASSWORD,
 			});
 		}
 		try {
@@ -30,10 +31,12 @@ export const actions: Actions = {
 				return fail(error.statusCode === 403 ? 403 : 400, {
 					name,
 					email,
-					message:
+					// Localized on the client; better-auth's own text kept as detail.
+					error:
 						error.statusCode === 403
-							? "Регистрация закрыта"
-							: (error.body?.message ?? "Не удалось зарегистрироваться"),
+							? ("registration_closed" as const)
+							: ("signup_failed" as const),
+					detail: error.statusCode === 403 ? undefined : error.body?.message,
 				});
 			}
 			throw error;

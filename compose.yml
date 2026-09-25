@@ -22,8 +22,10 @@ services:
       # Shared with the admin service — same root-.env pattern as HARNESS_API_KEY.
       ADMIN_API_KEY: ${ADMIN_API_KEY:?set ADMIN_API_KEY in .env (same value as admin)}
       DATABASE_PATH: /data/orchestrator.db
+    # SQLite on the host, not in a Docker volume: visible, easy to back up,
+    # survives `docker compose down -v`. ./data is gitignored.
     volumes:
-      - alpha-orchestrator-data:/data
+      - ./data/alpha-orchestrator:/data
     ports:
       - "3000:3000"
     depends_on:
@@ -42,6 +44,13 @@ services:
       - "8181:8080"
     volumes:
       - beta-text-models:/models
+    # Vulkan на встроенном Radeon: рендер-нода GPU внутрь контейнера.
+    # renderD128 на хосте и так crw-rw-rw-, group_add — на случай более строгих прав.
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "${RENDER_GID:-989}"
+      - "${VIDEO_GID:-985}"
 
   gamma-decision:
     build:
@@ -54,26 +63,30 @@ services:
     volumes:
       - gamma-decision-models:/root/.cache/receptron-laya
 
-  admin:
-    build:
-      context: .
-      dockerfile: apps/admin/Dockerfile
-    env_file:
-      - apps/admin/.env
-    environment:
-      HARNESS_BASE_URL: http://alpha-orchestrator:3000
-      ADMIN_API_KEY: ${ADMIN_API_KEY:?set ADMIN_API_KEY in .env (same value as alpha-orchestrator)}
-      # SvelteKit's CSRF check and better-auth both compare against the URL the
-      # panel is actually opened at.
-      ORIGIN: http://localhost:3002
-      BETTER_AUTH_URL: http://localhost:3002
-    volumes:
-      - admin-data:/data
-    # Loopback only — the admin panel is never exposed beyond this machine.
-    ports:
-      - "127.0.0.1:3002:3000"
-    depends_on:
-      - alpha-orchestrator
+#  admin:
+#    build:
+#      context: .
+#      dockerfile: apps/admin/Dockerfile
+#    env_file:
+#      - apps/admin/.env
+#    environment:
+#      # Explicit: apps/admin/.env sets a relative ./data/admin.db for local dev, which
+#      # inside the container resolved to /app/data — the container layer, not the
+#      # mount — and every recreate wiped all admin accounts.
+#      ADMIN_DATABASE_PATH: /data/admin.db
+#      HARNESS_BASE_URL: http://alpha-orchestrator:3000
+#      ADMIN_API_KEY: ${ADMIN_API_KEY:?set ADMIN_API_KEY in .env (same value as alpha-orchestrator)}
+#      # SvelteKit's CSRF check and better-auth both compare against the URL the
+#      # panel is actually opened at.
+#      ORIGIN: http://localhost:3002
+#      BETTER_AUTH_URL: http://localhost:3002
+#    volumes:
+#      - ./data/admin:/data
+#    # Loopback only — the admin panel is never exposed beyond this machine.
+#    ports:
+#      - "127.0.0.1:3002:3000"
+#    depends_on:
+#      - alpha-orchestrator
 
 #  memory:
 #    build:
@@ -100,12 +113,24 @@ services:
       - "3001:3000"
     depends_on:
       - alpha-orchestrator
-    # Webhook mode: TELEGRAM_WEBHOOK_URL must be a publicly reachable tunnel
-    # (cloudflared/ngrok) to localhost:3001, or updates never arrive.
+    # Webhook mode: Telegram reaches it through the `tunnel` service below
+    # (TELEGRAM_WEBHOOK_URL = that tunnel's public hostname).
+
+  # Named Cloudflare Tunnel (albedo.shalotts.site) -> telegram-bot's webhook,
+  # over the compose network. Token auth instead of mounting the credentials
+  # JSON: the image runs as uid 65532 and can't read a 0400 file owned by the
+  # host user. CLOUDFLARE_TUNNEL_TOKEN = base64 {a: AccountTag, t: TunnelID,
+  # s: TunnelSecret} from ~/.cloudflared/<tunnel-id>.json (see .env.example).
+  tunnel:
+    image: cloudflare/cloudflared:2026.3.0
+    command: tunnel --url http://telegram-bot:3000 run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?set CLOUDFLARE_TUNNEL_TOKEN in .env}
+    restart: unless-stopped
+    depends_on:
+      - telegram-bot
 
 volumes:
   beta-text-models:
   gamma-decision-models:
-  alpha-orchestrator-data:
-  admin-data:
 #  turingdb-data:

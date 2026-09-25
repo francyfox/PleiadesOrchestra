@@ -9,7 +9,7 @@ export const actions: Actions = {
 		const email = String(form.get("email") ?? "").trim();
 		const password = String(form.get("password") ?? "");
 		if (!email || !password) {
-			return fail(400, { email, message: "Укажите почту и пароль" });
+			return fail(400, { email, error: "missing_credentials" as const });
 		}
 		try {
 			// sveltekitCookies sets the session cookie on this response.
@@ -19,7 +19,7 @@ export const actions: Actions = {
 			});
 		} catch (error) {
 			if (error instanceof APIError) {
-				return fail(400, { email, message: "Неверная почта или пароль" });
+				return fail(400, { email, error: "invalid_credentials" as const });
 			}
 			throw error;
 		}

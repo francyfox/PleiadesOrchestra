@@ -8,6 +8,7 @@ declare global {
 		interface Locals {
 			user: Session["user"] | null;
 			session: Session["session"] | null;
+			locale: import("intlayer").Locale;
 		}
 	}
 }

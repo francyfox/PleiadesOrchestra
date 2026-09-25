@@ -1,9 +1,11 @@
 <script lang="ts">
+	import { useIntlayer } from "svelte-intlayer";
 	import type { UserStatus } from "$lib/api-types";
 	import { Badge } from "$lib/components/ui/badge/index.js";
-	import { STATUS_LABELS } from "$lib/format";
 
 	let { status }: { status: UserStatus } = $props();
+
+	const common = useIntlayer("common");
 
 	const variant = $derived(
 		status === "blocked"
@@ -14,4 +16,4 @@
 	);
 </script>
 
-<Badge {variant}>{STATUS_LABELS[status]}</Badge>
+<Badge {variant}>{$common.status[status].value}</Badge>

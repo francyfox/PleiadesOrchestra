@@ -2,10 +2,16 @@ import { sveltekit } from "@sveltejs/kit/vite";
 import tailwindcss from "@tailwindcss/vite";
 import adapter from "svelte-adapter-bun";
 import { defineConfig } from "vite";
+import { intlayer } from "vite-intlayer";
+import { coalesceIntlayerReloads } from "./vite/coalesce-intlayer-reloads";
 
 export default defineConfig({
+	// intlayer() must come before sveltekit() (vite-intlayer docs).
 	plugins: [
 		tailwindcss(),
+		intlayer(),
+		// Dev: one reload per dictionary rebuild instead of one per JSON file.
+		coalesceIntlayerReloads(),
 		sveltekit({
 			compilerOptions: {
 				// Force runes mode for the project, except for libraries. Can be removed in svelte 6.

@@ -24,9 +24,7 @@ export const actions: Actions = {
 			!Number.isFinite(expiresInHours) ||
 			expiresInHours <= 0
 		) {
-			return fail(400, {
-				message: "IP, причина и срок (часы > 0) обязательны",
-			});
+			return fail(400, { error: "invalid_block" as const });
 		}
 		const result = await orFail(
 			orchestratorAs(locals).createBlockedIp({

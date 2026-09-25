@@ -19,6 +19,10 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			LAYA_MODEL_REPO: z.string().default("receptron/laya-onnx"),
 			// Optional subfolder within that repo, e.g. "multilingual".
 			LAYA_MODEL_SUBFOLDER: z.string().optional(),
+
+			// onnxruntime intra-op threads; 0 = onnxruntime's default. 6 = the
+			// physical cores of the target Ryzen 5 5600H (see decision-engine.ts).
+			LAYA_THREADS: z.coerce.number().int().min(0).default(6),
 		},
 		runtimeEnv: env,
 	});

@@ -41,7 +41,8 @@ export const actions: Actions = {
 		const password = String(form.get("password") ?? "");
 		if (!email || password.length < MIN_PASSWORD) {
 			return fail(400, {
-				message: `Почта обязательна, пароль — не короче ${MIN_PASSWORD} символов`,
+				error: "weak_credentials" as const,
+				min: MIN_PASSWORD,
 			});
 		}
 		try {
@@ -65,7 +66,7 @@ export const actions: Actions = {
 			targetBanned: form.get("banned") === "true",
 			activeAdmins: await countActiveAdmins(services().db),
 		});
-		if (refusal) return fail(400, { message: refusal });
+		if (refusal) return fail(400, { error: refusal });
 		try {
 			await services().auth.api.banUser({
 				headers: request.headers,
@@ -96,9 +97,7 @@ export const actions: Actions = {
 		const userId = String(form.get("id") ?? "");
 		const newPassword = String(form.get("password") ?? "");
 		if (newPassword.length < MIN_PASSWORD) {
-			return fail(400, {
-				message: `Пароль — не короче ${MIN_PASSWORD} символов`,
-			});
+			return fail(400, { error: "weak_password" as const, min: MIN_PASSWORD });
 		}
 		try {
 			await services().auth.api.setUserPassword({

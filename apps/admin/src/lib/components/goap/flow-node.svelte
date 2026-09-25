@@ -1,11 +1,14 @@
 <script lang="ts">
 	import { Handle, type NodeProps, Position } from "@xyflow/svelte";
+	import { useIntlayer } from "svelte-intlayer";
 
 	/**
 	 * One node renderer for both GOAP graphs (run trace and action catalog):
 	 * label plus optional detail lines, colored by `data.status`/`data.kind`.
 	 */
 	let { data }: NodeProps = $props();
+
+	const content = useIntlayer("goap");
 
 	const status = $derived(String(data.status ?? data.kind ?? ""));
 	const details = $derived(
@@ -28,7 +31,7 @@
 
 <Handle type="target" position={Position.Left} />
 <div class={["min-w-36 rounded-md border-2 px-3 py-2 text-xs shadow-sm", tone[status] ?? "border-border bg-background"]}>
-	<div class="font-medium">{String(data.label ?? "")}</div>
+	<div class="font-medium">{data.kind === "no_plan" ? $content.noPlan.value : String(data.label ?? "")}</div>
 	{#each details as line (line)}
 		<div class="text-muted-foreground">{line}</div>
 	{/each}

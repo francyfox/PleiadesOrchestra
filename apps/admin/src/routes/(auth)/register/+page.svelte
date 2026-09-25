@@ -1,39 +1,38 @@
 <script lang="ts">
+	import { useIntlayer } from "svelte-intlayer";
 	import { enhance } from "$app/forms";
+	import FormField from "$lib/components/form-field.svelte";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import * as Card from "$lib/components/ui/card/index.js";
-	import { Input } from "$lib/components/ui/input/index.js";
-	import { Label } from "$lib/components/ui/label/index.js";
 
 	let { form } = $props();
+
+	const content = useIntlayer("auth");
+
+	const errorText = $derived.by(() => {
+		if (!form?.error) return null;
+		if (form.error === "weak_credentials") {
+			return String($content.errors.weak_credentials({ min: form.min ?? 8 }));
+		}
+		const base = $content.errors[form.error].value;
+		return "detail" in form && form.detail ? `${base}: ${form.detail}` : base;
+	});
 </script>
 
 <Card.Root>
 	<Card.Header>
-		<Card.Title>Первый администратор</Card.Title>
-		<Card.Description>
-			Администраторов ещё нет. Эта учётная запись станет первой; после неё регистрация закроется,
-			и новых администраторов можно будет создать только из админки.
-		</Card.Description>
+		<Card.Title>{$content.register.title.value}</Card.Title>
+		<Card.Description>{$content.register.subtitle.value}</Card.Description>
 	</Card.Header>
 	<Card.Content>
 		<form method="POST" use:enhance class="grid gap-4">
-			<div class="grid gap-2">
-				<Label for="name">Имя</Label>
-				<Input id="name" name="name" autocomplete="name" value={form?.name ?? ""} />
-			</div>
-			<div class="grid gap-2">
-				<Label for="email">Почта</Label>
-				<Input id="email" name="email" type="email" autocomplete="email" required value={form?.email ?? ""} />
-			</div>
-			<div class="grid gap-2">
-				<Label for="password">Пароль</Label>
-				<Input id="password" name="password" type="password" autocomplete="new-password" minlength={8} required />
-			</div>
-			{#if form?.message}
-				<p class="text-sm text-destructive">{form.message}</p>
+			<FormField id="name" label={$content.fields.name.value} autocomplete="name" value={form?.name ?? ""} />
+			<FormField id="email" label={$content.fields.email.value} type="email" autocomplete="email" required value={form?.email ?? ""} />
+			<FormField id="password" label={$content.fields.password.value} type="password" autocomplete="new-password" minlength={8} required />
+			{#if errorText}
+				<p class="text-sm text-destructive">{errorText}</p>
 			{/if}
-			<Button type="submit" class="w-full">Создать и войти</Button>
+			<Button type="submit" class="w-full">{$content.register.submit.value}</Button>
 		</form>
 	</Card.Content>
 </Card.Root>

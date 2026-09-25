@@ -21,7 +21,7 @@ describe("banRefusal", () => {
 				targetBanned: false,
 				activeAdmins: 3,
 			}),
-		).toBe("Нельзя заблокировать самого себя");
+		).toBe("self");
 	});
 
 	test("refuses to ban the last active admin", () => {
@@ -32,7 +32,7 @@ describe("banRefusal", () => {
 				targetBanned: false,
 				activeAdmins: 1,
 			}),
-		).toBe("Нельзя заблокировать последнего активного администратора");
+		).toBe("last_admin");
 	});
 
 	test("an already banned target is a no-op, not a refusal", () => {

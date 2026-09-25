@@ -13,6 +13,7 @@ import {
 	UnknownChannelError,
 	updateChannel,
 } from "./channels.ts";
+import { performance } from "./performance.ts";
 import {
 	applyUserAction,
 	deleteUserMessages,
@@ -151,6 +152,23 @@ export function adminRoutes(deps: AdminDeps) {
 			deleteUserMessages(db, params.id);
 			return new Response(null, { status: 204 });
 		})
+		.get(
+			"/performance",
+			({ query }) => {
+				const now = deps.now();
+				return performance(
+					db,
+					query.from ?? now - 30 * DAY_MS,
+					query.to ?? now,
+				);
+			},
+			{
+				query: t.Object({
+					from: t.Optional(t.Numeric()),
+					to: t.Optional(t.Numeric()),
+				}),
+			},
+		)
 		.get(
 			"/usage",
 			({ query }) => {

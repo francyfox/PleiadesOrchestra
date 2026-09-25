@@ -6,6 +6,7 @@ import type {
 	CreateBlockedIpInput,
 	CreateChannelInput,
 	GoapActionInfo,
+	PerformanceReport,
 	RunDetails,
 	Stats,
 	UpdateChannelInput,
@@ -107,6 +108,11 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 		}) =>
 			request<{ rows: UsageRow[] }>("GET", `/v1/admin/usage${toSearch(query)}`),
 		stats: () => request<Stats>("GET", "/v1/admin/stats"),
+		performance: (query: { from?: number; to?: number } = {}) =>
+			request<PerformanceReport>(
+				"GET",
+				`/v1/admin/performance${toSearch(query)}`,
+			),
 		getRun: (id: string) =>
 			request<RunDetails>("GET", `/v1/admin/runs/${segment(id)}`),
 		goapActions: () =>

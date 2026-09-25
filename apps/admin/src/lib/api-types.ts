@@ -111,6 +111,24 @@ export interface UsageRow extends UsageTotals {
 	avgLatencyMs: number;
 }
 
+export type CallKind = "ingest" | "generate" | "decision";
+
+export interface LatencyStats {
+	calls: number;
+	failed: number;
+	p50: number;
+	p90: number;
+	p99: number;
+	max: number;
+	/** Median output tokens/s; null when no call reported usage (Laya never does). */
+	tokensPerSecond: number | null;
+}
+
+export interface PerformanceReport {
+	rows: (LatencyStats & { day: string; kind: CallKind })[];
+	overall: (LatencyStats & { kind: CallKind })[];
+}
+
 export interface Stats {
 	users: { total: number; pending: number; blocked: number; anonymous: number };
 	usage: { today: UsageTotals; last7d: UsageTotals; last30d: UsageTotals };

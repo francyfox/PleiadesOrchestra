@@ -33,7 +33,7 @@ export const actions: Actions = {
 		);
 		const reason = String(form.get("reason") ?? "").trim() || undefined;
 		if (!action || ids.length === 0) {
-			return fail(400, { message: "Выберите пользователей и действие" });
+			return fail(400, { error: "no_selection" as const });
 		}
 		const result = await orFail(
 			orchestratorAs(locals).bulkUsers(ids, action, reason),

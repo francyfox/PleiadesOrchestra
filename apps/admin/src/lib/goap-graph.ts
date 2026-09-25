@@ -145,7 +145,8 @@ export function traceToGraph(
 						position: { x: 0, y: event.attempt * LANE_HEIGHT },
 						data: {
 							kind: "no_plan",
-							label: "нет плана",
+							// Language-neutral: flow-node.svelte renders the localized "no plan".
+							label: "",
 							attempt: event.attempt,
 							status: "failed",
 						},

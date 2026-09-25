@@ -1,32 +1,28 @@
 <script lang="ts">
+	import { useIntlayer } from "svelte-intlayer";
 	import { enhance } from "$app/forms";
+	import FormField from "$lib/components/form-field.svelte";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import * as Card from "$lib/components/ui/card/index.js";
-	import { Input } from "$lib/components/ui/input/index.js";
-	import { Label } from "$lib/components/ui/label/index.js";
 
 	let { form } = $props();
+
+	const content = useIntlayer("auth");
 </script>
 
 <Card.Root>
 	<Card.Header>
-		<Card.Title>Вход</Card.Title>
-		<Card.Description>Админка Pleiades</Card.Description>
+		<Card.Title>{$content.login.title.value}</Card.Title>
+		<Card.Description>{$content.login.subtitle.value}</Card.Description>
 	</Card.Header>
 	<Card.Content>
 		<form method="POST" use:enhance class="grid gap-4">
-			<div class="grid gap-2">
-				<Label for="email">Почта</Label>
-				<Input id="email" name="email" type="email" autocomplete="email" required value={form?.email ?? ""} />
-			</div>
-			<div class="grid gap-2">
-				<Label for="password">Пароль</Label>
-				<Input id="password" name="password" type="password" autocomplete="current-password" required />
-			</div>
-			{#if form?.message}
-				<p class="text-sm text-destructive">{form.message}</p>
+			<FormField id="email" label={$content.fields.email.value} type="email" autocomplete="email" required value={form?.email ?? ""} />
+			<FormField id="password" label={$content.fields.password.value} type="password" autocomplete="current-password" required />
+			{#if form?.error}
+				<p class="text-sm text-destructive">{$content.errors[form.error].value}</p>
 			{/if}
-			<Button type="submit" class="w-full">Войти</Button>
+			<Button type="submit" class="w-full">{$content.login.submit.value}</Button>
 		</form>
 	</Card.Content>
 </Card.Root>
