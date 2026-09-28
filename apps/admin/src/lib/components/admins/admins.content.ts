@@ -19,6 +19,29 @@ const adminsContent = {
 		}),
 		ban: t({ ru: "Заблокировать", en: "Ban", kk: "Бұғаттау" }),
 		unban: t({ ru: "Разблокировать", en: "Unban", kk: "Бұғаттан шығару" }),
+		remove: t({ ru: "Удалить", en: "Delete", kk: "Жою" }),
+		superAdmin: t({
+			ru: "Супер-админ",
+			en: "Super admin",
+			kk: "Супер-әкімші",
+		}),
+		superAdminHint: t({
+			ru: "Первый администратор: только он может удалять других администраторов, его пароль и учётную запись другие менять не могут.",
+			en: "The first administrator: only they can delete other administrators, and nobody else can change their password or account.",
+			kk: "Бірінші әкімші: тек ол басқа әкімшілерді жоя алады, оның құпиясөзі мен тіркелгісін басқалар өзгерте алмайды.",
+		}),
+		deleteDialog: {
+			title: t({
+				ru: insert("Удалить администратора {{email}}?"),
+				en: insert("Delete administrator {{email}}?"),
+				kk: insert("{{email}} әкімшісін жою керек пе?"),
+			}),
+			description: t({
+				ru: "Учётная запись и все её сессии будут удалены безвозвратно.",
+				en: "The account and all its sessions will be deleted permanently.",
+				kk: "Тіркелгі мен оның барлық сессиялары біржола жойылады.",
+			}),
+		},
 		create: {
 			title: t({
 				ru: "Новый администратор",
@@ -57,9 +80,24 @@ const adminsContent = {
 				kk: insert("Құпиясөз кемінде {{min}} таңба болуы керек"),
 			}),
 			self: t({
-				ru: "Нельзя заблокировать самого себя",
-				en: "You can't ban yourself",
-				kk: "Өзіңізді бұғаттай алмайсыз",
+				ru: "Нельзя заблокировать или удалить самого себя",
+				en: "You can't ban or delete yourself",
+				kk: "Өзіңізді бұғаттауға немесе жоюға болмайды",
+			}),
+			not_super: t({
+				ru: "Удалять администраторов может только супер-админ",
+				en: "Only the super admin can delete administrators",
+				kk: "Әкімшілерді тек супер-әкімші жоя алады",
+			}),
+			super_protected: t({
+				ru: "Супер-админа нельзя заблокировать, удалить или сменить ему пароль",
+				en: "The super admin can't be banned, deleted or have their password changed",
+				kk: "Супер-әкімшіні бұғаттауға, жоюға немесе құпиясөзін өзгертуге болмайды",
+			}),
+			not_found: t({
+				ru: "Администратор не найден",
+				en: "Administrator not found",
+				kk: "Әкімші табылмады",
 			}),
 			last_admin: t({
 				ru: "Нельзя заблокировать последнего активного администратора",

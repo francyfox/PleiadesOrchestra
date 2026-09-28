@@ -1,6 +1,7 @@
 <script lang="ts">
 	import ActivityIcon from "@lucide/svelte/icons/activity";
 	import BanIcon from "@lucide/svelte/icons/ban";
+	import BotIcon from "@lucide/svelte/icons/bot";
 	import GaugeIcon from "@lucide/svelte/icons/gauge";
 	import GlobeIcon from "@lucide/svelte/icons/globe";
 	import LightbulbIcon from "@lucide/svelte/icons/lightbulb";
@@ -10,6 +11,7 @@
 	import UsersIcon from "@lucide/svelte/icons/users";
 	import { useIntlayer } from "svelte-intlayer";
 	import { page } from "$app/state";
+	import { authActions } from "$lib/actions";
 	import * as Sidebar from "$lib/components/ui/sidebar/index.js";
 
 	let { email }: { email: string | null } = $props();
@@ -20,12 +22,19 @@
 		{ href: "/", key: "dashboard", icon: ActivityIcon },
 		{ href: "/users", key: "users", icon: UsersIcon },
 		{ href: "/goap/actions", key: "goap", icon: NetworkIcon },
+		{ href: "/agents", key: "agents", icon: BotIcon },
 		{ href: "/performance", key: "performance", icon: GaugeIcon },
 		{ href: "/recommendations", key: "recommendations", icon: LightbulbIcon },
 		{ href: "/channels", key: "channels", icon: GlobeIcon },
 		{ href: "/blocked-ips", key: "blockedIps", icon: BanIcon },
 		{ href: "/admins", key: "admins", icon: ShieldIcon },
 	] as const;
+
+	/** A full page load, not `goto`: drops every in-memory trace of the session. */
+	async function logout() {
+		await authActions.logout();
+		window.location.assign("/login");
+	}
 
 	const isActive = (href: string) =>
 		href === "/"
@@ -59,12 +68,10 @@
 	</Sidebar.Content>
 	<Sidebar.Footer>
 		<div class="px-2 text-xs text-muted-foreground">{email}</div>
-		<form method="POST" action="/logout">
-			<Sidebar.MenuButton>
-				{#snippet child({ props })}
-					<button type="submit" {...props}><LogOutIcon /><span>{$content.logout.value}</span></button>
-				{/snippet}
-			</Sidebar.MenuButton>
-		</form>
+		<Sidebar.MenuButton>
+			{#snippet child({ props })}
+				<button type="button" onclick={logout} {...props}><LogOutIcon /><span>{$content.logout.value}</span></button>
+			{/snippet}
+		</Sidebar.MenuButton>
 	</Sidebar.Footer>
 </Sidebar.Root>

@@ -26,4 +26,4 @@
 	<UsageByModelTable rows={data.details.usageByModel} />
 </section>
 
-<MessageList messages={data.details.messages} />
+<MessageList userId={data.details.user.id} messages={data.details.messages} />

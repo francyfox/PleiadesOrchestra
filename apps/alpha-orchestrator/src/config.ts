@@ -1,9 +1,12 @@
+import { observabilityEnv } from "@repo/elysia-kit";
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 
 export function buildConfig(env: Record<string, string | undefined>) {
 	return createEnv({
 		server: {
+			...observabilityEnv,
+
 			NODE_ENV: z
 				.enum(["production", "test", "development"])
 				.default("development"),
@@ -37,7 +40,7 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			// the compiled Docker binary can't see the repo, so the image sets it.
 			DATABASE_MIGRATIONS_DIR: z.string().min(1).optional(),
 
-			// Separate secret for /v1/admin/* (used by apps/admin's server side only) —
+			// Separate secret for /v1/admin/* (used by apps/admin-api only) —
 			// a leaked transport key must not be able to read every chat.
 			ADMIN_API_KEY: z.string().min(1),
 
@@ -49,13 +52,14 @@ export function buildConfig(env: Record<string, string | undefined>) {
 				.positive()
 				.default(10),
 
-			// Salt for hashing IPs (blocked-ips); the raw IP is never stored.
+			// Salt for hashing IPs: blocks match by hash. The plaintext IP is kept
+			// separately (users.last_ip, blocked_ips.ip) for the admin view only.
 			IP_HASH_SALT: z.string().min(1),
 
 			// Anonymous chat users inactive longer than this are deleted.
 			ANON_RETENTION_HOURS: z.coerce.number().positive().default(24),
 
-			// Shop chat widget (/v1/widget/*) abuse limits — public, anonymous
+			// Web chat widget (/v1/widget/*) abuse limits — public, anonymous
 			// access to a CPU-only model. In-memory, reset on restart.
 			WIDGET_MAX_TEXT_CHARS: z.coerce.number().int().positive().default(2000),
 			WIDGET_MESSAGES_PER_MINUTE: z.coerce
@@ -78,5 +82,7 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			TRUST_PROXY: z.stringbool().default(false),
 		},
 		runtimeEnv: env,
+		// `SENTRY_DSN=` in a copied .env.example means "off", not an invalid URL.
+		emptyStringAsUndefined: true,
 	});
 }

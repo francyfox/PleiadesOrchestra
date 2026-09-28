@@ -1,5 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import { createApp } from "./server.ts";
+import { createObservability } from "@repo/elysia-kit";
+import { createApp as createServer, type ServerDeps } from "./server.ts";
+
+const observability = createObservability("gamma-decision", {
+	LOG_LEVEL: "silent",
+});
+
+const createApp = (deps: Omit<ServerDeps, "observability">) =>
+	createServer({ ...deps, observability });
 
 const API_KEY = "test-api-key";
 

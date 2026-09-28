@@ -1,9 +1,2 @@
-/** One admin account as the /admins page loads it (better-auth user, flattened). */
-export interface AdminRow {
-	id: string;
-	name: string;
-	email: string;
-	banned: boolean;
-	banReason: string | null;
-	createdAt: number;
-}
+/** One admin account as the /admins page loads it. */
+export type { AdminAccount as AdminRow } from "admin-api/types";

@@ -8,12 +8,17 @@
 	let { data, children } = $props();
 
 	// Synchronously, before any child calls useIntlayer: the first render must
-	// already be in the locale resolved by hooks.server.ts (cookie →
-	// Accept-Language → ru), which arrives via the root +layout.server.ts.
+	// already be in the locale resolved by +layout.ts (cookie → browser
+	// language → ru).
 	// svelte-ignore state_referenced_locally
 	setupIntlayer(data.locale);
 
 	const common = useIntlayer("common");
+
+	// app.html ships lang="ru"; screen readers and hyphenation need the real one.
+	$effect(() => {
+		document.documentElement.lang = data.locale;
+	});
 </script>
 
 <svelte:head>

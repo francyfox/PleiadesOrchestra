@@ -14,13 +14,13 @@
 		"@gramio/auto-answer-callback-query": "^0.0.3",
 		"@gramio/auto-retry": "^0.0.3",
 		"@repo/core": "workspace:*",
-		"@t3-oss/env-core": "^0.13.11",
+		"@t3-oss/env-core": "catalog:",
 		"gramio": "^0.9.0",
 		"transferum": "^1.7.0",
-		"zod": "^4.4.3"
+		"zod": "catalog:"
 	},
 	"devDependencies": {
-		"typescript": "^5.9.3",
-		"@types/bun": "^1.3.12"
+		"@types/bun": "catalog:",
+		"typescript": "catalog:"
 	}
 }

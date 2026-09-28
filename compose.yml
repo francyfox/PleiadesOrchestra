@@ -63,30 +63,48 @@ services:
     volumes:
       - gamma-decision-models:/root/.cache/receptron-laya
 
+#  # Backend of the admin panel (Elysia): admin accounts (better-auth) and the
+#  # orchestrator's /v1/admin/* behind a session. Swagger UI: /api/docs.
+  admin-api:
+    build:
+      context: .
+      dockerfile: apps/admin-api/Dockerfile
+    env_file:
+      - apps/admin-api/.env
+    environment:
+      # Explicit: a relative path in apps/admin-api/.env (right for bare `bun run dev`)
+      # would override the image's ENV and resolve inside the container — the DB
+      # to the container layer (wiped on every recreate), the migrations to
+      # nowhere ("Can't find meta/_journal.json").
+      ADMIN_DATABASE_PATH: /data/admin.db
+      ADMIN_MIGRATIONS_DIR: /app/drizzle
+      HARNESS_BASE_URL: http://alpha-orchestrator:3000
+      ADMIN_API_KEY: ${ADMIN_API_KEY:?set ADMIN_API_KEY in .env (same value as alpha-orchestrator)}
+      # better-auth and the origin check compare against the URL the panel is
+      # actually opened at (Caddy in the `admin` service below).
+      BETTER_AUTH_URL: http://localhost:3002
+      ADMIN_TRUSTED_ORIGINS: http://localhost:3002,http://127.0.0.1:3002
+    # Same host dir the old SvelteKit admin used, so existing accounts carry over.
+    volumes:
+      - ./data/admin:/data
+    # Loopback only. The panel's Caddy reaches it over the compose network; the
+    # port is published for `bun --cwd apps/admin run dev` on the host, whose
+    # /api proxy targets http://localhost:3003.
+    ports:
+      - "127.0.0.1:3003:3003"
+    depends_on:
+      - alpha-orchestrator
+
+#  # The panel itself: static files only. Caddy serves them and proxies /api to admin-api.
 #  admin:
 #    build:
 #      context: .
 #      dockerfile: apps/admin/Dockerfile
-#    env_file:
-#      - apps/admin/.env
-#    environment:
-#      # Explicit: apps/admin/.env sets a relative ./data/admin.db for local dev, which
-#      # inside the container resolved to /app/data — the container layer, not the
-#      # mount — and every recreate wiped all admin accounts.
-#      ADMIN_DATABASE_PATH: /data/admin.db
-#      HARNESS_BASE_URL: http://alpha-orchestrator:3000
-#      ADMIN_API_KEY: ${ADMIN_API_KEY:?set ADMIN_API_KEY in .env (same value as alpha-orchestrator)}
-#      # SvelteKit's CSRF check and better-auth both compare against the URL the
-#      # panel is actually opened at.
-#      ORIGIN: http://localhost:3002
-#      BETTER_AUTH_URL: http://localhost:3002
-#    volumes:
-#      - ./data/admin:/data
 #    # Loopback only — the admin panel is never exposed beyond this machine.
 #    ports:
-#      - "127.0.0.1:3002:3000"
+#      - "127.0.0.1:3002:80"
 #    depends_on:
-#      - alpha-orchestrator
+#      - admin-api
 
 #  memory:
 #    build:
@@ -130,7 +148,42 @@ services:
     depends_on:
       - telegram-bot
 
+  # Gemini web-API MCP server (apps/gemini-webapi-mcp, vendored + hardened).
+  # Opt-in: `docker compose --profile gemini up -d gemini-mcp`. Holds a
+  # whole-account Google session — use a separate Google account's cookies.
+  # MCP endpoint: http://127.0.0.1:8765/mcp with `Authorization: Bearer
+  # $GEMINI_MCP_API_KEY`; other services reach it as http://gemini-mcp:8000/mcp.
+  gemini-mcp:
+    build:
+      context: .
+      dockerfile: apps/gemini-webapi-mcp/Dockerfile
+    profiles:
+      - gemini
+    environment:
+      # `:-` not `:?` — a required-var error would break `docker compose up`
+      # for every service even with this profile off; the server itself
+      # refuses to start without MCP_API_KEY and to log in without GEMINI_PSID.
+      GEMINI_PSID: ${GEMINI_PSID:-}
+      GEMINI_PSIDTS: ${GEMINI_PSIDTS:-}
+      MCP_API_KEY: ${GEMINI_MCP_API_KEY:-}
+    ports:
+      - "127.0.0.1:8765:8000"
+    volumes:
+      # Cookie cache (0700) + generated images.
+      - gemini-mcp-state:/data
+      # The only files the server may upload to Google — read-only.
+      - ./data/gemini-mcp/files:/data/files:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
 volumes:
   beta-text-models:
   gamma-decision-models:
+  gemini-mcp-state:
 #  turingdb-data:

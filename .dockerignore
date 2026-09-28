@@ -8,3 +8,8 @@ dist
 *.db-wal
 *.db-shm
 /data
+**/.venv
+**/__pycache__
+**/.pytest_cache
+# pyproject.toml of the Gemini MCP server declares readme = "README.md".
+!apps/gemini-webapi-mcp/README.md

@@ -1,32 +1,54 @@
 <script lang="ts">
+	import PencilIcon from "@lucide/svelte/icons/pencil";
+	import PowerIcon from "@lucide/svelte/icons/power";
+	import PowerOffIcon from "@lucide/svelte/icons/power-off";
+	import RefreshCwIcon from "@lucide/svelte/icons/refresh-cw";
 	import { useIntlayer } from "svelte-intlayer";
-	import { enhance } from "$app/forms";
+	import { channelActions } from "$lib/actions";
 	import type { Channel } from "$lib/api-types";
-	import { Button } from "$lib/components/ui/button/index.js";
+	import ConfirmDialog from "$lib/components/confirm-dialog.svelte";
+	import IconButton from "$lib/components/icon-button.svelte";
 	import { useChannelEnhance } from "./use-channel-enhance";
 
+	/** Edit / enable-disable / rotate keys. There is deliberately no delete: a channel is only ever disabled. */
 	let {
 		channel,
 		onEdit,
 	}: { channel: Channel; onEdit: (channel: Channel) => void } = $props();
 
 	const content = useIntlayer("channels");
-	const submitted = useChannelEnhance();
+	const toggle = useChannelEnhance(channelActions.toggle);
+
+	let rotateOpen = $state(false);
+	const rotate = useChannelEnhance(
+		channelActions.rotate,
+		() => (rotateOpen = false),
+	);
 </script>
 
 <div class="flex justify-end gap-1">
-	<Button size="sm" variant="ghost" onclick={() => onEdit(channel)}>{$content.edit.value}</Button>
-	<form method="POST" action="?/toggle" use:enhance={submitted}>
+	<IconButton icon={PencilIcon} tone="primary" label={$content.edit.value} onclick={() => onEdit(channel)} />
+	<form use:toggle>
 		<input type="hidden" name="id" value={channel.id} />
 		<input type="hidden" name="disabled" value={channel.disabledAt ? "false" : "true"} />
-		<Button size="sm" variant="ghost" type="submit">
-			{channel.disabledAt ? $content.enable.value : $content.disable.value}
-		</Button>
+		{#if channel.disabledAt}
+			<IconButton icon={PowerIcon} tone="success" type="submit" label={$content.enable.value} />
+		{:else}
+			<IconButton icon={PowerOffIcon} tone="warning" type="submit" label={$content.disable.value} />
+		{/if}
 	</form>
 	{#if channel.kind === "web"}
-		<form method="POST" action="?/rotate" use:enhance={submitted}>
-			<input type="hidden" name="id" value={channel.id} />
-			<Button size="sm" variant="ghost" type="submit">{$content.rotateKeys.value}</Button>
-		</form>
+		<IconButton icon={RefreshCwIcon} tone="warning" label={$content.rotateKeys.value} onclick={() => (rotateOpen = true)} />
+		<ConfirmDialog
+			bind:open={rotateOpen}
+			title={$content.rotateConfirm.title({ name: channel.name })}
+			description={$content.rotateConfirm.description.value}
+			submitLabel={$content.rotateKeys.value}
+			submitted={rotate}
+		>
+			{#snippet fields()}
+				<input type="hidden" name="id" value={channel.id} />
+			{/snippet}
+		</ConfirmDialog>
 	{/if}
 </div>

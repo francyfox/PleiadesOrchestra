@@ -46,7 +46,10 @@ ENV PARALLEL=1
 ENV THREADS=2
 # Сколько слоёв отдать GPU: 99 = вся модель, 0 = всё на CPU (как раньше).
 ENV N_GPU_LAYERS=99
-ENV TEMP=0.3
+# Not `TEMP`: that name is also the standard temp-dir variable, and Bun
+# auto-loads the root .env — `TEMP=0.3` made every bun/bunx run from the repo
+# root create a ./0.3 cache directory.
+ENV LLM_TEMPERATURE=0.3
 
 EXPOSE 8080
 

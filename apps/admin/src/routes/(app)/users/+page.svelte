@@ -14,6 +14,7 @@
 	import { useIntlayer } from "svelte-intlayer";
 	import { goto } from "$app/navigation";
 	import type { AdminUser } from "$lib/api-types";
+	import CopyValue from "$lib/components/copy-value.svelte";
 	import DataTable from "$lib/components/data-table.svelte";
 	import SortHeader from "$lib/components/sort-header.svelte";
 	import StatusBadge from "$lib/components/status-badge.svelte";
@@ -24,13 +25,14 @@
 	import UsersFilters from "$lib/components/users/users-filters.svelte";
 	import UsersPagination from "$lib/components/users/users-pagination.svelte";
 	import { useFormat } from "$lib/i18n/use-format";
+	import { whoisUrl } from "$lib/ip";
 	import {
 		sortingFromState,
 		usersStateToSearch,
 		withSorting,
 	} from "$lib/users-table-state";
 
-	let { data, form } = $props();
+	let { data } = $props();
 
 	const content = useIntlayer("users");
 	const actions = useIntlayer("user-actions");
@@ -73,6 +75,12 @@
 			id: "channel",
 			header: () => $content.columns.channel.value,
 			enableSorting: false,
+		}),
+		helper.accessor((user) => user.ip ?? "", {
+			id: "ip",
+			header: () => $content.columns.ip.value,
+			enableSorting: false,
+			cell: (ctx) => renderSnippet(ipCell, ctx.row.original),
 		}),
 		helper.accessor("status", {
 			header: () => $content.columns.status.value,
@@ -140,14 +148,6 @@
 	const selectedIds = $derived(
 		Object.keys(rowSelection()).filter((id) => rowSelection()[id]),
 	);
-
-	const formError = $derived(
-		form && "error" in form && form.error
-			? $actions.errors[form.error].value
-			: form && "message" in form
-				? String(form.message)
-				: null,
-	);
 </script>
 
 {#snippet selectAll(t: typeof table)}
@@ -167,6 +167,14 @@
 	/>
 {/snippet}
 
+{#snippet ipCell(user: AdminUser)}
+	{#if user.ip}
+		<CopyValue value={user.ip} href={whoisUrl(user.ip)} label={$actions.copyIp.value} />
+	{:else}
+		<span class="text-muted-foreground">—</span>
+	{/if}
+{/snippet}
+
 <h1 class="text-2xl font-semibold">{$content.title.value}</h1>
 
 <UsersFilters state={data.state} channels={data.channels} />
@@ -175,8 +183,6 @@
 	<BulkActionsBar ids={selectedIds} onDone={() => setRowSelection({})} />
 {/if}
 
-{#if formError}<p class="text-sm text-destructive">{formError}</p>{/if}
-
-<DataTable {table} emptyText={$content.empty.value} />
+<DataTable {table} emptyText={$content.empty.value} pageSize={data.state.limit} />
 
 <UsersPagination state={data.state} page={data.page} />

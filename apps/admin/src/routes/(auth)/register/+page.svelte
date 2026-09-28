@@ -1,21 +1,53 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import { enhance } from "$app/forms";
+	import { goto } from "$app/navigation";
+	import { authActions } from "$lib/actions";
 	import FormField from "$lib/components/form-field.svelte";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import * as Card from "$lib/components/ui/card/index.js";
 
-	let { form } = $props();
-
 	const content = useIntlayer("auth");
 
-	const errorText = $derived.by(() => {
-		if (!form?.error) return null;
-		if (form.error === "weak_credentials") {
-			return String($content.errors.weak_credentials({ min: form.min ?? 8 }));
+	let failure = $state<{
+		error: "weak_credentials" | "registration_closed" | "signup_failed";
+		min?: number;
+		detail?: string;
+	} | null>(null);
+	let pending = $state(false);
+
+	async function submit(event: SubmitEvent) {
+		event.preventDefault();
+		if (pending) return;
+		pending = true;
+		failure = null;
+		const result = await authActions.register(
+			new FormData(event.currentTarget as HTMLFormElement),
+		);
+		pending = false;
+		if (!result.ok) {
+			const { error, min, detail } = result.data;
+			failure = {
+				error:
+					error === "weak_credentials" || error === "registration_closed"
+						? error
+						: "signup_failed",
+				min: typeof min === "number" ? min : undefined,
+				detail: typeof detail === "string" ? detail : undefined,
+			};
+			return;
 		}
-		const base = $content.errors[form.error].value;
-		return "detail" in form && form.detail ? `${base}: ${form.detail}` : base;
+		await goto("/", { invalidateAll: true });
+	}
+
+	const errorText = $derived.by(() => {
+		if (!failure) return null;
+		if (failure.error === "weak_credentials") {
+			return String(
+				$content.errors.weak_credentials({ min: failure.min ?? 8 }),
+			);
+		}
+		const base = $content.errors[failure.error].value;
+		return failure.detail ? `${base}: ${failure.detail}` : base;
 	});
 </script>
 
@@ -25,14 +57,14 @@
 		<Card.Description>{$content.register.subtitle.value}</Card.Description>
 	</Card.Header>
 	<Card.Content>
-		<form method="POST" use:enhance class="grid gap-4">
-			<FormField id="name" label={$content.fields.name.value} autocomplete="name" value={form?.name ?? ""} />
-			<FormField id="email" label={$content.fields.email.value} type="email" autocomplete="email" required value={form?.email ?? ""} />
+		<form onsubmit={submit} class="grid gap-4">
+			<FormField id="name" label={$content.fields.name.value} autocomplete="name" />
+			<FormField id="email" label={$content.fields.email.value} type="email" autocomplete="email" required />
 			<FormField id="password" label={$content.fields.password.value} type="password" autocomplete="new-password" minlength={8} required />
 			{#if errorText}
 				<p class="text-sm text-destructive">{errorText}</p>
 			{/if}
-			<Button type="submit" class="w-full">{$content.register.submit.value}</Button>
+			<Button type="submit" class="w-full" disabled={pending}>{$content.register.submit.value}</Button>
 		</form>
 	</Card.Content>
 </Card.Root>

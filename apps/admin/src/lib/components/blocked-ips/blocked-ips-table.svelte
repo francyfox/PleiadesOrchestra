@@ -2,23 +2,31 @@
 	import {
 		createColumnHelper,
 		createTable,
+		renderComponent,
 		renderSnippet,
 		tableFeatures,
 	} from "@tanstack/svelte-table";
 	import { useIntlayer } from "svelte-intlayer";
-	import { enhance } from "$app/forms";
 	import type { BlockedIp, Channel } from "$lib/api-types";
+	import CopyValue from "$lib/components/copy-value.svelte";
 	import DataTable from "$lib/components/data-table.svelte";
-	import { Button } from "$lib/components/ui/button/index.js";
 	import { useFormat } from "$lib/i18n/use-format";
-	import { useBlockedIpEnhance } from "./use-blocked-ip-enhance";
+	import { whoisUrl } from "$lib/ip";
+	import type { ServerPagination } from "$lib/pagination";
+	import BlockedIpActions from "./blocked-ip-actions.svelte";
 
-	let { items, channels }: { items: BlockedIp[]; channels: Channel[] } =
-		$props();
+	let {
+		items,
+		channels,
+		pagination,
+	}: {
+		items: BlockedIp[];
+		channels: Channel[];
+		pagination: ServerPagination;
+	} = $props();
 
 	const content = useIntlayer("blocked-ips");
 	const format = useFormat();
-	const submitted = useBlockedIpEnhance();
 
 	const channelName = (id: string | null) =>
 		id
@@ -30,9 +38,13 @@
 	const table = createTable({
 		features,
 		columns: helper.columns([
+			helper.accessor("ip", {
+				header: () => $content.columns.ip.value,
+				cell: (ctx) => renderSnippet(ipCell, ctx.row.original),
+			}),
 			helper.accessor("ipHash", {
 				header: () => $content.columns.ipHash.value,
-				cell: (ctx) => `${ctx.getValue().slice(0, 16)}…`,
+				cell: (ctx) => renderSnippet(hashCell, ctx.row.original),
 			}),
 			helper.accessor("channelId", {
 				header: () => $content.columns.channel.value,
@@ -51,7 +63,8 @@
 			}),
 			helper.display({
 				id: "actions",
-				cell: (ctx) => renderSnippet(remove, ctx.row.original),
+				cell: (ctx) =>
+					renderComponent(BlockedIpActions, { item: ctx.row.original }),
 			}),
 		]),
 		get data() {
@@ -60,11 +73,16 @@
 	});
 </script>
 
-{#snippet remove(item: BlockedIp)}
-	<form method="POST" action="?/delete" use:enhance={submitted} class="flex justify-end">
-		<input type="hidden" name="id" value={item.id} />
-		<Button size="sm" variant="ghost" type="submit">{$content.lift.value}</Button>
-	</form>
+{#snippet ipCell(item: BlockedIp)}
+	{#if item.ip}
+		<CopyValue value={item.ip} href={whoisUrl(item.ip)} label={$content.copyIp.value} />
+	{:else}
+		<span class="text-muted-foreground" title={$content.legacyIp.value}>—</span>
+	{/if}
 {/snippet}
 
-<DataTable {table} emptyText={$content.empty.value} />
+{#snippet hashCell(item: BlockedIp)}
+	<CopyValue value={item.ipHash} label={$content.copyHash.value}>{item.ipHash.slice(0, 12)}…</CopyValue>
+{/snippet}
+
+<DataTable {table} emptyText={$content.empty.value} server={pagination} />

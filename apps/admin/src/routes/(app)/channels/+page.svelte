@@ -5,20 +5,31 @@
 	import ChannelsTable from "$lib/components/channels/channels-table.svelte";
 	import CreateChannelForm from "$lib/components/channels/create-channel-form.svelte";
 	import EditChannelDialog from "$lib/components/channels/edit-channel-dialog.svelte";
+	import { issued } from "$lib/components/channels/issued-secret.svelte";
 
-	let { data, form } = $props();
+	let { data } = $props();
 
 	const content = useIntlayer("channels");
 	let editing = $state<Channel | null>(null);
+
+	// The keys are shown once — don't carry them over to the next visit.
+	$effect(() => () => {
+		issued.current = null;
+	});
 </script>
 
 <h1 class="text-2xl font-semibold">{$content.title.value}</h1>
 
-{#if form && "secret" in form && form.secret}
-	<ChannelKeysCard secret={form.secret} />
+{#if issued.current}
+	<ChannelKeysCard secret={issued.current} />
 {/if}
 
-<ChannelsTable channels={data.channels} onEdit={(channel) => (editing = channel)} />
+<ChannelsTable
+	channels={data.channels}
+	total={data.total}
+	page={data.page}
+	onEdit={(channel) => (editing = channel)}
+/>
 
 <CreateChannelForm />
 

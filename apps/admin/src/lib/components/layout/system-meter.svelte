@@ -1,35 +1,20 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
 	import { useFormat } from "$lib/i18n/use-format";
+	import { snapshotLevels } from "$lib/system/load-level";
+	import { useSystemSnapshot } from "$lib/system/use-system-snapshot.svelte";
 	import type { SystemSnapshot } from "$lib/system-types";
+	import LevelBadge from "./level-badge.svelte";
 
-	/** Host CPU / RAM / GPU / VRAM in the header, refreshed from /api/system. */
+	/** Host CPU / RAM / GPU / VRAM in the header. Live over a WebSocket while the tab is visible. */
 	let { initial }: { initial: SystemSnapshot } = $props();
 
 	const content = useIntlayer("system-meter");
 	const format = useFormat();
 
-	const POLL_MS = 5000;
-	let polled = $state<SystemSnapshot | null>(null);
-	const current = $derived(polled ?? initial);
-
-	$effect(() => {
-		const timer = setInterval(async () => {
-			try {
-				const response = await fetch("/api/system");
-				// A lapsed session redirects to /login (HTML) — keep the last value.
-				if (
-					response.ok &&
-					response.headers.get("content-type")?.includes("json")
-				) {
-					polled = await response.json();
-				}
-			} catch {
-				// Offline for a moment — next tick retries.
-			}
-		}, POLL_MS);
-		return () => clearInterval(timer);
-	});
+	const stream = useSystemSnapshot(() => initial);
+	const current = $derived(stream.current);
+	const levels = $derived(snapshotLevels(current));
 
 	const pct = (value: number | null) =>
 		value === null ? "…" : `${Math.round(value)}%`;
@@ -38,33 +23,41 @@
 		current.memory.totalBytes - current.memory.availableBytes,
 	);
 	const gpu = $derived(current.gpus[0] ?? null);
+	const levelLabel = (level: keyof typeof levels) =>
+		$content.levels[levels[level]].value;
 </script>
 
-<div class="ml-auto flex flex-wrap items-center gap-x-4 gap-y-1 text-xs tabular-nums text-muted-foreground">
-	<span title={current.cpu.model}>
-		<span class="font-medium text-foreground">CPU</span>
+<div class="ml-auto flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+	<LevelBadge level={levels.overall} label={levelLabel("overall")} title={$content.overallHint.value}>
+		{$content.overall.value}: {levelLabel("overall")}
+	</LevelBadge>
+	<LevelBadge level={levels.cpu} label={levelLabel("cpu")} title={current.cpu.model}>
+		<span class="font-medium">CPU</span>
 		{pct(current.cpuBusyPercent)}
-		<span class="hidden sm:inline">
+		<span class="hidden text-muted-foreground sm:inline">
 			· {$content.cores({ physical: current.cpu.physicalCores, logical: current.cpu.logicalCores })}
 		</span>
-	</span>
-	<span>
-		<span class="font-medium text-foreground">RAM</span>
+	</LevelBadge>
+	<LevelBadge level={levels.ram} label={levelLabel("ram")}>
+		<span class="font-medium">RAM</span>
 		{$format.gbPair(ramUsed, current.memory.totalBytes)}
-	</span>
+	</LevelBadge>
 	{#if gpu}
-		<span title={`${gpu.card} · ${gpu.driver ?? "?"} · ${gpu.pciId ?? ""}`}>
-			<span class="font-medium text-foreground">GPU</span>
+		<LevelBadge level={levels.gpu} label={levelLabel("gpu")} title={`${gpu.card} · ${gpu.driver ?? "?"} · ${gpu.pciId ?? ""}`}>
+			<span class="font-medium">GPU</span>
 			{pct(gpu.busyPercent)}
-		</span>
-		<span title={gpu.uma ? $content.umaHint.value : undefined}>
-			<span class="font-medium text-foreground">VRAM</span>
+		</LevelBadge>
+		<LevelBadge level={levels.vram} label={levelLabel("vram")} title={gpu.uma ? $content.umaHint.value : undefined}>
+			<span class="font-medium">VRAM</span>
 			{$format.gbPair(gpu.vramUsedBytes, gpu.vramTotalBytes)}
 			{#if gpu.uma}
-				<span class="hidden md:inline">· GTT {$format.gbPair(gpu.gttUsedBytes, gpu.gttTotalBytes)}</span>
+				<span class="hidden text-muted-foreground md:inline">· GTT {$format.gbPair(gpu.gttUsedBytes, gpu.gttTotalBytes)}</span>
 			{/if}
-		</span>
+		</LevelBadge>
 	{:else}
-		<span><span class="font-medium text-foreground">GPU</span> {$content.noGpu.value}</span>
+		<LevelBadge level="unknown" label={$content.levels.unknown.value}>
+			<span class="font-medium">GPU</span>
+			{$content.noGpu.value}
+		</LevelBadge>
 	{/if}
 </div>

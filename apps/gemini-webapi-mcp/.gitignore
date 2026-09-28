@@ -1,0 +1,24 @@
+.DS_Store
+
+# Personal files
+docs/
+*.har
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+.env
+.uv/
+# uv.lock is committed on purpose (PleiadesOrchestra): it pins the reviewed dependency set.
+
+# gwt-mini binary — installed via `python scripts/install_gwt.py`, not committed
+/tools/gwt/
+
+# Claude Code local state / agent worktrees
+.claude/

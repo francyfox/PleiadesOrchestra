@@ -1,4 +1,5 @@
 <script lang="ts">
+	import CrownIcon from "@lucide/svelte/icons/crown";
 	import {
 		createColumnHelper,
 		createTable,
@@ -10,16 +11,21 @@
 	import DataTable from "$lib/components/data-table.svelte";
 	import { Badge } from "$lib/components/ui/badge/index.js";
 	import { useFormat } from "$lib/i18n/use-format";
+	import type { ServerPagination } from "$lib/pagination";
 	import AdminRowActions from "./admin-row-actions.svelte";
 	import type { AdminRow } from "./admin-types";
 
 	let {
 		admins,
 		currentAdminId,
+		currentAdminIsSuper,
+		pagination,
 		onChangePassword,
 	}: {
 		admins: AdminRow[];
 		currentAdminId: string | null;
+		currentAdminIsSuper: boolean;
+		pagination: ServerPagination;
 		onChangePassword: (admin: AdminRow) => void;
 	} = $props();
 
@@ -31,7 +37,10 @@
 	const table = createTable({
 		features,
 		columns: helper.columns([
-			helper.accessor("name", { header: () => $content.columns.name.value }),
+			helper.accessor("name", {
+				header: () => $content.columns.name.value,
+				cell: (ctx) => renderSnippet(nameCell, ctx.row.original),
+			}),
 			helper.accessor("email", { header: () => $content.columns.email.value }),
 			helper.accessor("banned", {
 				header: () => $content.columns.status.value,
@@ -47,6 +56,7 @@
 					renderComponent(AdminRowActions, {
 						admin: ctx.row.original,
 						currentAdminId,
+						currentAdminIsSuper,
 						onChangePassword,
 					}),
 			}),
@@ -57,6 +67,15 @@
 	});
 </script>
 
+{#snippet nameCell(admin: AdminRow)}
+	{admin.name}
+	{#if admin.isSuper}
+		<Badge variant="secondary" class="ml-1" title={$content.superAdminHint.value}>
+			<CrownIcon />{$content.superAdmin.value}
+		</Badge>
+	{/if}
+{/snippet}
+
 {#snippet status(admin: AdminRow)}
 	{#if admin.banned}
 		<Badge variant="destructive">{$content.banned.value}</Badge>
@@ -66,4 +85,4 @@
 	{/if}
 {/snippet}
 
-<DataTable {table} />
+<DataTable {table} server={pagination} />

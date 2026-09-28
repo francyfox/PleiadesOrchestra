@@ -1,0 +1,33 @@
+{
+	"name": "admin-api",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": "./src/app.ts",
+		"./types": "./src/types.ts"
+	},
+	"scripts": {
+		"dev": "bun --watch src/index.ts",
+		"start": "bun src/index.ts",
+		"test": "bun test",
+		"check-types": "tsc --noEmit",
+		"lint": "biome check .",
+		"db:generate": "drizzle-kit generate",
+		"auth:schema": "bunx --bun @better-auth/cli generate --config src/auth-cli.ts --output src/db/auth-schema.ts -y"
+	},
+	"dependencies": {
+		"@repo/elysia-kit": "workspace:*",
+		"@sinclair/typebox": "catalog:",
+		"@t3-oss/env-core": "catalog:",
+		"better-auth": "^1.7.5",
+		"drizzle-orm": "catalog:",
+		"drizzle-typebox": "catalog:",
+		"elysia": "catalog:",
+		"zod": "catalog:"
+	},
+	"devDependencies": {
+		"@types/bun": "catalog:",
+		"drizzle-kit": "catalog:",
+		"typescript": "catalog:"
+	}
+}

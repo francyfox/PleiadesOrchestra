@@ -9,7 +9,7 @@ export function anonymousCutoff(now: number, retentionHours: number): number {
 }
 
 /**
- * Anonymous chat users (widget visitors without a shop account) are kept
+ * Anonymous chat users (widget visitors without an account on the host site) are kept
  * for `retentionHours` of inactivity. Deleting the user cascades to their
  * threads, messages, visitor tokens and plan traces; `llm_calls` rows stay
  * with `user_id` NULLed so usage totals per channel/day don't change.

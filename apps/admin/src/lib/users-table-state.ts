@@ -5,6 +5,7 @@ import type {
 	UsersQuery,
 	UsersSort,
 } from "./api-types";
+import { DEFAULT_PAGE_SIZE } from "./pagination";
 
 /**
  * `/users` table state, owned by the URL (server-side filtering, sorting and
@@ -30,7 +31,7 @@ export interface SortingEntry {
 
 const DEFAULT_SORT: UsersSort = "lastSeenAt";
 const DEFAULT_ORDER: SortOrder = "desc";
-const DEFAULT_LIMIT = 50;
+const DEFAULT_LIMIT = DEFAULT_PAGE_SIZE;
 const MAX_LIMIT = 200;
 
 const KINDS: readonly UserKind[] = ["identified", "anonymous"];

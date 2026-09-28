@@ -78,8 +78,8 @@ interface ServerLike {
 }
 
 /**
- * Public API for the shop chat widget (browser-facing) plus the shop
- * backend's `identify` call. Browser requests are authenticated by a
+ * Public API for the web chat widget (browser-facing) plus the host site's
+ * backend `identify` call. Browser requests are authenticated by a
  * publishable key (to get a visitor token) and then the visitor token;
  * `Origin` must be one of the channel's `allowedOrigins`.
  */
@@ -102,15 +102,13 @@ export function widgetRoutes(deps: WidgetDeps) {
 		deps.now,
 	);
 
-	const clientIpHash = (
+	const clientIp = (
 		request: Request,
 		server: ServerLike | null,
-	): string | null => {
-		const ip = options.trustProxy
+	): string | null =>
+		(options.trustProxy
 			? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-			: server?.requestIP(request)?.address;
-		return ip ? hashIp(ip, deps.ipHashSalt) : null;
-	};
+			: server?.requestIP(request)?.address) || null;
 
 	const empty = (status: number, origin?: string) =>
 		new Response(null, {
@@ -135,12 +133,13 @@ export function widgetRoutes(deps: WidgetDeps) {
 		server: ServerLike | null,
 	): Authorized | Response => {
 		const origin = request.headers.get("origin") ?? "";
-		// CORS headers on the rejection only if the origin is a known shop,
+		// CORS headers on the rejection only if the origin is a known web channel,
 		// so the widget can tell "expired" from a network error.
 		const knownOrigin = deps.channels.isWebOrigin(origin) ? origin : undefined;
 
+		const ip = clientIp(request, server);
 		const token = request.headers.get("x-visitor-token");
-		const visitor = token ? useVisitor(db, token, deps.now(), ttlMs) : null;
+		const visitor = token ? useVisitor(db, token, deps.now(), ttlMs, ip) : null;
 		if (!visitor) return empty(401, knownOrigin);
 
 		const channel = deps.channels.byId(visitor.channelId);
@@ -148,7 +147,7 @@ export function widgetRoutes(deps: WidgetDeps) {
 			return empty(403);
 		}
 
-		const ipHash = clientIpHash(request, server);
+		const ipHash = ip ? hashIp(ip, deps.ipHashSalt) : null;
 		if (
 			!isAllowed(channel, visitor.user) ||
 			(ipHash && isIpBlocked(db, ipHash, channel.id, deps.now()))
@@ -180,7 +179,8 @@ export function widgetRoutes(deps: WidgetDeps) {
 			if (!channel.allowedOrigins.includes(origin)) return empty(403);
 
 			const now = deps.now();
-			const ipHash = clientIpHash(request, server);
+			const ip = clientIp(request, server);
+			const ipHash = ip ? hashIp(ip, deps.ipHashSalt) : null;
 			if (
 				channel.disabledAt !== null ||
 				(ipHash && isIpBlocked(db, ipHash, channel.id, now))
@@ -194,6 +194,7 @@ export function widgetRoutes(deps: WidgetDeps) {
 				channel.id,
 				now,
 				ttlMs,
+				ip,
 			);
 			return Response.json(
 				{ visitorToken, expiresAt },

@@ -26,6 +26,6 @@ exec /app/llama-server \
     --parallel "${PARALLEL:-1}" \
     --threads "${THREADS:-2}" \
     --n-gpu-layers "${N_GPU_LAYERS:-99}" \
-    --temp "${TEMP:-0.3}" \
+    --temp "${LLM_TEMPERATURE:-0.3}" \
     --api-key "$LLM_API_KEY" \
     2>&1

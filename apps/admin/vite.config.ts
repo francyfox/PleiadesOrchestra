@@ -1,13 +1,20 @@
+import adapter from "@sveltejs/adapter-static";
 import { sveltekit } from "@sveltejs/kit/vite";
 import tailwindcss from "@tailwindcss/vite";
-import adapter from "svelte-adapter-bun";
 import { defineConfig } from "vite";
 import { intlayer } from "vite-intlayer";
 import { coalesceIntlayerReloads } from "./vite/coalesce-intlayer-reloads";
+import { devApiProxy } from "./vite/dev-api-proxy";
+
+/** Where the dev server sends `/api` — apps/admin-api (`bun --cwd apps/admin-api run dev`). */
+const ADMIN_API = process.env.ADMIN_API_URL ?? "http://localhost:3003";
 
 export default defineConfig({
 	// intlayer() must come before sveltekit() (vite-intlayer docs).
 	plugins: [
+		// Same-origin /api in dev too, so the session cookie behaves as in prod.
+		// First: intlayer() and sveltekit() would otherwise see (and 404) /api first.
+		devApiProxy(ADMIN_API),
 		tailwindcss(),
 		intlayer(),
 		// Dev: one reload per dictionary rebuild instead of one per JSON file.
@@ -18,20 +25,10 @@ export default defineConfig({
 				runes: ({ filename }) =>
 					filename.split(/[/\\]/).includes("node_modules") ? undefined : true,
 			},
-			// Bun `bun:sqlite` (better-auth's DB) only exists under the Bun runtime,
-			// so the build targets a standalone Bun server.
-			adapter: adapter(),
-			// compose binds the panel to 127.0.0.1:3002 while ORIGIN says
-			// localhost:3002 — the same panel, but different origins to the CSRF
-			// check, so form actions opened via 127.0.0.1 got "Cross-site POST
-			// form submissions are forbidden". Build-time only, hence hardcoded.
-			csrf: {
-				trustedOrigins: ["http://localhost:3002", "http://127.0.0.1:3002"],
-			},
+			// A static SPA: every route falls back to index.html, which boots the
+			// client router. Served by nginx in Docker (see nginx.conf), which also
+			// proxies /api to admin-api.
+			adapter: adapter({ fallback: "index.html" }),
 		}),
 	],
-	ssr: {
-		// Resolved by the Bun runtime at request time, never bundled.
-		external: ["bun:sqlite"],
-	},
 });

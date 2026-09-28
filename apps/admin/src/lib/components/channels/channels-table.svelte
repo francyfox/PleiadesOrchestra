@@ -8,15 +8,25 @@
 	} from "@tanstack/svelte-table";
 	import { useIntlayer } from "svelte-intlayer";
 	import type { Channel } from "$lib/api-types";
+	import CopyValue from "$lib/components/copy-value.svelte";
 	import DataTable from "$lib/components/data-table.svelte";
 	import { Badge } from "$lib/components/ui/badge/index.js";
 	import { useFormat } from "$lib/i18n/use-format";
+	import { DEFAULT_PAGE_SIZE } from "$lib/pagination";
 	import ChannelRowActions from "./channel-row-actions.svelte";
 
+	/** One server-cut page of channels (`page` of `total`, from `?page=`). */
 	let {
 		channels,
+		total,
+		page,
 		onEdit,
-	}: { channels: Channel[]; onEdit: (channel: Channel) => void } = $props();
+	}: {
+		channels: Channel[];
+		total: number;
+		page: number;
+		onEdit: (channel: Channel) => void;
+	} = $props();
 
 	const content = useIntlayer("channels");
 	const format = useFormat();
@@ -37,12 +47,11 @@
 			}),
 			helper.accessor("allowedOrigins", {
 				header: () => $content.columns.origins.value,
-				cell: (ctx) =>
-					ctx.getValue().length ? ctx.getValue().join(", ") : "—",
+				cell: (ctx) => renderSnippet(origins, ctx.getValue()),
 			}),
 			helper.accessor("publishableKey", {
-				header: "Publishable key",
-				cell: (ctx) => ctx.getValue() ?? "—",
+				header: () => $content.columns.publishableKey.value,
+				cell: (ctx) => renderSnippet(publishableKey, ctx.getValue()),
 			}),
 			helper.accessor("createdAt", {
 				header: () => $content.columns.created.value,
@@ -69,4 +78,20 @@
 	{#if channel.disabledAt}<Badge variant="destructive">{$content.disabled.value}</Badge>{/if}
 {/snippet}
 
-<DataTable {table} emptyText={$content.empty.value} />
+{#snippet origins(list: string[])}
+	{#if list.length}
+		<div class="grid gap-0.5">
+			{#each list as origin (origin)}<CopyValue value={origin} href={origin} />{/each}
+		</div>
+	{:else}—{/if}
+{/snippet}
+
+{#snippet publishableKey(key: string | null)}
+	{#if key}<CopyValue value={key} />{:else}—{/if}
+{/snippet}
+
+<DataTable
+	{table}
+	emptyText={$content.empty.value}
+	server={{ page, pageSize: DEFAULT_PAGE_SIZE, total, href: (target) => `/channels?page=${target}` }}
+/>

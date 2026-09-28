@@ -4,6 +4,7 @@
 	import AdminsTable from "$lib/components/admins/admins-table.svelte";
 	import CreateAdminForm from "$lib/components/admins/create-admin-form.svelte";
 	import SetPasswordDialog from "$lib/components/admins/set-password-dialog.svelte";
+	import { DEFAULT_PAGE_SIZE } from "$lib/pagination";
 
 	let { data } = $props();
 
@@ -16,6 +17,13 @@
 <AdminsTable
 	admins={data.admins}
 	currentAdminId={data.admin?.id ?? null}
+	currentAdminIsSuper={data.admin?.isSuper ?? false}
+	pagination={{
+		page: data.page,
+		pageSize: DEFAULT_PAGE_SIZE,
+		total: data.total,
+		href: (page) => `/admins?page=${page}`,
+	}}
 	onChangePassword={(admin) => (passwordFor = admin)}
 />
 

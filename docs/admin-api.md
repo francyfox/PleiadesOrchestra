@@ -1,8 +1,13 @@
 # HTTP-контракт `alpha-orchestrator` для админки и транспортов
 
 Источник правды для параллельной разработки `apps/alpha-orchestrator` (сервер),
-`apps/admin` (клиент-BFF) и `apps/telegram-bot`/`apps/cli` (клиенты). Дизайн и мотивация —
+`apps/admin-api` (клиент; он же BFF для панели) и `apps/telegram-bot`/`apps/cli` (клиенты). Дизайн и мотивация —
 `docs/sessions-and-admin-plan.md`. Меняете контракт — меняйте этот файл в том же PR.
+
+Панель `apps/admin` этот API напрямую не вызывает: это статический SPA, он ходит в `apps/admin-api`
+(`/api/*`, Elysia, Swagger UI на `/api/docs`), а тот — сюда, под ключом `ADMIN_API_KEY` и с
+`X-Admin-Id` из сессии администратора. Контракт панель ↔ `admin-api` описан TypeBox-схемами в
+`apps/admin-api/src/schemas/` и документируется Swagger'ом; DTO ниже — те же, что там.
 
 Общие правила:
 
@@ -85,6 +90,7 @@ interface AdminUser {
   blockedBy: string | null;
   createdAt: number;
   lastSeenAt: number;
+  ip: string | null;              // IP последнего запроса виджета, открытым текстом; null — неизвестен (Telegram/CLI, старые записи)
   usage: UsageTotals;             // за период from/to запроса, по умолчанию — за всё время
 }
 
@@ -214,7 +220,7 @@ Query: `channel` (slug), `kind`, `status`, `q` (поиск по displayName/exte
 
 | Метод | Путь | Тело | Ответ |
 |---|---|---|---|
-| GET | `/v1/admin/channels` | — | `{ "items": [Channel] }` |
+| GET | `/v1/admin/channels?page=&pageSize=` | — | `{ "items": [Channel], "total": 3 }` |
 | POST | `/v1/admin/channels` | `{ "slug", "name", "kind": "web", "accessMode", "allowedOrigins": [] }` | `{ "channel": Channel, "secretKey": "..." }` |
 | PATCH | `/v1/admin/channels/:id` | `{ "name"?, "accessMode"?, "allowedOrigins"?, "disabled"?: boolean }` | `{ "channel": Channel }` |
 | POST | `/v1/admin/channels/:id/rotate-keys` | — | `{ "channel": Channel, "secretKey": "..." }` |
@@ -224,18 +230,58 @@ Query: `channel` (slug), `kind`, `status`, `q` (поиск по displayName/exte
 символов; занятый `slug` → `409`. `rotate-keys` меняет и `publishableKey`, и `secretKey`.
 В PATCH пропущенные поля не меняются.
 
+Постраничность (`GET /v1/admin/channels`, `GET /v1/admin/blocked-ips`): `pageSize` 1…100, `page` ≥ 1
+(по умолчанию 1). Без `pageSize` возвращается весь список (`page` игнорируется). `total` — полное
+число записей, не зависящее от страницы; страница за пределами списка → `items: []`. Порядок
+детерминирован: каналы — по `createdAt` (старые первыми), затем по `id`; блокировки — новые первыми.
+
+Каналы — не только «сайт»: это любая точка входа (telegram, discord, slack, cli, jira, виджет
+на сайте…). `kind: "web"` — единственный вид, который создаётся через API и у которого есть
+ключи виджета и `allowedOrigins`.
+
 ### Блокировки по IP
 
 | Метод | Путь | Тело | Ответ |
 |---|---|---|---|
-| GET | `/v1/admin/blocked-ips` | — | `{ "items": [{ "id", "ipHash", "channelId": null, "reason", "createdAt", "expiresAt" }] }` |
+| GET | `/v1/admin/blocked-ips?page=&pageSize=` | — | `{ "items": [BlockedIp], "total": 1 }` |
 | POST | `/v1/admin/blocked-ips` | `{ "ip": "1.2.3.4", "channelId"?: "...", "reason": "...", "expiresInHours": 24 }` | `{ "item": {...} }` |
 | DELETE | `/v1/admin/blocked-ips/:id` | — | `204` |
 
-Сервер хеширует `ip` с `IP_HASH_SALT`; сам IP не хранится. `expiresInHours` обязателен (> 0):
-IP бывают общими, бессрочная блокировка недопустима. Неизвестный `channelId` → `404`.
+`BlockedIp` = `{ "id", "ipHash", "ip": "1.2.3.4" | null, "channelId": null, "reason", "createdAt", "expiresAt" }`.
 
-## Widget API (публичный, для чат-виджета на сайте магазина)
+**Хеш или IP.** Совпадение блокировки всегда идёт по `ipHash` = `sha256(IP_HASH_SALT:ip)`. Открытый
+IP хранится дополнительно и только для админки (показать, найти по whois): `blocked_ips.ip`
+(`null` у записей, созданных до этого поля) и `users.last_ip`. `expiresInHours` обязателен (> 0):
+IP бывают общими, бессрочная блокировка недопустима. Анонимные
+пользователи (вместе с `last_ip`) удаляются после `ANON_RETENTION_HOURS` неактивности; у
+identified-пользователя `last_ip` остаётся, пока существует пользователь. Неизвестный
+`channelId` → `404`.
+
+### Агенты
+
+| Метод | Путь | Тело | Ответ |
+|---|---|---|---|
+| GET | `/v1/admin/agents` | — | `{ "items": [Agent] }` |
+
+```ts
+interface Agent {
+  id: string;                    // "beta-text" | "gamma-decision"
+  name: string;
+  role: "text" | "decision";     // генерация текста (LLM) / типизированные решения (Laya)
+  endpoint: string;              // базовый URL без логина/пароля, query и fragment
+  model: string | null;          // null у decision-агента
+  status: "up" | "down";
+  latencyMs: number | null;      // время ответа /health; null, если down
+  checkedAt: number;
+}
+```
+
+Список берётся из конфигурации оркестратора (`LLM_BASE_URL`/`LLM_MODEL` — текстовый агент,
+`LAYA_API_BASE_URL` — decision-агент). При каждом запросе оркестратор параллельно делает
+`GET <база без /v1>/health` с таймаутом 1,5 с и без ключей авторизации; ошибка сети, таймаут и
+не-2xx дают `down`, сам запрос не падает.
+
+## Widget API (публичный, для веб-чат-виджета на сайте)
 
 Не использует `HARNESS_API_KEY`/`ADMIN_API_KEY`. Браузер аутентифицируется publishable-ключом
 канала (только чтобы получить visitor-токен), дальше — visitor-токеном. На каждом запросе
@@ -253,7 +299,7 @@ IP бывают общими, бессрочная блокировка недо
 
 Visitor-токен: 32 случайных байта (base64url), в БД — только sha256. Срок жизни скользящий:
 `ANON_RETENTION_HOURS` (24 ч) с последнего использования. Каждый запрос с токеном продлевает его
-и обновляет `lastSeenAt` пользователя.
+и обновляет `lastSeenAt` и `last_ip` пользователя.
 
 ### `POST /v1/widget/visitors`
 
@@ -294,17 +340,18 @@ Visitor-токен: 32 случайных байта (base64url), в БД — т
 | `429` | больше `WIDGET_MESSAGES_PER_MINUTE` сообщений на токен или `WIDGET_IP_MESSAGES_PER_MINUTE` на IP в минуту |
 
 Лимиты — в памяти процесса, сбрасываются при рестарте. IP клиента берётся из соединения; из
-`X-Forwarded-For` — только при `TRUST_PROXY=true` (за своим прокси/туннелем). Хранится только
-`sha256(IP_HASH_SALT:ip)`.
+`X-Forwarded-For` — только при `TRUST_PROXY=true` (за своим прокси/туннелем). Блокировки и лимиты
+сверяются по `sha256(IP_HASH_SALT:ip)`; открытый IP посетителя пишется в `users.last_ip` только
+для админки (см. «Блокировки по IP»).
 
-## `POST /v1/channels/:slug/identify` (server-to-server, бэкенд магазина)
+## `POST /v1/channels/:slug/identify` (server-to-server, бэкенд сайта-интеграции)
 
 `Authorization: Bearer <secretKey канала>` (выдаётся при создании/ротации ключей канала в
 админке; сравнивается по хешу за постоянное время).
 
 ```json
 // запрос
-{ "visitorToken": "...", "externalUserId": "<id аккаунта в магазине>" }
+{ "visitorToken": "...", "externalUserId": "<id аккаунта на сайте>" }
 // ответ 200
 { "userId": "<наш id>", "merged": false }
 ```
@@ -314,7 +361,8 @@ Visitor-токен: 32 случайных байта (base64url), в БД — т
 - Есть → слияние в одной транзакции: треды, сообщения (с повторной обрезкой до
   `MESSAGE_RETENTION_PER_USER`), журнал расхода, GOAP-прогоны и visitor-токены переходят на
   существующего пользователя; блокировка и белый список любой из двух записей сохраняются;
-  анонимная запись удаляется. `merged: true`, `userId` — существующего пользователя.
+  анонимная запись удаляется; `last_ip` посетителя переходит на существующего пользователя.
+  `merged: true`, `userId` — существующего пользователя.
 - Повтор того же запроса → `200` с тем же `userId`, `merged: false`.
 
 | Статус | Когда |

@@ -1,4 +1,4 @@
-import { type Dictionary, t } from "intlayer";
+import { type Dictionary, insert, t } from "intlayer";
 
 /** Strings shared across pages: statuses, call kinds, generic words. */
 const commonContent = {
@@ -19,6 +19,37 @@ const commonContent = {
 		delete: t({ ru: "Удалить", en: "Delete", kk: "Жою" }),
 		done: t({ ru: "Готово", en: "Done", kk: "Дайын" }),
 		failed: t({ ru: "Ошибка", en: "Error", kk: "Қате" }),
+		copy: t({ ru: "Копировать", en: "Copy", kk: "Көшіру" }),
+		copied: t({ ru: "Скопировано", en: "Copied", kk: "Көшірілді" }),
+		copyFailed: t({
+			ru: "Не удалось скопировать",
+			en: "Couldn't copy",
+			kk: "Көшіру мүмкін болмады",
+		}),
+		confirmDeleteTitle: t({
+			ru: "Удалить безвозвратно?",
+			en: "Delete permanently?",
+			kk: "Біржола жою керек пе?",
+		}),
+		confirmDeleteBody: t({
+			ru: "Это действие нельзя отменить.",
+			en: "This can't be undone.",
+			kk: "Бұл әрекетті қайтару мүмкін емес.",
+		}),
+		pagination: {
+			page: t({
+				ru: insert("Страница {{page}} из {{pages}}"),
+				en: insert("Page {{page}} of {{pages}}"),
+				kk: insert("{{page}} / {{pages}} бет"),
+			}),
+			total: t({
+				ru: insert("Всего: {{count}}"),
+				en: insert("Total: {{count}}"),
+				kk: insert("Барлығы: {{count}}"),
+			}),
+			prev: t({ ru: "Назад", en: "Previous", kk: "Артқа" }),
+			next: t({ ru: "Вперёд", en: "Next", kk: "Алға" }),
+		},
 		status: {
 			allowed: t({ ru: "допущен", en: "allowed", kk: "рұқсат етілген" }),
 			pending: t({

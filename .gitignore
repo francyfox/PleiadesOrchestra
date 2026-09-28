@@ -14,10 +14,14 @@ dist
 
 .vscode/*
 
-# SQLite databases (alpha-orchestrator's data/, apps/admin's auth DB)
+# SQLite databases (alpha-orchestrator's data/, apps/admin-api's auth DB)
 *.db
 *.db-wal
 *.db-shm
 
 # Host-side SQLite for compose services (see compose.yml)
 /data/
+
+# Ad-hoc build/error logs
+*.err
+sh.err.*

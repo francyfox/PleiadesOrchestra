@@ -1,6 +1,7 @@
 <script lang="ts">
 	import SvelteVirtualChat from "@humanspeak/svelte-virtual-chat";
 	import { useIntlayer } from "svelte-intlayer";
+	import { userActions } from "$lib/actions";
 	import type { AdminMessage } from "$lib/api-types";
 	import ConfirmDialog from "$lib/components/confirm-dialog.svelte";
 	import { Button } from "$lib/components/ui/button/index.js";
@@ -8,13 +9,17 @@
 	import { useFormat } from "$lib/i18n/use-format";
 
 	/** The user's last ≤10 messages with per-answer usage and plan links. */
-	let { messages }: { messages: AdminMessage[] } = $props();
+	let { userId, messages }: { userId: string; messages: AdminMessage[] } =
+		$props();
 
 	const content = useIntlayer("user-detail");
 	const format = useFormat();
 
 	let eraseOpen = $state(false);
-	const submitted = useActionEnhance({ onSettled: () => (eraseOpen = false) });
+	const submitted = useActionEnhance({
+		run: () => userActions.deleteMessages(userId),
+		onSettled: () => (eraseOpen = false),
+	});
 </script>
 
 <section class="grid gap-2">
@@ -76,7 +81,6 @@
 	bind:open={eraseOpen}
 	title={$content.eraseDialog.title.value}
 	description={$content.eraseDialog.description.value}
-	action="?/deleteMessages"
 	submitLabel={$content.eraseDialog.submit.value}
 	{submitted}
 />

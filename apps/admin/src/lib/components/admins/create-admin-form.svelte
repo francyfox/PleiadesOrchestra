@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import { enhance } from "$app/forms";
+	import { adminActions } from "$lib/actions";
 	import FormField from "$lib/components/form-field.svelte";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import * as Card from "$lib/components/ui/card/index.js";
@@ -8,7 +8,7 @@
 
 	const content = useIntlayer("admins");
 	const common = useIntlayer("common");
-	const submitted = useAdminEnhance();
+	const submitted = useAdminEnhance(adminActions.create);
 </script>
 
 <Card.Root>
@@ -17,7 +17,7 @@
 		<Card.Description>{$content.create.hint.value}</Card.Description>
 	</Card.Header>
 	<Card.Content>
-		<form method="POST" action="?/create" use:enhance={submitted} class="grid max-w-xl gap-3">
+		<form use:submitted class="grid max-w-xl gap-3">
 			<FormField id="new-name" name="name" label={$content.columns.name.value} />
 			<FormField id="new-email" name="email" label={$content.columns.email.value} type="email" required />
 			<FormField

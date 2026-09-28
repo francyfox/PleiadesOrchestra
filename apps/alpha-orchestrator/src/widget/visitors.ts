@@ -25,6 +25,7 @@ export function createVisitor(
 	channelId: string,
 	now: number,
 	ttlMs: number,
+	ip: string | null = null,
 ): { visitorToken: string; expiresAt: number; userId: string } {
 	const visitorToken = Buffer.from(
 		crypto.getRandomValues(new Uint8Array(32)),
@@ -40,6 +41,7 @@ export function createVisitor(
 				kind: "anonymous",
 				createdAt: now,
 				lastSeenAt: now,
+				lastIp: ip,
 			})
 			.run();
 		db.insert(visitorTokens)
@@ -85,13 +87,15 @@ export function findVisitor(
 
 /**
  * Resolves a token for a widget request and slides its expiry; also bumps
- * the user's `lastSeenAt`, which is what the anonymous cleanup looks at.
+ * the user's `lastSeenAt`, which is what the anonymous cleanup looks at, and
+ * records the request's client IP (when known) for the admin view.
  */
 export function useVisitor(
 	db: Db,
 	token: string,
 	now: number,
 	ttlMs: number,
+	ip: string | null = null,
 ): Visitor | null {
 	const visitor = findVisitor(db, token, now);
 	if (!visitor) return null;
@@ -101,11 +105,18 @@ export function useVisitor(
 			.where(eq(visitorTokens.tokenHash, visitor.tokenHash))
 			.run();
 		db.update(users)
-			.set({ lastSeenAt: now })
+			.set(ip ? { lastSeenAt: now, lastIp: ip } : { lastSeenAt: now })
 			.where(eq(users.id, visitor.user.id))
 			.run();
 	})();
-	return { ...visitor, user: { ...visitor.user, lastSeenAt: now } };
+	return {
+		...visitor,
+		user: {
+			...visitor.user,
+			lastSeenAt: now,
+			lastIp: ip ?? visitor.user.lastIp,
+		},
+	};
 }
 
 /** A block on this IP hash — global (no channel) or for this channel — that hasn't expired. */

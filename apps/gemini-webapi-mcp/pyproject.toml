@@ -1,0 +1,56 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gemini-webapi-mcp"
+version = "0.1.0"
+description = "MCP server for Google Gemini — free image generation and chat via browser cookies"
+readme = "README.md"
+license = "AGPL-3.0-or-later"
+requires-python = ">=3.10"
+authors = [
+    { name = "AndyShaman" },
+]
+keywords = ["mcp", "mcp-server", "gemini", "google-gemini", "ai", "image-generation", "llm", "claude", "model-context-protocol"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries",
+]
+dependencies = [
+    # PleiadesOrchestra: pinned to the commit that was security-reviewed
+    # (2026-09-25) — upstream pointed at the fork's moving HEAD, so any push
+    # there would have reached a process holding a whole-account Google cookie.
+    "gemini-webapi @ git+https://github.com/xob0t/Gemini-API.git@4402e5231760a1e85e28eb6cd0040ff302b764de",
+    "mcp>=1.8,<2",
+    # browser-cookie3 removed: cookies come only from GEMINI_PSID/GEMINI_PSIDTS,
+    # never from decrypting the host browser's cookie store.
+    "orjson>=3.9",
+    "Pillow>=10.0",
+    "numpy>=1.24",
+    "curl-cffi>=0.14.0",
+]
+
+[dependency-groups]
+dev = ["pytest>=8", "pytest-asyncio>=0.23"]
+
+[project.scripts]
+gemini-webapi-mcp = "gemini_webapi_mcp:main"
+
+[project.urls]
+Homepage = "https://github.com/AndyShaman/gemini-webapi-mcp"
+Repository = "https://github.com/AndyShaman/gemini-webapi-mcp"
+Issues = "https://github.com/AndyShaman/gemini-webapi-mcp/issues"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/gemini_webapi_mcp"]

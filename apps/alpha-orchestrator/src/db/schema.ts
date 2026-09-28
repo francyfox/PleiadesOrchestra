@@ -41,6 +41,9 @@ export const users = sqliteTable(
 		displayName: text("display_name"),
 		createdAt: integer("created_at").notNull(),
 		lastSeenAt: integer("last_seen_at").notNull(),
+		// Plaintext client IP of the last widget request, for the admin view /
+		// whois. Blocking matches by salted hash (`blocked_ips.ip_hash`), not this.
+		lastIp: text("last_ip"),
 		whitelistedAt: integer("whitelisted_at"),
 		// Admin ids come from better-auth in apps/admin — another database, so no FK.
 		whitelistedBy: text("whitelisted_by"),
@@ -202,6 +205,8 @@ export const blockedIps = sqliteTable(
 	{
 		id: text("id").primaryKey(),
 		ipHash: text("ip_hash").notNull(),
+		// Plaintext copy for the admin view; NULL on rows created before it existed.
+		ip: text("ip"),
 		channelId: text("channel_id").references(() => channels.id, {
 			onDelete: "cascade",
 		}),

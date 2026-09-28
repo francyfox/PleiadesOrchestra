@@ -2,6 +2,7 @@ import type { GoapAction } from "@repo/core";
 import { Elysia, t } from "elysia";
 import type { Db } from "../db/client.ts";
 import type { ChannelDirectory } from "../db/identity.ts";
+import { type AgentSpec, type FetchLike, probeAgents } from "./agents.ts";
 import {
 	createBlockedIp,
 	createWebChannel,
@@ -32,6 +33,8 @@ export interface AdminDeps {
 	/** GOAP catalog served by /goap/actions (without `execute`). */
 	actions: GoapAction[];
 	ipHashSalt: string;
+	/** Agents shown on /agents, with the fetch used to probe them (tests inject one). */
+	agents?: { specs: AgentSpec[]; fetch?: FetchLike };
 	now: () => number;
 }
 
@@ -52,6 +55,11 @@ function oneOf<const T extends string>(values: readonly T[]) {
 }
 
 const AccessMode = oneOf(["whitelist", "open"]);
+/** Optional offset paging; without `pageSize` the whole list comes back. */
+const PageQuery = t.Object({
+	page: t.Optional(t.Numeric({ minimum: 1 })),
+	pageSize: t.Optional(t.Numeric({ minimum: 1, maximum: 100 })),
+});
 const Slug = t.String({ pattern: "^[a-z0-9][a-z0-9-]*$", maxLength: 64 });
 
 export function adminRoutes(deps: AdminDeps) {
@@ -204,7 +212,15 @@ export function adminRoutes(deps: AdminDeps) {
 				effects,
 			})),
 		}))
-		.get("/channels", () => ({ items: listChannels(db) }))
+		.get("/agents", async () => ({
+			items: await probeAgents(deps.agents?.specs ?? [], {
+				fetch: deps.agents?.fetch,
+				now: deps.now,
+			}),
+		}))
+		.get("/channels", ({ query }) => listChannels(db, query), {
+			query: PageQuery,
+		})
 		.post(
 			"/channels",
 			({ body, status }) => {
@@ -261,7 +277,9 @@ export function adminRoutes(deps: AdminDeps) {
 			deps.channels.invalidate();
 			return rotated;
 		})
-		.get("/blocked-ips", () => ({ items: listBlockedIps(db) }))
+		.get("/blocked-ips", ({ query }) => listBlockedIps(db, query), {
+			query: PageQuery,
+		})
 		.post(
 			"/blocked-ips",
 			({ body, status }) => {

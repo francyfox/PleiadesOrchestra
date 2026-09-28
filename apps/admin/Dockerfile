@@ -1,33 +1,31 @@
-# Built with the monorepo root as build context (bun.lock lives there).
+# Built with the monorepo root as build context. `turbo prune` cuts out just this
+# app and the workspaces it depends on (with a matching lockfile), so no
+# Dockerfile lists workspaces by hand — a new workspace needs no change here.
+FROM oven/bun:1-alpine AS prune
+WORKDIR /app
+COPY . .
+RUN bunx turbo@2.10.9 prune admin --docker
+
 FROM oven/bun:1-alpine AS install
 WORKDIR /app
-COPY package.json bun.lock ./
-COPY apps/admin/package.json apps/admin/package.json
-COPY apps/snake-benchmark/package.json apps/snake-benchmark/package.json
-COPY apps/alpha-orchestrator/package.json apps/alpha-orchestrator/package.json
-COPY apps/telegram-bot/package.json apps/telegram-bot/package.json
-COPY apps/cli/package.json apps/cli/package.json
-COPY apps/gamma-decision/package.json apps/gamma-decision/package.json
-COPY packages/core/package.json packages/core/package.json
+# Only package.json files + the pruned lockfile: this layer (and the install)
+# stays cached until a dependency actually changes.
+COPY --from=prune /app/out/json/ .
+COPY --from=prune /app/out/bun.lock ./bun.lock
 RUN bun install --frozen-lockfile
 
 FROM install AS build
-COPY apps/admin apps/admin
+COPY --from=prune /app/out/full/ .
 WORKDIR /app/apps/admin
+# Static SPA: build/ is plain files. admin-api is only imported for types,
+# which the bundler erases, so its sources are not needed here.
 RUN bun run build
 
-# Everything is bundled into build/ (all deps are devDependencies on purpose),
-# so the runtime image needs no node_modules — only the Bun runtime, since
-# better-auth's SQLite is `bun:sqlite`.
-FROM oven/bun:1-alpine
-WORKDIR /app
-COPY --from=build /app/apps/admin/build ./build
-COPY --from=build /app/apps/admin/drizzle ./drizzle
+# No application server at runtime — Caddy serves the files and proxies /api.
+FROM caddy:2.10-alpine
+COPY apps/admin/Caddyfile /etc/caddy/Caddyfile
+COPY --from=build /app/apps/admin/build /srv
 
-ENV PORT=3000 \
-    ADMIN_MIGRATIONS_DIR=/app/drizzle \
-    ADMIN_DATABASE_PATH=/data/admin.db
-EXPOSE 3000
-VOLUME /data
-
-CMD ["bun", "./build/index.js"]
+# Where /api is proxied to (read by the Caddyfile).
+ENV ADMIN_API_UPSTREAM=http://admin-api:3003
+EXPOSE 80

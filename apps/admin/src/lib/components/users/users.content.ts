@@ -7,6 +7,7 @@ const usersContent = {
 		columns: {
 			user: t({ ru: "Пользователь", en: "User", kk: "Пайдаланушы" }),
 			channel: t({ ru: "Канал", en: "Channel", kk: "Арна" }),
+			ip: t({ ru: "IP", en: "IP", kk: "IP" }),
 			status: t({ ru: "Статус", en: "Status", kk: "Күйі" }),
 			lastSeen: t({ ru: "Активность", en: "Last seen", kk: "Белсенділік" }),
 			created: t({ ru: "Создан", en: "Created", kk: "Құрылған" }),
@@ -62,13 +63,6 @@ const usersContent = {
 			en: "No users found",
 			kk: "Пайдаланушылар табылмады",
 		}),
-		total: t({
-			ru: insert("Всего: {{count}}"),
-			en: insert("Total: {{count}}"),
-			kk: insert("Барлығы: {{count}}"),
-		}),
-		prev: t({ ru: "Назад", en: "Previous", kk: "Артқа" }),
-		next: t({ ru: "Дальше", en: "Next", kk: "Келесі" }),
 	},
 } satisfies Dictionary;
 

@@ -616,7 +616,7 @@ describe("channels", () => {
 });
 
 describe("blocked ips", () => {
-	test("create hashes the ip (never stored raw), list, delete", async () => {
+	test("create matches by hash but keeps the ip for the admin view; list, delete", async () => {
 		const { app } = setup();
 		const created = await json(
 			await app.handle(
@@ -632,11 +632,13 @@ describe("blocked ips", () => {
 			createdAt: NOW,
 			expiresAt: NOW + 2 * 60 * 60 * 1000,
 		});
+		expect(created.item.ip).toBe("1.2.3.4");
 		expect(created.item.ipHash).not.toContain("1.2.3.4");
 
 		const list = await json(await app.handle(admin("/blocked-ips")));
 		expect(list.items).toHaveLength(1);
-		expect(JSON.stringify(list)).not.toContain("1.2.3.4");
+		expect(list.total).toBe(1);
+		expect(list.items[0].ip).toBe("1.2.3.4");
 
 		const deleted = await app.handle(
 			admin(`/blocked-ips/${created.item.id}`, { method: "DELETE" }),
@@ -678,5 +680,169 @@ describe("blocked ips", () => {
 				)
 			).status,
 		).toBe(422);
+	});
+});
+
+describe("pagination of channels and blocked ips", () => {
+	test("channels: no pageSize → everything; pageSize/page slice it; total is always the full count", async () => {
+		const { app } = setup();
+		for (const slug of ["a", "b", "c"]) {
+			await json(
+				await app.handle(
+					admin("/channels", {
+						method: "POST",
+						body: {
+							slug,
+							name: slug,
+							kind: "web",
+							accessMode: "open",
+							allowedOrigins: [],
+						},
+					}),
+				),
+			);
+		}
+		const all = await json(await app.handle(admin("/channels")));
+		expect(all.total).toBe(5);
+		expect(all.items).toHaveLength(5);
+
+		const first = await json(
+			await app.handle(admin("/channels?pageSize=2&page=1")),
+		);
+		const third = await json(
+			await app.handle(admin("/channels?pageSize=2&page=3")),
+		);
+		const beyond = await json(
+			await app.handle(admin("/channels?pageSize=2&page=4")),
+		);
+		expect(first.total).toBe(5);
+		expect(first.items).toHaveLength(2);
+		expect(third.items).toHaveLength(1);
+		expect(beyond.items).toEqual([]);
+		const ids = [
+			...first.items,
+			...(await json(await app.handle(admin("/channels?pageSize=2&page=2"))))
+				.items,
+			...third.items,
+		].map((channel: { id: string }) => channel.id);
+		expect(new Set(ids).size).toBe(5);
+	});
+
+	test("channels: pageSize without page means page 1; pageSize above 100 → 422", async () => {
+		const { app } = setup();
+		const page = await json(await app.handle(admin("/channels?pageSize=1")));
+		expect(page.items).toHaveLength(1);
+		expect((await app.handle(admin("/channels?pageSize=101"))).status).toBe(
+			422,
+		);
+	});
+
+	test("blocked ips: newest first, paginated, total is the full count", async () => {
+		const { app } = setup();
+		for (const ip of ["1.1.1.1", "2.2.2.2", "3.3.3.3"]) {
+			await json(
+				await app.handle(
+					admin("/blocked-ips", {
+						method: "POST",
+						body: { ip, reason: "r", expiresInHours: 1 },
+					}),
+				),
+			);
+		}
+		const page = await json(
+			await app.handle(admin("/blocked-ips?pageSize=2&page=1")),
+		);
+		expect(page.total).toBe(3);
+		expect(page.items).toHaveLength(2);
+		const rest = await json(
+			await app.handle(admin("/blocked-ips?pageSize=2&page=2")),
+		);
+		expect(rest.items).toHaveLength(1);
+		const seen = [...page.items, ...rest.items].map(
+			(item: { ip: string }) => item.ip,
+		);
+		expect(new Set(seen)).toEqual(new Set(["1.1.1.1", "2.2.2.2", "3.3.3.3"]));
+	});
+});
+
+describe("user ip", () => {
+	test("users list and detail expose the stored last ip (null when unknown)", async () => {
+		const { app, db } = setup();
+		const seen = upsertIdentifiedUser(db, "ch_telegram", "1", undefined, NOW);
+		const unseen = upsertIdentifiedUser(db, "ch_telegram", "2", undefined, NOW);
+		db.update(users)
+			.set({ lastIp: "203.0.113.7" })
+			.where(eq(users.id, seen.id))
+			.run();
+
+		const list = await json(await app.handle(admin("/users")));
+		const byId = new Map(
+			list.items.map((user: { id: string; ip: string | null }) => [
+				user.id,
+				user.ip,
+			]),
+		);
+		expect(byId.get(seen.id)).toBe("203.0.113.7");
+		expect(byId.get(unseen.id)).toBeNull();
+
+		const detail = await json(await app.handle(admin(`/users/${seen.id}`)));
+		expect(detail.user.ip).toBe("203.0.113.7");
+	});
+});
+
+describe("agents", () => {
+	test("GET /agents lists the configured agents with their health, credentials stripped", async () => {
+		const db = testDb();
+		const app = createApp({
+			agent,
+			decisionAgent,
+			apiKey: "transport-key",
+			adminApiKey: ADMIN_KEY,
+			maxChunkChars: 100,
+			db,
+			channels: new ChannelDirectory(db),
+			runs: new RunBinding(),
+			ipHashSalt: "salt",
+			now: () => NOW,
+			agents: {
+				specs: [
+					{
+						id: "beta-text",
+						name: "beta-text",
+						role: "text",
+						baseUrl: "http://key:secret@beta-text:8080/v1?token=x",
+						model: "vikhr",
+					},
+				],
+				fetch: async () => new Response("ok"),
+			},
+		});
+		const body = await json(await app.handle(admin("/agents")));
+		expect(body.items).toEqual([
+			{
+				id: "beta-text",
+				name: "beta-text",
+				role: "text",
+				endpoint: "http://beta-text:8080/v1",
+				model: "vikhr",
+				status: "up",
+				latencyMs: expect.any(Number),
+				checkedAt: expect.any(Number),
+			},
+		]);
+		expect(JSON.stringify(body)).not.toContain("secret");
+	});
+
+	test("without configured agents the list is empty", async () => {
+		const { app } = setup();
+		const body = await json(await app.handle(admin("/agents")));
+		expect(body).toEqual({ items: [] });
+	});
+
+	test("needs the admin key", async () => {
+		const { app } = setup();
+		expect(
+			(await app.handle(admin("/agents", { key: "transport-key" }))).status,
+		).toBe(401);
 	});
 });

@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { asc, count, desc, eq } from "drizzle-orm";
 import type { Db } from "../db/client.ts";
 import { blockedIps, channels } from "../db/schema.ts";
 
@@ -28,13 +28,33 @@ export function toChannel(row: ChannelRow) {
 	};
 }
 
-export function listChannels(db: Db) {
-	return db
+/** Offset paging; without `pageSize` everything is returned (`page` is then ignored). */
+export interface PageParams {
+	page?: number;
+	pageSize?: number;
+}
+
+function limitOffset({ page = 1, pageSize }: PageParams) {
+	return pageSize === undefined
+		? {}
+		: { limit: pageSize, offset: (Math.max(1, page) - 1) * pageSize };
+}
+
+export function listChannels(db: Db, paging: PageParams = {}) {
+	const { limit, offset } = limitOffset(paging);
+	const query = db
 		.select()
 		.from(channels)
-		.orderBy(channels.createdAt)
-		.all()
-		.map(toChannel);
+		.orderBy(asc(channels.createdAt), asc(channels.id));
+	const rows =
+		limit === undefined
+			? query.all()
+			: query
+					.limit(limit)
+					.offset(offset ?? 0)
+					.all();
+	const total = db.select({ value: count() }).from(channels).get()?.value ?? 0;
+	return { items: rows.map(toChannel), total };
 }
 
 export class SlugTakenError extends Error {}
@@ -125,8 +145,23 @@ export function hashIp(ip: string, salt: string): string {
 	return sha256Hex(`${salt}:${ip}`);
 }
 
-export function listBlockedIps(db: Db) {
-	return db.select().from(blockedIps).orderBy(blockedIps.createdAt).all();
+/** Newest first. */
+export function listBlockedIps(db: Db, paging: PageParams = {}) {
+	const { limit, offset } = limitOffset(paging);
+	const query = db
+		.select()
+		.from(blockedIps)
+		.orderBy(desc(blockedIps.createdAt), desc(blockedIps.id));
+	const items =
+		limit === undefined
+			? query.all()
+			: query
+					.limit(limit)
+					.offset(offset ?? 0)
+					.all();
+	const total =
+		db.select({ value: count() }).from(blockedIps).get()?.value ?? 0;
+	return { items, total };
 }
 
 export class UnknownChannelError extends Error {}
@@ -153,6 +188,7 @@ export function createBlockedIp(
 		.values({
 			id: crypto.randomUUID(),
 			ipHash: hashIp(input.ip, salt),
+			ip: input.ip,
 			channelId: input.channelId ?? null,
 			reason: input.reason,
 			createdAt: now,

@@ -16,6 +16,12 @@ const userActionsContent = {
 		}),
 		block: t({ ru: "Заблокировать", en: "Block", kk: "Бұғаттау" }),
 		unblock: t({ ru: "Разблокировать", en: "Unblock", kk: "Бұғаттан шығару" }),
+		blockIp: t({
+			ru: "Заблокировать IP",
+			en: "Block this IP",
+			kk: "IP бұғаттау",
+		}),
+		copyIp: t({ ru: "Копировать IP", en: "Copy IP", kk: "IP көшіру" }),
 		updated: t({
 			ru: insert("Обновлено: {{count}}"),
 			en: insert("Updated: {{count}}"),

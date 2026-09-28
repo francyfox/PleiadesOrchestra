@@ -15,14 +15,14 @@
 	"dependencies": {
 		"@ai-sdk/openai-compatible": "^3.0.20",
 		"@modelcontextprotocol/client": "^2.0.0",
-		"ai": "^7.0.48"
+		"ai": "^7.0.48",
+		"consola": "catalog:"
 	},
 	"devDependencies": {
 		"@modelcontextprotocol/server": "^2.0.0",
-		"@types/bun": "latest",
-		"consola": "^3.4.2"
+		"@types/bun": "catalog:"
 	},
 	"peerDependencies": {
-		"typescript": "^5"
+		"typescript": "^5 || ^6"
 	}
 }

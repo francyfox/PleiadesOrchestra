@@ -9,10 +9,12 @@ const userDetailContent = {
 			kk: "Анонимді пайдаланушы",
 		}),
 		channelId: t({
-			ru: insert("id в канале: {{id}}"),
-			en: insert("channel id: {{id}}"),
-			kk: insert("арнадағы id: {{id}}"),
+			ru: "id в канале:",
+			en: "channel id:",
+			kk: "арнадағы id:",
 		}),
+		ip: t({ ru: "IP:", en: "IP:", kk: "IP:" }),
+		copyId: t({ ru: "Копировать id", en: "Copy id", kk: "id көшіру" }),
 		stats: {
 			tokensTotal: t({
 				ru: "Токены (всего)",

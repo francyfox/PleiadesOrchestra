@@ -16,7 +16,7 @@ const config: IntlayerConfig = {
 		// An internal panel: no /en/… prefixes (which would also mean moving
 		// every route under [[locale]] and re-checking the auth redirects).
 		// The choice lives in a cookie; first visit falls back to
-		// Accept-Language (see src/lib/server/locale.ts).
+		// Accept-Language (see src/lib/i18n/browser-locale.ts).
 		mode: "no-prefix",
 		storage: "cookie",
 	},

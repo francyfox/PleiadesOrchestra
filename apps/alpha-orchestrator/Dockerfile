@@ -1,19 +1,21 @@
-# Собирается с корнем монорепо как build context (нужен доступ к packages/core).
+# Built with the monorepo root as build context. `turbo prune` cuts out just this
+# app and the workspaces it depends on (with a matching lockfile), so no
+# Dockerfile lists workspaces by hand — a new workspace needs no change here.
+FROM oven/bun:1-alpine AS prune
+WORKDIR /app
+COPY . .
+RUN bunx turbo@2.10.9 prune alpha-orchestrator --docker
+
 FROM oven/bun:1-alpine AS install
 WORKDIR /app
-COPY package.json bun.lock ./
-COPY apps/alpha-orchestrator/package.json apps/alpha-orchestrator/package.json
-COPY apps/telegram-bot/package.json apps/telegram-bot/package.json
-COPY apps/cli/package.json apps/cli/package.json
-COPY apps/gamma-decision/package.json apps/gamma-decision/package.json
-COPY apps/admin/package.json apps/admin/package.json
-COPY apps/snake-benchmark/package.json apps/snake-benchmark/package.json
-COPY packages/core/package.json packages/core/package.json
+# Only package.json files + the pruned lockfile: this layer (and the install)
+# stays cached until a dependency actually changes.
+COPY --from=prune /app/out/json/ .
+COPY --from=prune /app/out/bun.lock ./bun.lock
 RUN bun install --frozen-lockfile
 
 FROM install AS build
-COPY packages/core packages/core
-COPY apps/alpha-orchestrator apps/alpha-orchestrator
+COPY --from=prune /app/out/full/ .
 WORKDIR /app/apps/alpha-orchestrator
 RUN bun x tsc --noEmit && \
     bun build ./src/index.ts --compile --target=bun-linux-x64-musl --outfile /tmp/alpha-orchestrator

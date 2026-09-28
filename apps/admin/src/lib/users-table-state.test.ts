@@ -13,11 +13,11 @@ import {
 const parse = (search: string) => parseUsersState(new URLSearchParams(search));
 
 describe("parseUsersState", () => {
-	test("defaults: newest activity first, 50 rows, first page", () => {
+	test("defaults: newest activity first, 10 rows, first page", () => {
 		expect(parse("")).toEqual({
 			sort: "lastSeenAt",
 			order: "desc",
-			limit: 50,
+			limit: 10,
 			trail: [],
 		});
 	});
@@ -48,7 +48,7 @@ describe("parseUsersState", () => {
 			trail: [],
 		});
 		expect(parse("limit=0").limit).toBe(1);
-		expect(parse("limit=abc").limit).toBe(50);
+		expect(parse("limit=abc").limit).toBe(10);
 	});
 });
 
@@ -57,9 +57,14 @@ describe("usersStateToSearch", () => {
 		expect(usersStateToSearch(parse("")).toString()).toBe("");
 	});
 
+	test("the default page size is not written, a different one is", () => {
+		expect(usersStateToSearch(parse("limit=10")).toString()).toBe("");
+		expect(usersStateToSearch(parse("limit=25")).toString()).toBe("limit=25");
+	});
+
 	test("round-trips a non-default state", () => {
 		const search =
-			"channel=shop&status=blocked&q=a+b&sort=createdAt&order=asc&limit=10&cursor=c1&trail=%2Cc0";
+			"channel=shop&status=blocked&q=a+b&sort=createdAt&order=asc&limit=25&cursor=c1&trail=%2Cc0";
 		const state = parse(search);
 		expect(parse(usersStateToSearch(state).toString())).toEqual(state);
 	});
@@ -135,7 +140,7 @@ describe("toUsersQuery", () => {
 			q: "z",
 			sort: "lastSeenAt",
 			order: "desc",
-			limit: 50,
+			limit: 10,
 			cursor: "c1",
 		});
 	});

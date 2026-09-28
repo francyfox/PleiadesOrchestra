@@ -235,7 +235,12 @@ describe("POST /v1/channels/:slug/identify", () => {
 		const anon = seedHistory(ctx, visitor.userId, 4, "new");
 		ctx.db
 			.update(users)
-			.set({ blockedAt: 5, blockedReason: "spam", blockedBy: "admin-1" })
+			.set({
+				blockedAt: 5,
+				blockedReason: "spam",
+				blockedBy: "admin-1",
+				lastIp: "203.0.113.7",
+			})
 			.where(eq(users.id, visitor.userId))
 			.run();
 
@@ -259,6 +264,7 @@ describe("POST /v1/channels/:slug/identify", () => {
 			blockedReason: "spam",
 			blockedBy: "admin-1",
 			lastSeenAt: ctx.clock.now,
+			lastIp: "203.0.113.7",
 		});
 
 		const kept = ctx.db

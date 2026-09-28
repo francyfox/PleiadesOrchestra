@@ -367,6 +367,18 @@ describe("widget threads and messages", () => {
 		expect(expired.status).toBe(401);
 	});
 
+	test("the client IP is stored on the visitor (plaintext, for admins) and follows the visitor", async () => {
+		const ctx = setup();
+		const token = await newVisitor(ctx, "203.0.113.7");
+		expect(visitorUser(ctx)?.lastIp).toBe("203.0.113.7");
+
+		const response = await ctx.app.handle(
+			widgetRequest("/v1/widget/threads", { token, ip: "198.51.100.9" }),
+		);
+		expect(response.status).toBe(201);
+		expect(visitorUser(ctx)?.lastIp).toBe("198.51.100.9");
+	});
+
 	test("using the token slides its expiry and bumps lastSeenAt", async () => {
 		const ctx = setup();
 		const token = await newVisitor(ctx);

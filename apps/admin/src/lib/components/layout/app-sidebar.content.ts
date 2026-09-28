@@ -11,6 +11,7 @@ const appSidebarContent = {
 				en: "GOAP actions",
 				kk: "GOAP әрекеттері",
 			}),
+			agents: t({ ru: "Агенты", en: "Agents", kk: "Агенттер" }),
 			performance: t({
 				ru: "Производительность",
 				en: "Performance",

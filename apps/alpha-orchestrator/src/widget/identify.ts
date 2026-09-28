@@ -17,8 +17,8 @@ export type IdentifyResult =
 	| { status: "conflict" };
 
 /**
- * Binds a widget visitor to the shop's own account id, called by the shop
- * backend once the customer logs in.
+ * Binds a widget visitor to the site's own account id, called by the site's
+ * backend once the visitor logs in.
  *
  * - No identified user with that id yet → the anonymous user is promoted
  *   in place (same id, history and usage untouched).
@@ -100,6 +100,8 @@ export function identifyVisitor(
 				whitelistedAt: whitelist.whitelistedAt,
 				whitelistedBy: whitelist.whitelistedBy,
 				lastSeenAt: Math.max(target.lastSeenAt, source.lastSeenAt, input.now),
+				// The widget visit is the only place an IP is ever seen.
+				lastIp: source.lastIp ?? target.lastIp,
 			})
 			.where(eq(users.id, target.id))
 			.run();

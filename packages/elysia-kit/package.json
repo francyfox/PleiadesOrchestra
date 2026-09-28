@@ -1,0 +1,30 @@
+{
+	"name": "@repo/elysia-kit",
+	"version": "0.0.0",
+	"type": "module",
+	"private": true,
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"check-types": "tsc --noEmit",
+		"lint": "biome check .",
+		"test": "bun test"
+	},
+	"dependencies": {
+		"@elysiajs/openapi": "catalog:",
+		"@sentry/bun": "^11.0.0",
+		"consola": "catalog:",
+		"zod": "catalog:"
+	},
+	"devDependencies": {
+		"@sinclair/typebox": "catalog:",
+		"@types/bun": "catalog:",
+		"elysia": "catalog:",
+		"typescript": "catalog:"
+	},
+	"peerDependencies": {
+		"@sinclair/typebox": "catalog:",
+		"elysia": "catalog:"
+	}
+}

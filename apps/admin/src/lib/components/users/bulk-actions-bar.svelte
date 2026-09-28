@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import { enhance } from "$app/forms";
 	import type { BulkAction } from "$lib/api-types";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import { Input } from "$lib/components/ui/input/index.js";
@@ -27,9 +26,7 @@
 </script>
 
 <form
-	method="POST"
-	action="?/bulk"
-	use:enhance={submitted}
+	use:submitted
 	class="flex flex-wrap items-center gap-2 rounded-md border bg-muted/40 p-2"
 >
 	<span class="text-sm">{$content.bulk.selected({ count: ids.length })}</span>

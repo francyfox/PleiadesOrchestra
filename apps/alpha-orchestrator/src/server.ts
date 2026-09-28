@@ -1,4 +1,3 @@
-import { swagger } from "@elysiajs/swagger";
 import type {
 	Agent,
 	DecisionAgent,
@@ -8,8 +7,16 @@ import type {
 	WorldState,
 } from "@repo/core";
 import { createTextAction, runPlan } from "@repo/core";
-import { Elysia, t } from "elysia";
+import {
+	createKitApp,
+	createObservability,
+	hasBearer,
+	type Observability,
+	onRequestGuard,
+} from "@repo/elysia-kit";
+import { t } from "elysia";
 import { isAllowed } from "./access.ts";
+import type { AgentSpec, FetchLike } from "./admin/agents.ts";
 import { adminRoutes } from "./admin/routes.ts";
 import { chunkText } from "./chunk.ts";
 import type { Db } from "./db/client.ts";
@@ -35,9 +42,9 @@ export type { WidgetOptions } from "./widget/routes.ts";
 export interface ServerDeps {
 	agent: Agent;
 	decisionAgent: DecisionAgent;
-	/** Transport secret (telegram-bot, cli, shop backends). */
+	/** Transport secret (telegram-bot, cli, integration backends). */
 	apiKey: string;
-	/** Separate secret for /v1/admin/* (apps/admin's server side). */
+	/** Separate secret for /v1/admin/* (apps/admin-api). */
 	adminApiKey: string;
 	maxChunkChars: number;
 	db: Db;
@@ -47,11 +54,15 @@ export interface ServerDeps {
 	/** Flushed once a message's stream is done — `SqliteUsageRecorder` in production. */
 	usageRecorder?: { flush(): void };
 	ipHashSalt: string;
-	/** Shop-widget limits and settings; unset fields use `DEFAULT_WIDGET_OPTIONS`. */
+	/** Agents listed (and health-probed) by `GET /v1/admin/agents`. */
+	agents?: { specs: AgentSpec[]; fetch?: FetchLike };
+	/** Widget limits and settings; unset fields use `DEFAULT_WIDGET_OPTIONS`. */
 	widget?: Partial<WidgetOptions>;
 	now?: () => number;
 	/** Where persistence errors after a response go; they never break the stream. */
 	onError?: (error: unknown) => void;
+	/** Logger + error monitoring; tests omit it and get a silent one. */
+	observability?: Observability;
 }
 
 const DEFAULT_CHANNEL = "cli";
@@ -258,44 +269,47 @@ export function createApp(deps: ServerDeps) {
 		return streamPlanRun(deps, actions, initialState, { planRunId, threadId });
 	};
 
-	return new Elysia()
-		.use(swagger({ path: "/swagger" }))
-		.onRequest(({ request, set }) => {
-			const pathname = new URL(request.url).pathname;
-			// Health checks stay unauthenticated — a container orchestrator (or
-			// anyone else polling liveness) shouldn't need the shared secret for that.
-			// Swagger docs are also unauthenticated so the API is discoverable
-			// (e.g. by the Chrome extension) without a token in hand yet.
-			if (pathname === "/health" || pathname.startsWith("/swagger")) return;
-			// The shop widget is public (publishable key + visitor token + Origin)
-			// and `identify` uses the channel's own secret — both checked in
-			// widget/routes.ts, never the transport or admin key.
-			if (isPublicWidgetPath(pathname)) return;
+	const observability =
+		deps.observability ??
+		createObservability("alpha-orchestrator", { LOG_LEVEL: "silent" });
 
-			const authorization = request.headers.get("authorization");
-			// Two disjoint secrets: the transport key never reaches /v1/admin/*
-			// and the admin key never reaches the transport routes.
-			if (pathname === "/v1/admin" || pathname.startsWith("/v1/admin/")) {
-				if (authorization !== `Bearer ${deps.adminApiKey}`) {
-					set.status = 401;
-					return "Unauthorized";
-				}
-				if (
-					MUTATING_METHODS.has(request.method) &&
-					!request.headers.get("x-admin-id")
-				) {
-					set.status = 400;
-					return "X-Admin-Id header required";
-				}
-				return;
-			}
+	return createKitApp({
+		observability,
+		// Docs are unauthenticated so the API is discoverable (e.g. by the
+		// Chrome extension) without a token in hand yet.
+		docs: { title: "alpha-orchestrator", path: "/swagger", security: "bearer" },
+	})
+		.onRequest(
+			onRequestGuard(observability.logger, (request) => {
+				const pathname = new URL(request.url).pathname;
+				// Health checks stay unauthenticated — a container orchestrator (or
+				// anyone else polling liveness) shouldn't need the shared secret for that.
+				if (pathname === "/health" || pathname.startsWith("/swagger")) return;
+				// The web chat widget is public (publishable key + visitor token + Origin)
+				// and `identify` uses the channel's own secret — both checked in
+				// widget/routes.ts, never the transport or admin key.
+				if (isPublicWidgetPath(pathname)) return;
 
-			if (authorization !== `Bearer ${deps.apiKey}`) {
-				set.status = 401;
-				return "Unauthorized";
-			}
-		})
-		.get("/health", () => "ok")
+				// Two disjoint secrets: the transport key never reaches /v1/admin/*
+				// and the admin key never reaches the transport routes.
+				if (pathname === "/v1/admin" || pathname.startsWith("/v1/admin/")) {
+					if (!hasBearer(request, deps.adminApiKey)) {
+						return { status: 401, body: "Unauthorized" };
+					}
+					if (
+						MUTATING_METHODS.has(request.method) &&
+						!request.headers.get("x-admin-id")
+					) {
+						return { status: 400, body: "X-Admin-Id header required" };
+					}
+					return;
+				}
+
+				if (!hasBearer(request, deps.apiKey)) {
+					return { status: 401, body: "Unauthorized" };
+				}
+			}),
+		)
 		.post(
 			"/v1/access",
 			({ body, status }) => {
@@ -397,6 +411,7 @@ export function createApp(deps: ServerDeps) {
 				channels: deps.channels,
 				actions,
 				ipHashSalt: deps.ipHashSalt,
+				agents: deps.agents,
 				now,
 			}),
 		);

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import { enhance } from "$app/forms";
+	import { channelActions } from "$lib/actions";
 	import type { Channel } from "$lib/api-types";
 	import FormField from "$lib/components/form-field.svelte";
 	import { Button } from "$lib/components/ui/button/index.js";
@@ -16,14 +16,14 @@
 
 	const content = useIntlayer("channels");
 	const common = useIntlayer("common");
-	const submitted = useChannelEnhance(() => onClose());
+	const submitted = useChannelEnhance(channelActions.update, () => onClose());
 </script>
 
 <Dialog.Root open={channel !== null} onOpenChange={(open) => { if (!open) onClose(); }}>
 	<Dialog.Content>
 		{#if channel}
 			<Dialog.Header><Dialog.Title>{$content.editTitle({ name: channel.name })}</Dialog.Title></Dialog.Header>
-			<form method="POST" action="?/update" use:enhance={submitted} class="grid gap-3">
+			<form use:submitted class="grid gap-3">
 				<input type="hidden" name="id" value={channel.id} />
 				<FormField id="edit-name" name="name" label={$content.create.name.value} value={channel.name} />
 				<div class="grid gap-2">

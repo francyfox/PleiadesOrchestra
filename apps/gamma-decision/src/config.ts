@@ -1,9 +1,12 @@
+import { observabilityEnv } from "@repo/elysia-kit";
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 
 export function buildConfig(env: Record<string, string | undefined>) {
 	return createEnv({
 		server: {
+			...observabilityEnv,
+
 			NODE_ENV: z
 				.enum(["production", "test", "development"])
 				.default("development"),
@@ -25,5 +28,7 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			LAYA_THREADS: z.coerce.number().int().min(0).default(6),
 		},
 		runtimeEnv: env,
+		// `SENTRY_DSN=` in a copied .env.example means "off", not an invalid URL.
+		emptyStringAsUndefined: true,
 	});
 }

@@ -37,6 +37,8 @@ export interface AdminUser {
 	blockedBy: string | null;
 	createdAt: number;
 	lastSeenAt: number;
+	/** Client IP of the last widget request (plaintext, for admins); null if unknown. */
+	ip: string | null;
 	usage: UsageTotals;
 }
 
@@ -62,6 +64,7 @@ interface UserJoinRow {
 	displayName: string | null;
 	createdAt: number;
 	lastSeenAt: number;
+	ip: string | null;
 	whitelistedAt: number | null;
 	whitelistedBy: string | null;
 	blockedAt: number | null;
@@ -81,7 +84,7 @@ interface UserJoinRow {
 
 const USER_SELECT = `
 	u.id, u.kind, u.external_user_id AS externalUserId, u.display_name AS displayName,
-	u.created_at AS createdAt, u.last_seen_at AS lastSeenAt,
+	u.created_at AS createdAt, u.last_seen_at AS lastSeenAt, u.last_ip AS ip,
 	u.whitelisted_at AS whitelistedAt, u.whitelisted_by AS whitelistedBy,
 	u.blocked_at AS blockedAt, u.blocked_reason AS blockedReason, u.blocked_by AS blockedBy,
 	c.id AS channelId, c.slug AS channelSlug, c.name AS channelName, c.kind AS channelKind,
@@ -117,6 +120,7 @@ function toAdminUser(row: UserJoinRow): AdminUser {
 		blockedBy: row.blockedBy,
 		createdAt: row.createdAt,
 		lastSeenAt: row.lastSeenAt,
+		ip: row.ip,
 		usage: {
 			inputTokens: row.inputTokens,
 			outputTokens: row.outputTokens,

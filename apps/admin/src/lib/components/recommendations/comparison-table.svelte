@@ -1,7 +1,12 @@
 <script lang="ts">
+	import {
+		createColumnHelper,
+		createTable,
+		tableFeatures,
+	} from "@tanstack/svelte-table";
 	import { useIntlayer } from "svelte-intlayer";
+	import DataTable from "$lib/components/data-table.svelte";
 	import * as Card from "$lib/components/ui/card/index.js";
-	import * as UiTable from "$lib/components/ui/table/index.js";
 	import { useFormat } from "$lib/i18n/use-format";
 	import {
 		type ComparisonRow,
@@ -64,34 +69,44 @@
 				return "AVX2 + AVX-512 + VNNI";
 		}
 	}
+
+	const features = tableFeatures({});
+	const helper = createColumnHelper<typeof features, ComparisonRow>();
+	const table = createTable({
+		features,
+		columns: helper.columns([
+			helper.accessor("metric", {
+				header: () => $content.comparison.metric.value,
+				cell: (ctx) => $content.comparison.metrics[ctx.getValue()].value,
+			}),
+			helper.display({
+				id: "actual",
+				header: () => $content.comparison.actual.value,
+				cell: (ctx) => actual(ctx.row.original),
+			}),
+			helper.display({
+				id: "ideal",
+				header: () => $content.comparison.ideal.value,
+				cell: (ctx) => ideal(ctx.row.original),
+			}),
+			helper.accessor("percent", {
+				header: () => $content.comparison.percent.value,
+				cell: (ctx) => {
+					const value = ctx.getValue();
+					return value === null ? "—" : `${value}%`;
+				},
+			}),
+		]),
+		get data() {
+			return rows;
+		},
+		getRowId: (row) => row.metric,
+	});
 </script>
 
 <Card.Root>
 	<Card.Header><Card.Title>{$content.comparison.title.value}</Card.Title></Card.Header>
 	<Card.Content>
-		<div class="overflow-hidden rounded-md border">
-			<UiTable.Root>
-				<UiTable.Header>
-					<UiTable.Row>
-						<UiTable.Head>{$content.comparison.metric.value}</UiTable.Head>
-						<UiTable.Head>{$content.comparison.actual.value}</UiTable.Head>
-						<UiTable.Head>{$content.comparison.ideal.value}</UiTable.Head>
-						<UiTable.Head class="text-right">{$content.comparison.percent.value}</UiTable.Head>
-					</UiTable.Row>
-				</UiTable.Header>
-				<UiTable.Body>
-					{#each rows as row (row.metric)}
-						<UiTable.Row>
-							<UiTable.Cell class="font-medium">{$content.comparison.metrics[row.metric].value}</UiTable.Cell>
-							<UiTable.Cell>{actual(row)}</UiTable.Cell>
-							<UiTable.Cell class="text-muted-foreground">{ideal(row)}</UiTable.Cell>
-							<UiTable.Cell class="text-right tabular-nums">
-								{row.percent === null ? "—" : `${row.percent}%`}
-							</UiTable.Cell>
-						</UiTable.Row>
-					{/each}
-				</UiTable.Body>
-			</UiTable.Root>
-		</div>
+		<DataTable {table} />
 	</Card.Content>
 </Card.Root>

@@ -1,3 +1,4 @@
+import { createObservability, serve } from "@repo/elysia-kit";
 import { AGENT_MAX_HISTORY_MESSAGES, agent } from "./agent.ts";
 import { scheduleAnonymousCleanup } from "./db/cleanup.ts";
 import { channels, db, runs, usageRecorder } from "./db/instance.ts";
@@ -12,6 +13,20 @@ assertRetentionCoversHistory(
 	AGENT_MAX_HISTORY_MESSAGES,
 );
 
+const observability = createObservability("alpha-orchestrator", config);
+const { logger, monitoring } = observability;
+
+/** Persistence and background failures: logged and reported, never fatal to a request. */
+function report(message: string) {
+	return (error: unknown) => {
+		logger.error({
+			message,
+			"error.message": error instanceof Error ? error.message : String(error),
+		});
+		monitoring.capture(error, { source: message });
+	};
+}
+
 const app = createApp({
 	agent,
 	decisionAgent,
@@ -23,6 +38,24 @@ const app = createApp({
 	runs,
 	usageRecorder,
 	ipHashSalt: config.IP_HASH_SALT,
+	agents: {
+		specs: [
+			{
+				id: "beta-text",
+				name: "beta-text",
+				role: "text",
+				baseUrl: config.LLM_BASE_URL,
+				model: config.LLM_MODEL,
+			},
+			{
+				id: "gamma-decision",
+				name: "gamma-decision",
+				role: "decision",
+				baseUrl: config.LAYA_API_BASE_URL,
+				model: null,
+			},
+		],
+	},
 	widget: {
 		maxTextChars: config.WIDGET_MAX_TEXT_CHARS,
 		messagesPerMinute: config.WIDGET_MESSAGES_PER_MINUTE,
@@ -32,34 +65,22 @@ const app = createApp({
 		tokenTtlHours: config.ANON_RETENTION_HOURS,
 		retentionPerUser: config.MESSAGE_RETENTION_PER_USER,
 	},
-	onError: (error) => console.error("Persistence error:", error),
-}).listen(config.PORT);
+	onError: report("persistence_error"),
+	observability,
+});
 
 const stopCleanup = scheduleAnonymousCleanup(
 	db,
 	config.ANON_RETENTION_HOURS,
-	(error) => console.error("Anonymous cleanup failed:", error),
+	report("anonymous_cleanup_failed"),
 );
 
-const signals = ["SIGINT", "SIGTERM"];
-
-for (const signal of signals) {
-	process.on(signal, () => {
-		console.log(`Received ${signal}. Shutting down...`);
+serve(app, {
+	port: config.PORT,
+	observability,
+	onShutdown: () => {
 		stopCleanup();
-		app.stop();
 		usageRecorder.flush();
 		db.$client.close();
-		process.exit(0);
-	});
-}
-
-process.on("uncaughtException", (error) => {
-	console.error("Uncaught exception:", error);
+	},
 });
-
-process.on("unhandledRejection", (error) => {
-	console.error("Unhandled rejection:", error);
-});
-
-console.log(`harness listening on :${config.PORT}`);
