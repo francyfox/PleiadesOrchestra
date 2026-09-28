@@ -2,6 +2,13 @@ import { describe, expect, test } from "bun:test";
 import { SnakeGame } from "./game.ts";
 import { buildRequest, type DecideFn, decide } from "./policy.ts";
 
+/** Narrows away `undefined`/`null` in a test, failing loudly instead of a `!` assertion. */
+function defined<T>(value: T | null | undefined): T {
+	if (value === undefined || value === null)
+		throw new Error("expected a value");
+	return value;
+}
+
 function fakeLaya(
 	probabilities: Record<string, number>,
 	risk = 0.9,
@@ -57,7 +64,7 @@ describe("decide", () => {
 			seed: 1,
 			initialLength: 3,
 		});
-		const best = game.moves().find((m) => m.safe)!.direction;
+		const best = defined(game.moves().find((m) => m.safe)).direction;
 		const probabilities = {
 			UP: 0.1,
 			DOWN: 0.1,
@@ -86,8 +93,8 @@ describe("decide", () => {
 			initialLength: 3,
 		});
 		const moves = game.moves();
-		const unsafe = moves.find((m) => !m.safe)!.direction;
-		const safe = moves.find((m) => m.safe)!.direction;
+		const unsafe = defined(moves.find((m) => !m.safe)).direction;
+		const safe = defined(moves.find((m) => m.safe)).direction;
 		const probabilities = { UP: 0.05, DOWN: 0.05, LEFT: 0.05, RIGHT: 0.05 };
 		probabilities[unsafe as keyof typeof probabilities] = 0.6;
 		probabilities[safe as keyof typeof probabilities] = 0.3;

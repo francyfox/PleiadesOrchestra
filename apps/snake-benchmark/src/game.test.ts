@@ -1,6 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import { hamiltonianCycle, SnakeGame } from "./game.ts";
 
+/** Narrows away `undefined`/`null` in a test, failing loudly instead of a `!` assertion. */
+function defined<T>(value: T | null | undefined): T {
+	if (value === undefined || value === null)
+		throw new Error("expected a value");
+	return value;
+}
+
 function adjacent([ax, ay]: [number, number], [bx, by]: [number, number]) {
 	return Math.abs(ax - bx) + Math.abs(ay - by) === 1;
 }
@@ -20,7 +27,7 @@ describe("hamiltonianCycle", () => {
 			);
 			for (let i = 0; i < cycle.length; i++) {
 				const next = cycle[(i + 1) % cycle.length];
-				expect(adjacent(cycle[i]!, next!)).toBe(true);
+				expect(adjacent(defined(cycle[i]), defined(next))).toBe(true);
 			}
 		});
 	}
@@ -41,10 +48,10 @@ describe("SnakeGame", () => {
 		});
 		expect(game.alive).toBe(true);
 		expect(game.body).toHaveLength(4);
-		expect(game.food).not.toBeNull();
-		expect(
-			game.body.some(([x, y]) => x === game.food![0] && y === game.food![1]),
-		).toBe(false);
+		const food = defined(game.food);
+		expect(game.body.some(([x, y]) => x === food[0] && y === food[1])).toBe(
+			false,
+		);
 	});
 
 	test("going straight until the edge kills the snake by the wall", () => {
@@ -56,9 +63,9 @@ describe("SnakeGame", () => {
 		});
 		// Any direction except reversing into the neck: with length 2 the cells
 		// ahead are always empty, so the only possible death is the wall.
-		const direction = game
-			.moves()
-			.find((m) => m.reason !== "reverse")!.direction;
+		const direction = defined(
+			game.moves().find((m) => m.reason !== "reverse"),
+		).direction;
 		while (game.alive) game.step(direction);
 		expect(game.deathReason).toBe("wall");
 	});
@@ -90,7 +97,7 @@ describe("SnakeGame", () => {
 				expect(safe.length).toBeGreaterThan(0);
 				// Deterministic but arbitrary choice among the admissible moves.
 				pick = (pick * 1103515245 + 12345) % 2147483648;
-				game.step(safe[pick % safe.length]!.direction);
+				game.step(defined(safe[pick % safe.length]).direction);
 				expect(game.cycleOrderValid()).toBe(true);
 			}
 			expect(game.won).toBe(true);
