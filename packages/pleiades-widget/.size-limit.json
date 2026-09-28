@@ -1,0 +1,8 @@
+[
+	{
+		"name": "pleiades-chat (brotli)",
+		"path": "dist/pleiades-widget.js",
+		"brotli": true,
+		"limit": "10 kB"
+	}
+]

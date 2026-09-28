@@ -1,8 +1,10 @@
 import { redirect } from "@sveltejs/kit";
 import { createApi } from "$lib/api/client";
-import { loaded } from "$lib/api/result";
+import { throwAsPage, unwrap } from "$lib/api/result";
 import { resolveAuthRedirect } from "$lib/auth-redirect";
 import { resolveBrowserLocale } from "$lib/i18n/browser-locale";
+import { queryClient } from "$lib/query/client";
+import { queries } from "$lib/query/queries";
 import type { LayoutLoad } from "./$types";
 
 /**
@@ -14,7 +16,16 @@ export const ssr = false;
 export const prerender = false;
 
 export const load: LayoutLoad = async ({ fetch, url }) => {
-	const session = await loaded(createApi(fetch).session.get());
+	// Never from the cache: every navigation re-checks who is signed in.
+	const session = await queryClient
+		.fetchQuery({
+			...queries.session(),
+			// SvelteKit's own `fetch`: the one `load` is meant to use (a bare `window.fetch` here warns in dev).
+			queryFn: () => unwrap(createApi(fetch).session.get()),
+			staleTime: 0,
+			retry: false,
+		})
+		.catch(throwAsPage);
 
 	const target = resolveAuthRedirect({
 		pathname: url.pathname,

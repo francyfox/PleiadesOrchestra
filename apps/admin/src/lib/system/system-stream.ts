@@ -10,6 +10,8 @@ export interface SystemStreamOptions<T> {
 	url: string;
 	connect: (url: string) => StreamSocket;
 	onSnapshot: (snapshot: T) => void;
+	/** `true` when the socket opens or is stopped on purpose, `false` when it drops unasked. */
+	onStatus?: (up: boolean) => void;
 	/** Delays before successive reconnects; the last one repeats. */
 	backoffMs?: readonly number[];
 	setTimer?: (fn: () => void, ms: number) => unknown;
@@ -46,7 +48,9 @@ export function createSystemStream<T>(options: SystemStreamOptions<T>) {
 		const current = options.connect(options.url);
 		socket = current;
 		current.onopen = () => {
-			if (socket === current) attempt = 0;
+			if (socket !== current) return;
+			attempt = 0;
+			options.onStatus?.(true);
 		};
 		current.onmessage = (event) => {
 			if (socket !== current) return;
@@ -60,6 +64,7 @@ export function createSystemStream<T>(options: SystemStreamOptions<T>) {
 			if (socket !== current) return;
 			socket = null;
 			if (!running) return;
+			options.onStatus?.(false);
 			const delay = backoff[Math.min(attempt, backoff.length - 1)] ?? 1000;
 			attempt += 1;
 			timer = setTimer(() => {
@@ -85,6 +90,7 @@ export function createSystemStream<T>(options: SystemStreamOptions<T>) {
 			const current = socket;
 			socket = null;
 			current?.close();
+			options.onStatus?.(true);
 		},
 	};
 }

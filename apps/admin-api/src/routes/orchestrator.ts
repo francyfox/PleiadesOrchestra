@@ -1,5 +1,6 @@
 import { Elysia, t } from "elysia";
 import type { RouteDeps } from "../app.ts";
+import { fetchDashboard, fetchPerformance } from "../live/fetchers.ts";
 import { orchestratorErrors, requireAdmin } from "../plugins.ts";
 import { ApiError } from "../schemas/errors.ts";
 import {
@@ -23,7 +24,6 @@ import {
 	UsersQuery,
 } from "../schemas/orchestrator.ts";
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 const SLUG = /^[a-z0-9-]+$/;
 
 const Params = t.Object({ id: t.String() });
@@ -47,66 +47,33 @@ const Dashboard = t.Object({
 	byChannel: t.Array(UsageRow),
 });
 
-const byTokens = (
-	a: { inputTokens: number; outputTokens: number },
-	b: typeof a,
-) => b.inputTokens + b.outputTokens - (a.inputTokens + a.outputTokens);
-
 /**
  * The orchestrator's `/v1/admin/*` API, exposed to the panel behind an admin
  * session. Reads use the shared admin key; every mutation also carries the
  * signed-in admin's id (`X-Admin-Id`) for the audit fields.
  */
-export function orchestratorRoutes({ auth, orchestrator, now }: RouteDeps) {
+export function orchestratorRoutes({ auth, orchestrator, now, db }: RouteDeps) {
+	const ctx = { orchestrator, db, now };
 	return new Elysia({ name: "admin-api.orchestrator", tags: ["orchestrator"] })
 		.use(orchestratorErrors)
 		.use(requireAdmin(auth))
 		.guard({ admin: true }, (app) =>
 			app
-				.get(
-					"/dashboard",
-					async () => {
-						const from = now() - 30 * DAY_MS;
-						const [stats, byDay, byUser, byChannel] = await Promise.all([
-							orchestrator.stats(),
-							orchestrator.usage({ groupBy: "day", from }),
-							orchestrator.usage({ groupBy: "user", from }),
-							orchestrator.usage({ groupBy: "channel", from }),
-						]);
-						return {
-							stats,
-							byDay: byDay.rows.map((row) => ({
-								day: row.label,
-								inputTokens: row.inputTokens,
-								outputTokens: row.outputTokens,
-							})),
-							topUsers: [...byUser.rows].sort(byTokens).slice(0, 10),
-							byChannel: [...byChannel.rows].sort(byTokens),
-						};
+				.get("/dashboard", () => fetchDashboard(ctx), {
+					response: { 200: Dashboard, ...Upstream },
+					detail: {
+						summary: "Dashboard numbers",
+						description:
+							"Stats plus 30 days of usage by day, top-10 users and channels.",
 					},
-					{
-						response: { 200: Dashboard, ...Upstream },
-						detail: {
-							summary: "Dashboard numbers",
-							description:
-								"Stats plus 30 days of usage by day, top-10 users and channels.",
-						},
+				})
+				.get("/performance", ({ query }) => fetchPerformance(ctx, query), {
+					query: t.Object({ from: t.Optional(t.Numeric()) }),
+					response: { 200: PerformanceReport, ...Upstream },
+					detail: {
+						summary: "Model-call latency percentiles (default: last 30 days)",
 					},
-				)
-				.get(
-					"/performance",
-					({ query }) =>
-						orchestrator.performance({
-							from: query.from ?? now() - 30 * DAY_MS,
-						}),
-					{
-						query: t.Object({ from: t.Optional(t.Numeric()) }),
-						response: { 200: PerformanceReport, ...Upstream },
-						detail: {
-							summary: "Model-call latency percentiles (default: last 30 days)",
-						},
-					},
-				)
+				})
 				.get("/runs/:id", ({ params }) => orchestrator.getRun(params.id), {
 					params: Params,
 					response: { 200: RunDetails, ...Upstream },

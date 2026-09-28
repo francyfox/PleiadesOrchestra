@@ -2,6 +2,7 @@
 	import ActivityIcon from "@lucide/svelte/icons/activity";
 	import BanIcon from "@lucide/svelte/icons/ban";
 	import BotIcon from "@lucide/svelte/icons/bot";
+	import CircleQuestionMarkIcon from "@lucide/svelte/icons/circle-question-mark";
 	import GaugeIcon from "@lucide/svelte/icons/gauge";
 	import GlobeIcon from "@lucide/svelte/icons/globe";
 	import LightbulbIcon from "@lucide/svelte/icons/lightbulb";
@@ -28,6 +29,7 @@
 		{ href: "/channels", key: "channels", icon: GlobeIcon },
 		{ href: "/blocked-ips", key: "blockedIps", icon: BanIcon },
 		{ href: "/admins", key: "admins", icon: ShieldIcon },
+		{ href: "/faq", key: "faq", icon: CircleQuestionMarkIcon },
 	] as const;
 
 	/** A full page load, not `goto`: drops every in-memory trace of the session. */

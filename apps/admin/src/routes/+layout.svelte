@@ -1,9 +1,11 @@
 <script lang="ts">
 	import "./layout.css";
+	import { QueryClientProvider } from "@tanstack/svelte-query";
 	import { ModeWatcher } from "mode-watcher";
 	import { setupIntlayer, useIntlayer } from "svelte-intlayer";
 	import favicon from "$lib/assets/favicon.svg";
 	import { Toaster } from "$lib/components/ui/sonner/index.js";
+	import { queryClient } from "$lib/query/client";
 
 	let { data, children } = $props();
 
@@ -28,4 +30,13 @@
 
 <ModeWatcher />
 <Toaster richColors />
-{@render children()}
+<QueryClientProvider client={queryClient}>
+	{@render children()}
+</QueryClientProvider>
+
+<!-- Dev only, and imported on demand so a production build doesn't contain it. -->
+{#if import.meta.env.DEV}
+	{#await import("@tanstack/svelte-query-devtools") then { SvelteQueryDevtools }}
+		<SvelteQueryDevtools client={queryClient} buttonPosition="bottom-left" />
+	{/await}
+{/if}

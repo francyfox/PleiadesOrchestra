@@ -1,0 +1,222 @@
+:host {
+	all: initial;
+}
+
+.w {
+	--a: var(--pleiades-accent, #f0663f);
+	--b: var(--pleiades-bg, #fff);
+	--f: var(--pleiades-fg, #1c1917);
+	font:
+		14px / 1.45 system-ui,
+		sans-serif;
+	color: var(--f);
+	color-scheme: light;
+
+	button,
+	textarea {
+		font: inherit;
+		color: inherit;
+
+		&:focus-visible {
+			outline: 2px solid var(--f);
+			outline-offset: 2px;
+		}
+	}
+
+	/* Launcher: the corner comes from data-pos, e.g. "bottom-left". */
+	.fab {
+		position: fixed;
+		z-index: 2147483000;
+		display: grid;
+		place-items: center;
+		width: 52px;
+		height: 52px;
+		border: 0;
+		border-radius: 50%;
+		background: var(--a);
+		color: #fff;
+		cursor: pointer;
+		box-shadow: 0 4px 14px #0004;
+	}
+
+	&[data-pos^="bottom"] .fab {
+		bottom: 16px;
+	}
+
+	&[data-pos^="top"] .fab {
+		top: 16px;
+	}
+
+	&[data-pos$="left"] .fab {
+		left: 16px;
+	}
+
+	&[data-pos$="right"] .fab {
+		right: 16px;
+	}
+
+	/* Side panel: slides in from the launcher's side. */
+	.p {
+		position: fixed;
+		z-index: 2147483000;
+		top: 0;
+		bottom: 0;
+		display: flex;
+		flex-direction: column;
+		width: min(380px, 100vw);
+		background: var(--b);
+		box-shadow: 0 0 24px #0003;
+		visibility: hidden;
+		/* Hidden only after the slide-out ends, so a closed panel can't take focus. */
+		transition:
+			transform 0.2s,
+			visibility 0s 0.2s;
+	}
+
+	&[data-pos$="left"] .p {
+		left: 0;
+		transform: translateX(-100%);
+	}
+
+	&[data-pos$="right"] .p {
+		right: 0;
+		transform: translateX(100%);
+	}
+
+	/* The panel takes the launcher's place while open; its own × closes it. */
+	&.o .fab {
+		display: none;
+	}
+
+	/* After the position rules on purpose: same specificity, the later one wins. */
+	.p.o {
+		transform: none;
+		visibility: visible;
+		/* Visible at once when opening, so it can be focused right away. */
+		transition:
+			transform 0.2s,
+			visibility 0s;
+	}
+
+	header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 12px 16px;
+		background: var(--a);
+		color: #fff;
+	}
+
+	.x {
+		border: 0;
+		background: none;
+		font-size: 24px;
+		line-height: 1;
+		cursor: pointer;
+	}
+
+	.log {
+		display: flex;
+		flex: 1;
+		flex-direction: column;
+		gap: 8px;
+		padding: 12px;
+		overflow-y: auto;
+	}
+
+	.m {
+		max-width: 85%;
+		margin: 0;
+		padding: 8px 12px;
+		border-radius: 14px;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+	}
+
+	.a {
+		align-self: flex-start;
+		background: #f1efee;
+	}
+
+	.u {
+		align-self: flex-end;
+		background: var(--a);
+		color: #fff;
+	}
+
+	/* An assistant bubble with no text yet: the "typing…" indicator. */
+	.t::before {
+		content: "…";
+		animation: blink 1s infinite;
+	}
+
+	.e {
+		margin: 0;
+		padding: 6px 16px;
+		background: #fef2f2;
+		color: #b91c1c;
+	}
+
+	form {
+		display: flex;
+		gap: 8px;
+		padding: 8px 12px;
+		border-top: 1px solid #0002;
+
+		button {
+			padding: 0 14px;
+			border: 0;
+			border-radius: 8px;
+			background: var(--a);
+			color: #fff;
+			cursor: pointer;
+
+			&:disabled {
+				opacity: 0.5;
+				cursor: default;
+			}
+		}
+	}
+
+	textarea {
+		flex: 1;
+		max-height: 96px;
+		padding: 8px;
+		border: 1px solid #0003;
+		border-radius: 8px;
+		background: var(--b);
+		resize: none;
+	}
+
+	footer {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		padding: 6px 12px;
+		font-size: 11px;
+		opacity: 0.65;
+	}
+}
+
+@keyframes blink {
+	50% {
+		opacity: 0.2;
+	}
+}
+
+@media (max-width: 480px) {
+	.w .p {
+		width: 100vw;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.w .p {
+		transition: none;
+	}
+
+	.w .t::before {
+		animation: none;
+	}
+}

@@ -29,6 +29,7 @@ const appSidebarContent = {
 				kk: "IP бұғаттаулары",
 			}),
 			admins: t({ ru: "Администраторы", en: "Admins", kk: "Әкімшілер" }),
+			faq: t({ ru: "FAQ", en: "FAQ", kk: "FAQ" }),
 		},
 		logout: t({ ru: "Выйти", en: "Log out", kk: "Шығу" }),
 	},

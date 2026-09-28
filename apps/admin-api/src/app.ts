@@ -6,8 +6,12 @@ import {
 import { Elysia } from "elysia";
 import type { Auth } from "./auth.ts";
 import type { AdminDb } from "./db/index.ts";
+import { createLiveHub, type LiveHub } from "./live/hub.ts";
+import type { LiveTopic } from "./live/protocol.ts";
+import { createLiveTopics } from "./live/topics.ts";
 import type { OrchestratorClient } from "./orchestrator/client.ts";
 import { adminsRoutes } from "./routes/admins.ts";
+import { liveRoutes } from "./routes/live.ts";
 import { orchestratorRoutes } from "./routes/orchestrator.ts";
 import { sessionRoutes } from "./routes/session.ts";
 import { systemRoutes } from "./routes/system.ts";
@@ -25,6 +29,8 @@ export interface AdminApiDeps {
 	systemSnapshot: () => Promise<SystemSnapshot>;
 	/** Push interval of `/api/system/stream` (default 5000). */
 	systemStreamIntervalMs?: number;
+	/** Overrides of how often `/api/live` re-reads a topic (defaults in live/topics.ts); for tests. */
+	liveIntervalsMs?: Partial<Record<LiveTopic, number>>;
 	now?: () => number;
 }
 
@@ -32,6 +38,7 @@ export interface AdminApiDeps {
 export type RouteDeps = AdminApiDeps & {
 	now: () => number;
 	systemFeed: SystemFeed;
+	liveHub: LiveHub;
 };
 
 /**
@@ -40,11 +47,18 @@ export type RouteDeps = AdminApiDeps & {
  * orchestrator. Everything is under `/api`; Swagger UI is at `/api/docs`.
  */
 export function createApp(input: AdminApiDeps) {
+	const now = input.now ?? Date.now;
 	const deps: RouteDeps = {
-		now: Date.now,
+		now,
 		systemFeed: createSystemFeed({
 			snapshot: input.systemSnapshot,
 			intervalMs: input.systemStreamIntervalMs ?? 5000,
+		}),
+		liveHub: createLiveHub({
+			topics: createLiveTopics(
+				{ orchestrator: input.orchestrator, db: input.db, now },
+				input.liveIntervalsMs,
+			),
 		}),
 		...input,
 	};
@@ -70,7 +84,8 @@ export function createApp(input: AdminApiDeps) {
 				.use(sessionRoutes(deps))
 				.use(adminsRoutes(deps))
 				.use(orchestratorRoutes(deps))
-				.use(systemRoutes(deps)),
+				.use(systemRoutes(deps))
+				.use(liveRoutes(deps)),
 		);
 }
 

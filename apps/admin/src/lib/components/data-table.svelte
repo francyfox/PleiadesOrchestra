@@ -31,6 +31,7 @@
 		rowClass,
 		pageSize = DEFAULT_PAGE_SIZE,
 		server,
+		wrap = false,
 	}: {
 		table: Table<TFeatures, TData>;
 		/** Defaults to the common "No data". */
@@ -38,6 +39,8 @@
 		rowClass?: (row: TData) => string;
 		pageSize?: number;
 		server?: ServerPagination;
+		/** Let long cells wrap onto several lines instead of being cut with an ellipsis (reference tables). */
+		wrap?: boolean;
 	} = $props();
 
 	const common = useIntlayer("common");
@@ -73,7 +76,7 @@
 			{#each rows as row (row.id)}
 				<UiTable.Row class={rowClass?.(row.original)}>
 					{#each row.getAllCells() as cell (cell.id)}
-						<UiTable.Cell class="max-w-lg truncate"><FlexRender {cell} /></UiTable.Cell>
+						<UiTable.Cell class={wrap ? "align-top whitespace-normal" : "max-w-lg truncate"}><FlexRender {cell} /></UiTable.Cell>
 					{/each}
 				</UiTable.Row>
 			{:else}

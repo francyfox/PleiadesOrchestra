@@ -1,10 +1,15 @@
 <script lang="ts">
+	import { createQuery } from "@tanstack/svelte-query";
 	import { useIntlayer } from "svelte-intlayer";
 	import AuditList from "$lib/components/recommendations/audit-list.svelte";
 	import ComparisonTable from "$lib/components/recommendations/comparison-table.svelte";
 	import ScoreOverview from "$lib/components/recommendations/score-overview.svelte";
+	import { prefetched } from "$lib/query/prefetch";
+	import { queries } from "$lib/query/queries";
+	import { auditMachine } from "$lib/system/audit";
 
-	let { data } = $props();
+	const system = createQuery(() => queries.system());
+	const report = $derived(auditMachine(prefetched(system)));
 
 	const content = useIntlayer("recommendations");
 </script>
@@ -14,6 +19,6 @@
 	<p class="text-sm text-muted-foreground">{$content.subtitle.value}</p>
 </div>
 
-<ScoreOverview report={data.report} />
-<ComparisonTable rows={data.report.comparison} />
-<AuditList report={data.report} />
+<ScoreOverview report={report} />
+<ComparisonTable rows={report.comparison} />
+<AuditList {report} />

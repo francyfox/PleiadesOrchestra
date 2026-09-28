@@ -1,5 +1,4 @@
 import { APIError } from "better-auth/api";
-import { asc, count } from "drizzle-orm";
 import { Elysia, t } from "elysia";
 import {
 	banRefusal,
@@ -8,12 +7,8 @@ import {
 	passwordRefusal,
 } from "../admin-policy.ts";
 import type { RouteDeps } from "../app.ts";
-import {
-	countActiveAdmins,
-	findAdmin,
-	schema,
-	superAdminId,
-} from "../db/index.ts";
+import { countActiveAdmins, findAdmin, superAdminId } from "../db/index.ts";
+import { fetchAdminsPage } from "../live/fetchers.ts";
 import { requireAdmin } from "../plugins.ts";
 import {
 	AdminsPage,
@@ -32,7 +27,7 @@ const refusalStatus = (code: string) =>
 	code === "not_super" || code === "super_protected" ? 403 : 400;
 
 /** Admin accounts (better-auth's admin plugin). Every route needs an admin session. */
-export function adminsRoutes({ auth, db }: RouteDeps) {
+export function adminsRoutes({ auth, db, orchestrator, now }: RouteDeps) {
 	/** better-auth failures keep their own message; 5xx collapse to 500. */
 	const fromAuthError = (cause: unknown) => {
 		if (cause instanceof APIError) {
@@ -58,33 +53,7 @@ export function adminsRoutes({ auth, db }: RouteDeps) {
 			app
 				.get(
 					"/",
-					async ({ query }) => {
-						const superId = await superAdminId(db);
-						const ordered = db
-							.select()
-							.from(schema.user)
-							.orderBy(asc(schema.user.createdAt), asc(schema.user.id));
-						const rows = query.pageSize
-							? await ordered
-									.limit(query.pageSize)
-									.offset(((query.page ?? 1) - 1) * query.pageSize)
-							: await ordered;
-						const [totalRow] = await db
-							.select({ value: count() })
-							.from(schema.user);
-						return {
-							admins: rows.map((user) => ({
-								id: user.id,
-								name: user.name,
-								email: user.email,
-								banned: user.banned === true,
-								banReason: user.banReason ?? null,
-								createdAt: user.createdAt.getTime(),
-								isSuper: user.id === superId,
-							})),
-							total: totalRow?.value ?? 0,
-						};
-					},
+					({ query }) => fetchAdminsPage({ orchestrator, db, now }, query),
 					{
 						query: AdminsQuery,
 						response: AdminsPage,

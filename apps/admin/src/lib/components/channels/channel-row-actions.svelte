@@ -1,4 +1,5 @@
 <script lang="ts">
+	import CodeXmlIcon from "@lucide/svelte/icons/code-xml";
 	import PencilIcon from "@lucide/svelte/icons/pencil";
 	import PowerIcon from "@lucide/svelte/icons/power";
 	import PowerOffIcon from "@lucide/svelte/icons/power-off";
@@ -8,6 +9,7 @@
 	import type { Channel } from "$lib/api-types";
 	import ConfirmDialog from "$lib/components/confirm-dialog.svelte";
 	import IconButton from "$lib/components/icon-button.svelte";
+	import EmbedDialog from "./embed-dialog.svelte";
 	import { useChannelEnhance } from "./use-channel-enhance";
 
 	/** Edit / enable-disable / rotate keys. There is deliberately no delete: a channel is only ever disabled. */
@@ -19,6 +21,7 @@
 	const content = useIntlayer("channels");
 	const toggle = useChannelEnhance(channelActions.toggle);
 
+	let embedOpen = $state(false);
 	let rotateOpen = $state(false);
 	const rotate = useChannelEnhance(
 		channelActions.rotate,
@@ -27,6 +30,10 @@
 </script>
 
 <div class="flex justify-end gap-1">
+	{#if channel.kind === "web" && channel.publishableKey}
+		<IconButton icon={CodeXmlIcon} tone="primary" label={$content.embed.action.value} onclick={() => (embedOpen = true)} />
+		<EmbedDialog {channel} bind:open={embedOpen} />
+	{/if}
 	<IconButton icon={PencilIcon} tone="primary" label={$content.edit.value} onclick={() => onEdit(channel)} />
 	<form use:toggle>
 		<input type="hidden" name="id" value={channel.id} />

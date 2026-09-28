@@ -1,0 +1,64 @@
+import type { ChatState } from "../lib/chat";
+import type { Strings } from "../lib/i18n";
+import { Composer } from "./composer";
+import { Footer } from "./footer";
+import { Header } from "./header";
+import { h } from "./jsx";
+import { MessageList } from "./message-list";
+
+export interface PanelOptions {
+	s: Strings;
+	heading: string;
+	greeting: string;
+	placeholder: string;
+	maxChars: number;
+	onClose: () => void;
+	onSend: (text: string) => void;
+}
+
+/** The side panel: header, conversation, error line, message box, branding footer. */
+export function Panel({
+	s,
+	heading,
+	greeting,
+	placeholder,
+	maxChars,
+	onClose,
+	onSend,
+}: PanelOptions) {
+	const list = MessageList({ greeting });
+	const composer = Composer({ s, placeholder, maxChars, onSend });
+	const error = (<p class="e" role="alert" hidden />) as HTMLParagraphElement;
+	const el = (
+		<div
+			class="p"
+			id="p"
+			role="dialog"
+			aria-label={heading}
+			inert
+			onKeyDown={(event: KeyboardEvent) => event.key === "Escape" && onClose()}
+		>
+			<Header heading={heading} closeLabel={s.close} onClose={onClose} />
+			{list.el}
+			{error}
+			{composer.el}
+			<Footer />
+		</div>
+	) as HTMLDivElement;
+
+	return {
+		el,
+		focus: composer.focus,
+		setOpen(open: boolean) {
+			el.classList.toggle("o", open);
+			el.inert = !open;
+			if (open) composer.focus();
+		},
+		render(state: ChatState) {
+			list.render(state.messages);
+			composer.render(state);
+			error.hidden = !state.error;
+			error.textContent = state.error ? s[state.error] : "";
+		},
+	};
+}

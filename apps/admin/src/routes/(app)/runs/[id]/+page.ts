@@ -1,7 +1,8 @@
-import { createApi } from "$lib/api/client";
-import { loaded } from "$lib/api/result";
+import { prefetch } from "$lib/query/prefetch";
+import { queries } from "$lib/query/queries";
 import type { PageLoad } from "./$types";
 
-export const load: PageLoad = async ({ fetch, params }) => ({
-	details: await loaded(createApi(fetch).runs({ id: params.id }).get()),
-});
+export const load: PageLoad = async ({ params }) => {
+	await prefetch(queries.run(params.id));
+	return { id: params.id };
+};

@@ -3,6 +3,16 @@
  * from this package (type-only). Everything is derived from the TypeBox
  * schemas the routes validate with, so panel and API can't drift apart.
  */
+
+export type {
+	DashboardData,
+	LiveClientMessage,
+	LiveErrorCode,
+	LiveServerMessage,
+	LiveTopic,
+	LiveTopics,
+	PageParams,
+} from "./live/protocol.ts";
 export type {
 	AdminAccount,
 	AdminSelf,

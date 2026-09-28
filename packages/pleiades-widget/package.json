@@ -1,12 +1,42 @@
 {
-  "name": "pleiades-widget",
-  "module": "src/index.ts",
-  "type": "module",
-  "private": true,
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^7"
-  }
+	"name": "pleiades-widget",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "Chat widget for PleiadesOrchestra: a framework-agnostic <pleiades-chat> web component in vanilla TSX, under 10 kB.",
+	"main": "dist/pleiades-widget.js",
+	"module": "dist/pleiades-widget.js",
+	"exports": {
+		".": {
+			"types": "./types/index.d.ts",
+			"default": "./dist/pleiades-widget.js"
+		},
+		"./react": {
+			"types": "./types/react.d.ts"
+		}
+	},
+	"files": [
+		"dist",
+		"types"
+	],
+	"scripts": {
+		"dev": "vite --port 5199",
+		"build": "vite build && size-limit",
+		"test": "bun test src",
+		"check-types": "tsc --noEmit && tsc --noEmit -p types-test",
+		"lint": "biome check .",
+		"size": "size-limit"
+	},
+	"devDependencies": {
+		"@size-limit/file": "^14.1.0",
+		"@types/bun": "catalog:",
+		"@types/react": "^19",
+		"cssnano": "^9.1.0",
+		"postcss": "^8.5.28",
+		"postcss-nested": "^8.0.1",
+		"size-limit": "^14.1.0",
+		"typescript": "catalog:",
+		"vite": "^8.0.16"
+	},
+	"types": "types/index.d.ts"
 }

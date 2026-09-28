@@ -1,0 +1,54 @@
+/** Where the launcher button sits; the panel slides in from the same side. */
+export type PleiadesPosition =
+	| "bottom-left"
+	| "bottom-right"
+	| "top-left"
+	| "top-right";
+
+export type PleiadesLang = "en" | "ru" | "kk";
+
+/** The attributes of `<pleiades-chat>`. Everything is configured through attributes. */
+export interface PleiadesChatAttributes {
+	/** Base URL of the Pleiades orchestrator. `https` only (plain `http` is accepted for localhost). */
+	"agent-url": string;
+	/** The channel's PUBLIC key (`pk_…`). Never the secret key (`sk_…`): the widget refuses to start with it. */
+	"publishable-key": string;
+	/** Default `"bottom-left"`. */
+	position?: PleiadesPosition;
+	/** Panel title. */
+	heading?: string;
+	/** First bubble of the conversation. */
+	greeting?: string;
+	/** Hint in the message box. */
+	placeholder?: string;
+	/** Default: the page's language, else the browser's; anything unsupported is English. */
+	lang?: PleiadesLang;
+	/** Boolean attribute: the panel starts open. */
+	open?: boolean;
+}
+
+/** The element itself: the attributes above as properties, plus a small API. */
+export interface PleiadesChatElement extends HTMLElement {
+	agentUrl: string;
+	publishableKey: string;
+	position: string;
+	heading: string;
+	greeting: string;
+	placeholder: string;
+	lang: string;
+	/** Reflects the `open` attribute. */
+	open: boolean;
+	toggle(): void;
+	/**
+	 * The visitor token of this browser, creating the session if needed — for the
+	 * site's server-side `POST /v1/channels/:slug/identify` call. Resolves to
+	 * `undefined` while the element is not configured.
+	 */
+	getVisitorToken(): Promise<string | undefined>;
+}
+
+declare global {
+	interface HTMLElementTagNameMap {
+		"pleiades-chat": PleiadesChatElement;
+	}
+}

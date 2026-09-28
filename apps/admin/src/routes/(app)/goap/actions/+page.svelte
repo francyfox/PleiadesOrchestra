@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { createQuery } from "@tanstack/svelte-query";
 	import {
 		createColumnHelper,
 		createTable,
@@ -10,11 +11,14 @@
 	import FlowGraph from "$lib/components/goap/flow-graph.svelte";
 	import * as Card from "$lib/components/ui/card/index.js";
 	import { catalogToGraph, formatGoal } from "$lib/goap-graph";
+	import { prefetched } from "$lib/query/prefetch";
+	import { queries } from "$lib/query/queries";
 
-	let { data } = $props();
+	const catalog = createQuery(() => queries.goapActions());
+	const actions = $derived(prefetched(catalog).actions);
 
 	const content = useIntlayer("goap");
-	const graph = $derived(catalogToGraph(data.actions));
+	const graph = $derived(catalogToGraph(actions));
 
 	const features = tableFeatures({});
 	const helper = createColumnHelper<typeof features, GoapActionInfo>();
@@ -34,7 +38,7 @@
 			}),
 		]),
 		get data() {
-			return data.actions;
+			return actions;
 		},
 	});
 </script>

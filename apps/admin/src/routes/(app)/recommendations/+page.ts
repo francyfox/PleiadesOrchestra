@@ -1,7 +1,8 @@
-import { auditMachine } from "$lib/system/audit";
+import { prefetch } from "$lib/query/prefetch";
+import { queries } from "$lib/query/queries";
 import type { PageLoad } from "./$types";
 
-/** Scores the snapshot the layout just loaded — a second probe would measure CPU load over a few milliseconds. */
-export const load: PageLoad = async ({ parent }) => ({
-	report: auditMachine((await parent()).system),
-});
+/** The audit scores the host snapshot the layout already fetched — a second probe would measure CPU load over a few milliseconds. */
+export const load: PageLoad = async () => {
+	await prefetch(queries.system());
+};

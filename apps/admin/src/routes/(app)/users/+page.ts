@@ -1,14 +1,14 @@
-import { createApi } from "$lib/api/client";
-import { loaded } from "$lib/api/result";
+import { prefetch } from "$lib/query/prefetch";
+import { liveQueries, queries } from "$lib/query/queries";
 import { parseUsersState, toUsersQuery } from "$lib/users-table-state";
 import type { PageLoad } from "./$types";
 
-export const load: PageLoad = async ({ fetch, url }) => {
+export const load: PageLoad = async ({ url }) => {
 	const state = parseUsersState(url.searchParams);
-	const api = createApi(fetch);
-	const [page, channels] = await Promise.all([
-		loaded(api.users.get({ query: toUsersQuery(state) })),
-		loaded(api.channels.get()),
+	await Promise.all([
+		prefetch(liveQueries.users(toUsersQuery(state))),
+		// Every channel, unpaged — they fill the filter's select.
+		prefetch(queries.allChannels()),
 	]);
-	return { state, page, channels: channels.items };
+	return { state };
 };

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { createQuery } from "@tanstack/svelte-query";
 	import {
 		createColumnHelper,
 		createTable,
@@ -26,13 +27,21 @@
 	import UsersPagination from "$lib/components/users/users-pagination.svelte";
 	import { useFormat } from "$lib/i18n/use-format";
 	import { whoisUrl } from "$lib/ip";
+	import { useLiveQuery } from "$lib/live/use-live-query.svelte";
+	import { prefetched } from "$lib/query/prefetch";
+	import { queries } from "$lib/query/queries";
 	import {
 		sortingFromState,
+		toUsersQuery,
 		usersStateToSearch,
 		withSorting,
 	} from "$lib/users-table-state";
 
 	let { data } = $props();
+
+	const live = useLiveQuery("users", () => toUsersQuery(data.state));
+	const channelList = createQuery(() => queries.allChannels());
+	const channels = $derived(prefetched(channelList).items);
 
 	const content = useIntlayer("users");
 	const actions = useIntlayer("user-actions");
@@ -118,7 +127,7 @@
 		features,
 		columns,
 		get data() {
-			return data.page.items;
+			return live.current.items;
 		},
 		getRowId: (user) => user.id,
 		manualSorting: true,
@@ -143,6 +152,18 @@
 			});
 		},
 		onRowSelectionChange: setRowSelection,
+	});
+
+	// A live refresh can drop rows (filtered out, deleted, another page): forget their selection.
+	$effect(() => {
+		const present = new Set(live.current.items.map((user) => user.id));
+		const selected = rowSelection();
+		const kept = Object.fromEntries(
+			Object.entries(selected).filter(([id]) => present.has(id)),
+		);
+		if (Object.keys(kept).length !== Object.keys(selected).length) {
+			setRowSelection(kept);
+		}
 	});
 
 	const selectedIds = $derived(
@@ -177,7 +198,7 @@
 
 <h1 class="text-2xl font-semibold">{$content.title.value}</h1>
 
-<UsersFilters state={data.state} channels={data.channels} />
+<UsersFilters state={data.state} {channels} />
 
 {#if selectedIds.length > 0}
 	<BulkActionsBar ids={selectedIds} onDone={() => setRowSelection({})} />
@@ -185,4 +206,4 @@
 
 <DataTable {table} emptyText={$content.empty.value} pageSize={data.state.limit} />
 
-<UsersPagination state={data.state} page={data.page} />
+<UsersPagination state={data.state} page={live.current} />

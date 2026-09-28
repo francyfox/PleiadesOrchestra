@@ -1,9 +1,10 @@
+import { createMutation } from "@tanstack/svelte-query";
 import type { Action } from "svelte/action";
 import { get } from "svelte/store";
 import { useIntlayer } from "svelte-intlayer";
 import { toast } from "svelte-sonner";
-import { invalidateAll } from "$app/navigation";
 import type { ActionResult } from "$lib/api/result";
+import { queryClient } from "$lib/query/client";
 
 export interface ActionEnhanceOptions {
 	/** Sends the form to admin-api (see `$lib/actions`). */
@@ -26,49 +27,46 @@ export interface ActionEnhanceOptions {
 /**
  * Turns a `<form>` into a call to admin-api (`use:submit`): a toast for
  * success, or the failure's localized error (`errorText(code)`) / the
- * upstream message, then `onSettled` (e.g. close a dialog) and a reload of
- * the page's data. The submit button's own `name`/`value` are part of the
+ * upstream message, then `onSettled` (e.g. close a dialog) and a refresh of
+ * the data on screen (the request is a TanStack mutation; every cached query
+ * is invalidated, the ones in view refetch). The submit button's own `name`/`value` are part of the
  * form data, so several buttons can share one form. Call during component init.
  */
 export function useActionEnhance(
 	options: ActionEnhanceOptions,
 ): Action<HTMLFormElement> {
 	const common = useIntlayer("common");
+	const mutation = createMutation(() => ({
+		mutationFn: options.run,
+	}));
 
 	return (form) => {
-		let pending = false;
-
 		async function onSubmit(event: SubmitEvent) {
 			event.preventDefault();
-			if (pending) return;
-			pending = true;
-			try {
-				const result = await options.run(new FormData(form, event.submitter));
-				const c = get(common);
-				const data = result.data;
-				if (!result.ok) {
-					const localized =
-						typeof data.error === "string"
-							? options.errorText?.(data.error, data)
-							: undefined;
-					toast.error(
-						localized ??
-							(typeof data.message === "string"
-								? data.message
-								: c.failed.value),
-					);
-				} else {
-					options.onSuccess?.(data);
-					if (!options.quietSuccess?.(data)) {
-						toast.success(options.successText?.(data) ?? c.done.value);
-					}
+			if (mutation.isPending) return;
+			const result = await mutation.mutateAsync(
+				new FormData(form, event.submitter),
+			);
+			const c = get(common);
+			const data = result.data;
+			if (!result.ok) {
+				const localized =
+					typeof data.error === "string"
+						? options.errorText?.(data.error, data)
+						: undefined;
+				toast.error(
+					localized ??
+						(typeof data.message === "string" ? data.message : c.failed.value),
+				);
+			} else {
+				options.onSuccess?.(data);
+				if (!options.quietSuccess?.(data)) {
+					toast.success(options.successText?.(data) ?? c.done.value);
 				}
-				options.onSettled?.();
-				if (result.ok && options.resetOnSuccess) form.reset();
-				await invalidateAll();
-			} finally {
-				pending = false;
 			}
+			options.onSettled?.();
+			if (result.ok && options.resetOnSuccess) form.reset();
+			await queryClient.invalidateQueries();
 		}
 
 		form.addEventListener("submit", onSubmit);

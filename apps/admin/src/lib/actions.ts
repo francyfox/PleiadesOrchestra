@@ -1,6 +1,7 @@
 import type { AccessMode, BulkAction } from "$lib/api-types";
 import { api } from "./api/client";
 import { type ActionResult, submitted } from "./api/result";
+import { queryClient } from "./query/client";
 
 /**
  * What the panel's forms do: read the fields, call admin-api, hand back an
@@ -50,21 +51,36 @@ function withSecret(result: ActionResult): ActionResult {
 	};
 }
 
+/**
+ * Signing in starts a new session: whatever the query cache holds belongs to
+ * the previous one (another admin, or the same one before a lapse), so it is
+ * emptied on success — from the login page, where nothing reads it.
+ */
+async function startsSession(result: Promise<ActionResult>) {
+	const settled = await result;
+	if (settled.ok) queryClient.clear();
+	return settled;
+}
+
 export const authActions = {
 	login: (form: FormData) =>
-		submitted(
-			api().auth.login.post({
-				email: text(form, "email"),
-				password: String(form.get("password") ?? ""),
-			}),
+		startsSession(
+			submitted(
+				api().auth.login.post({
+					email: text(form, "email"),
+					password: String(form.get("password") ?? ""),
+				}),
+			),
 		),
 	register: (form: FormData) =>
-		submitted(
-			api().auth.register.post({
-				name: text(form, "name") || undefined,
-				email: text(form, "email"),
-				password: String(form.get("password") ?? ""),
-			}),
+		startsSession(
+			submitted(
+				api().auth.register.post({
+					name: text(form, "name") || undefined,
+					email: text(form, "email"),
+					password: String(form.get("password") ?? ""),
+				}),
+			),
 		),
 	logout: () => submitted(api().auth.logout.post()),
 };

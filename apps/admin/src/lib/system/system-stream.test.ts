@@ -164,4 +164,27 @@ describe("createSystemStream", () => {
 		expect(sockets).toHaveLength(2);
 		expect(sockets[1]?.closed).toBe(false);
 	});
+
+	test("reports up on open, down on an unexpected close, up again on stop", () => {
+		const statuses: boolean[] = [];
+		const sockets: FakeSocket[] = [];
+		const stream = createSystemStream<{ n: number }>({
+			url: "ws://panel/api/system/stream",
+			connect: () => {
+				const socket = new FakeSocket();
+				sockets.push(socket);
+				return socket;
+			},
+			onSnapshot: () => {},
+			onStatus: (up) => statuses.push(up),
+			setTimer: () => 1,
+			clearTimer: () => {},
+		});
+		stream.start();
+		sockets[0]?.open();
+		sockets[0]?.drop();
+		expect(statuses).toEqual([true, false]);
+		stream.stop();
+		expect(statuses).toEqual([true, false, true]);
+	});
 });

@@ -1,0 +1,20 @@
+{
+	"name": "pleiades-mcp",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"start": "bun src/index.ts",
+		"test": "bun test",
+		"check-types": "tsc --noEmit",
+		"lint": "biome check ."
+	},
+	"dependencies": {
+		"@modelcontextprotocol/sdk": "^1.29.0",
+		"@t3-oss/env-core": "catalog:",
+		"zod": "catalog:"
+	},
+	"devDependencies": {
+		"@types/bun": "catalog:",
+		"typescript": "catalog:"
+	}
+}

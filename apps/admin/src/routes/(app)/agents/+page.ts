@@ -1,7 +1,7 @@
-import { createApi } from "$lib/api/client";
-import { loaded } from "$lib/api/result";
+import { prefetch } from "$lib/query/prefetch";
+import { liveQueries } from "$lib/query/queries";
 import type { PageLoad } from "./$types";
 
-export const load: PageLoad = async ({ fetch }) => ({
-	agents: (await loaded(createApi(fetch).agents.get())).items,
-});
+export const load: PageLoad = async () => {
+	await prefetch(liveQueries.agents({}));
+};

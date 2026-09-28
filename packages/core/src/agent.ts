@@ -20,7 +20,11 @@ export interface AgentConfig {
 	apiKey: string;
 	model: string;
 	systemPrompt?: string;
-	/** Max number of past messages kept per thread (excluding the system prompt). */
+	/**
+	 * Past messages of a thread the model sees as context (excluding the system
+	 * prompt). `0` = stateless: the model gets only the current message, while
+	 * the exchange is still appended to the history store.
+	 */
 	maxHistoryMessages?: number;
 	/** Hard cap on generated tokens — without one, a repetition loop can run until it exhausts the context. */
 	maxOutputTokens?: number;
@@ -183,7 +187,11 @@ export function createAgent(config: AgentConfig): Agent {
 					content: finalContent,
 				};
 
-				const past = await history.get(message.threadId, maxHistoryMessages);
+				// `get(_, 0)` isn't "nothing" for every store (`slice(-0)` is everything), so 0 is handled here.
+				const past =
+					maxHistoryMessages > 0
+						? await history.get(message.threadId, maxHistoryMessages)
+						: [];
 				const generationStartedAt = Date.now();
 				inFlight = { kind: "generate", startedAt: generationStartedAt };
 				const result = streamText({

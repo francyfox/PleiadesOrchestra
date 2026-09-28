@@ -111,7 +111,10 @@ const silentTelemetry = createTelemetry([]);
 let stop: (() => void) | undefined;
 afterEach(() => stop?.());
 
-function setup(options: Parameters<typeof fakeLlm>[0] = {}) {
+function setup(
+	options: Parameters<typeof fakeLlm>[0] = {},
+	agentConfig: { maxHistoryMessages?: number } = {},
+) {
 	const llm = fakeLlm(options);
 	stop = () => llm.server.stop(true);
 	const usageRecorder = recorder();
@@ -123,6 +126,7 @@ function setup(options: Parameters<typeof fakeLlm>[0] = {}) {
 		telemetry: silentTelemetry,
 		historyStore,
 		usageRecorder,
+		...agentConfig,
 	});
 	return { llm, agent, usageRecorder, historyStore };
 }
@@ -233,6 +237,18 @@ describe("createAgent", () => {
 		await collect(agent.handleMessageStream(message({ chunks: ["second"] })));
 		const secondRequest = llm.requests.at(-1);
 		expect(JSON.stringify(secondRequest?.messages)).toContain("first");
+	});
+
+	test("with a history window of 0 the model sees only the current message, yet the exchange is still stored", async () => {
+		const { agent, llm, historyStore } = setup({}, { maxHistoryMessages: 0 });
+
+		await collect(agent.handleMessageStream(message({ chunks: ["first"] })));
+		await collect(agent.handleMessageStream(message({ chunks: ["second"] })));
+
+		const sent = (llm.requests.at(-1)?.messages ?? []) as { role: string }[];
+		expect(sent.map((m) => m.role)).toEqual(["system", "user"]);
+		expect(JSON.stringify(sent)).not.toContain("first");
+		expect(await historyStore.get("t1", 10)).toHaveLength(4);
 	});
 
 	test("resetThread clears the thread in the history store", async () => {

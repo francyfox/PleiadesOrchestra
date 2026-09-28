@@ -32,21 +32,34 @@ function pageStatus(status: number): 404 | 502 | 503 {
 	return status === 404 ? 404 : status === 503 ? 503 : 502;
 }
 
-/**
- * For `load`: the reply's data, or the matching error page. A lapsed session
- * (401) goes back to /login instead.
- */
-export async function loaded<T>(reply: Promise<Reply<T>>): Promise<T> {
-	const { data, error: failure } = await reply;
-	if (failure) {
-		const status = Number(failure.status);
-		if (status === 401) redirect(303, "/login");
-		error(
-			pageStatus(status),
-			String(bodyOf(failure.value).message ?? `Request failed (${status})`),
-		);
+/** A request the server answered with a failure: what a query function throws. */
+export class ApiError extends Error {
+	readonly status: number;
+	readonly body: unknown;
+
+	constructor(status: number, body: unknown) {
+		super(String(bodyOf(body).message ?? `Request failed (${status})`));
+		this.name = "ApiError";
+		this.status = status;
+		this.body = body;
 	}
+}
+
+/** The reply's data, or an `ApiError`. Network failures (no reply at all) reject as they are. */
+export async function unwrap<T>(reply: Promise<Reply<T>>): Promise<T> {
+	const { data, error: failure } = await reply;
+	if (failure) throw new ApiError(Number(failure.status), failure.value);
 	return data as T;
+}
+
+/**
+ * For `load`: turns a failed request into what SvelteKit shows — the matching
+ * error page, or /login for a lapsed session (401). Anything else is rethrown.
+ */
+export function throwAsPage(failure: unknown): never {
+	if (!(failure instanceof ApiError)) throw failure;
+	if (failure.status === 401) redirect(303, "/login");
+	error(pageStatus(failure.status), failure.message);
 }
 
 /** For form handlers: never throws; failures come back as `{ ok: false, data }` for the UI to localize. */

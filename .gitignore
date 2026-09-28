@@ -22,6 +22,9 @@ dist
 # Host-side SQLite for compose services (see compose.yml)
 /data/
 
+# Demo shop with its own git repo (a test bed for the widget), not part of this one
+/apps/shopping-cart-webmcp/
+
 # Ad-hoc build/error logs
 *.err
 sh.err.*

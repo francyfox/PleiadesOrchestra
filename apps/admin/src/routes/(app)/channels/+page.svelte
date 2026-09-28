@@ -6,8 +6,15 @@
 	import CreateChannelForm from "$lib/components/channels/create-channel-form.svelte";
 	import EditChannelDialog from "$lib/components/channels/edit-channel-dialog.svelte";
 	import { issued } from "$lib/components/channels/issued-secret.svelte";
+	import { useLiveQuery } from "$lib/live/use-live-query.svelte";
+	import { DEFAULT_PAGE_SIZE } from "$lib/pagination";
 
 	let { data } = $props();
+
+	const live = useLiveQuery("channels", () => ({
+		page: data.page,
+		pageSize: DEFAULT_PAGE_SIZE,
+	}));
 
 	const content = useIntlayer("channels");
 	let editing = $state<Channel | null>(null);
@@ -25,8 +32,8 @@
 {/if}
 
 <ChannelsTable
-	channels={data.channels}
-	total={data.total}
+	channels={live.current.items}
+	total={live.current.total}
 	page={data.page}
 	onEdit={(channel) => (editing = channel)}
 />

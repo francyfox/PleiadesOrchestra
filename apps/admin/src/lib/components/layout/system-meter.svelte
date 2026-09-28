@@ -3,16 +3,13 @@
 	import { useFormat } from "$lib/i18n/use-format";
 	import { snapshotLevels } from "$lib/system/load-level";
 	import { useSystemSnapshot } from "$lib/system/use-system-snapshot.svelte";
-	import type { SystemSnapshot } from "$lib/system-types";
 	import LevelBadge from "./level-badge.svelte";
 
 	/** Host CPU / RAM / GPU / VRAM in the header. Live over a WebSocket while the tab is visible. */
-	let { initial }: { initial: SystemSnapshot } = $props();
-
 	const content = useIntlayer("system-meter");
 	const format = useFormat();
 
-	const stream = useSystemSnapshot(() => initial);
+	const stream = useSystemSnapshot();
 	const current = $derived(stream.current);
 	const levels = $derived(snapshotLevels(current));
 

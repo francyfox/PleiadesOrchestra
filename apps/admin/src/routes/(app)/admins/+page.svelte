@@ -4,9 +4,15 @@
 	import AdminsTable from "$lib/components/admins/admins-table.svelte";
 	import CreateAdminForm from "$lib/components/admins/create-admin-form.svelte";
 	import SetPasswordDialog from "$lib/components/admins/set-password-dialog.svelte";
+	import { useLiveQuery } from "$lib/live/use-live-query.svelte";
 	import { DEFAULT_PAGE_SIZE } from "$lib/pagination";
 
 	let { data } = $props();
+
+	const live = useLiveQuery("admins", () => ({
+		page: data.page,
+		pageSize: DEFAULT_PAGE_SIZE,
+	}));
 
 	const content = useIntlayer("admins");
 	let passwordFor = $state<AdminRow | null>(null);
@@ -15,13 +21,13 @@
 <h1 class="text-2xl font-semibold">{$content.title.value}</h1>
 
 <AdminsTable
-	admins={data.admins}
+	admins={live.current.admins}
 	currentAdminId={data.admin?.id ?? null}
 	currentAdminIsSuper={data.admin?.isSuper ?? false}
 	pagination={{
 		page: data.page,
 		pageSize: DEFAULT_PAGE_SIZE,
-		total: data.total,
+		total: live.current.total,
 		href: (page) => `/admins?page=${page}`,
 	}}
 	onChangePassword={(admin) => (passwordFor = admin)}

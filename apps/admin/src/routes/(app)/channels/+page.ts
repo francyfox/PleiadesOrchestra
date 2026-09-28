@@ -1,14 +1,10 @@
-import { createApi } from "$lib/api/client";
-import { loaded } from "$lib/api/result";
 import { DEFAULT_PAGE_SIZE, parsePage } from "$lib/pagination";
+import { prefetch } from "$lib/query/prefetch";
+import { liveQueries } from "$lib/query/queries";
 import type { PageLoad } from "./$types";
 
-export const load: PageLoad = async ({ fetch, url }) => {
+export const load: PageLoad = async ({ url }) => {
 	const page = parsePage(url.searchParams.get("page"));
-	const { items, total } = await loaded(
-		createApi(fetch).channels.get({
-			query: { page, pageSize: DEFAULT_PAGE_SIZE },
-		}),
-	);
-	return { channels: items, total, page };
+	await prefetch(liveQueries.channels({ page, pageSize: DEFAULT_PAGE_SIZE }));
+	return { page };
 };

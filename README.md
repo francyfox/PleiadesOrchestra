@@ -74,3 +74,4 @@ All the main documentation lives in [`docs/`](docs/). Repository rules and lesso
 ## References
 
 - [goap-js](https://github.com/wmdmark/goap-js/tree/master) — a reference GOAP implementation
+- [embabel](https://github.com/embabel/embabel-agent) - goap framework
