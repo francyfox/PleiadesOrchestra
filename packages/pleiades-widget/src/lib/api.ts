@@ -28,6 +28,7 @@ export interface WidgetApi {
 		visitorToken: string,
 		threadId: string,
 		text: string,
+		signal?: AbortSignal,
 	): AsyncGenerator<StreamEvent>;
 }
 
@@ -37,6 +38,11 @@ export class ApiError extends Error {
 	constructor(readonly status: number) {
 		super(status === 0 ? "network error" : `HTTP ${status}`);
 	}
+}
+
+/** A deliberate `AbortController.abort()` (stop button or idle timeout) — never wrapped into `ApiError`, so callers can tell it apart from a real network failure. */
+export function isAbortError(cause: unknown): boolean {
+	return cause instanceof Error && cause.name === "AbortError";
 }
 
 interface ApiOptions {
@@ -70,7 +76,8 @@ export function createWidgetApi({
 				cache: "no-store",
 				...init,
 			});
-		} catch {
+		} catch (cause) {
+			if (isAbortError(cause)) throw cause;
 			throw new ApiError(0);
 		}
 		if (!response.ok) throw new ApiError(response.status);
@@ -116,13 +123,14 @@ export function createWidgetApi({
 			return (await response.json()) as { items: HistoryItem[] };
 		},
 
-		async *streamMessage(visitorToken, threadId, text) {
+		async *streamMessage(visitorToken, threadId, text, signal) {
 			const response = await request("/v1/widget/messages", {
 				method: "POST",
 				headers: withToken(visitorToken, {
 					"content-type": "application/json",
 				}),
 				body: JSON.stringify({ threadId, text }),
+				signal,
 			});
 			if (!response.body) throw new ApiError(0);
 
@@ -145,7 +153,7 @@ export function createWidgetApi({
 				const rest = buffer.trim();
 				if (rest) yield JSON.parse(rest) as StreamEvent;
 			} catch (cause) {
-				if (cause instanceof SyntaxError) throw cause;
+				if (cause instanceof SyntaxError || isAbortError(cause)) throw cause;
 				throw new ApiError(0);
 			} finally {
 				reader.releaseLock();

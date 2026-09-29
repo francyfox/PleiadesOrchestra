@@ -2,15 +2,39 @@
 	all: initial;
 }
 
+/*
+ * Same color system as apps/admin (tweakcn theme, apps/admin/src/routes/layout.css):
+ * the OKLCH tokens are copied over (light + prefers-color-scheme dark), not
+ * imported — this package's 10 kB brotli budget can't afford Tailwind or a
+ * bundled theme file. Every token stays overridable via the matching
+ * `--pleiades-*` custom property, same contract as before.
+ *
+ * Font: named the same as admin's (`Oxanium Variable`/`Exo 2 Variable`) so
+ * the two look identical when a host page happens to have them loaded
+ * already (e.g. the admin panel embedding this widget for its own preview),
+ * but never bundled here — that's several hundred KB of variable font
+ * files, far outside budget. Falls back to `system-ui` everywhere else.
+ */
 .w {
-	--a: var(--pleiades-accent, #f0663f);
-	--b: var(--pleiades-bg, #fff);
-	--f: var(--pleiades-fg, #1c1917);
+	--a: var(--pleiades-accent, oklch(0.5553 0.1455 48.9975));
+	--af: var(--pleiades-accent-fg, oklch(1 0 0));
+	--b: var(--pleiades-bg, oklch(0.9885 0.0057 84.5659));
+	--f: var(--pleiades-fg, oklch(0.366 0.0251 49.6085));
+	--m: var(--pleiades-muted, oklch(0.9363 0.0218 83.2637));
+	--mf: var(--pleiades-muted-fg, oklch(0.5534 0.0116 58.0708));
+	--bd: var(--pleiades-border, oklch(0.8866 0.0404 89.6994));
+	--d: var(--pleiades-destructive, oklch(0.4437 0.1613 26.8994));
+	--df: var(--pleiades-destructive-fg, oklch(1 0 0));
+	/* Same base + multiplicative scale as admin's --radius (0.3rem). */
+	--r: 0.3rem;
+
 	font:
-		14px / 1.45 system-ui,
+		14px / 1.45 "Oxanium Variable",
+		"Exo 2 Variable",
+		system-ui,
 		sans-serif;
 	color: var(--f);
-	color-scheme: light;
+	color-scheme: light dark;
 
 	button,
 	textarea {
@@ -34,9 +58,9 @@
 		border: 0;
 		border-radius: 50%;
 		background: var(--a);
-		color: #fff;
+		color: var(--af);
 		cursor: pointer;
-		box-shadow: 0 4px 14px #0004;
+		box-shadow: 0px 4px 6px -1px hsl(28 18% 25% / 0.28);
 	}
 
 	&[data-pos^="bottom"] .fab {
@@ -65,7 +89,7 @@
 		flex-direction: column;
 		width: min(380px, 100vw);
 		background: var(--b);
-		box-shadow: 0 0 24px #0003;
+		box-shadow: 0px 8px 10px -1px hsl(28 18% 25% / 0.28);
 		visibility: hidden;
 		/* Hidden only after the slide-out ends, so a closed panel can't take focus. */
 		transition:
@@ -104,7 +128,7 @@
 		justify-content: space-between;
 		padding: 12px 16px;
 		background: var(--a);
-		color: #fff;
+		color: var(--af);
 	}
 
 	.x {
@@ -128,20 +152,21 @@
 		max-width: 85%;
 		margin: 0;
 		padding: 8px 12px;
-		border-radius: 14px;
+		border-radius: calc(var(--r) * 3);
 		white-space: pre-wrap;
 		overflow-wrap: anywhere;
 	}
 
 	.a {
 		align-self: flex-start;
-		background: #f1efee;
+		background: var(--m);
+		color: var(--mf);
 	}
 
 	.u {
 		align-self: flex-end;
 		background: var(--a);
-		color: #fff;
+		color: var(--af);
 	}
 
 	/* An assistant bubble with no text yet: the "typing…" indicator. */
@@ -153,27 +178,33 @@
 	.e {
 		margin: 0;
 		padding: 6px 16px;
-		background: #fef2f2;
-		color: #b91c1c;
+		background: color-mix(in oklch, var(--d) 12%, var(--b));
+		color: var(--d);
 	}
 
 	form {
 		display: flex;
 		gap: 8px;
 		padding: 8px 12px;
-		border-top: 1px solid #0002;
+		border-top: 1px solid var(--bd);
 
 		button {
 			padding: 0 14px;
 			border: 0;
-			border-radius: 8px;
+			border-radius: calc(var(--r) * 1.67);
 			background: var(--a);
-			color: #fff;
+			color: var(--af);
 			cursor: pointer;
 
 			&:disabled {
 				opacity: 0.5;
 				cursor: default;
+			}
+
+			/* Stop mode (busy): stays clickable, colored like a destructive action. */
+			&.stop {
+				background: var(--d);
+				color: var(--df);
 			}
 		}
 	}
@@ -182,10 +213,77 @@
 		flex: 1;
 		max-height: 96px;
 		padding: 8px;
-		border: 1px solid #0003;
-		border-radius: 8px;
+		border: 1px solid var(--bd);
+		border-radius: calc(var(--r) * 1.67);
 		background: var(--b);
 		resize: none;
+	}
+
+	/* Tool integration switch: WebMCP (default) vs MCP. */
+	.mode {
+		display: flex;
+		align-items: center;
+		gap: 14px;
+		padding: 6px 12px;
+		border-top: 1px solid var(--bd);
+		font-size: 12px;
+
+		label {
+			display: inline-flex;
+			align-items: center;
+			gap: 4px;
+			cursor: pointer;
+		}
+
+		input {
+			margin: 0;
+			accent-color: var(--a);
+		}
+	}
+
+	.tip {
+		position: absolute;
+		bottom: calc(100% + 6px);
+		left: 50%;
+		z-index: 1;
+		width: max-content;
+		max-width: 200px;
+		padding: 6px 8px;
+		border-radius: calc(var(--r) * 1.67);
+		background: var(--f);
+		color: var(--b);
+		font-size: 11px;
+		line-height: 1.35;
+		text-align: left;
+		visibility: hidden;
+		opacity: 0;
+		transition: opacity 0.15s;
+		transform: translateX(-50%);
+		pointer-events: none;
+
+		.q:hover &,
+		.q:focus-visible & {
+			visibility: visible;
+			opacity: 1;
+		}
+	}
+
+	/* The "?" hint next to WebMCP. */
+	.q {
+		position: relative;
+		display: inline-grid;
+		flex: none;
+		place-items: center;
+		width: 14px;
+		height: 14px;
+		padding: 0;
+		border: 1px solid var(--bd);
+		border-radius: 50%;
+		background: none;
+		color: var(--mf);
+		font-size: 10px;
+		line-height: 1;
+		cursor: help;
 	}
 
 	footer {
@@ -196,6 +294,20 @@
 		padding: 6px 12px;
 		font-size: 11px;
 		opacity: 0.65;
+	}
+}
+
+@media (prefers-color-scheme: dark) {
+	.w {
+		--a: var(--pleiades-accent, oklch(0.7924 0.1503 61.9935));
+		--af: var(--pleiades-accent-fg, oklch(0.2686 0 0));
+		--b: var(--pleiades-bg, oklch(0.2161 0.0061 56.0434));
+		--f: var(--pleiades-fg, oklch(0.9699 0.0013 106.4238));
+		--m: var(--pleiades-muted, oklch(0.233 0.0073 67.4563));
+		--mf: var(--pleiades-muted-fg, oklch(0.7161 0.0091 56.259));
+		--bd: var(--pleiades-border, oklch(0.3741 0.0087 67.5582));
+		--d: var(--pleiades-destructive, oklch(0.5771 0.2152 27.325));
+		--df: var(--pleiades-destructive-fg, oklch(1 0 0));
 	}
 }
 

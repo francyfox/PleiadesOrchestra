@@ -1,10 +1,11 @@
-import type { ChatState } from "../lib/chat";
+import type { ChatState, ToolMode } from "../lib/chat";
 import type { Strings } from "../lib/i18n";
 import { Composer } from "./composer";
 import { Footer } from "./footer";
 import { Header } from "./header";
 import { h } from "./jsx";
 import { MessageList } from "./message-list";
+import { ModeSwitch } from "./mode-switch";
 
 export interface PanelOptions {
 	s: Strings;
@@ -14,9 +15,11 @@ export interface PanelOptions {
 	maxChars: number;
 	onClose: () => void;
 	onSend: (text: string) => void;
+	onStop: () => void;
+	onModeChange: (mode: ToolMode) => void;
 }
 
-/** The side panel: header, conversation, error line, message box, branding footer. */
+/** The side panel: header, conversation, error line, message box, mode switch, branding footer. */
 export function Panel({
 	s,
 	heading,
@@ -25,9 +28,12 @@ export function Panel({
 	maxChars,
 	onClose,
 	onSend,
+	onStop,
+	onModeChange,
 }: PanelOptions) {
 	const list = MessageList({ greeting });
-	const composer = Composer({ s, placeholder, maxChars, onSend });
+	const composer = Composer({ s, placeholder, maxChars, onSend, onStop });
+	const modeSwitch = ModeSwitch({ s, onChange: onModeChange });
 	const error = (<p class="e" role="alert" hidden />) as HTMLParagraphElement;
 	const el = (
 		<div
@@ -41,6 +47,7 @@ export function Panel({
 			<Header heading={heading} closeLabel={s.close} onClose={onClose} />
 			{list.el}
 			{error}
+			{modeSwitch.el}
 			{composer.el}
 			<Footer />
 		</div>
@@ -57,6 +64,7 @@ export function Panel({
 		render(state: ChatState) {
 			list.render(state.messages);
 			composer.render(state);
+			modeSwitch.render(state);
 			error.hidden = !state.error;
 			error.textContent = state.error ? s[state.error] : "";
 		},

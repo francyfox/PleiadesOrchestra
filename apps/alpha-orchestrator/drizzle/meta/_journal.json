@@ -29,6 +29,13 @@
 			"when": 1790570120914,
 			"tag": "0003_ip_visibility",
 			"breakpoints": true
+		},
+		{
+			"idx": 4,
+			"version": "6",
+			"when": 1790666136740,
+			"tag": "0004_thread_world_state",
+			"breakpoints": true
 		}
 	]
 }

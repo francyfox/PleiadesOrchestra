@@ -27,6 +27,7 @@ interface Script {
 		token: string,
 		threadId: string,
 		text: string,
+		signal?: AbortSignal,
 	) => AsyncGenerator<StreamEvent>;
 	history?: (
 		token: string,
@@ -41,7 +42,11 @@ interface Script {
 	}>;
 }
 
-function harness(script: Script = {}, start = 1000) {
+function harness(
+	script: Script = {},
+	start = 1000,
+	chatOptions: { idleTimeoutMs?: number; pingIntervalMs?: number } = {},
+) {
 	const log: string[] = [];
 	let visitors = 0;
 	let threads = 0;
@@ -60,10 +65,10 @@ function harness(script: Script = {}, start = 1000) {
 			log.push(`history:${threadId}@${token}`);
 			return script.history ? script.history(token, threadId) : { items: [] };
 		},
-		async *streamMessage(token, threadId, text) {
+		async *streamMessage(token, threadId, text, signal) {
 			log.push(`send:${threadId}@${token}:${text}`);
 			yield* script.stream
-				? script.stream(token, threadId, text)
+				? script.stream(token, threadId, text, signal)
 				: (async function* () {
 						yield { type: "delta", text: "ok" } as StreamEvent;
 						yield { type: "done", elapsedMs: 1 } as StreamEvent;
@@ -71,10 +76,26 @@ function harness(script: Script = {}, start = 1000) {
 		},
 	};
 	const store = createSessionStore({ ...scope, storage: memoryStorage() });
-	const chat = createChat({ api, store, now: () => start, maxChars: 20 });
+	const chat = createChat({
+		api,
+		store,
+		now: () => start,
+		maxChars: 20,
+		pingIntervalMs: 5,
+		...chatOptions,
+	});
 	const states: ChatState[] = [];
 	chat.subscribe((state) => states.push(structuredClone(state)));
 	return { chat, log, store, states, api };
+}
+
+/** Rejects once `signal` fires, like a real `fetch` aborting mid-stream. */
+function hangUntilAborted(signal?: AbortSignal): Promise<never> {
+	return new Promise((_, reject) => {
+		signal?.addEventListener("abort", () =>
+			reject(Object.assign(new Error("Aborted"), { name: "AbortError" })),
+		);
+	});
 }
 
 async function* replies(...events: StreamEvent[]) {
@@ -110,6 +131,21 @@ describe("createChat.init", () => {
 			["user", "hi"],
 			["assistant", "hello"],
 		]);
+	});
+
+	test("history longer than maxMessages is trimmed to the most recent ones", async () => {
+		const items = Array.from({ length: 14 }, (_, i) => ({
+			id: String(i),
+			role: (i % 2 === 0 ? "user" : "assistant") as "user" | "assistant",
+			content: `m${i}`,
+			createdAt: i,
+		}));
+		const { chat, store } = harness({ history: async () => ({ items }) });
+		store.save({ visitorToken: "old", expiresAt: 9999, threadId: "tOld" });
+		await chat.init();
+		expect(chat.state.messages).toHaveLength(10);
+		expect(chat.state.messages[0]?.content).toBe("m4");
+		expect(chat.state.messages.at(-1)?.content).toBe("m13");
 	});
 
 	test("init is idempotent: calling it twice does the work once", async () => {
@@ -152,6 +188,24 @@ describe("createChat.init", () => {
 });
 
 describe("createChat.send", () => {
+	test("keeps only the last 10 messages, dropping the oldest as new ones arrive", async () => {
+		const { chat } = harness({
+			stream: () =>
+				replies({ type: "delta", text: "ok" }, { type: "done", elapsedMs: 1 }),
+		});
+		for (let i = 0; i < 6; i++) await chat.send(`msg${i}`);
+		expect(chat.state.messages).toHaveLength(10);
+		// 6 sends = 12 messages; the oldest pair (msg0's user+assistant) is gone.
+		expect(chat.state.messages[0]).toMatchObject({
+			role: "user",
+			content: "msg1",
+		});
+		expect(chat.state.messages.at(-1)).toMatchObject({
+			role: "assistant",
+			content: "ok",
+		});
+	});
+
 	test("streams the assistant reply into a message", async () => {
 		const { chat, states } = harness({
 			stream: () =>
@@ -272,9 +326,97 @@ describe("createChat.send", () => {
 	});
 });
 
+describe("createChat.stop", () => {
+	test("aborts the in-flight reply, keeps the partial text, and reports no error", async () => {
+		const { chat, states } = harness({
+			stream: (_t, _tid, _text, signal) =>
+				(async function* () {
+					yield { type: "delta", text: "partial" } as StreamEvent;
+					yield await hangUntilAborted(signal);
+				})(),
+		});
+
+		const sending = chat.send("hi");
+		// Let the fake stream yield its first chunk before stopping.
+		for (
+			let i = 0;
+			i < 50 && chat.state.messages.at(-1)?.content !== "partial";
+			i++
+		) {
+			await Promise.resolve();
+		}
+		expect(chat.state.messages.at(-1)?.content).toBe("partial");
+		chat.stop();
+		await sending;
+
+		expect(chat.state.busy).toBe(false);
+		expect(chat.state.error).toBeUndefined();
+		expect(chat.state.connection).toBe("online");
+		expect(chat.state.messages.map((m) => [m.role, m.content])).toEqual([
+			["user", "hi"],
+			["assistant", "partial"],
+		]);
+		// Never went through the offline/error path.
+		expect(states.some((s) => s.connection === "offline")).toBe(false);
+	});
+
+	test("does nothing when nothing is in flight", () => {
+		const { chat } = harness();
+		expect(() => chat.stop()).not.toThrow();
+	});
+});
+
+describe("createChat connection loss", () => {
+	test("no event for idleTimeoutMs goes offline, blocks sending, and recovers once a ping succeeds", async () => {
+		const { chat, states } = harness(
+			{
+				stream: (_t, _tid, _text, signal) =>
+					(async function* () {
+						yield await hangUntilAborted(signal);
+					})(),
+			},
+			1000,
+			{ idleTimeoutMs: 5, pingIntervalMs: 5 },
+		);
+
+		await chat.send("hi");
+
+		expect(chat.state.busy).toBe(false);
+		expect(chat.state.connection).toBe("offline");
+		expect(chat.state.error).toBe("network");
+
+		// Sending while offline is a no-op — no new request, no thrown error.
+		const before = states.length;
+		await chat.send("again");
+		expect(states.length).toBe(before);
+
+		// The background ping (a plain history() call, which succeeds here)
+		// flips the widget back online on its own.
+		await new Promise((resolve) => setTimeout(resolve, 20));
+		expect(chat.state.connection).toBe("online");
+		expect(chat.state.error).toBeUndefined();
+	});
+});
+
 describe("createChat.getVisitorToken", () => {
 	test("returns the token, creating the session if needed (for the site's identify call)", async () => {
 		const { chat } = harness();
 		expect(await chat.getVisitorToken()).toBe("tok1");
+	});
+});
+
+describe("createChat tool mode", () => {
+	test("defaults to webmcp when nothing was chosen before", () => {
+		const { chat } = harness();
+		expect(chat.state.toolMode).toBe("webmcp");
+	});
+
+	test("setToolMode updates state and persists across a fresh createChat", () => {
+		const { chat, store, api } = harness();
+		chat.setToolMode("mcp");
+		expect(chat.state.toolMode).toBe("mcp");
+
+		const again = createChat({ api, store, now: () => 1000, maxChars: 20 });
+		expect(again.state.toolMode).toBe("mcp");
 	});
 });

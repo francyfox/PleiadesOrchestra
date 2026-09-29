@@ -200,6 +200,22 @@ export const visitorTokens = sqliteTable("visitor_tokens", {
 	expiresAt: integer("expires_at").notNull(),
 });
 
+/**
+ * GOAP `WorldState` a thread's plan run stopped short of its goal with —
+ * WAITING-style resumption (`docs/laya-autonomous-webmcp.md`): the next
+ * `/v1/messages` on this thread loads it back instead of starting from a
+ * blank state. Cleared once a run actually reaches its goal.
+ */
+export const threadWorldState = sqliteTable("thread_world_state", {
+	threadId: text("thread_id")
+		.primaryKey()
+		.references(() => threads.id, { onDelete: "cascade" }),
+	state: text("state", { mode: "json" })
+		.$type<Record<string, boolean | number | string | undefined>>()
+		.notNull(),
+	updatedAt: integer("updated_at").notNull(),
+});
+
 export const blockedIps = sqliteTable(
 	"blocked_ips",
 	{
@@ -227,4 +243,5 @@ export const schema = {
 	llmCalls,
 	visitorTokens,
 	blockedIps,
+	threadWorldState,
 };

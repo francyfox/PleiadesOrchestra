@@ -107,4 +107,43 @@ describe("createSessionStore", () => {
 		store.save({ visitorToken: "tok", expiresAt: 1000 });
 		expect(store.load(0)).toEqual({ visitorToken: "tok", expiresAt: 1000 });
 	});
+
+	describe("tool mode", () => {
+		test("starts unset", () => {
+			expect(
+				createSessionStore({
+					...scope,
+					storage: memoryStorage(),
+				}).loadToolMode(),
+			).toBeUndefined();
+		});
+
+		test("remembers the chosen mode across instances", () => {
+			const storage = memoryStorage();
+			createSessionStore({ ...scope, storage }).saveToolMode("mcp");
+			expect(createSessionStore({ ...scope, storage }).loadToolMode()).toBe(
+				"mcp",
+			);
+		});
+
+		test("survives the visitor token expiring — a UI preference, not session state", () => {
+			const storage = memoryStorage();
+			const store = createSessionStore({ ...scope, storage });
+			store.save({ visitorToken: "tok", expiresAt: 1000 });
+			store.saveToolMode("mcp");
+			expect(store.load(2000)).toEqual({});
+			expect(store.loadToolMode()).toBe("mcp");
+		});
+
+		test("garbage in the mode key is ignored, not thrown", () => {
+			const storage = memoryStorage();
+			storage.setItem(
+				"pleiades-widget:https://agent.example.com:pk_abcdefghijklmnop:mode",
+				"nonsense",
+			);
+			expect(
+				createSessionStore({ ...scope, storage }).loadToolMode(),
+			).toBeUndefined();
+		});
+	});
 });

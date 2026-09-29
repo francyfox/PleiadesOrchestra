@@ -131,12 +131,12 @@ describe("runPlan", () => {
 	});
 });
 
-describe("runPlan tracer", () => {
-	function traced() {
-		const events: PlanTraceEvent[] = [];
-		return { events, tracer: (event: PlanTraceEvent) => events.push(event) };
-	}
+function traced() {
+	const events: PlanTraceEvent[] = [];
+	return { events, tracer: (event: PlanTraceEvent) => events.push(event) };
+}
 
+describe("runPlan tracer", () => {
 	test("emits planned → started → finished → finished(run) for a straight run", async () => {
 		const reply = action("reply", 3, {}, { replied: true });
 		const { events, tracer } = traced();
@@ -318,5 +318,79 @@ describe("runPlan tracer", () => {
 		});
 
 		expect(result.succeeded).toBe(true);
+	});
+});
+
+describe("runPlan cancellation", () => {
+	test("returns killed:true without planning when the signal is already aborted", async () => {
+		const controller = new AbortController();
+		controller.abort();
+		const reply = action("reply", 1, {}, { replied: true });
+		const { events, tracer } = traced();
+
+		const result = await runPlan({
+			state: {},
+			goal: { replied: true },
+			actions: [reply],
+			ctx: {},
+			signal: controller.signal,
+			tracer,
+		});
+
+		expect(result).toMatchObject({
+			succeeded: false,
+			killed: true,
+			executedActions: [],
+		});
+		expect(events.map((event) => event.type)).toEqual(["killed", "finished"]);
+	});
+
+	test("stops between actions once the signal aborts mid-run, without running the rest of the plan", async () => {
+		const controller = new AbortController();
+		const first = action("first", 1, {}, { step1: true }, async () => {
+			controller.abort();
+			return { step1: true };
+		});
+		const second = action("second", 1, { step1: true }, { replied: true });
+		const { events, tracer } = traced();
+
+		const result = await runPlan({
+			state: {},
+			goal: { replied: true },
+			actions: [second, first],
+			ctx: {},
+			signal: controller.signal,
+			tracer,
+		});
+
+		expect(result.succeeded).toBe(false);
+		expect(result.killed).toBe(true);
+		expect(result.executedActions).toEqual(["first"]);
+		expect(events.map((event) => event.type)).toEqual([
+			"planned",
+			"action_started",
+			"action_finished",
+			"killed",
+			"finished",
+		]);
+	});
+
+	test("passes the signal through to execute()'s context", async () => {
+		const controller = new AbortController();
+		let seen: AbortSignal | undefined;
+		const reply = action("reply", 1, {}, { replied: true }, async (ctx) => {
+			seen = ctx.signal;
+			return { replied: true };
+		});
+
+		await runPlan({
+			state: {},
+			goal: { replied: true },
+			actions: [reply],
+			ctx: {},
+			signal: controller.signal,
+		});
+
+		expect(seen).toBe(controller.signal);
 	});
 });

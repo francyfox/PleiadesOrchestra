@@ -4,6 +4,9 @@ export interface StoredSession {
 	threadId?: string;
 }
 
+/** WebMCP: the browser exposes the host page's own tools directly (`navigator.modelContext`) — needs a recent Chrome. MCP: the site's tools are reached through a server-side MCP connection instead, no browser support required. */
+export type ToolMode = "webmcp" | "mcp";
+
 interface StoreOptions {
 	agentUrl: string;
 	publishableKey: string;
@@ -30,6 +33,9 @@ export function createSessionStore({
 	storage = defaultStorage(),
 }: StoreOptions) {
 	const name = `pleiades-widget:${agentUrl}:${publishableKey}`;
+	// Separate key, deliberately not part of `StoredSession`: a UI preference
+	// must survive the visitor token expiring, not be wiped along with it.
+	const modeKey = `${name}:mode`;
 	let memory: StoredSession = {};
 	let usable = storage !== undefined;
 
@@ -79,6 +85,23 @@ export function createSessionStore({
 				} catch {
 					usable = false;
 				}
+			}
+		},
+		loadToolMode(): ToolMode | undefined {
+			if (!usable || !storage) return undefined;
+			try {
+				const raw = storage.getItem(modeKey);
+				return raw === "webmcp" || raw === "mcp" ? raw : undefined;
+			} catch {
+				return undefined;
+			}
+		},
+		saveToolMode(mode: ToolMode) {
+			if (!usable || !storage) return;
+			try {
+				storage.setItem(modeKey, mode);
+			} catch {
+				// Best-effort — a lost preference just falls back to the default next time.
 			}
 		},
 	};

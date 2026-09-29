@@ -89,6 +89,7 @@ function widgetRequest(
 		origin?: string | null;
 		ip?: string;
 		body?: unknown;
+		acceptEncoding?: string;
 	} = {},
 ): Request {
 	const headers: Record<string, string> = {
@@ -98,6 +99,7 @@ function widgetRequest(
 	if (init.token) headers["x-visitor-token"] = init.token;
 	if (init.publishableKey) headers["x-publishable-key"] = init.publishableKey;
 	if (init.body !== undefined) headers["content-type"] = "application/json";
+	if (init.acceptEncoding) headers["accept-encoding"] = init.acceptEncoding;
 	return new Request(`http://harness.local${path}`, {
 		method: init.method ?? "POST",
 		headers,
@@ -313,6 +315,7 @@ describe("widget threads and messages", () => {
 			.split("\n")
 			.map((line) => JSON.parse(line));
 		expect(lines.map((line) => line.type)).toEqual(["delta", "done"]);
+		expect(response.headers.get("content-encoding")).toBeNull();
 
 		expect(ctx.calls).toHaveLength(1);
 		expect(ctx.calls[0]?.threadId).toBe(threadId);
@@ -332,6 +335,35 @@ describe("widget threads and messages", () => {
 			["user", "hello"],
 			["assistant", "reply"],
 		]);
+	});
+
+	test("gzips the NDJSON stream when the client sends accept-encoding: gzip", async () => {
+		const ctx = setup();
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+
+		const response = await ctx.app.handle(
+			widgetRequest("/v1/widget/messages", {
+				token,
+				body: { threadId, text: "hello" },
+				acceptEncoding: "gzip, deflate, br",
+			}),
+		);
+
+		expect(response.status).toBe(200);
+		expect(response.headers.get("content-encoding")).toBe("gzip");
+		const gunzip = new DecompressionStream(
+			"gzip",
+		) as unknown as ReadableWritablePair<Uint8Array, Uint8Array>;
+		const lines = (
+			await new Response(
+				(response.body as ReadableStream<Uint8Array>).pipeThrough(gunzip),
+			).text()
+		)
+			.trim()
+			.split("\n")
+			.map((line) => JSON.parse(line));
+		expect(lines.map((line) => line.type)).toEqual(["delta", "done"]);
 	});
 
 	test("another visitor's thread → 404 on write and read, model not called", async () => {

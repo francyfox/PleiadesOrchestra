@@ -158,4 +158,29 @@ describe("createWidgetApi", () => {
 		expect(error).toBeInstanceOf(ApiError);
 		expect((error as ApiError).status).toBe(0);
 	});
+
+	test("streamMessage passes the signal to fetch", async () => {
+		const controller = new AbortController();
+		const { api, calls } = recorder(() =>
+			ndjson([{ type: "done", elapsedMs: 1 }]),
+		);
+		await collect(api.streamMessage("tok", "t1", "x", controller.signal));
+		expect(calls[0]?.init.signal).toBe(controller.signal);
+	});
+
+	test("an abort surfaces as-is, not wrapped in ApiError", async () => {
+		const controller = new AbortController();
+		const api = createWidgetApi({
+			...scope,
+			fetch: async () => {
+				controller.abort();
+				throw Object.assign(new Error("Aborted"), { name: "AbortError" });
+			},
+		});
+		const error = await collect(
+			api.streamMessage("tok", "t1", "x", controller.signal),
+		).catch((cause) => cause);
+		expect(error).not.toBeInstanceOf(ApiError);
+		expect((error as Error).name).toBe("AbortError");
+	});
 });

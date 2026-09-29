@@ -5,9 +5,15 @@ import type {
 	DecisionAgent,
 	DecisionAnswer,
 	DecisionQuestion,
+	GoapAction,
 	IncomingMessage,
 } from "@repo/core";
-import { ChannelDirectory } from "./db/identity.ts";
+import { InMemoryWorldStateStore } from "@repo/core";
+import {
+	ChannelDirectory,
+	resolveThreadId,
+	upsertIdentifiedUser,
+} from "./db/identity.ts";
 import { RunBinding } from "./db/run-binding.ts";
 import { createApp, type ServerDeps } from "./server.ts";
 import { testDb } from "./test/db.ts";
@@ -149,6 +155,45 @@ describe("createApp", () => {
 		// underlying agent call's own token counts (via world-state facts).
 		expect(events).toEqual([
 			{ type: "delta", text: "echo: hi there" },
+			{ type: "done", elapsedMs: 3, inputTokens: 10, outputTokens: 2 },
+		]);
+		// No accept-encoding sent above — the stream must stay uncompressed.
+		expect(response.headers.get("content-encoding")).toBeNull();
+	});
+
+	test("POST /v1/messages gzips the NDJSON stream when the client accepts gzip", async () => {
+		const app = createTestApp({
+			agent: fakeAgent(singleDeltaStream),
+			decisionAgent: fakeDecisionAgent(),
+		});
+
+		const response = await app.handle(
+			authedRequest("http://harness.local/v1/messages", {
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+					"accept-encoding": "gzip, deflate, br",
+				},
+				body: JSON.stringify({ threadId: "t1", userId: "u1", text: "hi" }),
+			}),
+		);
+
+		expect(response.status).toBe(200);
+		expect(response.headers.get("content-encoding")).toBe("gzip");
+		expect(response.body).not.toBeNull();
+
+		const gunzip = new DecompressionStream(
+			"gzip",
+		) as unknown as ReadableWritablePair<Uint8Array, Uint8Array>;
+		const text = await new Response(
+			(response.body as ReadableStream<Uint8Array>).pipeThrough(gunzip),
+		).text();
+		const events = text
+			.split("\n")
+			.filter((line) => line.length > 0)
+			.map((line) => JSON.parse(line));
+		expect(events).toEqual([
+			{ type: "delta", text: "echo: hi" },
 			{ type: "done", elapsedMs: 3, inputTokens: 10, outputTokens: 2 },
 		]);
 	});
@@ -400,5 +445,185 @@ describe("createApp", () => {
 		);
 
 		expect(response.status).toBe(404);
+	});
+});
+
+function deferred<T = void>() {
+	let resolve!: (value: T) => void;
+	const promise = new Promise<T>((res) => {
+		resolve = res;
+	});
+	return { promise, resolve };
+}
+
+/** Same upserts `/v1/messages` does internally — idempotent, so calling them ahead of a request just resolves the id it will use. */
+function internalThreadId(db: ServerDeps["db"], externalThreadId = "t1") {
+	const channels = new ChannelDirectory(db);
+	const channel = channels.bySlug("cli");
+	if (!channel) throw new Error("cli channel not seeded");
+	const user = upsertIdentifiedUser(
+		db,
+		channel.id,
+		"u1",
+		undefined,
+		Date.now(),
+	);
+	return resolveThreadId(db, channel.id, user.id, externalThreadId, Date.now());
+}
+
+describe("createApp — GOAP process lifecycle", () => {
+	test("clears the persisted WorldState once a run succeeds", async () => {
+		const db = testDb();
+		const store = new InMemoryWorldStateStore();
+		const threadId = internalThreadId(db);
+		await store.save(threadId, { stale: true });
+
+		const app = createTestApp({
+			db,
+			worldStateStore: store,
+			agent: fakeAgent(singleDeltaStream),
+			decisionAgent: fakeDecisionAgent(),
+		});
+		const response = await app.handle(
+			authedRequest("http://harness.local/v1/messages", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({ threadId: "t1", userId: "u1", text: "hi" }),
+			}),
+		);
+		await readNdjson(response);
+
+		expect(await store.load(threadId)).toBeUndefined();
+	});
+
+	test("saves the WorldState when a run is killed by an already-aborted signal, instead of running any action", async () => {
+		const db = testDb();
+		const store = new InMemoryWorldStateStore();
+		const threadId = internalThreadId(db);
+		let agentCalled = false;
+
+		const app = createTestApp({
+			db,
+			worldStateStore: store,
+			agent: fakeAgent(async function* (message) {
+				agentCalled = true;
+				yield* singleDeltaStream(message);
+			}),
+			decisionAgent: fakeDecisionAgent(),
+		});
+
+		const controller = new AbortController();
+		controller.abort();
+		const response = await app.handle(
+			authedRequest("http://harness.local/v1/messages", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({ threadId: "t1", userId: "u1", text: "hi" }),
+				signal: controller.signal,
+			}),
+		);
+		const events = await readNdjson(response);
+
+		expect(agentCalled).toBe(false);
+		expect(events).toEqual([{ type: "error", message: "run cancelled" }]);
+		expect(await store.load(threadId)).toMatchObject({
+			userMessage: "hi",
+			threadId,
+		});
+	});
+
+	test("resumes from persisted WorldState, and the current turn's own facts win over stale ones", async () => {
+		const db = testDb();
+		const store = new InMemoryWorldStateStore();
+		const threadId = internalThreadId(db);
+		await store.save(threadId, { userMessage: "stale", budget: 500 });
+
+		let seenBudget: unknown;
+		let seenUserMessage: unknown;
+		const cheapReply: GoapAction = {
+			name: "cheapReply",
+			// Cheaper than the static `generateReply` (cost 5) — the planner
+			// picks this one, so its `execute()` observes the merged state.
+			cost: 0,
+			preconditions: {},
+			effects: { replied: true },
+			async execute(ctx) {
+				seenBudget = ctx.state.budget;
+				seenUserMessage = ctx.state.userMessage;
+				return { replied: true };
+			},
+		};
+
+		const app = createTestApp({
+			db,
+			worldStateStore: store,
+			threadActionsFor: () => [cheapReply],
+			agent: fakeAgent(singleDeltaStream),
+			decisionAgent: fakeDecisionAgent(),
+		});
+		const response = await app.handle(
+			authedRequest("http://harness.local/v1/messages", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({
+					threadId: "t1",
+					userId: "u1",
+					text: "new message",
+				}),
+			}),
+		);
+		await readNdjson(response);
+
+		expect(seenBudget).toBe(500);
+		expect(seenUserMessage).toBe("new message");
+	});
+
+	test("serializes two requests on the same thread through runLock, and leaves a different thread unaffected", async () => {
+		const order: string[] = [];
+		const gate = deferred();
+		let calls = 0;
+
+		const agent = fakeAgent(async function* () {
+			calls++;
+			const call = calls;
+			if (call === 1) {
+				// The first call to actually run (thread "t1"'s first request) —
+				// gated so the test can observe what does/doesn't run while it waits.
+				order.push("a-start");
+				await gate.promise;
+				order.push("a-end");
+			} else {
+				order.push(`run-${call}`);
+			}
+			yield { type: "done", elapsedMs: 1 } as const;
+		});
+		const app = createTestApp({ agent, decisionAgent: fakeDecisionAgent() });
+
+		const requestFor = (threadId: string) =>
+			authedRequest("http://harness.local/v1/messages", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({ threadId, userId: "u1", text: "hi" }),
+			});
+
+		// Same thread as the in-flight first call — must queue behind it.
+		const sameThreadA = app.handle(requestFor("t1"));
+		await new Promise((resolve) => setTimeout(resolve, 10));
+		const sameThreadB = app.handle(requestFor("t1"));
+		// Different thread — must run without waiting on "t1"'s lock.
+		const otherThread = app.handle(requestFor("t2"));
+
+		await readNdjson(await otherThread);
+		expect(order).toContain("run-2");
+		expect(order).not.toContain("a-end");
+
+		await new Promise((resolve) => setTimeout(resolve, 10));
+		expect(order).toEqual(["a-start", "run-2"]);
+
+		gate.resolve();
+		await readNdjson(await sameThreadA);
+		await readNdjson(await sameThreadB);
+
+		expect(order).toEqual(["a-start", "run-2", "a-end", "run-3"]);
 	});
 });

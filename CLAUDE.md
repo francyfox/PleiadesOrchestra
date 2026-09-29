@@ -71,6 +71,7 @@ and rationale.
 - **On failure or architecture change**: when something breaks, a real lesson is learned (wrong assumption, dead end, limitation discovered the hard way), or the architecture is changed, record it in this file at the end of the task so it isn't repeated.
 - Don't create files/scaffolding outside what's explicitly asked for in the current task.
 - **Delete confirmed-dead code/infra**: once something is established as no longer going to be used, it's fine and preferred to actually delete it rather than leaving it lying around "just in case". Don't let confirmed dead ends linger.
+- **New agent-shaped service = propose, don't just build**: if solving a task turns out to need a new agent-shaped `apps/*` service (an agent in the Alpha/Beta/Gamma "Pleiades maid" sense — see Architecture — not a transport like `telegram-bot`/`cli`), stop and propose that explicitly to the user, along with which small/tiny model fits it, before scaffolding it. Don't fold a new agent's responsibility into an existing service (e.g. cramming a new decision domain into `alpha-orchestrator` or `gamma-decision`) just to avoid asking.
 
 ## Lessons learned
 

@@ -5,6 +5,8 @@ export { runPlan } from "./executor";
 export type { StdioMcpClientConfig } from "./mcp-client";
 export { connectStdioMcpClient } from "./mcp-client";
 export { plan } from "./plan";
+export type { RunLock } from "./run-lock";
+export { createRunLock } from "./run-lock";
 export type {
 	StreamingContext,
 	TextActionConfig,
@@ -28,3 +30,5 @@ export type {
 	PlanTracer,
 	WorldState,
 } from "./types";
+export type { WorldStateStore } from "./world-state-store";
+export { InMemoryWorldStateStore } from "./world-state-store";

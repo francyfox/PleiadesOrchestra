@@ -25,6 +25,8 @@ export type BaseContext = Record<string, unknown>;
  */
 export interface ActionContext extends BaseContext {
 	state: WorldState;
+	/** Set when the run was given one via `RunPlanOptions.signal` — a long-running action should abort its own work when this fires. */
+	signal?: AbortSignal;
 }
 
 export interface GoapAction {
@@ -79,6 +81,8 @@ export type PlanTraceEvent =
 	  }
 	/** `attempt` is the attempt that just ended short of the goal; the next `planned` carries `attempt + 1`. */
 	| { type: "replan"; attempt: number; state: WorldState; at: number }
+	/** `RunPlanOptions.signal` fired — before planning, or between two actions of the current plan. */
+	| { type: "killed"; attempt: number; state: WorldState; at: number }
 	| {
 			type: "finished";
 			succeeded: boolean;

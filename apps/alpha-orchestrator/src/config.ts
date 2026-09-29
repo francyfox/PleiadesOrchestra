@@ -80,6 +80,15 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			// Take the client IP from X-Forwarded-For. Only behind a proxy/tunnel
 			// you control — otherwise any client can spoof its IP past blocks and limits.
 			TRUST_PROXY: z.stringbool().default(false),
+
+			// beta-text/gamma-decision are single CPU-bound sidecars with a
+			// calibrated thread count (see the beta-text/gamma-decision Lessons
+			// learned) — more concurrent clients than this just queue at the
+			// model server instead of here, where it's at least bounded and
+			// visible. Conservative defaults; raise alongside LAYA_THREADS/the
+			// beta-text thread count if the hardware has room.
+			LLM_MAX_CONCURRENCY: z.coerce.number().int().positive().default(4),
+			LAYA_MAX_CONCURRENCY: z.coerce.number().int().positive().default(4),
 		},
 		runtimeEnv: env,
 		// `SENTRY_DSN=` in a copied .env.example means "off", not an invalid URL.

@@ -4,9 +4,16 @@ import type {
 	DecisionQuestion,
 	GoapAction,
 	PlanTraceEvent,
+	RunLock,
 	WorldState,
+	WorldStateStore,
 } from "@repo/core";
-import { createTextAction, runPlan } from "@repo/core";
+import {
+	createRunLock,
+	createTextAction,
+	InMemoryWorldStateStore,
+	runPlan,
+} from "@repo/core";
 import {
 	createKitApp,
 	createObservability,
@@ -19,6 +26,7 @@ import { isAllowed } from "./access.ts";
 import type { AgentSpec, FetchLike } from "./admin/agents.ts";
 import { adminRoutes } from "./admin/routes.ts";
 import { chunkText } from "./chunk.ts";
+import { compressIfAccepted } from "./compression.ts";
 import type { Db } from "./db/client.ts";
 import {
 	type ChannelDirectory,
@@ -53,6 +61,30 @@ export interface ServerDeps {
 	runs: RunBinding;
 	/** Flushed once a message's stream is done — `SqliteUsageRecorder` in production. */
 	usageRecorder?: { flush(): void };
+	/**
+	 * Persists a thread's `WorldState` across separate `runPlan` calls — a run
+	 * that stops short of its goal (WAITING on the user, replans exhausted)
+	 * resumes from here on the thread's next message instead of starting
+	 * blank. In-memory default (lost on restart) when unset; `SqliteWorldStateStore`
+	 * in production. See `docs/laya-autonomous-webmcp.md`.
+	 */
+	worldStateStore?: WorldStateStore;
+	/**
+	 * Serializes `runPlan` calls that share a `threadId` — without this, two
+	 * overlapping requests on the same thread (a user sends a second message
+	 * before the first plan run finished) would race over the same live
+	 * WorldState/session. Different threads never contend. In-memory default
+	 * when unset (fine for a single instance; not for multi-instance deployment).
+	 */
+	runLock?: RunLock;
+	/**
+	 * Extra actions available only on one thread — e.g. a WebMCP tool catalog
+	 * bound to that thread's live browser session. Unlike `buildActions`'s
+	 * static catalog (built once per app instance), this runs per request:
+	 * a WebMCP action's `McpClient` is tied to one visitor's open tab, so it
+	 * can't be baked into a catalog shared by every client this process serves.
+	 */
+	threadActionsFor?: (threadId: string) => Promise<GoapAction[]> | GoapAction[];
 	ipHashSalt: string;
 	/** Agents listed (and health-probed) by `GET /v1/admin/agents`. */
 	agents?: { specs: AgentSpec[]; fetch?: FetchLike };
@@ -154,12 +186,23 @@ interface RunContext {
  *
  * Trace events and usage records are buffered during the run and written
  * after the stream is closed — no SQLite write while tokens are streaming.
+ *
+ * The run is serialized through `runLock` by `threadId` (two overlapping
+ * requests on the same thread must not race over the same WorldState/live
+ * session) and given `signal` so a disconnected client's run stops between
+ * actions instead of running to completion unobserved. `threadActionsFor`
+ * (per-thread actions, e.g. a WebMCP tool catalog) is resolved here, per
+ * call — not baked into `staticActions`, which is built once for the whole
+ * app instance and can't hold anything tied to one visitor's session.
  */
 function streamPlanRun(
 	deps: ServerDeps,
-	actions: GoapAction[],
+	staticActions: GoapAction[],
 	initialState: WorldState,
 	run: RunContext,
+	worldStateStore: WorldStateStore,
+	runLock: RunLock,
+	signal?: AbortSignal,
 ): ReadableStream<Uint8Array> {
 	const now = deps.now ?? Date.now;
 	return new ReadableStream({
@@ -167,31 +210,48 @@ function streamPlanRun(
 			const startedAt = now();
 			const events: PlanTraceEvent[] = [];
 			let succeeded = false;
+			let finalState: WorldState = initialState;
 			try {
-				const result = await runPlan({
-					state: initialState,
-					goal: REPLY_GOAL,
-					actions,
-					tracer: (event) => {
-						events.push(event);
-					},
-					ctx: {
-						onDelta: (text: string) => {
-							controller.enqueue(ndjsonLine({ type: "delta", text }));
+				const persisted = await worldStateStore.load(run.threadId);
+				// The current turn's own facts (userMessage, planRunId, ...) always
+				// win over whatever an earlier, unfinished run left behind.
+				const state = persisted
+					? { ...persisted, ...initialState }
+					: initialState;
+				const threadActions = deps.threadActionsFor
+					? await deps.threadActionsFor(run.threadId)
+					: [];
+				const actions = [...staticActions, ...threadActions];
+
+				const result = await runLock.withLock(run.threadId, () =>
+					runPlan({
+						state,
+						goal: REPLY_GOAL,
+						actions,
+						signal,
+						tracer: (event) => {
+							events.push(event);
 						},
-					},
-				});
+						ctx: {
+							onDelta: (text: string) => {
+								controller.enqueue(ndjsonLine({ type: "delta", text }));
+							},
+						},
+					}),
+				);
 				succeeded = result.succeeded;
+				finalState = result.finalState;
 
 				if (!result.succeeded) {
 					controller.enqueue(
 						ndjsonLine({
 							type: "error",
-							message: "no plan reached the goal",
+							message: result.killed
+								? "run cancelled"
+								: "no plan reached the goal",
 						}),
 					);
 				} else {
-					const { finalState } = result;
 					controller.enqueue(
 						ndjsonLine({
 							type: "done",
@@ -215,8 +275,8 @@ function streamPlanRun(
 				);
 			} finally {
 				// `done`/`error` is already enqueued, so the client has the full
-				// answer; the one short transaction below only delays the
-				// stream's end marker, and keeps "response finished ⇒ persisted".
+				// answer; the work below only delays the stream's end marker, and
+				// keeps "response finished ⇒ persisted".
 				deps.runs.unbind(run.threadId);
 				try {
 					finishPlanRun(deps.db, run.planRunId, {
@@ -225,6 +285,11 @@ function streamPlanRun(
 						events,
 					});
 					deps.usageRecorder?.flush();
+					// Goal reached: nothing left to resume, don't carry stale facts
+					// into the thread's next turn. Otherwise: keep whatever the run
+					// got to (including a killed one) so the next turn resumes it.
+					if (succeeded) await worldStateStore.clear(run.threadId);
+					else await worldStateStore.save(run.threadId, finalState);
 				} catch (error) {
 					deps.onError?.(error);
 				}
@@ -243,12 +308,15 @@ const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 export function createApp(deps: ServerDeps) {
 	const actions = buildActions(deps);
 	const now = deps.now ?? Date.now;
+	const worldStateStore = deps.worldStateStore ?? new InMemoryWorldStateStore();
+	const runLock = deps.runLock ?? createRunLock();
 
 	/** Starts the GOAP reply for an already-authorized user and internal thread. */
 	const startReply = (
 		user: UserRow,
 		threadId: string,
 		text: string,
+		signal?: AbortSignal,
 	): ReadableStream<Uint8Array> => {
 		const planRunId = crypto.randomUUID();
 		startPlanRun(deps.db, {
@@ -266,7 +334,15 @@ export function createApp(deps: ServerDeps) {
 			userId: user.id,
 			planRunId,
 		};
-		return streamPlanRun(deps, actions, initialState, { planRunId, threadId });
+		return streamPlanRun(
+			deps,
+			actions,
+			initialState,
+			{ planRunId, threadId },
+			worldStateStore,
+			runLock,
+			signal,
+		);
 	};
 
 	const observability =
@@ -328,7 +404,7 @@ export function createApp(deps: ServerDeps) {
 		)
 		.post(
 			"/v1/messages",
-			({ body, status }) => {
+			({ body, status, request }) => {
 				const channel = deps.channels.bySlug(body.channel ?? DEFAULT_CHANNEL);
 				if (!channel) return status(404, "Unknown channel");
 
@@ -352,10 +428,17 @@ export function createApp(deps: ServerDeps) {
 					body.threadId,
 					timestamp,
 				);
-				const stream = startReply(user, threadId, body.text);
+				const stream = startReply(user, threadId, body.text, request.signal);
+				const { body: responseBody, encoding } = compressIfAccepted(
+					stream,
+					request.headers.get("accept-encoding"),
+				);
 
-				return new Response(stream, {
-					headers: { "content-type": "application/x-ndjson" },
+				return new Response(responseBody, {
+					headers: {
+						"content-type": "application/x-ndjson",
+						...(encoding ? { "content-encoding": encoding } : {}),
+					},
 				});
 			},
 			{ body: MessageBody },

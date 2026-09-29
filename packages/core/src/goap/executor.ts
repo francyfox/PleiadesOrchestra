@@ -17,6 +17,8 @@ export interface RunPlanOptions {
 	maxReplans?: number;
 	/** Receives planning/execution events (see `PlanTraceEvent`). Must not throw. */
 	tracer?: PlanTracer;
+	/** Checked before planning and before each action; also passed through to `execute()` as `ctx.signal` for actions that can abort their own work (e.g. a `fetch` call). Aborting stops the run between actions, not mid-`execute()` — see the KILLED state in `docs/goap-actions.md`. */
+	signal?: AbortSignal;
 }
 
 export interface RunPlanResult {
@@ -24,6 +26,8 @@ export interface RunPlanResult {
 	/** Names of actions actually run, in execution order — includes repeats across replans. */
 	executedActions: string[];
 	succeeded: boolean;
+	/** True when the run stopped because `signal` fired, not because the goal was (un)reachable. */
+	killed: boolean;
 }
 
 function satisfied(
@@ -55,6 +59,7 @@ interface Run {
 	attempts: number;
 	/** Distributive, so each `PlanTraceEvent` variant keeps its own fields. */
 	emit: (event: DistributiveOmit<PlanTraceEvent, "at">) => void;
+	signal?: AbortSignal;
 }
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown
@@ -75,13 +80,28 @@ async function attempt(
 	state: WorldState,
 	replansLeft: number,
 ): Promise<RunPlanResult> {
-	const { goal, actions, ctx, executedActions, emit } = run;
+	const { goal, actions, ctx, executedActions, emit, signal } = run;
 	const attemptIndex = run.attempts++;
+
+	if (signal?.aborted) {
+		emit({ type: "killed", attempt: attemptIndex, state });
+		return {
+			finalState: state,
+			executedActions,
+			succeeded: false,
+			killed: true,
+		};
+	}
 
 	const currentPlan = plan(state, goal, actions);
 	if (!currentPlan) {
 		emit({ type: "no_plan", attempt: attemptIndex, state });
-		return { finalState: state, executedActions, succeeded: false };
+		return {
+			finalState: state,
+			executedActions,
+			succeeded: false,
+			killed: false,
+		};
 	}
 	emit({
 		type: "planned",
@@ -93,6 +113,16 @@ async function attempt(
 
 	let nextState = state;
 	for (const action of currentPlan) {
+		if (signal?.aborted) {
+			emit({ type: "killed", attempt: attemptIndex, state: nextState });
+			return {
+				finalState: nextState,
+				executedActions,
+				succeeded: false,
+				killed: true,
+			};
+		}
+
 		if (!satisfied(action.preconditions, nextState)) {
 			emit({
 				type: "action_skipped",
@@ -114,7 +144,11 @@ async function attempt(
 			// Live state as of this specific action, not just what was true when
 			// this attempt started — an earlier action's real effects in this same
 			// loop are already reflected here.
-			observedEffects = await action.execute({ ...ctx, state: nextState });
+			observedEffects = await action.execute({
+				...ctx,
+				state: nextState,
+				signal,
+			});
 		} catch (error) {
 			emit({
 				type: "action_failed",
@@ -138,10 +172,20 @@ async function attempt(
 	}
 
 	if (satisfied(goal, nextState)) {
-		return { finalState: nextState, executedActions, succeeded: true };
+		return {
+			finalState: nextState,
+			executedActions,
+			succeeded: true,
+			killed: false,
+		};
 	}
 	if (replansLeft <= 0) {
-		return { finalState: nextState, executedActions, succeeded: false };
+		return {
+			finalState: nextState,
+			executedActions,
+			succeeded: false,
+			killed: false,
+		};
 	}
 
 	emit({ type: "replan", attempt: attemptIndex, state: nextState });
@@ -162,7 +206,15 @@ async function attempt(
  * an action throws (the error is still rethrown afterwards).
  */
 export async function runPlan(options: RunPlanOptions): Promise<RunPlanResult> {
-	const { state, goal, actions, ctx, maxReplans = 10, tracer } = options;
+	const {
+		state,
+		goal,
+		actions,
+		ctx,
+		maxReplans = 10,
+		tracer,
+		signal,
+	} = options;
 	const startedAt = Date.now();
 	const run: Run = {
 		goal,
@@ -170,6 +222,7 @@ export async function runPlan(options: RunPlanOptions): Promise<RunPlanResult> {
 		ctx,
 		executedActions: [],
 		attempts: 0,
+		signal,
 		emit: (event) => {
 			if (!tracer) return;
 			// Tracing is observability — a buggy tracer must never change the run.

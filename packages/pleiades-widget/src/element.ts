@@ -146,6 +146,8 @@ export class PleiadesChat extends HTMLElement {
 				this.open = false;
 			},
 			onSend: (text) => void chat.send(text),
+			onStop: () => chat.stop(),
+			onModeChange: (mode) => chat.setToolMode(mode),
 		});
 		this.#ui = ui;
 		this.#off = chat.subscribe(ui.render);

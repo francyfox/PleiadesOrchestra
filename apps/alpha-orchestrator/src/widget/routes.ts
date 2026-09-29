@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { Elysia, t } from "elysia";
 import { isAllowed } from "../access.ts";
 import { hashIp, sha256Hex } from "../admin/channels.ts";
+import { compressIfAccepted } from "../compression.ts";
 import type { Db } from "../db/client.ts";
 import type { ChannelDirectory, ChannelRow, UserRow } from "../db/identity.ts";
 import { identifyVisitor } from "./identify.ts";
@@ -50,7 +51,12 @@ export interface WidgetDeps {
 	now: () => number;
 	options: WidgetOptions;
 	/** Runs the GOAP reply for an already-authorized user/thread (shared with /v1/messages). */
-	startReply(user: UserRow, threadId: string, text: string): ReadableStream;
+	startReply(
+		user: UserRow,
+		threadId: string,
+		text: string,
+		signal?: AbortSignal,
+	): ReadableStream;
 }
 
 const MINUTE_MS = 60 * 1000;
@@ -244,15 +250,24 @@ export function widgetRoutes(deps: WidgetDeps) {
 					return empty(404, origin);
 				}
 
-				return new Response(
-					deps.startReply(visitor.user, body.threadId, body.text),
-					{
-						headers: {
-							...corsHeaders(origin),
-							"content-type": "application/x-ndjson",
-						},
-					},
+				const stream = deps.startReply(
+					visitor.user,
+					body.threadId,
+					body.text,
+					request.signal,
 				);
+				const { body: responseBody, encoding } = compressIfAccepted(
+					stream,
+					request.headers.get("accept-encoding"),
+				);
+
+				return new Response(responseBody, {
+					headers: {
+						...corsHeaders(origin),
+						"content-type": "application/x-ndjson",
+						...(encoding ? { "content-encoding": encoding } : {}),
+					},
+				});
 			},
 			{ body: t.Object({ threadId: t.String(), text: t.String() }) },
 		)

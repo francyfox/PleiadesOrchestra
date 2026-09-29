@@ -1,4 +1,8 @@
-import { createAgent } from "@repo/core";
+import {
+	createAgent,
+	createConcurrencyLimiter,
+	withConcurrencyLimit,
+} from "@repo/core";
 import { historyStore, usageRecorder } from "./db/instance.ts";
 import { config } from "./env.ts";
 
@@ -14,7 +18,7 @@ export const AGENT_MAX_HISTORY_MESSAGES = 0;
 // No custom telemetry reporters here — falls back to `@repo/core`'s default
 // (stdout JSON lines). Sentry is the planned replacement for anything more
 // than that; VictoriaMetrics push support was removed, not just unwired.
-export const agent = createAgent({
+const baseAgent = createAgent({
 	baseURL: config.LLM_BASE_URL,
 	apiKey: config.LLM_API_KEY,
 	model: config.LLM_MODEL,
@@ -22,3 +26,10 @@ export const agent = createAgent({
 	historyStore,
 	usageRecorder,
 });
+
+// beta-text is one shared CPU-bound llama-server — bounds how many replies
+// stream concurrently instead of letting every request hit it at once.
+export const agent = withConcurrencyLimit(
+	baseAgent,
+	createConcurrencyLimiter(config.LLM_MAX_CONCURRENCY),
+);

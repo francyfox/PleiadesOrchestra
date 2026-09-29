@@ -1,5 +1,11 @@
 export type { AgentConfig } from "./agent";
 export { createAgent } from "./agent";
+export type { ConcurrencyLimiter } from "./concurrency-limiter";
+export {
+	createConcurrencyLimiter,
+	withConcurrencyLimit,
+	withDecisionConcurrencyLimit,
+} from "./concurrency-limiter";
 export type { DecisionAgentConfig } from "./decision-agent";
 export { createDecisionAgent } from "./decision-agent";
 export type {
@@ -19,6 +25,7 @@ export type {
 	McpToolSourceConfig,
 	PlanTraceEvent,
 	PlanTracer,
+	RunLock,
 	RunPlanOptions,
 	RunPlanResult,
 	StdioMcpClientConfig,
@@ -27,12 +34,15 @@ export type {
 	TextActionMeta,
 	ToolSource,
 	WorldState,
+	WorldStateStore,
 } from "./goap";
 export {
 	connectStdioMcpClient,
 	createDecisionAction,
 	createMcpToolSource,
+	createRunLock,
 	createTextAction,
+	InMemoryWorldStateStore,
 	plan,
 	runPlan,
 } from "./goap";
