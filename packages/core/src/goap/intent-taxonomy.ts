@@ -35,3 +35,24 @@ export const EFFECTS_BY_INTENT: Record<ToolIntent, Partial<WorldState>> = {
 	compare: {},
 	other: {},
 };
+
+/**
+ * Best-effort ordering heuristic — not a guarantee. A tool's real dependency
+ * order isn't recoverable from name/description alone (no MCP/WebMCP tool
+ * descriptor carries dependency metadata); this is a generic e-commerce
+ * default. A plan that gets it wrong isn't wrong forever: the real call
+ * just returns an error/different effect and `runPlan`'s replanning already
+ * handles that (see `executor.ts`) — at the cost of one extra tool call,
+ * not a crash. See docs/laya-autonomous-webmcp.md, "Ограничения".
+ */
+export const PRECONDITIONS_BY_INTENT: Record<ToolIntent, Partial<WorldState>> = {
+	search: {},
+	filter: { catalogSearched: true },
+	select: {},
+	addToCart: { itemSelected: true },
+	removeFromCart: {},
+	checkout: { inCart: true },
+	paginate: {},
+	compare: {},
+	other: {},
+};

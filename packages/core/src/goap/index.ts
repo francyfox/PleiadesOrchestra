@@ -30,12 +30,14 @@ export type {
 export { createMcpToolSource } from "./tool-source";
 export type {
 	ActionContext,
+	ActionResult,
 	BaseContext,
 	Goal,
 	GoapAction,
 	PlanTraceEvent,
 	PlanTracer,
+	WaitingOn,
 	WorldState,
 } from "./types";
-export type { WorldStateStore } from "./world-state-store";
+export type { WorldStateCheckpoint, WorldStateStore } from "./world-state-store";
 export { InMemoryWorldStateStore } from "./world-state-store";

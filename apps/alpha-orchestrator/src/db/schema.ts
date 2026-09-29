@@ -213,6 +213,10 @@ export const threadWorldState = sqliteTable("thread_world_state", {
 	state: text("state", { mode: "json" })
 		.$type<Record<string, boolean | number | string | undefined>>()
 		.notNull(),
+	/** The goal this checkpoint's run was pursuing — needed to resume a WAITING run (e.g. on a browser-side WebMCP tool call) with the exact same goal, not a re-derived one. */
+	goal: text("goal", { mode: "json" })
+		.$type<Record<string, boolean | number | string | undefined>>()
+		.notNull(),
 	updatedAt: integer("updated_at").notNull(),
 });
 

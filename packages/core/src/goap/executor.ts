@@ -5,6 +5,7 @@ import type {
 	GoapAction,
 	PlanTraceEvent,
 	PlanTracer,
+	WaitingOn,
 	WorldState,
 } from "./types";
 
@@ -28,6 +29,22 @@ export interface RunPlanResult {
 	succeeded: boolean;
 	/** True when the run stopped because `signal` fired, not because the goal was (un)reachable. */
 	killed: boolean;
+	/** Set when an action stopped the run to wait on something only the caller can supply (see `WaitingOn`) — persist `finalState` and resume with a later `runPlan` call once it's available. */
+	waiting?: WaitingOn;
+}
+
+/**
+ * `Partial<WorldState>`'s index signature makes plain `"waiting" in outcome`
+ * narrowing unreliable for TS (a real fact could structurally collide with
+ * the key) — a `WorldState` value is always a primitive, though, so
+ * checking it's an object is enough to tell the two branches of
+ * `ActionResult` apart at both the type and the runtime level.
+ */
+function isWaitingResult(
+	outcome: Awaited<ReturnType<GoapAction["execute"]>>,
+): outcome is { waiting: WaitingOn } {
+	const value = (outcome as { waiting?: unknown }).waiting;
+	return typeof value === "object" && value !== null;
 }
 
 function satisfied(
@@ -139,12 +156,12 @@ async function attempt(
 			action: action.name,
 		});
 		const actionStartedAt = Date.now();
-		let observedEffects: Partial<WorldState>;
+		let outcome: Awaited<ReturnType<GoapAction["execute"]>>;
 		try {
 			// Live state as of this specific action, not just what was true when
 			// this attempt started — an earlier action's real effects in this same
 			// loop are already reflected here.
-			observedEffects = await action.execute({
+			outcome = await action.execute({
 				...ctx,
 				state: nextState,
 				signal,
@@ -159,6 +176,23 @@ async function attempt(
 			});
 			throw error;
 		}
+		if (isWaitingResult(outcome)) {
+			emit({
+				type: "waiting",
+				attempt: attemptIndex,
+				action: action.name,
+				waiting: outcome.waiting,
+				state: nextState,
+			});
+			return {
+				finalState: nextState,
+				executedActions,
+				succeeded: false,
+				killed: false,
+				waiting: outcome.waiting,
+			};
+		}
+		const observedEffects = outcome;
 		emit({
 			type: "action_finished",
 			attempt: attemptIndex,

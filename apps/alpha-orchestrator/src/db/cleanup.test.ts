@@ -89,6 +89,7 @@ describe("deleteStaleWorldState", () => {
 			.values({
 				threadId: stale,
 				state: { step: "checkout" },
+				goal: { replied: true },
 				updatedAt: now - 25 * HOUR,
 			})
 			.run();
@@ -96,6 +97,7 @@ describe("deleteStaleWorldState", () => {
 			.values({
 				threadId: fresh,
 				state: { step: "search" },
+				goal: { replied: true },
 				updatedAt: now - 1 * HOUR,
 			})
 			.run();

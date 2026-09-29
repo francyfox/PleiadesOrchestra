@@ -29,6 +29,21 @@ export interface ActionContext extends BaseContext {
 	signal?: AbortSignal;
 }
 
+/**
+ * What an action asks for when it needs something only the run's caller can
+ * supply — e.g. a WebMCP tool call, which can only execute in the visitor's
+ * browser, never on the server (see docs/laya-autonomous-webmcp.md). `kind`
+ * and `payload` are opaque to the executor: it only stops the run and
+ * reports this back, the caller decides what to do with it.
+ */
+export interface WaitingOn {
+	kind: string;
+	payload: unknown;
+}
+
+/** Either the real/expected effects, or a request to pause the run (see `WaitingOn`). */
+export type ActionResult = Partial<WorldState> | { waiting: WaitingOn };
+
 export interface GoapAction {
 	name: string;
 	/** Real resource cost (calibrated latency/CPU), not an arbitrary number — see the plan doc. */
@@ -36,8 +51,8 @@ export interface GoapAction {
 	preconditions: Partial<WorldState>;
 	/** Expected effects — what this action is *supposed* to produce. */
 	effects: Partial<WorldState>;
-	/** Actual effects observed — may differ (tool error, model refusal, ...); the executor (Phase 2) reconciles this. */
-	execute(ctx: ActionContext): Promise<Partial<WorldState>>;
+	/** Actual effects observed — may differ (tool error, model refusal, ...); the executor (Phase 2) reconciles this. Or a `{ waiting }` request to pause the run (Phase 6/WebMCP). */
+	execute(ctx: ActionContext): Promise<ActionResult>;
 }
 
 /**
@@ -62,6 +77,15 @@ export type PlanTraceEvent =
 			at: number;
 	  }
 	| { type: "action_started"; attempt: number; action: string; at: number }
+	/** An action can't complete on the server — see `WaitingOn` — so the run stops here; the caller persists state and resumes later. */
+	| {
+			type: "waiting";
+			attempt: number;
+			action: string;
+			waiting: WaitingOn;
+			state: WorldState;
+			at: number;
+	  }
 	| {
 			type: "action_finished";
 			attempt: number;

@@ -15,6 +15,7 @@ export type {
 } from "./decision-types";
 export type {
 	ActionContext,
+	ActionResult,
 	BaseContext,
 	ClassifyMessageIntentConfig,
 	DecisionActionConfig,
@@ -36,7 +37,9 @@ export type {
 	TextActionMeta,
 	ToolIntent,
 	ToolSource,
+	WaitingOn,
 	WorldState,
+	WorldStateCheckpoint,
 	WorldStateStore,
 } from "./goap";
 export {

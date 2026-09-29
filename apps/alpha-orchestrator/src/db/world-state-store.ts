@@ -1,4 +1,4 @@
-import type { WorldState, WorldStateStore } from "@repo/core";
+import type { WorldStateCheckpoint, WorldStateStore } from "@repo/core";
 import { eq } from "drizzle-orm";
 import type { Db } from "./client.ts";
 import { threadWorldState } from "./schema.ts";
@@ -15,22 +15,31 @@ export class SqliteWorldStateStore implements WorldStateStore {
 		private readonly now: () => number = Date.now,
 	) {}
 
-	async load(threadId: string): Promise<WorldState | undefined> {
+	async load(threadId: string): Promise<WorldStateCheckpoint | undefined> {
 		const row = this.db
-			.select({ state: threadWorldState.state })
+			.select({ state: threadWorldState.state, goal: threadWorldState.goal })
 			.from(threadWorldState)
 			.where(eq(threadWorldState.threadId, threadId))
 			.get();
-		return row?.state;
+		return row;
 	}
 
-	async save(threadId: string, state: WorldState): Promise<void> {
+	async save(threadId: string, checkpoint: WorldStateCheckpoint): Promise<void> {
 		this.db
 			.insert(threadWorldState)
-			.values({ threadId, state, updatedAt: this.now() })
+			.values({
+				threadId,
+				state: checkpoint.state,
+				goal: checkpoint.goal,
+				updatedAt: this.now(),
+			})
 			.onConflictDoUpdate({
 				target: threadWorldState.threadId,
-				set: { state, updatedAt: this.now() },
+				set: {
+					state: checkpoint.state,
+					goal: checkpoint.goal,
+					updatedAt: this.now(),
+				},
 			})
 			.run();
 	}

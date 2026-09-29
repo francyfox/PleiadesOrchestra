@@ -1,13 +1,15 @@
 import { describe, expect, test } from "bun:test";
 import { runPlan } from "./executor.ts";
-import type { GoapAction, PlanTraceEvent } from "./types.ts";
+import type { ActionResult, GoapAction, PlanTraceEvent } from "./types.ts";
 
 function action(
 	name: string,
 	cost: number,
 	preconditions: GoapAction["preconditions"],
 	effects: GoapAction["effects"],
-	execute: GoapAction["execute"] = async () => effects,
+	execute: (
+		ctx: Parameters<GoapAction["execute"]>[0],
+	) => Promise<ActionResult> = async () => effects,
 ): GoapAction {
 	return { name, cost, preconditions, effects, execute };
 }
@@ -392,5 +394,117 @@ describe("runPlan cancellation", () => {
 		});
 
 		expect(seen).toBe(controller.signal);
+	});
+});
+
+describe("runPlan waiting", () => {
+	test("an action returning `waiting` stops the run immediately, without throwing or counting as failure the same way no_plan does", async () => {
+		const askBrowser = action(
+			"askBrowser",
+			1,
+			{},
+			{ inCart: true },
+			async () => ({
+				waiting: { kind: "webmcp_tool_call", payload: { tool: "add_to_cart" } },
+			}),
+		);
+		const { events, tracer } = traced();
+
+		const result = await runPlan({
+			state: {},
+			goal: { inCart: true },
+			actions: [askBrowser],
+			ctx: {},
+			tracer,
+		});
+
+		expect(result.succeeded).toBe(false);
+		expect(result.killed).toBe(false);
+		expect(result.waiting).toEqual({
+			kind: "webmcp_tool_call",
+			payload: { tool: "add_to_cart" },
+		});
+		expect(result.executedActions).toEqual([]);
+		expect(events.map((event) => event.type)).toEqual([
+			"planned",
+			"action_started",
+			"waiting",
+			"finished",
+		]);
+		expect(events[2]).toMatchObject({
+			type: "waiting",
+			action: "askBrowser",
+			waiting: { kind: "webmcp_tool_call", payload: { tool: "add_to_cart" } },
+		});
+		expect(events.at(-1)).toMatchObject({ succeeded: false, attempts: 1 });
+	});
+
+	test("doesn't run any action after the one that waits, even earlier in the same plan", async () => {
+		const askBrowser = action(
+			"askBrowser",
+			1,
+			{},
+			{ inCart: true },
+			async () => ({
+				waiting: { kind: "webmcp_tool_call", payload: { tool: "add_to_cart" } },
+			}),
+		);
+		let replyRan = false;
+		const reply = action(
+			"reply",
+			5,
+			{ inCart: true },
+			{ replied: true },
+			async () => {
+				replyRan = true;
+				return { replied: true };
+			},
+		);
+
+		const result = await runPlan({
+			state: {},
+			goal: { inCart: true, replied: true },
+			actions: [askBrowser, reply],
+			ctx: {},
+		});
+
+		expect(result.waiting).toBeDefined();
+		expect(replyRan).toBe(false);
+	});
+
+	test("resuming is just calling runPlan again with the result merged into state — the same action now returns real effects", async () => {
+		const addToCart = action(
+			"addToCart",
+			1,
+			{},
+			{ inCart: true },
+			async (ctx) =>
+				ctx.state["webmcp:add_to_cart:result"] === "ok"
+					? { inCart: true }
+					: {
+							waiting: {
+								kind: "webmcp_tool_call",
+								payload: { tool: "add_to_cart" },
+							},
+						},
+		);
+
+		const first = await runPlan({
+			state: {},
+			goal: { inCart: true },
+			actions: [addToCart],
+			ctx: {},
+		});
+		expect(first.succeeded).toBe(false);
+		expect(first.waiting).toBeDefined();
+
+		const resumed = await runPlan({
+			state: { ...first.finalState, "webmcp:add_to_cart:result": "ok" },
+			goal: { inCart: true },
+			actions: [addToCart],
+			ctx: {},
+		});
+		expect(resumed.succeeded).toBe(true);
+		expect(resumed.finalState.inCart).toBe(true);
 	});
 });

@@ -41,7 +41,15 @@ export interface McpToolSourceConfig {
 /** Placeholder until the plan doc's benchmark (open question) gives a real number. */
 const DEFAULT_MCP_TOOL_COST = 3;
 
-function buildArguments(
+/**
+ * Maps `state` facts onto tool call arguments by matching the input
+ * schema's own property names — covers parameters whose value is already
+ * known (extracted earlier by some other action), the same way for any
+ * tool source keyed on a JSON-Schema-shaped `inputSchema` (MCP here,
+ * WebMCP in `webmcp-actions.ts`). See docs/laya-autonomous-webmcp.md,
+ * "Аргументы тула: bounded vs open".
+ */
+export function buildArguments(
 	state: WorldState,
 	inputSchema: McpToolDescriptor["inputSchema"],
 ): Record<string, unknown> {
