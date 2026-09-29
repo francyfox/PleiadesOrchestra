@@ -5,6 +5,9 @@ import type {
 	GoapAction,
 	PlanTraceEvent,
 	RunLock,
+	WaitingOn,
+	WebMcpToolCallPayload,
+	WebMcpToolDescriptor,
 	WorldState,
 	WorldStateStore,
 } from "@repo/core";
@@ -12,6 +15,7 @@ import {
 	classifyMessageIntent,
 	createRunLock,
 	createTextAction,
+	createWebMcpActions,
 	goalForIntent,
 	InMemoryWorldStateStore,
 	runPlan,
@@ -87,6 +91,17 @@ export interface ServerDeps {
 	 * can't be baked into a catalog shared by every client this process serves.
 	 */
 	threadActionsFor?: (threadId: string) => Promise<GoapAction[]> | GoapAction[];
+	/**
+	 * Classified WebMCP actions per thread, registered once when the widget's
+	 * panel opens (`POST /v1/widget/tools`) and reused for every message/
+	 * resume after — not resent (and reclassified via Laya!) on every single
+	 * call, which is what made a real tool catalog (a dozen-plus tools with
+	 * real descriptions/schemas) blow past `WIDGET_MAX_TEXT_CHARS` on the
+	 * very first message. In-memory default (lost on restart — fine, the
+	 * widget just re-registers on its next open). See
+	 * docs/laya-autonomous-webmcp.md.
+	 */
+	webmcpCatalog?: Map<string, GoapAction[]>;
 	ipHashSalt: string;
 	/** Agents listed (and health-probed) by `GET /v1/admin/agents`. */
 	agents?: { specs: AgentSpec[]; fetch?: FetchLike };
@@ -201,6 +216,52 @@ interface RunContext {
 	threadId: string;
 }
 
+/** What `streamPlanRun`'s `prepare` resolves before `runPlan` is actually called — see its own doc. */
+interface PreparedRun {
+	state: WorldState;
+	goal: Partial<WorldState>;
+	actions: GoapAction[];
+}
+
+/**
+ * `threadActionsFor` (per-thread actions, e.g. a real MCP tool catalog) plus
+ * whatever WebMCP actions were registered for this thread (`webmcpCatalog`,
+ * populated by `POST /v1/widget/tools` when the widget's panel opens — see
+ * `registerWebMcpTools` below). Not resolved from a per-message payload:
+ * classifying a whole tool catalog through Laya on *every* message was both
+ * slow and, for a real catalog (a dozen-plus tools with real descriptions/
+ * schemas), large enough to blow past `WIDGET_MAX_TEXT_CHARS` on the very
+ * first message. See docs/laya-autonomous-webmcp.md.
+ */
+function resolveDynamicActions(
+	deps: ServerDeps,
+	webmcpCatalog: Map<string, GoapAction[]>,
+	threadId: string,
+): Promise<GoapAction[]> | GoapAction[] {
+	const webmcpActions = webmcpCatalog.get(threadId) ?? [];
+	if (!deps.threadActionsFor) return webmcpActions;
+	return Promise.resolve(deps.threadActionsFor(threadId)).then(
+		(threadActions) => [...threadActions, ...webmcpActions],
+	);
+}
+
+/** The NDJSON line for a run that stopped to wait on something only the caller can supply — today, always a WebMCP tool call (the only `WaitingOn.kind` any action in this app produces). */
+function toolCallEvent(waiting: WaitingOn) {
+	if (waiting.kind === "webmcp_tool_call") {
+		const payload = waiting.payload as WebMcpToolCallPayload;
+		return {
+			type: "tool_call" as const,
+			tool: payload.tool,
+			arguments: payload.arguments,
+			callId: crypto.randomUUID(),
+		};
+	}
+	return {
+		type: "error" as const,
+		message: `unsupported wait: ${waiting.kind}`,
+	};
+}
+
 /**
  * NDJSON body: one JSON object per line. `delta` streams live as the
  * underlying `Agent` generates text (via the text-action's `onDelta` — see
@@ -209,9 +270,14 @@ interface RunContext {
  * the same `elapsedMs`/`inputTokens`/`outputTokens` shape the old direct
  * `Agent.handleMessageStream` wiring did (read back off `finalState`, where
  * `generateReply`'s `toEffects` put them) — `apps/cli`'s usage line depends
- * on that shape, not just this endpoint's own callers. `error` covers both
- * an action throwing mid-run and the planner failing to reach the goal at
- * all — a transport-level failure either way, not a `GoapAction`.
+ * on that shape, not just this endpoint's own callers. `tool_call` is a new
+ * terminal line: the run stopped on `WaitingOn` (see `executor.ts`) because
+ * an action — a WebMCP tool — can only run in the caller's browser; the
+ * caller executes it and resumes via `resumeReply`/`POST
+ * /v1/widget/tool-results` instead of a further `delta`/`done` on this same
+ * stream. `error` covers both an action throwing mid-run and the planner
+ * failing to reach the goal at all — a transport-level failure either way,
+ * not a `GoapAction`.
  *
  * Trace events and usage records are buffered during the run and written
  * after the stream is closed — no SQLite write while tokens are streaming.
@@ -219,27 +285,26 @@ interface RunContext {
  * The run is serialized through `runLock` by `threadId` (two overlapping
  * requests on the same thread must not race over the same WorldState/live
  * session) and given `signal` so a disconnected client's run stops between
- * actions instead of running to completion unobserved. `threadActionsFor`
- * (per-thread actions, e.g. a WebMCP tool catalog) is resolved here, per
- * call — not baked into `staticActions`, which is built once for the whole
- * app instance and can't hold anything tied to one visitor's session.
+ * actions instead of running to completion unobserved.
  *
- * `threadActionsFor` returning nothing (still the common case — no
- * WebMCP/MCP catalog wired for this thread) skips message-intent
- * classification entirely: a plain "hi" always resolves through the one
- * `generateReply` action, no Laya round trip spent reasoning about tools
- * that aren't there. Only once a catalog exists does the turn's own message
- * get classified (`classifyMessageIntent`) and the goal extended to match
- * (`goalForIntent`) — see docs/laya-autonomous-webmcp.md.
+ * `prepare` resolves the actual `state`/`goal`/`actions` to run — kept as a
+ * callback, not a plain argument, so that work (loading a persisted
+ * checkpoint, resolving dynamic actions, message-intent classification) runs
+ * *inside* the stream, overlapped with the response already having started,
+ * the same way it always has — not before the caller even gets a response.
+ * `startReply` and `resumeReply` (in `createApp`) each supply their own
+ * `prepare`: one turns a fresh message into a goal via
+ * `classifyMessageIntent`, the other resumes a persisted checkpoint's exact
+ * goal with a tool result merged in. Neither is baked in here, which is what
+ * makes this one function serve both — see docs/laya-autonomous-webmcp.md.
  */
 function streamPlanRun(
 	deps: ServerDeps,
-	staticActions: GoapAction[],
-	initialState: WorldState,
 	run: RunContext,
 	worldStateStore: WorldStateStore,
 	runLock: RunLock,
-	signal?: AbortSignal,
+	signal: AbortSignal | undefined,
+	prepare: () => Promise<PreparedRun>,
 ): ReadableStream<Uint8Array> {
 	const now = deps.now ?? Date.now;
 	return new ReadableStream({
@@ -247,35 +312,17 @@ function streamPlanRun(
 			const startedAt = now();
 			const events: PlanTraceEvent[] = [];
 			let succeeded = false;
-			let finalState: WorldState = initialState;
+			let prepared: PreparedRun | undefined;
+			let finalState: WorldState = {};
 			try {
-				const persisted = await worldStateStore.load(run.threadId);
-				// The current turn's own facts (userMessage, planRunId, ...) always
-				// win over whatever an earlier, unfinished run left behind.
-				const merged = persisted
-					? { ...persisted, ...initialState }
-					: initialState;
-				const threadActions = deps.threadActionsFor
-					? await deps.threadActionsFor(run.threadId)
-					: [];
-				const actions = [...staticActions, ...threadActions];
-
-				let goal: WorldState = REPLY_GOAL;
-				let state = merged;
-				if (threadActions.length > 0) {
-					const intent = await classifyMessageIntent(
-						{ decisionAgent: deps.decisionAgent },
-						String(merged.userMessage ?? ""),
-					);
-					state = { ...merged, messageIntent: intent };
-					goal = goalForIntent(intent, REPLY_GOAL, actions);
-				}
+				prepared = await prepare();
+				finalState = prepared.state;
 
 				const result = await runLock.withLock(run.threadId, () =>
 					runPlan({
-						state,
-						goal,
-						actions,
+						state: prepared?.state ?? {},
+						goal: prepared?.goal ?? {},
+						actions: prepared?.actions ?? [],
 						signal,
 						tracer: (event) => {
 							events.push(event);
@@ -290,7 +337,9 @@ function streamPlanRun(
 				succeeded = result.succeeded;
 				finalState = result.finalState;
 
-				if (!result.succeeded) {
+				if (result.waiting) {
+					controller.enqueue(ndjsonLine(toolCallEvent(result.waiting)));
+				} else if (!result.succeeded) {
 					controller.enqueue(
 						ndjsonLine({
 							type: "error",
@@ -322,9 +371,9 @@ function streamPlanRun(
 					}),
 				);
 			} finally {
-				// `done`/`error` is already enqueued, so the client has the full
-				// answer; the work below only delays the stream's end marker, and
-				// keeps "response finished ⇒ persisted".
+				// `done`/`error`/`tool_call` is already enqueued, so the client has
+				// the full answer; the work below only delays the stream's end
+				// marker, and keeps "response finished ⇒ persisted".
 				deps.runs.unbind(run.threadId);
 				try {
 					finishPlanRun(deps.db, run.planRunId, {
@@ -334,10 +383,19 @@ function streamPlanRun(
 					});
 					deps.usageRecorder?.flush();
 					// Goal reached: nothing left to resume, don't carry stale facts
-					// into the thread's next turn. Otherwise: keep whatever the run
-					// got to (including a killed one) so the next turn resumes it.
+					// into the thread's next turn. Otherwise (including a killed run,
+					// or one waiting on a browser-side tool call): keep whatever the
+					// run got to, plus the goal it was pursuing, so the next turn (or
+					// `resumeReply`) can pick up from here. `prepared` is unset only
+					// when `prepare()` itself threw (e.g. `resumeReply` finding
+					// nothing to resume) — nothing to persist in that case.
 					if (succeeded) await worldStateStore.clear(run.threadId);
-					else await worldStateStore.save(run.threadId, finalState);
+					else if (prepared) {
+						await worldStateStore.save(run.threadId, {
+							state: finalState,
+							goal: prepared.goal,
+						});
+					}
 				} catch (error) {
 					deps.onError?.(error);
 				}
@@ -358,6 +416,67 @@ export function createApp(deps: ServerDeps) {
 	const now = deps.now ?? Date.now;
 	const worldStateStore = deps.worldStateStore ?? new InMemoryWorldStateStore();
 	const runLock = deps.runLock ?? createRunLock();
+	const webmcpCatalog = deps.webmcpCatalog ?? new Map<string, GoapAction[]>();
+
+	/**
+	 * `POST /v1/widget/tools` — classifies a widget-supplied WebMCP tool list
+	 * through Laya once (`createWebMcpActions`) and caches the result for
+	 * every later message/resume on this thread, instead of reclassifying it
+	 * on every one. An empty list clears the thread's entry (the widget sends
+	 * one when it has nothing to offer, e.g. `toolMode` switched away from
+	 * `"webmcp"`) — nothing left over from a stale registration.
+	 */
+	const registerWebMcpTools = async (
+		threadId: string,
+		tools: WebMcpToolDescriptor[],
+	): Promise<void> => {
+		if (tools.length === 0) {
+			webmcpCatalog.delete(threadId);
+			return;
+		}
+		webmcpCatalog.set(
+			threadId,
+			await createWebMcpActions({ tools, decisionAgent: deps.decisionAgent }),
+		);
+	};
+
+	/**
+	 * Starts a new `plan_runs` row + `streamPlanRun` — the bookkeeping both
+	 * `startReply` and `resumeReply` need, only the `prepare` differs.
+	 * `planRunId` is generated here (not inside `prepare`) because the trace
+	 * row needs it up front, but `prepare` needs it too — `text-action.ts`
+	 * reads `state.planRunId` straight off the world state to link usage
+	 * records to this run — so it's passed in, not just closed over.
+	 */
+	const runStream = (
+		user: UserRow,
+		threadId: string,
+		signal: AbortSignal | undefined,
+		prepare: (planRunId: string) => Promise<PreparedRun>,
+	): ReadableStream<Uint8Array> => {
+		const planRunId = crypto.randomUUID();
+		startPlanRun(deps.db, {
+			id: planRunId,
+			userId: user.id,
+			threadId,
+			// Best-effort base goal for the trace row — the goal `prepare()`
+			// actually runs with (possibly extended by classification, or the
+			// exact one a resumed run was already pursuing) is only known once
+			// the stream starts; this has always been true for `startReply` too,
+			// not a new imprecision introduced by resuming.
+			goal: REPLY_GOAL,
+			createdAt: now(),
+		});
+		deps.runs.bind(threadId, planRunId);
+		return streamPlanRun(
+			deps,
+			{ planRunId, threadId },
+			worldStateStore,
+			runLock,
+			signal,
+			() => prepare(planRunId),
+		);
+	};
 
 	/** Starts the GOAP reply for an already-authorized user and internal thread. */
 	const startReply = (
@@ -366,34 +485,94 @@ export function createApp(deps: ServerDeps) {
 		text: string,
 		signal?: AbortSignal,
 		customerContext?: Record<string, string | number | boolean>,
-	): ReadableStream<Uint8Array> => {
-		const planRunId = crypto.randomUUID();
-		startPlanRun(deps.db, {
-			id: planRunId,
-			userId: user.id,
-			threadId,
-			goal: REPLY_GOAL,
-			createdAt: now(),
-		});
-		deps.runs.bind(threadId, planRunId);
+	): ReadableStream<Uint8Array> =>
+		runStream(user, threadId, signal, async (planRunId) => {
+			const persisted = await worldStateStore.load(threadId);
+			const initialState: WorldState = {
+				userMessage: normalizeText.apply(text),
+				threadId,
+				userId: user.id,
+				planRunId,
+				...customerFacts(customerContext),
+			};
+			// The current turn's own facts (userMessage, customerContext, ...)
+			// always win over whatever an earlier, unfinished run left behind.
+			const merged = persisted
+				? { ...persisted.state, ...initialState }
+				: initialState;
 
-		const initialState: WorldState = {
-			userMessage: normalizeText.apply(text),
-			threadId,
-			userId: user.id,
-			planRunId,
-			...customerFacts(customerContext),
-		};
-		return streamPlanRun(
-			deps,
-			actions,
-			initialState,
-			{ planRunId, threadId },
-			worldStateStore,
-			runLock,
-			signal,
-		);
-	};
+			const dynamicActions = await resolveDynamicActions(
+				deps,
+				webmcpCatalog,
+				threadId,
+			);
+			const allActions = [...actions, ...dynamicActions];
+
+			// Dynamic actions absent (still the common case — no WebMCP/MCP
+			// catalog for this thread) skips classification entirely: a plain
+			// "hi" always resolves through `generateReply`, no Laya round trip
+			// spent reasoning about tools that aren't there.
+			if (dynamicActions.length === 0) {
+				return { state: merged, goal: REPLY_GOAL, actions: allActions };
+			}
+			const intent = await classifyMessageIntent(
+				{ decisionAgent: deps.decisionAgent },
+				String(merged.userMessage ?? ""),
+			);
+			return {
+				state: { ...merged, messageIntent: intent },
+				goal: goalForIntent(intent, REPLY_GOAL, allActions),
+				actions: allActions,
+			};
+		});
+
+	/**
+	 * Resumes a run that stopped on `WaitingOn` (see `executor.ts`) once the
+	 * caller has executed the browser-side WebMCP tool it asked for — the
+	 * `POST /v1/widget/tool-results` counterpart to `startReply`. Loads the
+	 * exact checkpoint (`state` + `goal`) the original run left behind
+	 * instead of re-deriving the goal from the original message a second
+	 * time (see `WorldStateCheckpoint`'s doc), merges in the tool's outcome
+	 * as `webmcp:<tool>:result` (read back by the same action in
+	 * `createWebMcpActions` that asked to wait), and lets `runPlan` continue
+	 * from there — including chaining into a *further* WebMCP tool call, or
+	 * straight to `generateReply` if that was the last fact the goal needed.
+	 */
+	const resumeReply = (
+		user: UserRow,
+		threadId: string,
+		toolResult: { tool: string; isError: boolean },
+		signal?: AbortSignal,
+	): ReadableStream<Uint8Array> =>
+		runStream(user, threadId, signal, async (planRunId) => {
+			const checkpoint = await worldStateStore.load(threadId);
+			if (!checkpoint) {
+				// Stale/bogus resume (expired checkpoint, wrong callId, a thread
+				// that was never actually waiting) — surfaced as an in-band error
+				// line, the same way a run that can't reach its goal already is,
+				// not a distinct HTTP status (the stream has already started).
+				throw new Error("nothing to resume for this thread");
+			}
+			const dynamicActions = await resolveDynamicActions(
+				deps,
+				webmcpCatalog,
+				threadId,
+			);
+			return {
+				state: {
+					...checkpoint.state,
+					// This resumed run is its own `plan_runs` row (usage records
+					// generated by whatever runs next — e.g. `generateReply` — link
+					// to it, not the original one that hit WAITING).
+					planRunId,
+					[`webmcp:${toolResult.tool}:result`]: toolResult.isError
+						? "error"
+						: "ok",
+				},
+				goal: checkpoint.goal,
+				actions: [...actions, ...dynamicActions],
+			};
+		});
 
 	const observability =
 		deps.observability ??
@@ -536,6 +715,8 @@ export function createApp(deps: ServerDeps) {
 				now,
 				options: { ...DEFAULT_WIDGET_OPTIONS, ...deps.widget },
 				startReply,
+				resumeReply,
+				registerWebMcpTools,
 			}),
 		)
 		.use(

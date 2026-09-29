@@ -18,6 +18,7 @@ import { performance } from "./performance.ts";
 import {
 	applyUserAction,
 	deleteUserMessages,
+	dynamicActionsForUser,
 	getAdminUser,
 	getRun,
 	getUserDetail,
@@ -204,14 +205,26 @@ export function adminRoutes(deps: AdminDeps) {
 		.get("/runs/:id", ({ params, status }) => {
 			return getRun(db, params.id) ?? status(404, "Not found");
 		})
-		.get("/goap/actions", () => ({
-			actions: deps.actions.map(({ name, cost, preconditions, effects }) => ({
-				name,
-				cost,
-				preconditions,
-				effects,
-			})),
-		}))
+		.get(
+			"/goap/actions",
+			({ query }) => {
+				const actions = deps.actions.map(
+					({ name, cost, preconditions, effects }) => ({
+						name,
+						cost,
+						preconditions,
+						effects,
+					}),
+				);
+				if (!query.userId) return { actions };
+				const staticNames = new Set(actions.map((action) => action.name));
+				return {
+					actions,
+					dynamicActions: dynamicActionsForUser(db, query.userId, staticNames),
+				};
+			},
+			{ query: t.Object({ userId: t.Optional(t.String()) }) },
+		)
 		.get("/agents", async () => ({
 			items: await probeAgents(deps.agents?.specs ?? [], {
 				fetch: deps.agents?.fetch,

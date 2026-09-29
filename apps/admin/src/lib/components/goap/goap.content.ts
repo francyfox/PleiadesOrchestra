@@ -130,6 +130,39 @@ const goapContent = {
 				en: "The catalog is empty",
 				kk: "Каталог бос",
 			}),
+			dynamic: {
+				title: t({
+					ru: "Динамические действия пользователя",
+					en: "User's dynamic actions",
+					kk: "Пайдаланушының динамикалық әрекеттері",
+				}),
+				hint: t({
+					ru: "Действия вне статического каталога — например, WebMCP-тулы, которые видел браузер посетителя. Восстановлено из истории прогонов этого пользователя, не живой список.",
+					en: "Actions outside the static catalog — e.g. WebMCP tools the visitor's browser saw. Reconstructed from this user's own run history, not a live list.",
+					kk: "Статикалық каталогтан тыс әрекеттер — мысалы, келуші браузері көрген WebMCP-тулдары. Осы пайдаланушының іске қосылымдар тарихынан қалпына келтірілген, тірі тізім емес.",
+				}),
+				userIdLabel: t({
+					ru: "ID пользователя",
+					en: "User ID",
+					kk: "Пайдаланушы ID",
+				}),
+				userIdPlaceholder: t({
+					ru: "вставьте id со страницы пользователей",
+					en: "paste an id from the users page",
+					kk: "пайдаланушылар бетінен id қойыңыз",
+				}),
+				load: t({ ru: "Показать", en: "Show", kk: "Көрсету" }),
+				empty: t({
+					ru: "Для этого пользователя динамических действий не найдено",
+					en: "No dynamic actions found for this user",
+					kk: "Бұл пайдаланушы үшін динамикалық әрекеттер табылмады",
+				}),
+				lastSeen: t({
+					ru: "Последний раз",
+					en: "Last seen",
+					kk: "Соңғы рет",
+				}),
+			},
 		},
 	},
 } satisfies Dictionary;

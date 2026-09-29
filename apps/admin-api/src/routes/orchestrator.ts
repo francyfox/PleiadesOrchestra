@@ -12,6 +12,7 @@ import {
 	ChannelWithSecret,
 	CreateBlockedIpInput,
 	CreateChannelInput,
+	DynamicActionInfo,
 	GoapActionInfo,
 	PageQuery,
 	PerformanceReport,
@@ -79,13 +80,25 @@ export function orchestratorRoutes({ auth, orchestrator, now, db }: RouteDeps) {
 					response: { 200: RunDetails, ...Upstream },
 					detail: { summary: "One GOAP plan run with its trace" },
 				})
-				.get("/goap/actions", () => orchestrator.goapActions(), {
-					response: {
-						200: t.Object({ actions: t.Array(GoapActionInfo) }),
-						...Upstream,
+				.get(
+					"/goap/actions",
+					({ query }) => orchestrator.goapActions(query.userId),
+					{
+						query: t.Object({ userId: t.Optional(t.String()) }),
+						response: {
+							200: t.Object({
+								actions: t.Array(GoapActionInfo),
+								dynamicActions: t.Optional(t.Array(DynamicActionInfo)),
+							}),
+							...Upstream,
+						},
+						detail: {
+							summary: "The GOAP action catalog",
+							description:
+								"With ?userId=, also lists that user's dynamic actions (e.g. a WebMCP tool catalog) reconstructed from their own run history.",
+						},
 					},
-					detail: { summary: "The GOAP action catalog" },
-				})
+				)
 
 				// --- chat users -------------------------------------------------
 				.get("/users", ({ query }) => orchestrator.listUsers(query), {

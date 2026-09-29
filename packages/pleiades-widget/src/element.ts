@@ -8,6 +8,7 @@ import {
 } from "./lib/config";
 import { pickLang, strings } from "./lib/i18n";
 import { createSessionStore } from "./lib/storage";
+import { createNavigatorWebMcpProvider } from "./lib/webmcp";
 // `?inline` gives the string this class injects into the shadow root at
 // runtime; the plain import (unused otherwise) makes Vite also emit the
 // same, identically-processed stylesheet as a standalone `dist/pleiades-widget.css`
@@ -131,6 +132,11 @@ export class PleiadesChat extends HTMLElement {
 			this.#chat = createChat({
 				api: createWidgetApi(config.config),
 				store: createSessionStore(config.config),
+				// Absent in every real browser today (see `webmcp.ts`) — `chat.ts`
+				// itself only actually uses this while `toolMode === "webmcp"`,
+				// checked per `send()`, not just here, so the mode toggle needs no
+				// `#mount()` beyond what already runs for any attribute change.
+				webmcp: createNavigatorWebMcpProvider(),
 				maxChars: MAX_CHARS,
 			});
 			this.#scope = scope;

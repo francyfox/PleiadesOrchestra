@@ -28,3 +28,8 @@ dist
 # Ad-hoc build/error logs
 *.err
 sh.err.*
+
+# Playwright (apps/e2e)
+/apps/e2e/test-results/
+/apps/e2e/playwright-report/
+/apps/e2e/blob-report/

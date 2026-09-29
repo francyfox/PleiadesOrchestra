@@ -1,6 +1,7 @@
 import { ApiError, isAbortError, type WidgetApi } from "./api";
 import type { CustomerContext } from "./config";
 import type { SessionStore, ToolMode } from "./storage";
+import type { WebMcpProvider } from "./webmcp";
 
 export type { ToolMode } from "./storage";
 
@@ -39,6 +40,14 @@ export interface ChatState {
 interface ChatOptions {
 	api: WidgetApi;
 	store: SessionStore;
+	/**
+	 * The in-page WebMCP tool caller, if the browser exposes one (see
+	 * `webmcp.ts`) — undefined in every real browser today, and even when
+	 * present only actually used while `state.toolMode === "webmcp"` (`send`
+	 * checks this on every call, not just once at creation, since the mode
+	 * can change without recreating `Chat`).
+	 */
+	webmcp?: WebMcpProvider;
 	now?: () => number;
 	/** Mirrors the server's `WIDGET_MAX_TEXT_CHARS`. */
 	maxChars?: number;
@@ -82,6 +91,7 @@ function errorCodeOf(cause: unknown): ChatError {
 export function createChat({
 	api,
 	store,
+	webmcp,
 	now = Date.now,
 	maxChars = 2000,
 	idleTimeoutMs = 15_000,
@@ -209,6 +219,32 @@ export function createChat({
 				content: item.content,
 			}))
 			.slice(-maxMessages);
+
+		await syncWebMcpTools();
+	}
+
+	/**
+	 * Registers this thread's current WebMCP tool catalog with the server —
+	 * once here (panel open) and once more from `setToolMode` (mode switched
+	 * while already open), never per message: a real catalog is several kB
+	 * on its own, and reclassifying it through Laya on every message was
+	 * both wasteful and, combined with the size, what caused a `413` on the
+	 * very first message. A listing/registration failure (offline, an
+	 * unstable/half-implemented `navigator.modelContext`) just means no
+	 * tools this session, not a broken open/mode switch.
+	 */
+	async function syncWebMcpTools(): Promise<void> {
+		// No provider at all (every real browser today — see webmcp.ts): never
+		// anything to register or clear, so skip the network call entirely
+		// rather than sending an empty catalog on every single panel open.
+		if (!session || !webmcp) return;
+		const tools =
+			state.toolMode === "webmcp"
+				? await webmcp.listTools().catch(() => [])
+				: [];
+		await api
+			.registerWebMcpTools(session.visitorToken, session.threadId, tools)
+			.catch(() => {});
 	}
 
 	function init(): Promise<void> {
@@ -224,6 +260,13 @@ export function createChat({
 		return initPromise;
 	}
 
+	/**
+	 * Consumes one NDJSON stream, then — if it ended on a `tool_call` line
+	 * instead of `done`/`error` — executes the WebMCP tool in-browser and
+	 * loops onto a fresh stream via `sendToolResult`, until a real `done`/
+	 * `error` is reached (or there's no way to run the tool at all, which is
+	 * itself just another `"failed"`, not a hang — see `webmcp.ts`).
+	 */
 	async function readReply(
 		text: string,
 		current: Session,
@@ -232,22 +275,45 @@ export function createChat({
 		onEvent: () => void,
 		customerContext?: CustomerContext,
 	): Promise<"ok" | "failed"> {
-		for await (const event of api.streamMessage(
+		let stream = api.streamMessage(
 			current.visitorToken,
 			current.threadId,
 			text,
 			signal,
 			customerContext,
-		)) {
-			onEvent();
-			if (event.type === "delta") {
-				target.content += event.text;
-				emit();
-			} else if (event.type === "error") {
-				return "failed";
+		);
+		while (true) {
+			let toolCall:
+				| { tool: string; arguments: Record<string, unknown>; callId: string }
+				| undefined;
+			for await (const event of stream) {
+				onEvent();
+				if (event.type === "delta") {
+					target.content += event.text;
+					emit();
+				} else if (event.type === "error") {
+					return "failed";
+				} else if (event.type === "tool_call") {
+					toolCall = event;
+				}
 			}
+			if (!toolCall) return "ok";
+			if (!webmcp) return "failed";
+
+			const { result, isError } = await webmcp.callTool(
+				toolCall.tool,
+				toolCall.arguments,
+			);
+			stream = api.sendToolResult(
+				current.visitorToken,
+				current.threadId,
+				toolCall.callId,
+				toolCall.tool,
+				result,
+				isError ?? false,
+				signal,
+			);
 		}
-		return "ok";
 	}
 
 	async function send(
@@ -357,6 +423,9 @@ export function createChat({
 	function setToolMode(mode: ToolMode): void {
 		store.saveToolMode(mode);
 		update({ toolMode: mode });
+		// Only meaningful once a session exists — if the panel hasn't opened
+		// yet, `open()` reads the now-updated `state.toolMode` on its own.
+		void syncWebMcpTools();
 	}
 
 	return {

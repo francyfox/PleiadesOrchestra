@@ -525,3 +525,71 @@ export function getRun(db: Db, id: string) {
 		llmCalls,
 	};
 }
+
+export interface DynamicActionSummary {
+	name: string;
+	/** From the `planned` event that scheduled it — `null` if that run only ever `action_skipped`ed it. */
+	cost: number | null;
+	/** The action's declared `effects` as of its most recent `action_finished` event. */
+	effects: Record<string, unknown>;
+	lastSeenAt: number;
+}
+
+/**
+ * Actions that aren't in the static `/goap/actions` catalog because they
+ * only ever existed per-request — a WebMCP tool catalog a visitor's browser
+ * sent with one of their messages (`createWebMcpActions`, see
+ * docs/laya-autonomous-webmcp.md). There's no live listing for these (the
+ * catalog only exists inside the request that used it), so this
+ * reconstructs one from that user's own `plan_events` history instead:
+ * cost from the `planned` step that scheduled the action, effects from its
+ * most recent `action_finished`. Preconditions aren't recoverable this way
+ * (no trace event carries an action's full precondition set) — omitted,
+ * not guessed.
+ */
+export function dynamicActionsForUser(
+	db: Db,
+	userId: string,
+	staticActionNames: ReadonlySet<string>,
+): DynamicActionSummary[] {
+	const sqlite = db.$client;
+	const runIds = sqlite
+		.query<{ id: string }, [string]>(
+			"SELECT id FROM plan_runs WHERE user_id = ?",
+		)
+		.all(userId)
+		.map((row) => row.id);
+	if (runIds.length === 0) return [];
+
+	const placeholders = runIds.map(() => "?").join(",");
+	const costByName = new Map<string, number>();
+	for (const row of sqlite
+		.query<{ payload: string }, Bind[]>(
+			`SELECT payload FROM plan_events WHERE run_id IN (${placeholders}) AND type = 'planned' ORDER BY at`,
+		)
+		.all(...runIds)) {
+		const payload = JSON.parse(row.payload) as {
+			plan?: { name: string; cost: number }[];
+		};
+		for (const step of payload.plan ?? []) costByName.set(step.name, step.cost);
+	}
+
+	const byName = new Map<string, DynamicActionSummary>();
+	for (const row of sqlite
+		.query<{ action: string | null; payload: string; at: number }, Bind[]>(
+			`SELECT action, payload, at FROM plan_events WHERE run_id IN (${placeholders}) AND type = 'action_finished' ORDER BY at`,
+		)
+		.all(...runIds)) {
+		if (!row.action || staticActionNames.has(row.action)) continue;
+		const payload = JSON.parse(row.payload) as {
+			expectedEffects?: Record<string, unknown>;
+		};
+		byName.set(row.action, {
+			name: row.action,
+			cost: costByName.get(row.action) ?? null,
+			effects: payload.expectedEffects ?? {},
+			lastSeenAt: row.at,
+		});
+	}
+	return [...byName.values()].sort((a, b) => b.lastSeenAt - a.lastSeenAt);
+}

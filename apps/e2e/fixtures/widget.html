@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>pleiades-widget e2e fixture</title>
+	</head>
+	<body>
+		<!--
+			agent-url is never actually reached — every test intercepts
+			/v1/widget/* via page.route() — but resolveConfig() (lib/config.ts)
+			requires https or a localhost host, so it has to look real.
+		-->
+		<script src="/dist/pleiades-widget.js" defer></script>
+		<pleiades-chat
+			agent-url="http://localhost:9999"
+			publishable-key="pk_e2e00000000000000"
+			open
+		></pleiades-chat>
+	</body>
+</html>

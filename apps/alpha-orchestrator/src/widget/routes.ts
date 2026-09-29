@@ -1,4 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
+import type { WebMcpToolDescriptor } from "@repo/core";
 import { Elysia, t } from "elysia";
 import { isAllowed } from "../access.ts";
 import { hashIp, sha256Hex } from "../admin/channels.ts";
@@ -20,6 +21,14 @@ import {
 export interface WidgetOptions {
 	/** Longest accepted message text (characters). */
 	maxTextChars: number;
+	/**
+	 * Longest accepted serialized WebMCP tool catalog (characters), on
+	 * `POST /v1/widget/tools`. Registered once per panel-open, not per
+	 * message, so this can afford to be much bigger than `maxTextChars` — a
+	 * real catalog (a dozen-plus tools with real descriptions/schemas) is
+	 * several kB on its own.
+	 */
+	maxWebmcpToolsChars: number;
 	/** Messages per visitor token per minute. */
 	messagesPerMinute: number;
 	/** Messages per client IP per minute, across all visitors. */
@@ -36,6 +45,7 @@ export interface WidgetOptions {
 
 export const DEFAULT_WIDGET_OPTIONS: WidgetOptions = {
 	maxTextChars: 2000,
+	maxWebmcpToolsChars: 20_000,
 	messagesPerMinute: 10,
 	ipMessagesPerMinute: 30,
 	visitorsPerHourPerIp: 20,
@@ -58,7 +68,40 @@ export interface WidgetDeps {
 		signal?: AbortSignal,
 		customerContext?: Record<string, string | number | boolean>,
 	): ReadableStream;
+	/**
+	 * Resumes a run that stopped on a `tool_call` NDJSON line (see
+	 * `server.ts`'s `streamPlanRun`) once the widget has executed the
+	 * browser-side WebMCP tool and has its outcome.
+	 */
+	resumeReply(
+		user: UserRow,
+		threadId: string,
+		toolResult: { tool: string; isError: boolean },
+		signal?: AbortSignal,
+	): ReadableStream;
+	/**
+	 * Classifies and caches a WebMCP tool catalog for this thread
+	 * (`POST /v1/widget/tools`, called once when the widget's panel opens) —
+	 * every later `startReply`/`resumeReply` on the same thread picks it up
+	 * on its own, no need to resend it per message.
+	 */
+	registerWebMcpTools(
+		threadId: string,
+		tools: WebMcpToolDescriptor[],
+	): Promise<void>;
 }
+
+/** Shared by `/v1/widget/messages` and `/v1/widget/tool-results` — matches `@repo/core`'s `WebMcpToolDescriptor`. */
+const WebMcpToolSchema = t.Object({
+	name: t.String(),
+	description: t.Optional(t.String()),
+	inputSchema: t.Optional(
+		t.Object({
+			type: t.Literal("object"),
+			properties: t.Optional(t.Record(t.String(), t.Unknown())),
+		}),
+	),
+});
 
 const MINUTE_MS = 60 * 1000;
 const HOUR_MS = 60 * MINUTE_MS;
@@ -290,6 +333,86 @@ export function widgetRoutes(deps: WidgetDeps) {
 							t.Union([t.String(), t.Number(), t.Boolean()]),
 						),
 					),
+				}),
+			},
+		)
+		.post(
+			"/v1/widget/tools",
+			async ({ request, server, body }) => {
+				const auth = authorize(request, server);
+				if (auth instanceof Response) return auth;
+				const { visitor, origin, ipHash } = auth;
+
+				if (
+					JSON.stringify(body.webmcpTools).length > options.maxWebmcpToolsChars
+				) {
+					return empty(413, origin);
+				}
+				if (
+					!tokenLimiter.hit(visitor.tokenHash) ||
+					(ipHash && !ipLimiter.hit(ipHash))
+				) {
+					return empty(429, origin);
+				}
+				if (!isOwnThread(db, body.threadId, visitor.user.id)) {
+					return empty(404, origin);
+				}
+
+				await deps.registerWebMcpTools(body.threadId, body.webmcpTools);
+				return empty(204, origin);
+			},
+			{
+				body: t.Object({
+					threadId: t.String(),
+					webmcpTools: t.Array(WebMcpToolSchema),
+				}),
+			},
+		)
+		.post(
+			"/v1/widget/tool-results",
+			({ request, server, body }) => {
+				const auth = authorize(request, server);
+				if (auth instanceof Response) return auth;
+				const { visitor, origin, ipHash } = auth;
+
+				if (
+					!tokenLimiter.hit(visitor.tokenHash) ||
+					(ipHash && !ipLimiter.hit(ipHash))
+				) {
+					return empty(429, origin);
+				}
+				if (!isOwnThread(db, body.threadId, visitor.user.id)) {
+					return empty(404, origin);
+				}
+
+				const stream = deps.resumeReply(
+					visitor.user,
+					body.threadId,
+					{ tool: body.tool, isError: body.isError ?? false },
+					request.signal,
+				);
+				const { body: responseBody, encoding } = compressIfAccepted(
+					stream,
+					request.headers.get("accept-encoding"),
+				);
+
+				return new Response(responseBody, {
+					headers: {
+						...corsHeaders(origin),
+						"content-type": "application/x-ndjson",
+						...(encoding ? { "content-encoding": encoding } : {}),
+					},
+				});
+			},
+			{
+				body: t.Object({
+					threadId: t.String(),
+					/** Correlates with the `tool_call` line's `callId` — not yet read server-side (single in-flight tool call per thread today), kept for the client's own bookkeeping and future use. */
+					callId: t.String(),
+					tool: t.String(),
+					/** Not yet incorporated into the reply — see docs/laya-autonomous-webmcp.md. */
+					result: t.Unknown(),
+					isError: t.Optional(t.Boolean()),
 				}),
 			},
 		)

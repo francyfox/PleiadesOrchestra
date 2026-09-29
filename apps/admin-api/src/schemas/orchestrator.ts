@@ -222,6 +222,20 @@ export const GoapActionInfo = t.Object({
 	effects: WorldState,
 });
 
+/**
+ * An action that only ever existed per-request — a WebMCP tool catalog a
+ * visitor's browser sent with one of their messages — reconstructed from
+ * that user's own plan-run history (`?userId=` on `/goap/actions`), not a
+ * live catalog. No `preconditions`: no trace event carries an action's full
+ * precondition set, so it isn't guessed. See docs/laya-autonomous-webmcp.md.
+ */
+export const DynamicActionInfo = t.Object({
+	name: t.String(),
+	cost: nullable(t.Number()),
+	effects: WorldState,
+	lastSeenAt: t.Number(),
+});
+
 export const BlockedIp = t.Object({
 	id: t.String(),
 	ipHash: t.String(),
@@ -311,6 +325,7 @@ export type PlanRun = Static<typeof PlanRun>;
 export type RunLlmCall = Static<typeof RunLlmCall>;
 export type RunDetails = Static<typeof RunDetails>;
 export type GoapActionInfo = Static<typeof GoapActionInfo>;
+export type DynamicActionInfo = Static<typeof DynamicActionInfo>;
 export type BlockedIp = Static<typeof BlockedIp>;
 export type PageQuery = Static<typeof PageQuery>;
 export type Agent = Static<typeof Agent>;

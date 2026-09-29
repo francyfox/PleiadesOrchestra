@@ -1,4 +1,5 @@
 import type { CustomerContext } from "./config";
+import type { WebMcpToolDescriptor } from "./webmcp";
 
 export type FetchLike = (url: string, init: RequestInit) => Promise<Response>;
 
@@ -9,6 +10,13 @@ export type StreamEvent =
 			elapsedMs?: number;
 			inputTokens?: number;
 			outputTokens?: number;
+	  }
+	/** The run is waiting on a browser-side WebMCP tool call — resume via `sendToolResult`. */
+	| {
+			type: "tool_call";
+			tool: string;
+			arguments: Record<string, unknown>;
+			callId: string;
 	  }
 	| { type: "error"; message: string };
 
@@ -33,6 +41,30 @@ export interface WidgetApi {
 		signal?: AbortSignal,
 		customerContext?: CustomerContext,
 	): AsyncGenerator<StreamEvent>;
+	/** Resumes a run that stopped on a `tool_call` event, once the browser has executed it. */
+	sendToolResult(
+		visitorToken: string,
+		threadId: string,
+		callId: string,
+		tool: string,
+		result: unknown,
+		isError: boolean,
+		signal?: AbortSignal,
+	): AsyncGenerator<StreamEvent>;
+	/**
+	 * Registers this thread's current WebMCP tool catalog — called once when
+	 * the panel opens (or the tool mode changes), not per message: a real
+	 * catalog is several kB on its own, and reclassifying it through Laya on
+	 * every single message was both wasteful and, combined with the size,
+	 * what caused a `413` on the very first message. See
+	 * docs/laya-autonomous-webmcp.md.
+	 */
+	registerWebMcpTools(
+		visitorToken: string,
+		threadId: string,
+		webmcpTools: WebMcpToolDescriptor[],
+		signal?: AbortSignal,
+	): Promise<void>;
 }
 
 /** `status` is the HTTP status, or 0 when the request never got an answer (offline, CORS, DNS). */
@@ -95,6 +127,35 @@ export function createWidgetApi({
 		...extra,
 	});
 
+	/** Shared by `streamMessage` and `sendToolResult` — both just POST a body and read back the same NDJSON line protocol. */
+	async function* readNdjson(response: Response): AsyncGenerator<StreamEvent> {
+		if (!response.body) throw new ApiError(0);
+		const reader = response.body.getReader();
+		const decoder = new TextDecoder();
+		let buffer = "";
+		try {
+			while (true) {
+				const { done, value } = await reader.read();
+				if (value) buffer += decoder.decode(value, { stream: true });
+				let newline = buffer.indexOf("\n");
+				while (newline !== -1) {
+					const line = buffer.slice(0, newline).trim();
+					buffer = buffer.slice(newline + 1);
+					if (line) yield JSON.parse(line) as StreamEvent;
+					newline = buffer.indexOf("\n");
+				}
+				if (done) break;
+			}
+			const rest = buffer.trim();
+			if (rest) yield JSON.parse(rest) as StreamEvent;
+		} catch (cause) {
+			if (cause instanceof SyntaxError || isAbortError(cause)) throw cause;
+			throw new ApiError(0);
+		} finally {
+			reader.releaseLock();
+		}
+	}
+
 	return {
 		async createVisitor() {
 			const response = await request("/v1/widget/visitors", {
@@ -145,32 +206,44 @@ export function createWidgetApi({
 				}),
 				signal,
 			});
-			if (!response.body) throw new ApiError(0);
+			yield* readNdjson(response);
+		},
 
-			const reader = response.body.getReader();
-			const decoder = new TextDecoder();
-			let buffer = "";
-			try {
-				while (true) {
-					const { done, value } = await reader.read();
-					if (value) buffer += decoder.decode(value, { stream: true });
-					let newline = buffer.indexOf("\n");
-					while (newline !== -1) {
-						const line = buffer.slice(0, newline).trim();
-						buffer = buffer.slice(newline + 1);
-						if (line) yield JSON.parse(line) as StreamEvent;
-						newline = buffer.indexOf("\n");
-					}
-					if (done) break;
-				}
-				const rest = buffer.trim();
-				if (rest) yield JSON.parse(rest) as StreamEvent;
-			} catch (cause) {
-				if (cause instanceof SyntaxError || isAbortError(cause)) throw cause;
-				throw new ApiError(0);
-			} finally {
-				reader.releaseLock();
-			}
+		async *sendToolResult(
+			visitorToken,
+			threadId,
+			callId,
+			tool,
+			result,
+			isError,
+			signal,
+		) {
+			const response = await request("/v1/widget/tool-results", {
+				method: "POST",
+				headers: withToken(visitorToken, {
+					"content-type": "application/json",
+				}),
+				body: JSON.stringify({
+					threadId,
+					callId,
+					tool,
+					result,
+					...(isError ? { isError: true } : {}),
+				}),
+				signal,
+			});
+			yield* readNdjson(response);
+		},
+
+		async registerWebMcpTools(visitorToken, threadId, webmcpTools, signal) {
+			await request("/v1/widget/tools", {
+				method: "POST",
+				headers: withToken(visitorToken, {
+					"content-type": "application/json",
+				}),
+				body: JSON.stringify({ threadId, webmcpTools }),
+				signal,
+			});
 		},
 	};
 }

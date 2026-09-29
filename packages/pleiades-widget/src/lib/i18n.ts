@@ -15,7 +15,8 @@ export const strings = {
 		mode: "Tool integration",
 		webmcp: "WebMCP",
 		mcp: "MCP",
-		webmcpHint: "Requires Chrome 155+. Experimental — for future use.",
+		webmcpHint:
+			"Requires a browser extension that provides WebMCP tools. Experimental — for future use.",
 	},
 	ru: {
 		title: "Ассистент",
@@ -33,7 +34,8 @@ export const strings = {
 		mode: "Режим интеграции",
 		webmcp: "WebMCP",
 		mcp: "MCP",
-		webmcpHint: "Требуется Chrome 155+. Экспериментально — задел на будущее.",
+		webmcpHint:
+			"Требуется браузерное расширение, предоставляющее WebMCP-тулы. Экспериментально — задел на будущее.",
 	},
 	kk: {
 		title: "Көмекші",
@@ -51,7 +53,8 @@ export const strings = {
 		mode: "Құрал интеграциясы",
 		webmcp: "WebMCP",
 		mcp: "MCP",
-		webmcpHint: "Chrome 155+ қажет. Эксперименттік — болашаққа арналған.",
+		webmcpHint:
+			"WebMCP-тулдарын беретін браузер кеңейтуі қажет. Эксперименттік — болашаққа арналған.",
 	},
 } as const;
 

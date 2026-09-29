@@ -17,12 +17,94 @@
 - **WebMCP** — тулы существуют только в браузере посетителя, через `navigator.modelContext` на
   странице, где встроен виджет. Здесь **вызов инструмента исполняется в браузере, самим
   виджетом** (`navigator.modelContext.callTool(...)`), а не через relay на сервер. Это значит,
-  что схема с `McpClient`/`createClassifiedMcpToolSource` из этого документа **не покрывает
-  WebMCP-режим как есть** — нужен отдельный дизайн для того, как сервер (GOAP-планировщик)
-  говорит виджету, что вызвать, и как виджет возвращает результат обратно в `WorldState` прогона.
-  Это пока не спроектировано и не реализовано — есть только сам переключатель режима в UI
-  виджета (`chat.ts`'s `toolMode`/`setToolMode`, `ui/mode-switch.tsx`), без реальной логики за
-  ним ни на одной из сторон.
+  что схема с `McpClient`/`createClassifiedMcpToolSource` из этого документа не покрывает
+  WebMCP-режим как есть — реализовано отдельно, `createWebMcpActions`
+  (`packages/core/src/goap/webmcp-actions.ts`), см. следующий раздел.
+
+## WebMCP: раунд-трип с браузером (реализовано, 2026-09-29)
+
+Развязка вопроса «сервер решил, что нужен браузерный тул — как получить результат обратно в тот
+же прогон» — один HTTP NDJSON-стрим не может быть двунаправленным. Решение: **WAITING + новый
+запрос**, тот же принцип, что Embabel называет состоянием `WAITING` агент-процесса (см. раздел
+про gaps 2–6 в истории проекта) — прогон не падает и не зависает, а сохраняет чекпойнт и ждёт
+следующего HTTP-запроса с результатом.
+
+- **`WaitingOn`** (`packages/core/src/goap/types.ts`) — новый исход `GoapAction.execute()`:
+  `Promise<Partial<WorldState> | { waiting: WaitingOn }>`. Действие, которое не может завершиться
+  на сервере, возвращает `{ waiting: { kind, payload } }` вместо эффектов. `executor.ts` останавливает
+  прогон немедленно (не бросает исключение, не считается `killed`/`no_plan` — отдельное поле
+  `RunPlanResult.waiting`), эмитит `PlanTraceEvent` типа `"waiting"`.
+- **`createWebMcpActions`** (`packages/core/src/goap/webmcp-actions.ts`) — превращает список
+  тулов в `GoapAction[]`: классифицирует каждый тул один раз через Laya `choice`
+  (`TOOL_INTENTS`/`EFFECTS_BY_INTENT`/`PRECONDITIONS_BY_INTENT`, `intent-taxonomy.ts` — та же
+  таксономия, что предлагалась для `createClassifiedMcpToolSource` выше). `execute()` **никогда
+  сам ничего не вызывает**: если `ctx.state["webmcp:<name>:result"]` уже есть (браузер уже ответил,
+  записано при резюмировании) — возвращает реальные эффекты; иначе —
+  `{ waiting: { kind: "webmcp_tool_call", payload: { tool, arguments } } }`. Вызывается не на
+  каждый запрос, а один раз на регистрацию каталога (`POST /v1/widget/tools`, см. следующий
+  раздел) — результат кэшируется по `threadId`.
+- **`WorldStateCheckpoint`** (`packages/core/src/goap/world-state-store.ts`) — стор теперь хранит
+  не только `state`, но и `goal` прогона (`thread_world_state.goal`, миграция
+  `0005_thread_world_state_goal`). Нужно, чтобы резюмирование продолжало **ту же самую** цель, а
+  не переклассифицировало исходное сообщение заново (Laya не гарантированно детерминирована).
+- **Протокол** (`apps/alpha-orchestrator`, `docs/admin-api.md` — там же контракт целиком): NDJSON
+  получает терминальную строку `tool_call` (вместо `done`/`error`) с `tool`/`arguments`/`callId`;
+  новый эндпоинт `POST /v1/widget/tool-results` резюмирует прогон, подмешивая
+  `webmcp:<tool>:result = "ok"|"error"` в чекпойнт и вызывая `runPlan` заново с тем же `goal` —
+  вплоть до ещё одного `tool_call`, если план требует второй вызов подряд.
+- **Виджет** (`packages/pleiades-widget`): `lib/webmcp.ts`'s `WebMcpProvider` — узкая абстракция
+  над `navigator.modelContext`/`document.modelContext` (best-effort, API нестабилен — см. ниже),
+  не сама реализация напрямую, чтобы `chat.ts` и его тесты не зависели от несуществующего в
+  `bun test` браузерного API. `chat.ts`'s `readReply` стал циклом: на `tool_call` — вызывает
+  `webmcp.callTool(...)`, затем продолжает через `api.sendToolResult(...)` на новом стриме. Без
+  провайдера вообще (сегодня — любой реальный браузер) `syncWebMcpTools` не делает ни одного
+  сетевого вызова — нечего регистрировать и нечего чистить.
+
+**Каталог тулов регистрируется один раз при открытии панели, не на каждое сообщение (найдено и
+исправлено 2026-09-29).** Первая версия отправляла `webmcpTools` вместе с *каждым*
+`/v1/widget/messages`/`/v1/widget/tool-results` — с реальным каталогом (у демки
+`apps/shopping-cart-webmcp` — 15 тулов с настоящими описаниями/схемами, тела`definitions.js` уже
+13+ кБ) это (а) валило `413` на самом первом сообщении, `WIDGET_MAX_TEXT_CHARS` рассчитан на
+короткий текст чата, не на каталог тулов, и (б) заново гоняло классификацию через Laya на каждое
+сообщение — раньше не пойманная лишняя нагрузка ровно из-за (а). Исправлено: `chat.ts`'s
+`syncWebMcpTools()` вызывает `api.registerWebMcpTools(...)` → `POST /v1/widget/tools` один раз в
+конце `open()` (панель открылась) и повторно из `setToolMode()` (режим переключили, пока панель
+уже открыта) — не из `send()`. Сервер (`server.ts`'s `registerWebMcpTools`, `webmcpCatalog: Map<threadId,
+GoapAction[]>` в `ServerDeps`, в памяти процесса — теряется при рестарте, виджет просто
+регистрирует заново при следующем открытии) классифицирует и кэширует по `threadId`;
+`resolveDynamicActions` берёт готовый список из кэша вместо параметра запроса.
+`/v1/widget/messages`/`/v1/widget/tool-results` каталог больше не принимают вовсе. Отдельный лимит
+`WIDGET_MAX_WEBMCP_TOOLS_CHARS` (20000 по умолчанию, много больше `WIDGET_MAX_TEXT_CHARS`) —
+регистрация разовая, может позволить себе быть крупнее.
+
+**Первая версия `createNavigatorWebMcpProvider` не работала вообще (найдено и исправлено
+2026-09-29).** Реальная поверхность API — `document.modelContext.getTools()` (async, перечитывается
+на каждый вызов — тулы приходят и уходят вместе с состоянием страницы) и
+**`executeTool(tool, argsJson)`**, которая принимает **сам объект тула** (не просто имя) и
+**JSON-строку** аргументов, отвечает JSON-строкой либо уже распарсенным MCP-объектом. Никакого
+`callTool(name, args)` не существует — первая версия файла угадала именно такую сигнатуру и
+проверяла именно её наличие для фиче-детекта, поэтому `createNavigatorWebMcpProvider` **всегда**
+возвращала `undefined`, даже при полностью рабочем `document.modelContext` — WebMCP молча не
+работал целиком. Подтверждено эмпирически по рабочему вызывающему коду в
+`apps/shopping-cart-webmcp/skills/grocery-staples/scripts/webmcp-bridge.js` (реальный клиент,
+вызывающий `context.getTools()`/`context.executeTool(tool, JSON.stringify(args))`) и по README
+`use-webmcp-tool` (сторона регистрации, `document.modelContext.registerTool` — другое направление,
+не то, что нужно вызывающему). `document.modelContext` при этом — не нативный API браузера:
+"typically injected by a browser extension" (та же README); голый Chromium/Chrome без такого
+расширения его не создаёт вообще — это подтверждено и для Playwright-бандла Chromium, и для
+системного `google-chrome-stable` (см. ниже).
+
+**E2E-регрессия — `apps/e2e`** (Playwright, `bunx playwright test`, отдельный `bun run test:e2e`
+в корне — не часть обычного `bun run test`, нужен `bunx playwright install chromium` один раз,
+как `test:beta-text`). `bun:test` не имеет DOM, поэтому не мог поймать этот баг — весь
+`WebMcpProvider`-раунд-трип там тестируется через фейки, которые сами угадывали правильную форму
+(см. `webmcp.test.ts`, добавлен вместе с исправлением). `apps/e2e/tests/webmcp.spec.ts` вместо
+этого гоняет настоящий виджет (`packages/pleiades-widget/dist/pleiades-widget.js`, собранный
+бандл) в настоящем браузере (`channel: "chrome"`, системный, не отдельная загрузка Chromium),
+подсовывая через `page.addInitScript()` `document.modelContext` с точной реальной формой
+(`getTools`/`executeTool`) — то есть эмулирует расширение, а не сам факт WebMCP. Проверено вручную
+(отключение фикса → все три теста падают именно там, где ловится баг; включение фикса → все три
+проходят) — тест реально ловит именно эту регрессию, не просто зелёный по недосмотру.
 
 ## Почему нельзя просто писать action на каждый тул
 

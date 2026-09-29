@@ -9,7 +9,8 @@
 		"format": "biome format --write .",
 		"check-types": "turbo run check-types",
 		"test": "turbo run test",
-		"test:beta-text": "bun test apps/beta-text/docker.test.ts"
+		"test:beta-text": "bun test apps/beta-text/docker.test.ts",
+		"test:e2e": "cd packages/pleiades-widget && bun run build && cd ../../apps/e2e && bun run test:e2e"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.7",

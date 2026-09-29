@@ -3,9 +3,12 @@ import type {
 	Agent,
 	AgentStreamEvent,
 	DecisionAgent,
+	DecisionAnswer,
 	GoapAction,
 	IncomingMessage,
+	WebMcpToolDescriptor,
 } from "@repo/core";
+import { InMemoryWorldStateStore } from "@repo/core";
 import { eq } from "drizzle-orm";
 import { createBlockedIp, createWebChannel } from "../admin/channels.ts";
 import { SqliteHistoryStore } from "../db/history-store.ts";
@@ -129,6 +132,23 @@ async function newThread(ctx: Ctx, token: string): Promise<string> {
 	);
 	expect(response.status).toBe(201);
 	return ((await response.json()) as { threadId: string }).threadId;
+}
+
+/** `POST /v1/widget/tools` — what the widget calls once when its panel opens, not on every message (see docs/laya-autonomous-webmcp.md). */
+async function registerTools(
+	ctx: Ctx,
+	token: string,
+	threadId: string,
+	webmcpTools: WebMcpToolDescriptor[],
+): Promise<Response> {
+	const response = await ctx.app.handle(
+		widgetRequest("/v1/widget/tools", {
+			token,
+			body: { threadId, webmcpTools },
+		}),
+	);
+	expect(response.status).toBe(204);
+	return response;
 }
 
 function sendMessage(
@@ -591,5 +611,250 @@ describe("widget threads and messages", () => {
 			}),
 		);
 		expect(noToken.status).toBe(401);
+	});
+});
+
+describe("widget WebMCP round trip", () => {
+	function choiceAnswer(choice: string): DecisionAnswer {
+		return {
+			type: "choice",
+			choice,
+			probabilities: { [choice]: 1 },
+			confidence: 1,
+			rl_agent: { act_probability: 1 },
+		};
+	}
+
+	/** Classifies both the per-tool question (`createWebMcpActions`) and the per-message question (`classifyMessageIntent`) as the same intent — this test only needs one tool/one intent throughout. */
+	function classifyingDecisionAgent(intent: string): DecisionAgent {
+		return {
+			async decide(_state, questions) {
+				const result: Record<string, DecisionAnswer> = {};
+				if (questions.intent) result.intent = choiceAnswer(intent);
+				return result;
+			},
+		};
+	}
+
+	// "search" (not "addToCart") on purpose: PRECONDITIONS_BY_INTENT.addToCart
+	// requires `itemSelected`, which nothing in this single-tool catalog can
+	// produce — a real "no plan reached the goal" outcome (working as
+	// designed, see docs/laya-autonomous-webmcp.md's "Ограничения"), just not
+	// what this test is exercising. `search`'s preconditions are empty.
+	const searchTool: WebMcpToolDescriptor = {
+		name: "search_products",
+		description: "Search the catalog",
+		inputSchema: { type: "object", properties: { query: {} } },
+	};
+
+	test("a message that needs a WebMCP tool produces a tool_call line and persists a resumable checkpoint", async () => {
+		const store = new InMemoryWorldStateStore();
+		const ctx = setup(
+			{},
+			{
+				decisionAgent: classifyingDecisionAgent("search"),
+				worldStateStore: store,
+			},
+		);
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+		await registerTools(ctx, token, threadId, [searchTool]);
+
+		const response = await ctx.app.handle(
+			widgetRequest("/v1/widget/messages", {
+				token,
+				body: {
+					threadId,
+					text: "add the cheapest laptop to my cart",
+				},
+			}),
+		);
+		const text = await response.text();
+		const lines = text
+			.trim()
+			.split("\n")
+			.map((line) => JSON.parse(line));
+
+		// `replied` and `catalogSearched` are independent facts (`generateReply`
+		// and `search_products` share no precondition), so `plan()` is free to
+		// order either action first — only the guarantee actually proven at
+		// the executor level (`executor.test.ts`, "doesn't run any action
+		// after the one that waits") applies: the stream must end on
+		// `tool_call`, not `done`, whichever action ran (or didn't) before it.
+		const last = lines.at(-1);
+		expect(last).toMatchObject({
+			type: "tool_call",
+			tool: "search_products",
+			arguments: {},
+		});
+		expect(typeof last?.callId).toBe("string");
+		expect(lines.some((line) => line.type === "done")).toBe(false);
+
+		const checkpoint = await store.load(threadId);
+		expect(checkpoint).toMatchObject({
+			goal: { replied: true, catalogSearched: true },
+		});
+	});
+
+	test("POST /v1/widget/tool-results resumes with the browser's outcome and reaches done", async () => {
+		const ctx = setup(
+			{},
+			{ decisionAgent: classifyingDecisionAgent("search") },
+		);
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+		await registerTools(ctx, token, threadId, [searchTool]);
+		await ctx.app
+			.handle(
+				widgetRequest("/v1/widget/messages", {
+					token,
+					body: {
+						threadId,
+						text: "add the cheapest laptop to my cart",
+					},
+				}),
+			)
+			.then((response) => response.text());
+
+		const response = await ctx.app.handle(
+			widgetRequest("/v1/widget/tool-results", {
+				token,
+				body: {
+					threadId,
+					callId: "call-1",
+					tool: "search_products",
+					result: { ok: true },
+					isError: false,
+				},
+			}),
+		);
+		const events = (await response.text())
+			.trim()
+			.split("\n")
+			.map((line) => JSON.parse(line));
+
+		expect(events.at(-1)).toMatchObject({ type: "done" });
+		expect(ctx.calls).toHaveLength(1);
+	});
+
+	test("a tool catalog too large for a single message no longer 413s /v1/widget/messages — it's registered separately, once", async () => {
+		const ctx = setup(
+			{ maxTextChars: 50 },
+			{ decisionAgent: classifyingDecisionAgent("search") },
+		);
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+		// Larger than maxTextChars (50) on its own — would have 413'd the old
+		// per-message `webmcpTools` field.
+		const bigTool: WebMcpToolDescriptor = {
+			name: "search_products",
+			description: "x".repeat(200),
+		};
+		await registerTools(ctx, token, threadId, [bigTool]);
+
+		const response = await sendMessage(ctx, token, threadId, "hi");
+
+		expect(response.status).toBe(200);
+	});
+
+	test("registering the catalog once is reused across several messages, not resent", async () => {
+		const ctx = setup(
+			{},
+			{ decisionAgent: classifyingDecisionAgent("search") },
+		);
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+		await registerTools(ctx, token, threadId, [searchTool]);
+
+		const first = await ctx.app.handle(
+			widgetRequest("/v1/widget/messages", {
+				token,
+				body: { threadId, text: "find a laptop" },
+			}),
+		);
+		const firstLine = (await first.text()).trim().split("\n").at(-1);
+		expect(JSON.parse(firstLine ?? "{}")).toMatchObject({
+			type: "tool_call",
+			tool: "search_products",
+		});
+
+		// A second, independent message on a *fresh* thread — no per-message
+		// webmcpTools, no re-registration — still sees the tool because
+		// registration is per visitor's active tab, keyed by thread, and this
+		// reuses the same one.
+		const second = await ctx.app.handle(
+			widgetRequest("/v1/widget/messages", {
+				token,
+				body: { threadId, text: "find a laptop again" },
+			}),
+		);
+		expect(second.status).toBe(200);
+	});
+
+	test("registering an empty catalog clears it — later messages fall back to a plain reply", async () => {
+		const ctx = setup(
+			{},
+			{ decisionAgent: classifyingDecisionAgent("search") },
+		);
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+		await registerTools(ctx, token, threadId, [searchTool]);
+		await registerTools(ctx, token, threadId, []);
+
+		const response = await sendMessage(ctx, token, threadId, "find a laptop");
+		const lines = (await response.text())
+			.trim()
+			.split("\n")
+			.map((line) => JSON.parse(line));
+
+		expect(lines.some((line) => line.type === "tool_call")).toBe(false);
+		expect(lines.at(-1)).toMatchObject({ type: "done" });
+	});
+
+	test("POST /v1/widget/tools rejects a catalog larger than maxWebmcpToolsChars → 413", async () => {
+		const ctx = setup(
+			{ maxWebmcpToolsChars: 100 },
+			{ decisionAgent: classifyingDecisionAgent("search") },
+		);
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+
+		const response = await ctx.app.handle(
+			widgetRequest("/v1/widget/tools", {
+				token,
+				body: {
+					threadId,
+					webmcpTools: [
+						{ name: "search_products", description: "x".repeat(200) },
+					],
+				},
+			}),
+		);
+
+		expect(response.status).toBe(413);
+	});
+
+	test("POST /v1/widget/tool-results for another visitor's thread → 404, nothing resumed", async () => {
+		const ctx = setup(
+			{},
+			{ decisionAgent: classifyingDecisionAgent("search") },
+		);
+		const owner = await newVisitor(ctx);
+		const threadId = await newThread(ctx, owner);
+		const intruder = await newVisitor(ctx);
+
+		const response = await ctx.app.handle(
+			widgetRequest("/v1/widget/tool-results", {
+				token: intruder,
+				body: {
+					threadId,
+					callId: "call-1",
+					tool: "search_products",
+					result: {},
+				},
+			}),
+		);
+
+		expect(response.status).toBe(404);
 	});
 });

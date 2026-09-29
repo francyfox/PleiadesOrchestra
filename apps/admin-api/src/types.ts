@@ -36,6 +36,7 @@ export type {
 	ChannelRef,
 	CreateBlockedIpInput,
 	CreateChannelInput,
+	DynamicActionInfo,
 	GoapActionInfo,
 	LatencyStats,
 	PageQuery,

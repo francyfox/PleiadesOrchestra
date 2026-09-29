@@ -24,7 +24,10 @@ export class SqliteWorldStateStore implements WorldStateStore {
 		return row;
 	}
 
-	async save(threadId: string, checkpoint: WorldStateCheckpoint): Promise<void> {
+	async save(
+		threadId: string,
+		checkpoint: WorldStateCheckpoint,
+	): Promise<void> {
 		this.db
 			.insert(threadWorldState)
 			.values({

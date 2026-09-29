@@ -65,6 +65,7 @@ const app = createApp({
 	},
 	widget: {
 		maxTextChars: config.WIDGET_MAX_TEXT_CHARS,
+		maxWebmcpToolsChars: config.WIDGET_MAX_WEBMCP_TOOLS_CHARS,
 		messagesPerMinute: config.WIDGET_MESSAGES_PER_MINUTE,
 		ipMessagesPerMinute: config.WIDGET_IP_MESSAGES_PER_MINUTE,
 		visitorsPerHourPerIp: config.WIDGET_VISITORS_PER_HOUR_PER_IP,

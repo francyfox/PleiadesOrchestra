@@ -45,7 +45,10 @@ export const EFFECTS_BY_INTENT: Record<ToolIntent, Partial<WorldState>> = {
  * handles that (see `executor.ts`) — at the cost of one extra tool call,
  * not a crash. See docs/laya-autonomous-webmcp.md, "Ограничения".
  */
-export const PRECONDITIONS_BY_INTENT: Record<ToolIntent, Partial<WorldState>> = {
+export const PRECONDITIONS_BY_INTENT: Record<
+	ToolIntent,
+	Partial<WorldState>
+> = {
 	search: {},
 	filter: { catalogSearched: true },
 	select: {},

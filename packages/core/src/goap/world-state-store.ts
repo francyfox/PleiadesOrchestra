@@ -37,7 +37,10 @@ export class InMemoryWorldStateStore implements WorldStateStore {
 		return this.threads.get(threadId);
 	}
 
-	async save(threadId: string, checkpoint: WorldStateCheckpoint): Promise<void> {
+	async save(
+		threadId: string,
+		checkpoint: WorldStateCheckpoint,
+	): Promise<void> {
 		this.threads.set(threadId, checkpoint);
 	}
 

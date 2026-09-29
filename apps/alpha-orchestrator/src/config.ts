@@ -69,6 +69,15 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			// Web chat widget (/v1/widget/*) abuse limits — public, anonymous
 			// access to a CPU-only model. In-memory, reset on restart.
 			WIDGET_MAX_TEXT_CHARS: z.coerce.number().int().positive().default(2000),
+			// POST /v1/widget/tools, registered once per panel-open (not per
+			// message) — a real WebMCP catalog (a dozen-plus tools with real
+			// descriptions/schemas) is several kB on its own, well past
+			// WIDGET_MAX_TEXT_CHARS.
+			WIDGET_MAX_WEBMCP_TOOLS_CHARS: z.coerce
+				.number()
+				.int()
+				.positive()
+				.default(20_000),
 			WIDGET_MESSAGES_PER_MINUTE: z.coerce
 				.number()
 				.int()

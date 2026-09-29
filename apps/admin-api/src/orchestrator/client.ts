@@ -7,6 +7,7 @@ import type {
 	BulkAction,
 	Channel,
 	CreateBlockedIpInput,
+	DynamicActionInfo,
 	GoapActionInfo,
 	PageQuery,
 	PerformanceReport,
@@ -128,8 +129,12 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 			),
 		getRun: (id: string) =>
 			request<RunDetails>("GET", `/v1/admin/runs/${segment(id)}`),
-		goapActions: () =>
-			request<{ actions: GoapActionInfo[] }>("GET", "/v1/admin/goap/actions"),
+		/** `userId` also lists that user's dynamic actions (e.g. a WebMCP tool catalog seen in their own run history — see docs/laya-autonomous-webmcp.md), reconstructed from `plan_events`, not a live catalog. */
+		goapActions: (userId?: string) =>
+			request<{
+				actions: GoapActionInfo[];
+				dynamicActions?: DynamicActionInfo[];
+			}>("GET", `/v1/admin/goap/actions${toSearch({ userId })}`),
 		listChannels: (query: PageQuery = {}) =>
 			request<{ items: Channel[]; total: number }>(
 				"GET",

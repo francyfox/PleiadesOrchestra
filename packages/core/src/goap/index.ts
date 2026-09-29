@@ -3,7 +3,11 @@ export { createDecisionAction } from "./decision-action";
 export type { RunPlanOptions, RunPlanResult } from "./executor";
 export { runPlan } from "./executor";
 export type { ToolIntent } from "./intent-taxonomy";
-export { EFFECTS_BY_INTENT, TOOL_INTENTS } from "./intent-taxonomy";
+export {
+	EFFECTS_BY_INTENT,
+	PRECONDITIONS_BY_INTENT,
+	TOOL_INTENTS,
+} from "./intent-taxonomy";
 export type { StdioMcpClientConfig } from "./mcp-client";
 export { connectStdioMcpClient } from "./mcp-client";
 export type {
@@ -39,5 +43,14 @@ export type {
 	WaitingOn,
 	WorldState,
 } from "./types";
-export type { WorldStateCheckpoint, WorldStateStore } from "./world-state-store";
+export type {
+	CreateWebMcpActionsConfig,
+	WebMcpToolCallPayload,
+	WebMcpToolDescriptor,
+} from "./webmcp-actions";
+export { createWebMcpActions } from "./webmcp-actions";
+export type {
+	WorldStateCheckpoint,
+	WorldStateStore,
+} from "./world-state-store";
 export { InMemoryWorldStateStore } from "./world-state-store";

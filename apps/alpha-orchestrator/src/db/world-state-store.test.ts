@@ -50,15 +50,24 @@ describe("SqliteWorldStateStore", () => {
 
 	test("clear removes the stored checkpoint", async () => {
 		const { threadA, store } = setup();
-		await store.save(threadA, { state: { inCart: true }, goal: { replied: true } });
+		await store.save(threadA, {
+			state: { inCart: true },
+			goal: { replied: true },
+		});
 		await store.clear(threadA);
 		expect(await store.load(threadA)).toBeUndefined();
 	});
 
 	test("threads are isolated from each other", async () => {
 		const { threadA, threadB, store } = setup();
-		await store.save(threadA, { state: { inCart: true }, goal: { replied: true } });
-		await store.save(threadB, { state: { inCart: false }, goal: { replied: true } });
+		await store.save(threadA, {
+			state: { inCart: true },
+			goal: { replied: true },
+		});
+		await store.save(threadB, {
+			state: { inCart: false },
+			goal: { replied: true },
+		});
 		expect(await store.load(threadA)).toEqual({
 			state: { inCart: true },
 			goal: { replied: true },
@@ -71,7 +80,10 @@ describe("SqliteWorldStateStore", () => {
 
 	test("deleting the thread cascades to its stored checkpoint", async () => {
 		const { db, threadA, store } = setup();
-		await store.save(threadA, { state: { inCart: true }, goal: { replied: true } });
+		await store.save(threadA, {
+			state: { inCart: true },
+			goal: { replied: true },
+		});
 		db.delete(threads).where(eq(threads.id, threadA)).run();
 		expect(await store.load(threadA)).toBeUndefined();
 	});

@@ -3,6 +3,7 @@ import { ApiError, type StreamEvent, type WidgetApi } from "./api";
 import { type ChatState, createChat } from "./chat";
 import type { CustomerContext } from "./config";
 import { createSessionStore } from "./storage";
+import type { WebMcpProvider, WebMcpToolDescriptor } from "./webmcp";
 
 function memoryStorage(): Storage {
 	const data = new Map<string, string>();
@@ -31,6 +32,15 @@ interface Script {
 		signal?: AbortSignal,
 		customerContext?: CustomerContext,
 	) => AsyncGenerator<StreamEvent>;
+	toolResult?: (
+		token: string,
+		threadId: string,
+		callId: string,
+		tool: string,
+		result: unknown,
+		isError: boolean,
+		signal?: AbortSignal,
+	) => AsyncGenerator<StreamEvent>;
 	history?: (
 		token: string,
 		threadId: string,
@@ -47,9 +57,14 @@ interface Script {
 function harness(
 	script: Script = {},
 	start = 1000,
-	chatOptions: { idleTimeoutMs?: number; pingIntervalMs?: number } = {},
+	chatOptions: {
+		idleTimeoutMs?: number;
+		pingIntervalMs?: number;
+		webmcp?: WebMcpProvider;
+	} = {},
 ) {
 	const log: string[] = [];
+	const registeredTools: WebMcpToolDescriptor[][] = [];
 	let visitors = 0;
 	let threads = 0;
 	const api: WidgetApi = {
@@ -76,19 +91,51 @@ function harness(
 						yield { type: "done", elapsedMs: 1 } as StreamEvent;
 					})();
 		},
+		async *sendToolResult(
+			token,
+			threadId,
+			callId,
+			tool,
+			result,
+			isError,
+			signal,
+		) {
+			log.push(`tool-result:${threadId}@${token}:${tool}`);
+			yield* script.toolResult
+				? script.toolResult(
+						token,
+						threadId,
+						callId,
+						tool,
+						result,
+						isError,
+						signal,
+					)
+				: (async function* () {
+						yield { type: "done", elapsedMs: 1 } as StreamEvent;
+					})();
+		},
+		async registerWebMcpTools(token, threadId, webmcpTools) {
+			log.push(
+				`webmcp-register:${threadId}@${token}:${webmcpTools.map((t) => t.name).join(",")}`,
+			);
+			registeredTools.push(webmcpTools);
+		},
 	};
 	const store = createSessionStore({ ...scope, storage: memoryStorage() });
+	const { webmcp, ...restChatOptions } = chatOptions;
 	const chat = createChat({
 		api,
 		store,
+		webmcp,
 		now: () => start,
 		maxChars: 20,
 		pingIntervalMs: 5,
-		...chatOptions,
+		...restChatOptions,
 	});
 	const states: ChatState[] = [];
 	chat.subscribe((state) => states.push(structuredClone(state)));
-	return { chat, log, store, states, api };
+	return { chat, log, store, states, api, registeredTools };
 }
 
 /** Rejects once `signal` fires, like a real `fetch` aborting mid-stream. */
@@ -436,5 +483,103 @@ describe("createChat tool mode", () => {
 
 		const again = createChat({ api, store, now: () => 1000, maxChars: 20 });
 		expect(again.state.toolMode).toBe("mcp");
+	});
+});
+
+describe("createChat WebMCP round trip", () => {
+	const searchTool: WebMcpToolDescriptor = { name: "search_products" };
+
+	test("a tool_call line is executed in-browser and the run resumes to done", async () => {
+		let calledWith: [string, Record<string, unknown>] | undefined;
+		const webmcp: WebMcpProvider = {
+			listTools: async () => [searchTool],
+			async callTool(name, args) {
+				calledWith = [name, args];
+				return { result: { items: [] } };
+			},
+		};
+		const { chat, log } = harness(
+			{
+				stream: async function* () {
+					yield {
+						type: "tool_call",
+						tool: "search_products",
+						arguments: { query: "laptop" },
+						callId: "call-1",
+					} as StreamEvent;
+				},
+				toolResult: async function* () {
+					yield { type: "delta", text: "found some" } as StreamEvent;
+					yield { type: "done", elapsedMs: 1 } as StreamEvent;
+				},
+			},
+			1000,
+			{ webmcp },
+		);
+
+		await chat.send("find a laptop");
+
+		expect(calledWith).toEqual(["search_products", { query: "laptop" }]);
+		expect(chat.state.error).toBeUndefined();
+		expect(chat.state.messages.at(-1)).toMatchObject({
+			role: "assistant",
+			content: "found some",
+		});
+		expect(log).toContain("tool-result:t1@tok1:search_products");
+	});
+
+	test("a tool_call with no WebMCP provider fails cleanly instead of hanging", async () => {
+		const { chat, log } = harness({
+			stream: async function* () {
+				yield {
+					type: "tool_call",
+					tool: "search_products",
+					arguments: {},
+					callId: "call-1",
+				} as StreamEvent;
+			},
+		});
+
+		await chat.send("find a laptop");
+
+		expect(chat.state.busy).toBe(false);
+		expect(chat.state.error).toBe("failed");
+		expect(log.some((entry) => entry.startsWith("tool-result"))).toBe(false);
+	});
+
+	test("the tool catalog is registered once when the panel opens, and again on setToolMode — never per message", async () => {
+		const webmcp: WebMcpProvider = {
+			listTools: async () => [searchTool],
+			callTool: async () => ({ result: {} }),
+		};
+		const { chat, log, registeredTools } = harness({}, 1000, { webmcp });
+		// `setToolMode` fires its registration call without awaiting it (a UI
+		// toggle shouldn't block on the network) — flush pending microtasks
+		// before asserting on it.
+		const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+		// Before any session exists: nothing to register yet, `open()` reads
+		// the now-updated mode on its own once it runs.
+		chat.setToolMode("mcp");
+		await flush();
+		expect(registeredTools).toEqual([]);
+
+		// First send() triggers init()/open(), which registers once — empty,
+		// since toolMode is "mcp" — then this send's own message goes out
+		// with no further tool-catalog call.
+		await chat.send("hi");
+		expect(registeredTools).toEqual([[]]);
+
+		// Switching mode while already open registers again, directly.
+		chat.setToolMode("webmcp");
+		await flush();
+		expect(registeredTools).toEqual([[], [searchTool]]);
+
+		// A second message doesn't register a third time.
+		await chat.send("hi again");
+		expect(registeredTools).toEqual([[], [searchTool]]);
+		expect(
+			log.filter((entry) => entry.startsWith("webmcp-register")),
+		).toHaveLength(2);
 	});
 });

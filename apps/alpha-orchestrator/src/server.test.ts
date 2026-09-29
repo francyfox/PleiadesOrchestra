@@ -141,12 +141,10 @@ describe("createApp", () => {
 
 		expect(response.status).toBe(200);
 		expect(response.headers.get("content-type")).toBe("application/x-ndjson");
-		// threadId/userId are now the orchestrator's internal ids (the external
-		// "t1"/"u1" are mapped via the threads/users tables).
-		expect(receivedMessage).toMatchObject({ chunks: ["hi there"] });
-		expect(receivedMessage?.userId).not.toBe("u1");
-		expect(receivedMessage?.threadId).not.toBe("t1");
 
+		// The agent only actually runs while the NDJSON stream is drained (its
+		// work happens inside the stream's own `start()`, not before the
+		// Response is constructed) — read it before asserting on side effects.
 		const events = await readNdjson(response);
 		// No `progress` event: that was specific to the old multi-chunk ingest
 		// pipeline, not to what the planner's single `generateReply` action
@@ -159,6 +157,12 @@ describe("createApp", () => {
 		]);
 		// No accept-encoding sent above — the stream must stay uncompressed.
 		expect(response.headers.get("content-encoding")).toBeNull();
+
+		// threadId/userId are now the orchestrator's internal ids (the external
+		// "t1"/"u1" are mapped via the threads/users tables).
+		expect(receivedMessage).toMatchObject({ chunks: ["hi there"] });
+		expect(receivedMessage?.userId).not.toBe("u1");
+		expect(receivedMessage?.threadId).not.toBe("t1");
 	});
 
 	test("POST /v1/messages gzips the NDJSON stream when the client accepts gzip", async () => {
@@ -211,13 +215,14 @@ describe("createApp", () => {
 		const longText =
 			"this message is deliberately longer than the configured chunk budget so it must be split";
 
-		await app.handle(
+		const response = await app.handle(
 			authedRequest("http://harness.local/v1/messages", {
 				method: "POST",
 				headers: { "content-type": "application/json" },
 				body: JSON.stringify({ threadId: "t1", userId: "u1", text: longText }),
 			}),
 		);
+		await readNdjson(response);
 
 		expect(receivedMessage?.chunks.length).toBeGreaterThan(1);
 		for (const chunk of receivedMessage?.chunks ?? []) {
@@ -476,7 +481,10 @@ describe("createApp — GOAP process lifecycle", () => {
 		const db = testDb();
 		const store = new InMemoryWorldStateStore();
 		const threadId = internalThreadId(db);
-		await store.save(threadId, { stale: true });
+		await store.save(threadId, {
+			state: { stale: true },
+			goal: { replied: true },
+		});
 
 		const app = createTestApp({
 			db,
@@ -527,8 +535,7 @@ describe("createApp — GOAP process lifecycle", () => {
 		expect(agentCalled).toBe(false);
 		expect(events).toEqual([{ type: "error", message: "run cancelled" }]);
 		expect(await store.load(threadId)).toMatchObject({
-			userMessage: "hi",
-			threadId,
+			state: { userMessage: "hi", threadId },
 		});
 	});
 
@@ -536,7 +543,10 @@ describe("createApp — GOAP process lifecycle", () => {
 		const db = testDb();
 		const store = new InMemoryWorldStateStore();
 		const threadId = internalThreadId(db);
-		await store.save(threadId, { userMessage: "stale", budget: 500 });
+		await store.save(threadId, {
+			state: { userMessage: "stale", budget: 500 },
+			goal: { replied: true },
+		});
 
 		let seenBudget: unknown;
 		let seenUserMessage: unknown;

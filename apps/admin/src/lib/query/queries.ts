@@ -82,10 +82,11 @@ export const queries = {
 			queryKey: ["channels", "all"],
 			queryFn: () => unwrap(api().channels.get({ query: {} })),
 		}),
-	goapActions: () =>
+	/** `userId` also lists that user's dynamic actions (e.g. a WebMCP tool catalog seen in their own run history), reconstructed from `plan_events`, not a live catalog. */
+	goapActions: (userId?: string) =>
 		queryOptions({
-			queryKey: ["goap-actions"],
-			queryFn: () => unwrap(api().goap.actions.get()),
+			queryKey: ["goap-actions", userId ?? null],
+			queryFn: () => unwrap(api().goap.actions.get({ query: { userId } })),
 		}),
 	run: (id: string) =>
 		queryOptions({
