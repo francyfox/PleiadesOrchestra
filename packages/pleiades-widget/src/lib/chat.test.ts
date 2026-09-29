@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { ApiError, type StreamEvent, type WidgetApi } from "./api";
 import { type ChatState, createChat } from "./chat";
+import type { CustomerContext } from "./config";
 import { createSessionStore } from "./storage";
 
 function memoryStorage(): Storage {
@@ -28,6 +29,7 @@ interface Script {
 		threadId: string,
 		text: string,
 		signal?: AbortSignal,
+		customerContext?: CustomerContext,
 	) => AsyncGenerator<StreamEvent>;
 	history?: (
 		token: string,
@@ -65,10 +67,10 @@ function harness(
 			log.push(`history:${threadId}@${token}`);
 			return script.history ? script.history(token, threadId) : { items: [] };
 		},
-		async *streamMessage(token, threadId, text, signal) {
+		async *streamMessage(token, threadId, text, signal, customerContext) {
 			log.push(`send:${threadId}@${token}:${text}`);
 			yield* script.stream
-				? script.stream(token, threadId, text, signal)
+				? script.stream(token, threadId, text, signal, customerContext)
 				: (async function* () {
 						yield { type: "delta", text: "ok" } as StreamEvent;
 						yield { type: "done", elapsedMs: 1 } as StreamEvent;
@@ -226,6 +228,22 @@ describe("createChat.send", () => {
 				(state) => state.busy && state.messages.at(-1)?.content === "Hel",
 			),
 		).toBe(true);
+	});
+
+	test("forwards customerContext through to the API call, and omits it when not given", async () => {
+		const seen: (CustomerContext | undefined)[] = [];
+		const { chat } = harness({
+			stream: (_token, _threadId, _text, _signal, customerContext) => {
+				seen.push(customerContext);
+				return replies({ type: "done", elapsedMs: 1 });
+			},
+		});
+		await chat.send("hi", { country: "Kazakhstan", city: "Qyzylorda" });
+		await chat.send("again");
+		expect(seen).toEqual([
+			{ country: "Kazakhstan", city: "Qyzylorda" },
+			undefined,
+		]);
 	});
 
 	test("initialises the session on demand", async () => {

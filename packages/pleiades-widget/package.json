@@ -13,7 +13,8 @@
 		},
 		"./react": {
 			"types": "./types/react.d.ts"
-		}
+		},
+		"./style.css": "./dist/pleiades-widget.css"
 	},
 	"files": [
 		"dist",

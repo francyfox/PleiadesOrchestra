@@ -27,10 +27,11 @@ export function Composer({
 			maxlength={maxChars}
 			placeholder={placeholder}
 			aria-label={placeholder}
+			part="input"
 		/>
 	) as HTMLTextAreaElement;
 	const button = (
-		<button type="submit" disabled>
+		<button type="submit" part="send" disabled>
 			{s.send}
 		</button>
 	) as HTMLButtonElement;
@@ -71,6 +72,7 @@ export function Composer({
 	});
 	const el = (
 		<form
+			part="composer"
 			onSubmit={(event: Event) => {
 				event.preventDefault();
 				submit();

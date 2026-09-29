@@ -1,3 +1,5 @@
+import type { CustomerContext } from "./config";
+
 export type FetchLike = (url: string, init: RequestInit) => Promise<Response>;
 
 export type StreamEvent =
@@ -29,6 +31,7 @@ export interface WidgetApi {
 		threadId: string,
 		text: string,
 		signal?: AbortSignal,
+		customerContext?: CustomerContext,
 	): AsyncGenerator<StreamEvent>;
 }
 
@@ -123,13 +126,23 @@ export function createWidgetApi({
 			return (await response.json()) as { items: HistoryItem[] };
 		},
 
-		async *streamMessage(visitorToken, threadId, text, signal) {
+		async *streamMessage(
+			visitorToken,
+			threadId,
+			text,
+			signal,
+			customerContext,
+		) {
 			const response = await request("/v1/widget/messages", {
 				method: "POST",
 				headers: withToken(visitorToken, {
 					"content-type": "application/json",
 				}),
-				body: JSON.stringify({ threadId, text }),
+				body: JSON.stringify({
+					threadId,
+					text,
+					...(customerContext ? { customerContext } : {}),
+				}),
 				signal,
 			});
 			if (!response.body) throw new ApiError(0);

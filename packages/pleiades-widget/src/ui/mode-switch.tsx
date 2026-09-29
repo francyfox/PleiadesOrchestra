@@ -28,24 +28,25 @@ export function ModeSwitch({
 	webmcp.addEventListener("change", pick);
 	mcp.addEventListener("change", pick);
 
-	const tip = (
-		<span class="tip" role="tooltip" id="pl-webmcp-tip">
+	const tooltip = (
+		<span class="tooltip" part="tooltip" role="tooltip" id="pl-webmcp-tip">
 			{s.webmcpHint}
 		</span>
 	) as HTMLSpanElement;
 	const hint = (
 		<button
 			type="button"
-			class="q"
+			class="hint"
+			part="hint"
 			aria-describedby="pl-webmcp-tip"
 			aria-label={s.webmcpHint}
 		>
-			?{tip}
+			?{tooltip}
 		</button>
 	) as HTMLButtonElement;
 
 	const el = (
-		<div class="mode" role="radiogroup" aria-label={s.mode}>
+		<div class="mode" part="mode" role="radiogroup" aria-label={s.mode}>
 			<label for="pl-m-webmcp">
 				{webmcp}
 				{s.webmcp}

@@ -3,11 +3,17 @@ import { type Chat, createChat } from "./lib/chat";
 import {
 	describeConfigError,
 	normalizePosition,
+	parseCustomerContext,
 	resolveConfig,
 } from "./lib/config";
 import { pickLang, strings } from "./lib/i18n";
 import { createSessionStore } from "./lib/storage";
+// `?inline` gives the string this class injects into the shadow root at
+// runtime; the plain import (unused otherwise) makes Vite also emit the
+// same, identically-processed stylesheet as a standalone `dist/pleiades-widget.css`
+// asset — a reference for integrators, see the "Theming" section of the README.
 import css from "./ui/styles.css?inline";
+import "./ui/styles.css";
 import { createUi, type Ui } from "./ui/ui";
 
 /** Mirrors the server's `WIDGET_MAX_TEXT_CHARS` default. */
@@ -22,6 +28,7 @@ const ATTRIBUTES = {
 	greeting: "greeting",
 	placeholder: "placeholder",
 	lang: "lang",
+	customerContext: "customer-context",
 } as const;
 
 type Prop = keyof typeof ATTRIBUTES;
@@ -42,6 +49,7 @@ export class PleiadesChat extends HTMLElement {
 	declare greeting: string;
 	declare placeholder: string;
 	declare lang: string;
+	declare customerContext: string;
 
 	#root = this.attachShadow({ mode: "open" });
 	#chat?: Chat;
@@ -128,6 +136,7 @@ export class PleiadesChat extends HTMLElement {
 			this.#scope = scope;
 		}
 		const chat = this.#chat;
+		const customerContext = parseCustomerContext(attr("customerContext"));
 		const s =
 			strings[
 				pickLang(
@@ -145,7 +154,7 @@ export class PleiadesChat extends HTMLElement {
 			onClose: () => {
 				this.open = false;
 			},
-			onSend: (text) => void chat.send(text),
+			onSend: (text) => void chat.send(text, customerContext),
 			onStop: () => chat.stop(),
 			onModeChange: (mode) => chat.setToolMode(mode),
 		});

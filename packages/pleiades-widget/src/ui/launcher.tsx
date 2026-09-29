@@ -13,8 +13,9 @@ export function Launcher({
 	const el = (
 		<button
 			type="button"
-			class="fab"
-			aria-controls="p"
+			class="launcher"
+			part="launcher"
+			aria-controls="panel"
 			aria-expanded="false"
 			aria-label={s.open}
 			onClick={onToggle}

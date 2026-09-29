@@ -8,8 +8,8 @@ import { h } from "./jsx";
  */
 export function MessageList({ greeting }: { greeting: string }) {
 	const el = (
-		<div class="log" role="log" aria-live="polite">
-			<p class="m a">{greeting}</p>
+		<div class="messages" part="messages" role="log" aria-live="polite">
+			<p class="message assistant">{greeting}</p>
 		</div>
 	) as HTMLDivElement;
 	const bubbles = new Map<string, HTMLElement>();
@@ -28,7 +28,9 @@ export function MessageList({ greeting }: { greeting: string }) {
 				let bubble = bubbles.get(message.id);
 				if (!bubble) {
 					bubble = (
-						<p class={message.role === "user" ? "m u" : "m a"} />
+						<p
+							class={`message ${message.role === "user" ? "user" : "assistant"}`}
+						/>
 					) as HTMLElement;
 					bubbles.set(message.id, bubble);
 					el.appendChild(bubble);
@@ -36,7 +38,7 @@ export function MessageList({ greeting }: { greeting: string }) {
 				if (bubble.textContent !== message.content)
 					bubble.textContent = message.content;
 				// An assistant bubble with no text yet is the "typing…" indicator.
-				bubble.classList.toggle("t", message.content === "");
+				bubble.classList.toggle("typing", message.content === "");
 			}
 			el.scrollTop = el.scrollHeight;
 		},

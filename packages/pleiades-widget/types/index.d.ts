@@ -23,6 +23,14 @@ export interface PleiadesChatAttributes {
 	placeholder?: string;
 	/** Default: the page's language, else the browser's; anything unsupported is English. */
 	lang?: PleiadesLang;
+	/**
+	 * Flat JSON object of customer data the site already knows and the browser
+	 * can't reliably detect itself, e.g. `'{"country":"Kazakhstan","city":"Qyzylorda"}'`
+	 * — forwarded to the orchestrator as extra facts for the store's own GOAP
+	 * actions. Values must be strings, numbers or booleans; anything else (or
+	 * invalid JSON) is dropped with a console warning, not a fatal error.
+	 */
+	"customer-context"?: string;
 	/** Boolean attribute: the panel starts open. */
 	open?: boolean;
 }
@@ -36,6 +44,7 @@ export interface PleiadesChatElement extends HTMLElement {
 	greeting: string;
 	placeholder: string;
 	lang: string;
+	customerContext: string;
 	/** Reflects the `open` attribute. */
 	open: boolean;
 	toggle(): void;

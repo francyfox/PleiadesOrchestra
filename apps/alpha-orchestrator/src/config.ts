@@ -59,6 +59,13 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			// Anonymous chat users inactive longer than this are deleted.
 			ANON_RETENTION_HOURS: z.coerce.number().positive().default(24),
 
+			// A thread's persisted GOAP WorldState (see SqliteWorldStateStore) not
+			// updated for this long is deleted — covers stuck/abandoned plan runs
+			// belonging to *identified* users, who aren't cleared by
+			// ANON_RETENTION_HOURS. Same default: no reason for it to outlive an
+			// anonymous visitor's own retention window.
+			WORLD_STATE_RETENTION_HOURS: z.coerce.number().positive().default(24),
+
 			// Web chat widget (/v1/widget/*) abuse limits — public, anonymous
 			// access to a CPU-only model. In-memory, reset on restart.
 			WIDGET_MAX_TEXT_CHARS: z.coerce.number().int().positive().default(2000),

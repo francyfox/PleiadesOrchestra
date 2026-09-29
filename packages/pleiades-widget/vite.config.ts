@@ -7,8 +7,9 @@ import { defineConfig } from "vite";
  * is enforced by `bun run build`.
  */
 export default defineConfig({
-	// TSX is compiled to calls of our own tiny `h` (src/ui/jsx.ts), not React.
-	esbuild: { jsx: "transform", jsxFactory: "h", jsxFragment: "Fragment" },
+	// TSX → calls of our own tiny `h` (src/ui/jsx.ts), not React — read from
+	// tsconfig.json's jsx/jsxFactory/jsxFragmentFactory, Vite's transformer
+	// isn't esbuild here so an `esbuild: { jsx: ... }` override does nothing.
 	build: {
 		target: "es2022",
 		// cssnano (postcss.config.js) minifies the styles.

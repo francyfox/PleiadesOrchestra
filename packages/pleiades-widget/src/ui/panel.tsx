@@ -34,11 +34,14 @@ export function Panel({
 	const list = MessageList({ greeting });
 	const composer = Composer({ s, placeholder, maxChars, onSend, onStop });
 	const modeSwitch = ModeSwitch({ s, onChange: onModeChange });
-	const error = (<p class="e" role="alert" hidden />) as HTMLParagraphElement;
+	const error = (
+		<p class="error" part="error" role="alert" hidden />
+	) as HTMLParagraphElement;
 	const el = (
 		<div
-			class="p"
-			id="p"
+			class="panel"
+			part="panel"
+			id="panel"
 			role="dialog"
 			aria-label={heading}
 			inert
@@ -57,7 +60,7 @@ export function Panel({
 		el,
 		focus: composer.focus,
 		setOpen(open: boolean) {
-			el.classList.toggle("o", open);
+			el.classList.toggle("open", open);
 			el.inert = !open;
 			if (open) composer.focus();
 		},

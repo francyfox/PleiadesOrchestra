@@ -319,8 +319,23 @@ Visitor-токен: 32 случайных байта (base64url), в БД — т
 ### `POST /v1/widget/messages`
 
 ```json
-{ "threadId": "<из /v1/widget/threads>", "text": "..." }
+{
+  "threadId": "<из /v1/widget/threads>",
+  "text": "...",
+  "customerContext": { "country": "Kazakhstan", "city": "Qyzylorda" }
+}
 ```
+
+`customerContext` — необязательный плоский объект (`Record<string, string | number | boolean>`,
+без вложенности), который сайт-интеграция уже знает о посетителе и который браузер не может
+надёжно определить сам (например, город доставки, выбранный в собственном UI сайта, а не через
+геолокацию — см. атрибут `customer-context` в `packages/pleiades-widget`). Каждое поле попадает в
+`WorldState` прогона под именем `customer:<key>` (`customer:country`, `customer:city`, …) — namespaced,
+чтобы никогда не конфликтовать со служебными фактами (`threadId`, `replied`, `messageIntent`, …);
+сам оркестратор эти факты не интерпретирует, только передаёт дальше действиям каталога (см.
+`docs/laya-autonomous-webmcp.md`, раздел «Приоритет: не каждое сообщение — задача»). Размер
+`customerContext` в виде JSON-строки ограничен тем же `WIDGET_MAX_TEXT_CHARS`, что и `text` — `413`
+при превышении.
 
 Ответ — тот же NDJSON-стрим, что у `/v1/messages` (`delta`/`done`/`error`).
 
@@ -336,7 +351,7 @@ Visitor-токен: 32 случайных байта (base64url), в БД — т
 | `401` | нет/неизвестный/истёкший токен (новый токен — через `/v1/widget/visitors`) |
 | `403` (пустое тело) | `Origin` не в `allowedOrigins` канала токена; пользователь заблокирован; канал отключён; канал в режиме `whitelist`, а посетитель не в белом списке; IP заблокирован (`blocked_ips`, глобально или для канала, не истёк). Модель не вызывается |
 | `404` | тред не принадлежит этому посетителю (проверка по владельцу, не по id из запроса) |
-| `413` | `text` длиннее `WIDGET_MAX_TEXT_CHARS` |
+| `413` | `text` длиннее `WIDGET_MAX_TEXT_CHARS`, или сериализованный `customerContext` длиннее того же лимита |
 | `429` | больше `WIDGET_MESSAGES_PER_MINUTE` сообщений на токен или `WIDGET_IP_MESSAGES_PER_MINUTE` на IP в минуту |
 
 Лимиты — в памяти процесса, сбрасываются при рестарте. IP клиента берётся из соединения; из

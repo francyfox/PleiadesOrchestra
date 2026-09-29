@@ -22,9 +22,27 @@ Or from a bundler: `import "pleiades-widget"` (it registers the element; there a
 | `position` | `bottom-left` | Launcher corner: `bottom-left`, `bottom-right`, `top-left`, `top-right`. The panel slides in from the same side. |
 | `heading`, `greeting`, `placeholder` | localized | Panel title, first bubble, input hint. |
 | `lang` | page language | `en`, `ru` or `kk`; anything else is English. |
+| `customer-context` | none | Flat JSON object of data the site already knows (e.g. `'{"country":"Kazakhstan","city":"Qyzylorda"}'`) — see "Customer context" below. |
 | `open` | absent | Boolean; also a property: `el.open = true`, `el.toggle()`. |
 
-Theming: set `--pleiades-accent`, `--pleiades-bg`, `--pleiades-fg` on the element. The widget lives in a shadow root, so the host page's CSS can't break it.
+### Customer context
+
+`customer-context` forwards data the *site* already has and the browser can't reliably detect itself — e.g. a delivery city picked from the site's own UI, not geolocation — to the orchestrator, as facts a store's GOAP actions can use (`customer:country`, `customer:city`, …; see `docs/admin-api.md`'s `/v1/widget/messages`). Values must be flat strings/numbers/booleans; anything else (nested objects, arrays, invalid JSON) is dropped with a `[pleiades-widget] invalid_customer_context` console warning, not a fatal error.
+
+**Keep it small, and don't put anything sensitive in it.** It's capped server-side at the same limit as a message's `text` (`WIDGET_MAX_TEXT_CHARS`, `413` past it), but today that data still ends up sitting in the orchestrator's **process memory** (`InMemoryWorldStateStore`, the default — not yet wired to the SQLite-backed store the codebase already has for this) for as long as a thread's plan run hasn't fully completed, with no size cap beyond the per-message one and no separate expiry. Treat it like `text`: a handful of short fields (country, city, a segment/tier label), never PII like full names, emails, phone numbers or free-form notes.
+
+Theming: set `--pleiades-accent`, `--pleiades-accent-fg`, `--pleiades-bg`, `--pleiades-fg`, `--pleiades-muted`, `--pleiades-muted-fg`, `--pleiades-border`, `--pleiades-destructive`, `--pleiades-destructive-fg` on the element. The widget lives in a shadow root, so the host page's CSS can't break it — which also means a page's own stylesheet can't reach past these variables. For anything past color tokens (spacing, radius, shadows, hiding a part entirely), target the widget's [CSS Shadow Parts](https://developer.mozilla.org/en-US/docs/Web/CSS/::part) by name, e.g.:
+
+```css
+pleiades-chat::part(panel) {
+  border-radius: 0;
+}
+pleiades-chat::part(send) {
+  text-transform: uppercase;
+}
+```
+
+Parts: `launcher`, `panel`, `header`, `close`, `messages`, `error`, `mode`, `hint`, `tooltip`, `composer`, `input`, `send`. `dist/pleiades-widget.css` (also importable as `pleiades-widget/style.css`) is the exact same, minified stylesheet the widget injects into its shadow root — a reference for which classes/parts exist and what they do by default. It isn't meant to be linked into a page as-is: shadow DOM won't apply it there anyway.
 
 `el.getVisitorToken()` returns the visitor token of this browser, for the site's server-side `POST /v1/channels/:slug/identify` call (links an anonymous visitor to a logged-in account).
 
@@ -75,10 +93,10 @@ Pin the script with Subresource Integrity if you host it yourself, and don't put
 bun test src          # logic in src/lib: config, storage, API client, chat
 bun run check-types
 bun run lint
-bun run build         # dist/pleiades-widget.js, then the 10 kB size check
+bun run build         # dist/pleiades-widget.{js,css}, then the 10 kB size check (js only)
 bun run dev           # vite on :5199
 ```
 
-`src/lib` is UI-free (config validation, session store, Widget API client, chat state machine) and unit-tested; `src/ui` is small TSX components on a ~400-byte JSX runtime (`ui/jsx.ts`) that builds real DOM nodes; `src/element.ts` connects attributes to both. Styles are `ui/styles.css`, written with nesting and compiled by PostCSS (`postcss-nested`, `cssnano`).
+`src/lib` is UI-free (config validation, session store, Widget API client, chat state machine) and unit-tested; `src/ui` is small TSX components on a ~400-byte JSX runtime (`ui/jsx.ts`) that builds real DOM nodes; `src/element.ts` connects attributes to both. Styles are `ui/styles.css`, written with nesting and full class names (not abbreviated — the file doubles as the reference stylesheet below) and compiled by PostCSS (`postcss-nested` + `cssnano`). `element.ts` imports it twice — once `?inline`, for the string it injects into the shadow root at runtime, and once plain, which does nothing at runtime but makes Vite's own lib-mode CSS extraction also emit it as `dist/pleiades-widget.css` — same file, same PostCSS pass, no separate build step to keep in sync. See "Theming" above.
 
 Why not Svelte: an empty Svelte 5 custom element is already ~11 kB brotli, Svelte 4 leaves ~6 kB for everything else. A message list doesn't need virtualization either — the server keeps only the last 10 messages per visitor.

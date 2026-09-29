@@ -16,6 +16,7 @@ export type {
 export type {
 	ActionContext,
 	BaseContext,
+	ClassifyMessageIntentConfig,
 	DecisionActionConfig,
 	Goal,
 	GoapAction,
@@ -23,6 +24,7 @@ export type {
 	McpClient,
 	McpToolDescriptor,
 	McpToolSourceConfig,
+	MessageIntent,
 	PlanTraceEvent,
 	PlanTracer,
 	RunLock,
@@ -32,19 +34,24 @@ export type {
 	StreamingContext,
 	TextActionConfig,
 	TextActionMeta,
+	ToolIntent,
 	ToolSource,
 	WorldState,
 	WorldStateStore,
 } from "./goap";
 export {
+	classifyMessageIntent,
 	connectStdioMcpClient,
 	createDecisionAction,
 	createMcpToolSource,
 	createRunLock,
 	createTextAction,
+	EFFECTS_BY_INTENT,
+	goalForIntent,
 	InMemoryWorldStateStore,
 	plan,
 	runPlan,
+	TOOL_INTENTS,
 } from "./goap";
 export { InMemoryHistoryStore } from "./history";
 export type { LlmStateFields, MessageEventFields } from "./telemetry";

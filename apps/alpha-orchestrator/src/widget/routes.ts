@@ -56,6 +56,7 @@ export interface WidgetDeps {
 		threadId: string,
 		text: string,
 		signal?: AbortSignal,
+		customerContext?: Record<string, string | number | boolean>,
 	): ReadableStream;
 }
 
@@ -240,6 +241,15 @@ export function widgetRoutes(deps: WidgetDeps) {
 				const { visitor, origin, ipHash } = auth;
 
 				if (body.text.length > options.maxTextChars) return empty(413, origin);
+				// Same cap as `text` — bounds how much extra data a buggy/malicious
+				// integration can push into WorldState (and, on an unfinished run,
+				// into `threadWorldState`) per message.
+				if (
+					body.customerContext &&
+					JSON.stringify(body.customerContext).length > options.maxTextChars
+				) {
+					return empty(413, origin);
+				}
 				if (
 					!tokenLimiter.hit(visitor.tokenHash) ||
 					(ipHash && !ipLimiter.hit(ipHash))
@@ -255,6 +265,7 @@ export function widgetRoutes(deps: WidgetDeps) {
 					body.threadId,
 					body.text,
 					request.signal,
+					body.customerContext,
 				);
 				const { body: responseBody, encoding } = compressIfAccepted(
 					stream,
@@ -269,7 +280,18 @@ export function widgetRoutes(deps: WidgetDeps) {
 					},
 				});
 			},
-			{ body: t.Object({ threadId: t.String(), text: t.String() }) },
+			{
+				body: t.Object({
+					threadId: t.String(),
+					text: t.String(),
+					customerContext: t.Optional(
+						t.Record(
+							t.String(),
+							t.Union([t.String(), t.Number(), t.Boolean()]),
+						),
+					),
+				}),
+			},
 		)
 		.post(
 			"/v1/channels/:slug/identify",

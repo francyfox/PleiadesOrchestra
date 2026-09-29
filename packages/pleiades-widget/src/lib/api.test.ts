@@ -113,6 +113,30 @@ describe("createWidgetApi", () => {
 		).toBeUndefined();
 	});
 
+	test("streamMessage includes customerContext in the body when given, and omits it when not", async () => {
+		const { api, calls } = recorder(() =>
+			ndjson([{ type: "done", elapsedMs: 1 }]),
+		);
+		await collect(
+			api.streamMessage("tok", "t1", "hello", undefined, {
+				country: "Kazakhstan",
+				city: "Qyzylorda",
+			}),
+		);
+		expect(JSON.parse(String(calls[0]?.init.body))).toEqual({
+			threadId: "t1",
+			text: "hello",
+			customerContext: { country: "Kazakhstan", city: "Qyzylorda" },
+		});
+
+		const noContext = recorder(() => ndjson([{ type: "done", elapsedMs: 1 }]));
+		await collect(noContext.api.streamMessage("tok", "t1", "hello"));
+		expect(JSON.parse(String(noContext.calls[0]?.init.body))).toEqual({
+			threadId: "t1",
+			text: "hello",
+		});
+	});
+
 	test("decodes lines split across chunks, including multi-byte text", async () => {
 		const { api } = recorder(() =>
 			ndjson(

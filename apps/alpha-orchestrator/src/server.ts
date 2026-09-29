@@ -9,8 +9,10 @@ import type {
 	WorldStateStore,
 } from "@repo/core";
 import {
+	classifyMessageIntent,
 	createRunLock,
 	createTextAction,
+	goalForIntent,
 	InMemoryWorldStateStore,
 	runPlan,
 } from "@repo/core";
@@ -125,7 +127,14 @@ function ndjsonLine(value: unknown): Uint8Array {
 	return encoder.encode(`${JSON.stringify(value)}\n`);
 }
 
-/** Default goal for `/v1/messages` — the only thing Phase 5 of the GOAP plan wires up so far. A domain-specific goal (derived from classified intent, once Laya-actions are in this catalog too) is future work, not this phase's scope. */
+/**
+ * Base goal for `/v1/messages` — always required, chat or task. A message
+ * classified as a task (`classifyMessageIntent`, only run when
+ * `threadActionsFor` actually bound a WebMCP/MCP catalog to this thread —
+ * see `streamPlanRun`) extends this with the intent's usual effect
+ * (`goalForIntent`), so `plan()` has to chain in whatever action produces
+ * it instead of settling for a bare reply. See docs/laya-autonomous-webmcp.md.
+ */
 const REPLY_GOAL = { replied: true };
 
 /**
@@ -167,6 +176,26 @@ function numberOrUndefined(value: WorldState[string]): number | undefined {
 	return typeof value === "number" ? value : undefined;
 }
 
+/**
+ * Flat customer data the integrating site already knows (e.g. a delivery
+ * city picked from its own UI, not detected via browser geolocation — see
+ * `packages/pleiades-widget`'s `customer-context` attribute), namespaced
+ * with `customer:` so it can never collide with a bookkeeping fact
+ * (`threadId`, `replied`, `messageIntent`, ...). Store-specific actions
+ * read these facts directly (e.g. a precondition on `"customer:city"`);
+ * the orchestrator itself never interprets them.
+ */
+function customerFacts(
+	context: Record<string, string | number | boolean> | undefined,
+): WorldState {
+	if (!context) return {};
+	const facts: WorldState = {};
+	for (const [key, value] of Object.entries(context)) {
+		facts[`customer:${key}`] = value;
+	}
+	return facts;
+}
+
 interface RunContext {
 	planRunId: string;
 	threadId: string;
@@ -194,6 +223,14 @@ interface RunContext {
  * (per-thread actions, e.g. a WebMCP tool catalog) is resolved here, per
  * call — not baked into `staticActions`, which is built once for the whole
  * app instance and can't hold anything tied to one visitor's session.
+ *
+ * `threadActionsFor` returning nothing (still the common case — no
+ * WebMCP/MCP catalog wired for this thread) skips message-intent
+ * classification entirely: a plain "hi" always resolves through the one
+ * `generateReply` action, no Laya round trip spent reasoning about tools
+ * that aren't there. Only once a catalog exists does the turn's own message
+ * get classified (`classifyMessageIntent`) and the goal extended to match
+ * (`goalForIntent`) — see docs/laya-autonomous-webmcp.md.
  */
 function streamPlanRun(
 	deps: ServerDeps,
@@ -215,7 +252,7 @@ function streamPlanRun(
 				const persisted = await worldStateStore.load(run.threadId);
 				// The current turn's own facts (userMessage, planRunId, ...) always
 				// win over whatever an earlier, unfinished run left behind.
-				const state = persisted
+				const merged = persisted
 					? { ...persisted, ...initialState }
 					: initialState;
 				const threadActions = deps.threadActionsFor
@@ -223,10 +260,21 @@ function streamPlanRun(
 					: [];
 				const actions = [...staticActions, ...threadActions];
 
+				let goal: WorldState = REPLY_GOAL;
+				let state = merged;
+				if (threadActions.length > 0) {
+					const intent = await classifyMessageIntent(
+						{ decisionAgent: deps.decisionAgent },
+						String(merged.userMessage ?? ""),
+					);
+					state = { ...merged, messageIntent: intent };
+					goal = goalForIntent(intent, REPLY_GOAL, actions);
+				}
+
 				const result = await runLock.withLock(run.threadId, () =>
 					runPlan({
 						state,
-						goal: REPLY_GOAL,
+						goal,
 						actions,
 						signal,
 						tracer: (event) => {
@@ -317,6 +365,7 @@ export function createApp(deps: ServerDeps) {
 		threadId: string,
 		text: string,
 		signal?: AbortSignal,
+		customerContext?: Record<string, string | number | boolean>,
 	): ReadableStream<Uint8Array> => {
 		const planRunId = crypto.randomUUID();
 		startPlanRun(deps.db, {
@@ -333,6 +382,7 @@ export function createApp(deps: ServerDeps) {
 			threadId,
 			userId: user.id,
 			planRunId,
+			...customerFacts(customerContext),
 		};
 		return streamPlanRun(
 			deps,

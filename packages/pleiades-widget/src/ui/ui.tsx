@@ -26,7 +26,7 @@ export function createUi({
 		},
 	});
 	const el = (
-		<div class="w" data-pos={position}>
+		<div class="widget" data-pos={position}>
 			{launcher.el}
 			{panel.el}
 		</div>
@@ -36,7 +36,7 @@ export function createUi({
 		el,
 		render: (state: ChatState) => panel.render(state),
 		setOpen(open: boolean) {
-			el.classList.toggle("o", open);
+			el.classList.toggle("open", open);
 			launcher.setOpen(open);
 			panel.setOpen(open);
 		},

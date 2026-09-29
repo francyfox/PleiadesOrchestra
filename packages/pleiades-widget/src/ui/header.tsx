@@ -9,9 +9,15 @@ export const Header = ({
 	closeLabel: string;
 	onClose: () => void;
 }) => (
-	<header>
+	<header part="header">
 		<b>{heading}</b>
-		<button type="button" class="x" aria-label={closeLabel} onClick={onClose}>
+		<button
+			type="button"
+			class="close"
+			part="close"
+			aria-label={closeLabel}
+			onClick={onClose}
+		>
 			×
 		</button>
 	</header>

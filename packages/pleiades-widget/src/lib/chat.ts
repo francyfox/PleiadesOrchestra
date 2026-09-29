@@ -1,4 +1,5 @@
 import { ApiError, isAbortError, type WidgetApi } from "./api";
+import type { CustomerContext } from "./config";
 import type { SessionStore, ToolMode } from "./storage";
 
 export type { ToolMode } from "./storage";
@@ -229,12 +230,14 @@ export function createChat({
 		target: ChatMessage,
 		signal: AbortSignal,
 		onEvent: () => void,
+		customerContext?: CustomerContext,
 	): Promise<"ok" | "failed"> {
 		for await (const event of api.streamMessage(
 			current.visitorToken,
 			current.threadId,
 			text,
 			signal,
+			customerContext,
 		)) {
 			onEvent();
 			if (event.type === "delta") {
@@ -247,7 +250,10 @@ export function createChat({
 		return "ok";
 	}
 
-	async function send(raw: string): Promise<void> {
+	async function send(
+		raw: string,
+		customerContext?: CustomerContext,
+	): Promise<void> {
 		const text = raw.trim();
 		if (!text || state.busy || state.connection === "offline") return;
 		if (text.length > maxChars) {
@@ -293,6 +299,7 @@ export function createChat({
 						assistant,
 						controller.signal,
 						resetIdleTimer,
+						customerContext,
 					)) === "failed"
 						? "failed"
 						: undefined;
@@ -308,6 +315,7 @@ export function createChat({
 						assistant,
 						controller.signal,
 						resetIdleTimer,
+						customerContext,
 					)) === "failed"
 						? "failed"
 						: undefined;

@@ -97,3 +97,57 @@ const ADVICE: Record<ConfigError, string> = {
 export function describeConfigError(code: ConfigError): string {
 	return `${code}: ${ADVICE[code]}`;
 }
+
+/**
+ * Flat customer data the integrating site already knows and the browser
+ * can't reliably derive itself (e.g. a delivery city picked from a
+ * server-rendered dropdown, not detected via geolocation) — forwarded to
+ * the orchestrator as extra facts for the store's own GOAP actions to use.
+ * The widget never reads or interprets these values itself.
+ */
+export type CustomerContext = Record<string, string | number | boolean>;
+
+/**
+ * Parses the `customer-context` attribute (raw JSON text). Unlike
+ * `resolveConfig`'s required fields, a bad value here doesn't block the
+ * widget from mounting — it's optional extra context, so this only warns
+ * and drops what it can't use, field by field where possible.
+ */
+export function parseCustomerContext(
+	raw: string | null | undefined,
+): CustomerContext | undefined {
+	const text = raw?.trim();
+	if (!text) return undefined;
+
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(text);
+	} catch {
+		console.error(
+			'[pleiades-widget] invalid_customer_context: customer-context must be valid JSON, e.g. {"country":"Kazakhstan","city":"Qyzylorda"}.',
+		);
+		return undefined;
+	}
+	if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+		console.error(
+			"[pleiades-widget] invalid_customer_context: customer-context must be a flat JSON object of strings/numbers/booleans.",
+		);
+		return undefined;
+	}
+
+	const result: CustomerContext = {};
+	for (const [key, value] of Object.entries(parsed)) {
+		if (
+			typeof value === "string" ||
+			typeof value === "number" ||
+			typeof value === "boolean"
+		) {
+			result[key] = value;
+		} else {
+			console.error(
+				`[pleiades-widget] invalid_customer_context: field "${key}" must be a string, number or boolean — dropped.`,
+			);
+		}
+	}
+	return Object.keys(result).length > 0 ? result : undefined;
+}

@@ -3,6 +3,7 @@ import type {
 	Agent,
 	AgentStreamEvent,
 	DecisionAgent,
+	GoapAction,
 	IncomingMessage,
 } from "@repo/core";
 import { eq } from "drizzle-orm";
@@ -11,7 +12,7 @@ import { SqliteHistoryStore } from "../db/history-store.ts";
 import { ChannelDirectory } from "../db/identity.ts";
 import { RunBinding } from "../db/run-binding.ts";
 import { channels, users, visitorTokens } from "../db/schema.ts";
-import { createApp, type WidgetOptions } from "../server.ts";
+import { createApp, type ServerDeps, type WidgetOptions } from "../server.ts";
 import { testDb } from "../test/db.ts";
 
 const ORIGIN = "https://shop.example";
@@ -21,7 +22,10 @@ const HOUR_MS = 60 * 60 * 1000;
 
 const decisionAgent: DecisionAgent = { decide: async () => ({}) };
 
-function setup(widget: Partial<WidgetOptions> = {}) {
+function setup(
+	widget: Partial<WidgetOptions> = {},
+	overrides: Partial<ServerDeps> = {},
+) {
 	const db = testDb();
 	const runs = new RunBinding();
 	const store = new SqliteHistoryStore(db, 10, runs);
@@ -55,6 +59,7 @@ function setup(widget: Partial<WidgetOptions> = {}) {
 		ipHashSalt: SALT,
 		now: () => clock.now,
 		widget: { trustProxy: true, ...widget },
+		...overrides,
 	});
 	const shop = createWebChannel(
 		db,
@@ -132,12 +137,17 @@ function sendMessage(
 	threadId: string,
 	text = "hello",
 	ip = IP,
+	customerContext?: Record<string, string | number | boolean>,
 ) {
 	return ctx.app.handle(
 		widgetRequest("/v1/widget/messages", {
 			token,
 			ip,
-			body: { threadId, text },
+			body: {
+				threadId,
+				text,
+				...(customerContext ? { customerContext } : {}),
+			},
 		}),
 	);
 }
@@ -494,6 +504,52 @@ describe("widget threads and messages", () => {
 		const token = await newVisitor(ctx);
 		const threadId = await newThread(ctx, token);
 		const response = await sendMessage(ctx, token, threadId, "too long text");
+		expect(response.status).toBe(413);
+		expect(ctx.calls).toHaveLength(0);
+	});
+
+	test("customerContext is forwarded into WorldState under a customer: prefix", async () => {
+		let seen: Record<string, unknown> | undefined;
+		const probe: GoapAction = {
+			name: "probe",
+			// Cheaper than the static `generateReply` (cost 5) — the planner
+			// picks this one, so its `execute()` observes the merged state.
+			cost: 0,
+			preconditions: {},
+			effects: { replied: true },
+			async execute(ctx) {
+				seen = {
+					city: ctx.state["customer:city"],
+					country: ctx.state["customer:country"],
+				};
+				return { replied: true };
+			},
+		};
+		const ctx = setup({}, { threadActionsFor: () => [probe] });
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+
+		const response = await sendMessage(ctx, token, threadId, "hello", IP, {
+			city: "Qyzylorda",
+			country: "Kazakhstan",
+		});
+		// The plan only actually runs while the NDJSON stream is drained.
+		await response.text();
+
+		expect(response.status).toBe(200);
+		expect(ctx.calls).toHaveLength(0);
+		expect(seen).toEqual({ city: "Qyzylorda", country: "Kazakhstan" });
+	});
+
+	test("customerContext larger than the text limit → 413, model not called", async () => {
+		const ctx = setup({ maxTextChars: 20 });
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+
+		const response = await sendMessage(ctx, token, threadId, "hi", IP, {
+			note: "x".repeat(40),
+		});
+
 		expect(response.status).toBe(413);
 		expect(ctx.calls).toHaveLength(0);
 	});

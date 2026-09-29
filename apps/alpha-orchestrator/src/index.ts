@@ -1,7 +1,11 @@
 import { createObservability, serve } from "@repo/elysia-kit";
 import { AGENT_MAX_HISTORY_MESSAGES, agent } from "./agent.ts";
-import { scheduleAnonymousCleanup } from "./db/cleanup.ts";
+import {
+	scheduleAnonymousCleanup,
+	scheduleWorldStateCleanup,
+} from "./db/cleanup.ts";
 import { channels, db, runs, usageRecorder } from "./db/instance.ts";
+import { SqliteWorldStateStore } from "./db/world-state-store.ts";
 import { decisionAgent } from "./decision-agent.ts";
 import { config } from "./env.ts";
 import { assertRetentionCoversHistory } from "./retention.ts";
@@ -27,6 +31,8 @@ function report(message: string) {
 	};
 }
 
+const worldStateStore = new SqliteWorldStateStore(db);
+
 const app = createApp({
 	agent,
 	decisionAgent,
@@ -37,6 +43,7 @@ const app = createApp({
 	channels,
 	runs,
 	usageRecorder,
+	worldStateStore,
 	ipHashSalt: config.IP_HASH_SALT,
 	agents: {
 		specs: [
@@ -69,17 +76,23 @@ const app = createApp({
 	observability,
 });
 
-const stopCleanup = scheduleAnonymousCleanup(
+const stopAnonymousCleanup = scheduleAnonymousCleanup(
 	db,
 	config.ANON_RETENTION_HOURS,
 	report("anonymous_cleanup_failed"),
+);
+const stopWorldStateCleanup = scheduleWorldStateCleanup(
+	db,
+	config.WORLD_STATE_RETENTION_HOURS,
+	report("world_state_cleanup_failed"),
 );
 
 serve(app, {
 	port: config.PORT,
 	observability,
 	onShutdown: () => {
-		stopCleanup();
+		stopAnonymousCleanup();
+		stopWorldStateCleanup();
 		usageRecorder.flush();
 		db.$client.close();
 	},

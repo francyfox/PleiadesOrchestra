@@ -627,3 +627,128 @@ describe("createApp — GOAP process lifecycle", () => {
 		expect(order).toEqual(["a-start", "run-2", "a-end", "run-3"]);
 	});
 });
+
+describe("createApp — message intent routing", () => {
+	function choiceAnswer(choice: string): DecisionAnswer {
+		return {
+			type: "choice",
+			choice,
+			probabilities: { [choice]: 1 },
+			confidence: 1,
+			rl_agent: { act_probability: 1 },
+		};
+	}
+
+	test("skips Laya classification (and the plain reply wins) when no thread actions are bound", async () => {
+		let decideCalls = 0;
+		const decisionAgent = fakeDecisionAgent(async () => {
+			decideCalls++;
+			return {};
+		});
+
+		const app = createTestApp({
+			agent: fakeAgent(singleDeltaStream),
+			decisionAgent,
+		});
+		const response = await app.handle(
+			authedRequest("http://harness.local/v1/messages", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({ threadId: "t1", userId: "u1", text: "привет" }),
+			}),
+		);
+		const events = await readNdjson(response);
+
+		expect(decideCalls).toBe(0);
+		expect(
+			events.some((event) => (event as { type: string }).type === "done"),
+		).toBe(true);
+	});
+
+	test("classifies a task message and extends the goal so plan() chains in the matching thread action", async () => {
+		let cartActionRan = false;
+		let seenMessageIntent: unknown;
+		const cartAction: GoapAction = {
+			name: "cartTool",
+			cost: 2,
+			preconditions: {},
+			effects: { inCart: true },
+			async execute(ctx) {
+				cartActionRan = true;
+				seenMessageIntent = ctx.state.messageIntent;
+				return { inCart: true };
+			},
+		};
+		const decisionAgent = fakeDecisionAgent(async () => ({
+			intent: choiceAnswer("addToCart"),
+		}));
+
+		const app = createTestApp({
+			agent: fakeAgent(singleDeltaStream),
+			decisionAgent,
+			threadActionsFor: () => [cartAction],
+		});
+		const response = await app.handle(
+			authedRequest("http://harness.local/v1/messages", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({
+					threadId: "t1",
+					userId: "u1",
+					text: "добавь самый дешёвый ноутбук в корзину",
+				}),
+			}),
+		);
+		const events = await readNdjson(response);
+
+		expect(cartActionRan).toBe(true);
+		expect(seenMessageIntent).toBe("addToCart");
+		expect(
+			events.some((event) => (event as { type: string }).type === "done"),
+		).toBe(true);
+	});
+
+	test("a classified task intent with no matching action in the catalog degrades to a plain reply instead of failing", async () => {
+		let unrelatedActionRan = false;
+		const unrelatedAction: GoapAction = {
+			name: "searchTool",
+			cost: 2,
+			preconditions: {},
+			effects: { catalogSearched: true },
+			async execute() {
+				unrelatedActionRan = true;
+				return { catalogSearched: true };
+			},
+		};
+		// Classified as "checkout" (needs `checkoutComplete`), but nothing in
+		// the catalog produces that fact — `goalForIntent` must fall back to
+		// the base `{ replied: true }` goal instead of handing `plan()` a fact
+		// nothing can supply.
+		const decisionAgent = fakeDecisionAgent(async () => ({
+			intent: choiceAnswer("checkout"),
+		}));
+
+		const app = createTestApp({
+			agent: fakeAgent(singleDeltaStream),
+			decisionAgent,
+			threadActionsFor: () => [unrelatedAction],
+		});
+		const response = await app.handle(
+			authedRequest("http://harness.local/v1/messages", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({
+					threadId: "t1",
+					userId: "u1",
+					text: "оформи заказ",
+				}),
+			}),
+		);
+		const events = await readNdjson(response);
+
+		expect(unrelatedActionRan).toBe(false);
+		expect(
+			events.some((event) => (event as { type: string }).type === "done"),
+		).toBe(true);
+	});
+});

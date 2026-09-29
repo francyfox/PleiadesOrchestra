@@ -1,8 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import { testDb } from "../test/db.ts";
-import { anonymousCutoff, deleteInactiveAnonymousUsers } from "./cleanup.ts";
-import { upsertIdentifiedUser } from "./identity.ts";
-import { llmCalls, users } from "./schema.ts";
+import {
+	anonymousCutoff,
+	deleteInactiveAnonymousUsers,
+	deleteStaleWorldState,
+	worldStateCutoff,
+} from "./cleanup.ts";
+import { resolveThreadId, upsertIdentifiedUser } from "./identity.ts";
+import { llmCalls, threadWorldState, users } from "./schema.ts";
 
 const HOUR = 60 * 60 * 1000;
 
@@ -64,5 +69,44 @@ describe("deleteInactiveAnonymousUsers", () => {
 			channelId: "ch_cli",
 			inputTokens: 5,
 		});
+	});
+});
+
+describe("worldStateCutoff", () => {
+	test("is `hours` before now", () => {
+		expect(worldStateCutoff(100 * HOUR, 24)).toBe(76 * HOUR);
+	});
+});
+
+describe("deleteStaleWorldState", () => {
+	test("deletes only WorldState checkpoints not updated within the retention window", () => {
+		const db = testDb();
+		const now = 100 * HOUR;
+		const user = upsertIdentifiedUser(db, "ch_cli", "u1", undefined, 1);
+		const stale = resolveThreadId(db, "ch_cli", user.id, "stale", 1);
+		const fresh = resolveThreadId(db, "ch_cli", user.id, "fresh", 1);
+		db.insert(threadWorldState)
+			.values({
+				threadId: stale,
+				state: { step: "checkout" },
+				updatedAt: now - 25 * HOUR,
+			})
+			.run();
+		db.insert(threadWorldState)
+			.values({
+				threadId: fresh,
+				state: { step: "search" },
+				updatedAt: now - 1 * HOUR,
+			})
+			.run();
+
+		expect(deleteStaleWorldState(db, now, 24)).toBe(1);
+		expect(
+			db
+				.select({ threadId: threadWorldState.threadId })
+				.from(threadWorldState)
+				.all()
+				.map((row) => row.threadId),
+		).toEqual([fresh]);
 	});
 });

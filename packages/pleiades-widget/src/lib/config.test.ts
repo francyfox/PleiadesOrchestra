@@ -1,8 +1,9 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 import {
 	type ConfigError,
 	describeConfigError,
 	normalizePosition,
+	parseCustomerContext,
 	resolveConfig,
 } from "./config";
 
@@ -159,5 +160,64 @@ describe("describeConfigError", () => {
 	test("a missing or malformed key points at the PUBLIC key too", () => {
 		expect(describeConfigError("missing_key")).toContain("PUBLIC");
 		expect(describeConfigError("invalid_key")).toContain("PUBLIC");
+	});
+});
+
+describe("parseCustomerContext", () => {
+	test("absent, empty or whitespace-only attribute is undefined, silently", () => {
+		const error = spyOn(console, "error").mockImplementation(() => {});
+		expect(parseCustomerContext(undefined)).toBeUndefined();
+		expect(parseCustomerContext(null)).toBeUndefined();
+		expect(parseCustomerContext("")).toBeUndefined();
+		expect(parseCustomerContext("   ")).toBeUndefined();
+		expect(error).not.toHaveBeenCalled();
+		error.mockRestore();
+	});
+
+	test("parses a flat JSON object of strings/numbers/booleans", () => {
+		expect(
+			parseCustomerContext(
+				'{"country":"Kazakhstan","city":"Qyzylorda","loyaltyTier":2,"vip":true}',
+			),
+		).toEqual({
+			country: "Kazakhstan",
+			city: "Qyzylorda",
+			loyaltyTier: 2,
+			vip: true,
+		});
+	});
+
+	test("invalid JSON is dropped with a console warning", () => {
+		const error = spyOn(console, "error").mockImplementation(() => {});
+		expect(parseCustomerContext("{not json")).toBeUndefined();
+		expect(error).toHaveBeenCalledTimes(1);
+		expect(error.mock.calls[0]?.[0]).toContain("invalid_customer_context");
+		error.mockRestore();
+	});
+
+	test("a JSON array or scalar (not an object) is dropped with a console warning", () => {
+		const error = spyOn(console, "error").mockImplementation(() => {});
+		expect(parseCustomerContext("[1,2,3]")).toBeUndefined();
+		expect(parseCustomerContext("42")).toBeUndefined();
+		expect(parseCustomerContext("null")).toBeUndefined();
+		expect(error).toHaveBeenCalledTimes(3);
+		error.mockRestore();
+	});
+
+	test("a nested object/array field is dropped, but the rest of the flat fields survive", () => {
+		const error = spyOn(console, "error").mockImplementation(() => {});
+		expect(
+			parseCustomerContext(
+				'{"city":"Qyzylorda","address":{"street":"x"},"tags":[1,2]}',
+			),
+		).toEqual({ city: "Qyzylorda" });
+		expect(error).toHaveBeenCalledTimes(2);
+		error.mockRestore();
+	});
+
+	test("an object with only unusable fields is undefined, not empty", () => {
+		const error = spyOn(console, "error").mockImplementation(() => {});
+		expect(parseCustomerContext('{"address":{"street":"x"}}')).toBeUndefined();
+		error.mockRestore();
 	});
 });
