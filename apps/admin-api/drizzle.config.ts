@@ -1,9 +1,9 @@
 import { defineConfig } from "drizzle-kit";
 
-// Migrations only — generated from the better-auth schema, applied at startup
-// by `src/lib/server/db/index.ts`. No credentials needed to generate.
+// Migrations only — generated from the better-auth schema and applied at
+// startup by `openAdminDb` (src/modules/database/database.ts).
 export default defineConfig({
 	dialect: "sqlite",
-	schema: "./src/lib/server/db/auth-schema.ts",
+	schema: "./src/modules/database/database.auth-schema.ts",
 	out: "./drizzle",
 });

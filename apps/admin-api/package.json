@@ -13,7 +13,7 @@
 		"check-types": "tsc --noEmit",
 		"lint": "biome check .",
 		"db:generate": "drizzle-kit generate",
-		"auth:schema": "bunx --bun @better-auth/cli generate --config src/auth-cli.ts --output src/db/auth-schema.ts -y"
+		"auth:schema": "bunx --bun @better-auth/cli generate --config src/modules/auth/auth-cli.ts --output src/modules/database/database.auth-schema.ts -y"
 	},
 	"dependencies": {
 		"@repo/elysia-kit": "workspace:*",

@@ -2,11 +2,11 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { createObservability, serve } from "@repo/elysia-kit";
 import { createApp } from "./app.ts";
-import { createAuth } from "./auth.ts";
-import { openAdminDb } from "./db/index.ts";
-import { config } from "./env.ts";
-import { createOrchestratorClient } from "./orchestrator/client.ts";
-import { systemSnapshot } from "./system/snapshot.ts";
+import { createAuth } from "./modules/auth/auth.ts";
+import { config } from "./modules/config/config.service.ts";
+import { openAdminDb } from "./modules/database/database.ts";
+import { createOrchestratorClient } from "./modules/orchestrator/orchestrator.ts";
+import { systemSnapshot } from "./modules/system/system-snapshot.service.ts";
 
 const observability = createObservability("admin-api", config);
 

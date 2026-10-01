@@ -282,7 +282,7 @@ export function createClassifiedMcpToolSource(
 цель и упал бы с `"no plan reached the goal"` на ровном месте, хотя виноват не пользователь, а
 то, что WebMCP-тулы для этого треда ещё не подключены.
 
-Реализовано в `apps/alpha-orchestrator/src/server.ts`'s `streamPlanRun`: классификация
+Реализовано в `apps/alpha-orchestrator/src/modules/run-stream/run-stream.ts`'s `streamPlanRun`: классификация
 запускается только когда `threadActionsFor` вообще что-то вернул для этого треда (обычный
 случай сегодня — ничего, раз WebMCP ещё не подключён, см. раздел выше) — значит, для подавляющего
 большинства сообщений ("привет" включая) лишний вызов Laya не тратится вообще, `generateReply`

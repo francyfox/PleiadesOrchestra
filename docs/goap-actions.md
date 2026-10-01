@@ -10,7 +10,7 @@
 2. Напиши функцию, которая возвращает объект `GoapAction`, и вынеси её рядом с остальными
    actions (например, `apps/alpha-orchestrator/src/actions/`).
 3. Зарегистрируй её в каталоге — добавь вызов в `buildActions()`
-   (`apps/alpha-orchestrator/src/server.ts`).
+   (`apps/alpha-orchestrator/src/modules/goap/goap.service.ts`).
 
 Минимальный рабочий пример — action, который открывает каталог товаров через WebMCP:
 
@@ -36,8 +36,8 @@ export function createOpenCatalogAction(webmcp: WebMcpClient): GoapAction {
 И регистрация:
 
 ```ts
-// apps/alpha-orchestrator/src/server.ts, внутри buildActions(deps)
-function buildActions(deps: ServerDeps): GoapAction[] {
+// apps/alpha-orchestrator/src/modules/goap/goap.service.ts, внутри buildActions(agent, maxChunkChars)
+function buildActions(agent: Agent, maxChunkChars: number): GoapAction[] {
   return [
     createTextAction({ /* ... существующий generateReply ... */ }),
     createOpenCatalogAction(deps.webmcp),
@@ -135,7 +135,7 @@ Actions тестируются юнит-тестами рядом с файло�
 ## Регистрация в каталоге
 
 Actions собираются один раз на инстанс приложения, не на каждый запрос — см.
-`buildActions()` в `apps/alpha-orchestrator/src/server.ts`. Новый action добавляется туда же
+`buildActions()` в `apps/alpha-orchestrator/src/modules/goap/goap.service.ts`. Новый action добавляется туда же
 (или в отдельный `buildWebMcpActions()`, который `buildActions()` конкатенирует), а не создаётся
 заново при каждом вызове `/v1/messages`.
 

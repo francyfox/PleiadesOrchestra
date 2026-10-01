@@ -5,6 +5,38 @@
  */
 
 export type {
+	AdminAccount,
+	AdminSelf,
+	AdminsPage,
+} from "./modules/admins/admins.schema.ts";
+export type {
+	Agent,
+	AgentRole,
+	AgentStatus,
+} from "./modules/agents/agents.schema.ts";
+export type {
+	BlockedIp,
+	CreateBlockedIpInput,
+} from "./modules/blocked-ips/blocked-ips.schema.ts";
+export type {
+	AccessMode,
+	Channel,
+	ChannelKind,
+	ChannelRef,
+	CreateChannelInput,
+	UpdateChannelInput,
+} from "./modules/channels/channels.schema.ts";
+export type {
+	ApiError,
+	CallKind,
+	PageQuery,
+	WorldState,
+} from "./modules/common/common.schema.ts";
+export type {
+	DynamicActionInfo,
+	GoapActionInfo,
+} from "./modules/goap/goap.schema.ts";
+export type {
 	DashboardData,
 	LiveClientMessage,
 	LiveErrorCode,
@@ -12,58 +44,42 @@ export type {
 	LiveTopic,
 	LiveTopics,
 	PageParams,
-} from "./live/protocol.ts";
+} from "./modules/live/live.types.ts";
 export type {
-	AdminAccount,
-	AdminSelf,
-	AdminsPage,
-	Session,
-} from "./schemas/accounts.ts";
-export type { WorldState } from "./schemas/common.ts";
-export type { ApiError } from "./schemas/errors.ts";
-export type {
-	AccessMode,
-	AdminMessage,
-	AdminUser,
-	Agent,
-	AgentRole,
-	AgentStatus,
-	BlockedIp,
-	BulkAction,
-	CallKind,
-	Channel,
-	ChannelKind,
-	ChannelRef,
-	CreateBlockedIpInput,
-	CreateChannelInput,
-	DynamicActionInfo,
-	GoapActionInfo,
 	LatencyStats,
-	PageQuery,
 	PerformanceReport,
+} from "./modules/performance/performance.schema.ts";
+export type {
 	PlanRun,
 	RunDetails,
 	RunLlmCall,
-	SortOrder,
-	Stats,
 	TraceEvent,
 	TraceEventType,
-	UpdateChannelInput,
+} from "./modules/plan-runs/plan-runs.schema.ts";
+export type { Session } from "./modules/session/session.schema.ts";
+export type { Stats } from "./modules/stats/stats.schema.ts";
+export type {
+	CpuInfo,
+	GpuInfo,
+	MemoryInfo,
+	SystemSnapshot,
+} from "./modules/system/system.schema.ts";
+export type {
 	UsageByDay,
 	UsageByModel,
 	UsageGroupBy,
 	UsageRow,
 	UsageTotals,
+} from "./modules/usage/usage.schema.ts";
+export type {
+	AdminMessage,
+	AdminUser,
+	BulkAction,
+	SortOrder,
 	UserDetails,
 	UserKind,
 	UserStatus,
 	UsersPage,
 	UsersQuery,
 	UsersSort,
-} from "./schemas/orchestrator.ts";
-export type {
-	CpuInfo,
-	GpuInfo,
-	MemoryInfo,
-	SystemSnapshot,
-} from "./schemas/system.ts";
+} from "./modules/users/users.schema.ts";

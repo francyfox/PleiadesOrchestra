@@ -1,17 +1,20 @@
 import { createObservability, serve } from "@repo/elysia-kit";
-import { AGENT_MAX_HISTORY_MESSAGES, agent } from "./agent.ts";
+import { createApp } from "./app.ts";
 import {
-	scheduleAnonymousCleanup,
-	scheduleWorldStateCleanup,
-} from "./db/cleanup.ts";
-import { channels, db, runs, usageRecorder } from "./db/instance.ts";
-import { SqliteWorldStateStore } from "./db/world-state-store.ts";
-import { decisionAgent } from "./decision-agent.ts";
-import { config } from "./env.ts";
-import { assertRetentionCoversHistory } from "./retention.ts";
-import { createApp } from "./server.ts";
+	AGENT_MAX_HISTORY_MESSAGES,
+	agent,
+} from "./modules/agents/agents.instance.ts";
+import { channelDirectory } from "./modules/channel-directory/channel-directory.instance.ts";
+import { config } from "./modules/config/config.service.ts";
+import { db } from "./modules/database/database.instance.ts";
+import { decisionAgent } from "./modules/decisions/decisions.instance.ts";
+import { assertRetentionCoversHistory } from "./modules/retention/retention.service.ts";
+import { startRetentionJobs } from "./modules/retention/retention.ts";
+import { runs } from "./modules/run-binding/run-binding.instance.ts";
+import { usageRecorder } from "./modules/usage-recorder/usage-recorder.instance.ts";
+import { SqliteWorldStateStore } from "./modules/world-state/world-state.ts";
 
-// Migrations already ran when ./db/instance.ts opened the database.
+// Migrations already ran when database.instance.ts opened the database.
 assertRetentionCoversHistory(
 	config.MESSAGE_RETENTION_PER_USER,
 	AGENT_MAX_HISTORY_MESSAGES,
@@ -21,7 +24,7 @@ const observability = createObservability("alpha-orchestrator", config);
 const { logger, monitoring } = observability;
 
 /** Persistence and background failures: logged and reported, never fatal to a request. */
-function report(message: string) {
+function reportError(message: string) {
 	return (error: unknown) => {
 		logger.error({
 			message,
@@ -31,8 +34,6 @@ function report(message: string) {
 	};
 }
 
-const worldStateStore = new SqliteWorldStateStore(db);
-
 const app = createApp({
 	agent,
 	decisionAgent,
@@ -40,10 +41,10 @@ const app = createApp({
 	adminApiKey: config.ADMIN_API_KEY,
 	maxChunkChars: config.HARNESS_MAX_CHUNK_CHARS,
 	db,
-	channels,
+	channels: channelDirectory,
 	runs,
 	usageRecorder,
-	worldStateStore,
+	worldStateStore: new SqliteWorldStateStore(db),
 	ipHashSalt: config.IP_HASH_SALT,
 	agents: {
 		specs: [
@@ -73,27 +74,21 @@ const app = createApp({
 		tokenTtlHours: config.ANON_RETENTION_HOURS,
 		retentionPerUser: config.MESSAGE_RETENTION_PER_USER,
 	},
-	onError: report("persistence_error"),
+	onError: reportError("persistence_error"),
 	observability,
 });
 
-const stopAnonymousCleanup = scheduleAnonymousCleanup(
-	db,
-	config.ANON_RETENTION_HOURS,
-	report("anonymous_cleanup_failed"),
-);
-const stopWorldStateCleanup = scheduleWorldStateCleanup(
-	db,
-	config.WORLD_STATE_RETENTION_HOURS,
-	report("world_state_cleanup_failed"),
-);
+const stopRetentionJobs = startRetentionJobs(db, {
+	anonymousRetentionHours: config.ANON_RETENTION_HOURS,
+	worldStateRetentionHours: config.WORLD_STATE_RETENTION_HOURS,
+	onError: reportError,
+});
 
 serve(app, {
 	port: config.PORT,
 	observability,
 	onShutdown: () => {
-		stopAnonymousCleanup();
-		stopWorldStateCleanup();
+		stopRetentionJobs();
 		usageRecorder.flush();
 		db.$client.close();
 	},

@@ -3,6 +3,10 @@
 	"root": false,
 	"extends": "//",
 	"files": {
-		"includes": ["**", "!src/db/auth-schema.ts", "!drizzle"]
+		"includes": [
+			"**",
+			"!src/modules/database/database.auth-schema.ts",
+			"!drizzle"
+		]
 	}
 }

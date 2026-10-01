@@ -94,7 +94,7 @@ test.describe("WebMCP round trip", () => {
 		});
 		// api.ts omits `isError` from the body entirely when false (same
 		// minimal-payload convention as `customerContext`/`webmcpTools`) —
-		// the server defaults a missing field to `false` (`widget/routes.ts`).
+		// the server defaults a missing field to `false` (`modules/widget/widget.ts`).
 		expect(
 			(resumeRequest?.body as { isError?: unknown } | undefined)?.isError,
 		).toBeFalsy();

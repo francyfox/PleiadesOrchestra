@@ -10,11 +10,14 @@
  */
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import { DEFAULT_MIGRATIONS_DIR, openDatabase } from "../src/db/client.ts";
+import {
+	DEFAULT_MIGRATIONS_DIR,
+	openDatabase,
+} from "../src/modules/database/database.ts";
 import {
 	importTelegramWhitelist,
 	parseIds,
-} from "../src/db/whitelist-import.ts";
+} from "../src/modules/telegram-whitelist/telegram-whitelist.service.ts";
 
 const raw = process.argv[2] ?? process.env.ALLOWED_TELEGRAM_USER_IDS;
 if (!raw) {
