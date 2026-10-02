@@ -2,6 +2,7 @@ import { Elysia, t } from "elysia";
 import { isIpBlocked } from "../blocked-ips/blocked-ips.service.ts";
 import type { ChannelDirectory } from "../channel-directory/channel-directory.ts";
 import type { Db } from "../database/database.ts";
+import { recordCatalog } from "../mcp/mcp.service.ts";
 import { ndjsonResponse } from "../streaming/streaming.service.ts";
 import {
 	createWidgetThread,
@@ -16,7 +17,11 @@ import {
 	type WidgetAuth,
 	WidgetGuard,
 } from "./widget.service.ts";
-import type { WidgetOptions, WidgetReply } from "./widget.types.ts";
+import {
+	MAX_PAGE_CHARS,
+	type WidgetOptions,
+	type WidgetReply,
+} from "./widget.types.ts";
 
 export { isPublicWidgetPath } from "./widget.service.ts";
 export type { WidgetOptions } from "./widget.types.ts";
@@ -31,6 +36,9 @@ export interface WidgetDeps {
 	reply: WidgetReply;
 }
 
+/** `location.pathname + location.search` of the visitor's page; the widget cuts it at this length. */
+const PageField = t.Optional(t.String({ maxLength: MAX_PAGE_CHARS }));
+
 /** Matches `@repo/core`'s `WebMcpToolDescriptor`. */
 const WebMcpToolSchema = t.Object({
 	name: t.String(),
@@ -39,6 +47,9 @@ const WebMcpToolSchema = t.Object({
 		t.Object({
 			type: t.Literal("object"),
 			properties: t.Optional(t.Record(t.String(), t.Unknown())),
+			// Without this Elysia drops `required` from the body, and the planner
+			// can't tell which parameters it has to fill.
+			required: t.Optional(t.Array(t.String())),
 		}),
 	),
 });
@@ -156,8 +167,11 @@ export function widgetRoutes(deps: WidgetDeps) {
 					auth.visitor.user,
 					body.threadId,
 					body.text,
-					request.signal,
-					body.customerContext,
+					{
+						signal: request.signal,
+						customerContext: body.customerContext,
+						page: body.page,
+					},
 				);
 				return ndjsonResponse(stream, request, corsHeaders(auth.origin));
 			},
@@ -165,6 +179,7 @@ export function widgetRoutes(deps: WidgetDeps) {
 				body: t.Object({
 					threadId: t.String(),
 					text: t.String(),
+					page: PageField,
 					customerContext: t.Optional(
 						t.Record(
 							t.String(),
@@ -188,6 +203,7 @@ export function widgetRoutes(deps: WidgetDeps) {
 				const rejected = rejectIfNotAllowedToUse(auth, body.threadId);
 				if (rejected) return rejected;
 
+				recordCatalog(db, auth.channel.id, body.webmcpTools, now());
 				await reply.registerWebMcpTools(body.threadId, body.webmcpTools);
 				return emptyResponse(204, auth.origin);
 			},
@@ -210,7 +226,12 @@ export function widgetRoutes(deps: WidgetDeps) {
 				const stream = reply.resumeReply(
 					auth.visitor.user,
 					body.threadId,
-					{ tool: body.tool, isError: body.isError ?? false },
+					{
+						tool: body.tool,
+						isError: body.isError ?? false,
+						result: body.result,
+						page: body.page,
+					},
 					request.signal,
 				);
 				return ndjsonResponse(stream, request, corsHeaders(auth.origin));
@@ -221,7 +242,9 @@ export function widgetRoutes(deps: WidgetDeps) {
 					/** Matches the `tool_call` line's `callId`; not read server-side yet (one in-flight tool call per thread). */
 					callId: t.String(),
 					tool: t.String(),
-					/** Not yet folded into the reply. */
+					/** Where the visitor is now; a tool may have navigated. */
+					page: PageField,
+					/** What the tool answered; its text is kept for the next step (e.g. the search hits). */
 					result: t.Unknown(),
 					isError: t.Optional(t.Boolean()),
 				}),

@@ -132,21 +132,4 @@ describe("createOrchestratorClient", () => {
 			"http://orch:3000/v1/admin/usage?groupBy=day&from=1&to=2",
 		);
 	});
-
-	test("goapActions omits ?userId= when not given, and appends it when given", async () => {
-		const f = fakeFetch(() => json({ actions: [] }));
-		const client = createOrchestratorClient({
-			baseUrl: "http://orch:3000",
-			apiKey: "k",
-			fetch: f.fetch,
-		});
-
-		await client.goapActions();
-		expect(f.calls[0]?.url).toBe("http://orch:3000/v1/admin/goap/actions");
-
-		await client.goapActions("u1");
-		expect(f.calls[1]?.url).toBe(
-			"http://orch:3000/v1/admin/goap/actions?userId=u1",
-		);
-	});
 });

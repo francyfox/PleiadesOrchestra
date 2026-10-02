@@ -195,26 +195,78 @@ Query: `channel` (slug), `kind`, `status`, `q` (поиск по displayName/exte
 
 ### GOAP
 
-`GET /v1/admin/runs/:id` →
+### Запросы (цепочки прогонов)
+
+Одно сообщение пользователя = **запрос**: первый прогон плюс по одному на каждый ответ браузерного
+тула (прогон останавливается на `waiting` и возобновляется новым). Прогоны одного запроса связаны
+`plan_runs.root_run_id` (корень — сам первый прогон; у старых строк `NULL` читается как «сам себе
+корень»). Трассы цепочки живут, пока жив хотя бы один ответ в `messages` (см. `trimUserHistory`).
+
+`GET /v1/admin/requests?page=&pageSize=` (новые первыми; без `pageSize` — 25) →
+
+```json
+{ "items": [{ "id": "<id первого прогона>", "userId": "", "threadId": "", "prompt": "купи 1 сыр",
+              "intent": "addToCart", "status": "running" | "waiting" | "succeeded" | "failed" | "abandoned",
+              "steps": ["choose_store", "search_products"], "runs": 2, "startedAt": 0, "durationMs": 0 }],
+  "total": 1 }
+```
+
+`status`: `running` — прогон идёт сейчас (реестр `ActiveRuns` в памяти оркестратора); `waiting` — последний
+прогон остановился на браузерном туле и тул ещё не ответил (< 5 мин); `abandoned` — не ответил дольше
+5 минут; иначе `succeeded`/`failed` по последнему прогону. `steps` — действия по порядку завершения
+плюс то, которое сейчас выполняет браузер. `durationMs` у идущего запроса — до «сейчас». `prompt`
+обрезан до 200 символов; для запросов, записанных до появления колонки, берётся из `userMessage`
+первого плана.
+
+`GET /v1/admin/requests/:id` (подходит id любого прогона цепочки; неизвестный → `404`) →
 
 ```json
 {
-  "run": { "id": "", "userId": "", "threadId": "", "goal": {}, "succeeded": true, "attempts": 1, "durationMs": 0, "createdAt": 0 },
-  "events": [{ "seq": 0, "type": "planned", "attempt": 0, "action": null, "payload": {}, "at": 0 }],
-  "llmCalls": [{ "actionName": "generateReply", "kind": "generate", "model": "", "inputTokens": 0, "outputTokens": 0, "latencyMs": 0, "ok": true, "at": 0 }]
+  "request": { "id": "", "userId": "", "threadId": "", "prompt": "", "intent": "addToCart", "status": "succeeded",
+               "goal": {}, "reply": "ответ ассистента или null", "startedAt": 0, "durationMs": 0 },
+  "runs": [{ "id": "", "createdAt": 0, "durationMs": 0, "succeeded": true, "running": false,
+             "events": [{ "seq": 0, "type": "planned", "attempt": 0, "action": null, "payload": {}, "at": 0 }] }],
+  "llmCalls": [{ "planRunId": "", "actionName": "", "kind": "generate", "provider": "albedo", "model": "",
+                 "inputTokens": 0, "outputTokens": 0, "latencyMs": 0, "ok": true, "error": null, "at": 0 }],
+  "now": 0
 }
 ```
 
-`events[].type` и поля `payload` — ровно `PlanTraceEvent` из `@repo/core`
-(`packages/core/src/goap/types.ts`) без полей `type`/`attempt`/`action`/`at`, вынесенных на
-верхний уровень. Длинные строки в `state` обрезаны до 500 символов. У события `finished` нет
-`attempt` — в колонку `attempt` кладётся его `attempts`.
+`events[].type` и `payload` — ровно `PlanTraceEvent` из `@repo/core` (`packages/core/src/goap/types.ts`) без полей `type`/`attempt`/`action`/`at`, вынесенных на верхний уровень; длинные строки в `state` обрезаны до 500 символов; у `finished` нет `attempt` — в колонку кладётся его `attempts`. У прогона, который идёт сейчас (`running: true`), это события, уже
+случившиеся (из памяти, в БД их ещё нет). `now` — время сервера, от него считают прошедшее время
+выполняемого шага.
 
-`GET /v1/admin/goap/actions` →
+**admin-api (BFF) → панель.** Панель не склеивает прогоны и не угадывает статусы: `GET /api/requests`
+отдаёт ту же страницу, а `GET /api/requests/:id` — `RequestView`, уже готовый к отрисовке:
+`nodes` (`prompt` → `understand` → шаги плана → `result`; у каждого `round`, `status`
+`done|running|browser|failed|skipped|diverged|pending|not_reached|reached|missed`, `startedAt`,
+`durationMs`, `detail` с аргументами тула, временем браузера, ответом тула, эффектами, ошибкой и
+вызовами моделей) и `edges` (`next`/`replan`). Браузерный тул — один шаг, хотя сервер останавливается
+и возобновляется вокруг него; его `detail.browserMs` — время от паузы сервера до возобновления.
+`now` отдаётся только идущему запросу (иначе ответ менялся бы при каждом чтении и live-хаб
+пушил бы его бесконечно). Live-темы `/api/live`: `requests` (список, 3 с) и `request` (один запрос, 1 с).
+
+### MCP (каталоги WebMCP-тулов сайтов)
+
+Когда посетитель открывает виджет, страница присылает свои WebMCP-тулы (`POST /v1/widget/tools`).
+Оркестратор запоминает их в `mcp_catalogs` (по версии на канал: хеш канонического списка тулов —
+имена, описания, схемы; повторное объявление того же каталога только увеличивает `registrations` и
+`lastSeenAt`; хранятся 5 последних версий) и **не классифицирует тот же каталог заново** (кэш в памяти
+по тому же хешу, 32 каталога; смена любого описания или схемы = другой хеш = новая классификация;
+перезапуск сбрасывает кэш).
+
+`GET /v1/admin/mcp` →
 
 ```json
-{ "actions": [{ "name": "generateReply", "cost": 5, "preconditions": {}, "effects": { "replied": true } }] }
+{ "items": [{ "channelId": "", "channelSlug": "shop", "channelName": "Shop",
+              "tools": [{ "name": "search_products", "description": "…", "inputSchema": {} }],
+              "toolCount": 1, "firstSeenAt": 0, "lastSeenAt": 0, "registrations": 3, "versions": 1 }] }
 ```
+
+Одна запись на канал — его новейшая версия каталога (`firstSeenAt` — когда эта версия пришла впервые).
+**admin-api (BFF)** разбирает `inputSchema` каждого тула в список параметров
+(`name`, `type` вида `string`/`string[]`, `description`, `required`, `values` у enum): `GET /api/mcp`,
+live-тема `mcp` (10 с).
 
 ### Каналы
 
@@ -267,7 +319,7 @@ identified-пользователя `last_ip` остаётся, пока сущ�
 interface Agent {
   id: string;                    // "beta-text" | "gamma-decision"
   name: string;
-  role: "text" | "decision";     // генерация текста (LLM) / типизированные решения (Laya)
+  role: "text" | "decision" | "function-call"; // текст (LLM) / типизированные решения (Laya) / JSON-аргументы вызова функции (delta)
   endpoint: string;              // базовый URL без логина/пароля, query и fragment
   model: string | null;          // null у decision-агента
   status: "up" | "down";
@@ -349,9 +401,18 @@ Visitor-токен: 32 случайных байта (base64url), в БД — т
 {
   "threadId": "<из /v1/widget/threads>",
   "text": "...",
+  "page": "/ru/store/greenleaf?q=milk",
   "customerContext": { "country": "Kazakhstan", "city": "Qyzylorda" }
 }
 ```
+
+`page` — необязательно, `pathname + search` страницы, на которой сейчас посетитель (без origin и
+`#hash`; язык в пути `/ru/…` и параметры остаются — это часть адреса; до 512 символов, иначе `422`).
+Виджет шлёт её с каждым `/messages` и с каждым `/tool-results` заново (WebMCP-тул мог сменить
+страницу). В `WorldState`: `page:path` (как пришло) и `page:lang` (из префикса `/ru/` или
+`?lang=`/`?locale=`); Laya получает `{ message, page, lang }` при определении намерения. Тул-навигация
+(интент `navigate`) не вызывается в браузере, если адрес назначения — та же страница
+(`samePage`: язык и `utm_*`/`gclid`/… не считаются, параметры назначения сравниваются как набор).
 
 `customerContext` — необязательный плоский объект (`Record<string, string | number | boolean>`,
 без вложенности), который сайт-интеграция уже знает о посетителе и который браузер не может
@@ -365,8 +426,22 @@ Visitor-токен: 32 случайных байта (base64url), в БД — т
 Размер `customerContext` в виде JSON-строки ограничен тем же `WIDGET_MAX_TEXT_CHARS`, что и
 `text` — `413` при превышении.
 
-Ответ — тот же NDJSON-стрим, что у `/v1/messages` (`delta`/`done`/`error`), плюс новая терминальная
-строка `tool_call`:
+Ответ — тот же NDJSON-стрим, что у `/v1/messages` (`delta`/`done`/`error`), плюс нетерминальная
+строка `step` (ход выполнения) и терминальная строка `tool_call`:
+
+```json
+{ "type": "step", "id": "search_products", "phase": "running", "text": "Ищу «cheese»…" }
+{ "type": "step", "id": "search_products", "phase": "done", "text": "Нашёл: Mozzarella Cheese" }
+```
+
+`step` — «что сейчас происходит» для пользователя, готовым текстом на его языке (`page:lang`:
+русский/казахский → русский, остальные → английский; без языка страницы — русский). `id` — имя действия
+плана; следующая строка с тем же `id` **заменяет** предыдущую (начал → закончил). `phase`:
+`running` | `done` | `failed`. Приходят до `delta`; после `tool_call` и возобновления через
+`/tool-results` поток продолжается теми же `id`. Молчат действия без описания (например, сам ответ
+модели — он идёт `delta`). Клиенты, не знающие `step` (CLI, Telegram, MCP), строку игнорируют.
+
+Терминальная строка `tool_call`:
 
 ```json
 { "type": "tool_call", "tool": "search_products", "arguments": { "query": "..." }, "callId": "..." }
@@ -392,9 +467,10 @@ Visitor-токен: 32 случайных байта (base64url), в БД — т
 (`state` + `goal`, ровно та же цель, что план преследовал изначально — не переклассифицируется) и
 тот же кэшированный каталог тулов (`POST /v1/widget/tools`), подмешивает исход тула
 (`webmcp:<tool>:result` = `"ok"`/`"error"` в `WorldState`) и продолжает `runPlan` — вплоть до ещё
-одного `tool_call`, если нужен второй вызов, или до `done`. `callId`/`result` пока не используются
-сервером за пределами валидации (значение результата в ответ модели ещё не подмешивается —
-отдельная задача); `isError` — единственное, что реально читается. Если резюмировать нечего
+одного `tool_call`, если нужен второй вызов, или до `done`. `callId` сервером не читается. Текст из `result` (MCP `content[].text` или строка, до 4000
+символов) кладётся в `WorldState` как `webmcp:<tool>:text` — следующий шаг читает его (например,
+из ответа поиска берётся первый товар «в наличии» для `add_to_cart`); `isError` задаёт
+`webmcp:<tool>:result`. Если резюмировать нечего
 (чекпойнт истёк по `WORLD_STATE_RETENTION_HOURS`, устаревший `callId`, тред никогда не ждал) — это
 возвращается как обычная строка `error` внутри уже начатого стрима, не отдельный HTTP-статус (см.
 общие статусы ниже для `404`/`429`/и т.д. — они по-прежнему проверяются до старта стрима).

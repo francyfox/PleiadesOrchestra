@@ -1,0 +1,1057 @@
+{
+  "at": "2026-10-01T19:41:03.881Z",
+  "gpuLayers": 99,
+  "prompt": "v2",
+  "sanitize": true,
+  "rows": [
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "lang": "en",
+      "summary": {
+        "cases": 34,
+        "accuracy": 0.7058823529411765,
+        "valid": 1,
+        "p50Ms": 596.988507,
+        "p90Ms": 1783.5624989999997,
+        "meanMs": 851.9061801470585
+      },
+      "meanPromptTokens": 445.29411764705884,
+      "meanOutputTokens": 19.205882352941178
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "lang": "en",
+      "summary": {
+        "cases": 34,
+        "accuracy": 0.058823529411764705,
+        "valid": 0.08823529411764706,
+        "p50Ms": 975.5856530000019,
+        "p90Ms": 2176.9554449999996,
+        "meanMs": 1215.8586988823524
+      },
+      "meanPromptTokens": 756.5294117647059,
+      "meanOutputTokens": 25.11764705882353
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "schema",
+      "lang": "en",
+      "summary": {
+        "cases": 34,
+        "accuracy": 0.8235294117647058,
+        "valid": 1,
+        "p50Ms": 1228.298477999997,
+        "p90Ms": 2240.193524000002,
+        "meanMs": 1550.0541720588235
+      },
+      "meanPromptTokens": 441.29411764705884,
+      "meanOutputTokens": 15.294117647058824
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "native",
+      "lang": "en",
+      "summary": {
+        "cases": 34,
+        "accuracy": 0.8235294117647058,
+        "valid": 0.9117647058823529,
+        "p50Ms": 2396.8375519999827,
+        "p90Ms": 4660.781140999985,
+        "meanMs": 2872.438643411765
+      },
+      "meanPromptTokens": 752.5294117647059,
+      "meanOutputTokens": 28.294117647058822
+    }
+  ],
+  "failures": [
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "result": {
+        "id": "store-organic.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 476.4325859999999,
+        "actual": {
+          "store": "Greenleaf Market"
+        },
+        "reason": "store: \"Greenleaf Market\" ≠ \"Harbor Foods Co-op\"",
+        "promptTokens": 425,
+        "outputTokens": 9
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "result": {
+        "id": "store-fastest.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 544.4819960000004,
+        "actual": {
+          "store": "Penny Pantry"
+        },
+        "reason": "store: \"Penny Pantry\" ≠ \"Greenleaf Market\"",
+        "promptTokens": 425,
+        "outputTokens": 10
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "result": {
+        "id": "search-all-filters.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 596.988507,
+        "actual": {
+          "query": "milk",
+          "max_price": 4.5
+        },
+        "reason": "department: missing",
+        "promptTokens": 448,
+        "outputTokens": 14
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "result": {
+        "id": "add-three-apples.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1355.2243740000013,
+        "actual": {
+          "items": [
+            {
+              "product": "Honeycrisp Apples",
+              "quantity": 3
+            },
+            {
+              "product": "Granny Smith Apples",
+              "quantity": 3
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 477,
+        "outputTokens": 30
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "result": {
+        "id": "add-apples-no-qty.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1321.51224,
+        "actual": {
+          "items": [
+            {
+              "product": "Honeycrisp Apples",
+              "quantity": 1
+            },
+            {
+              "product": "Granny Smith Apples",
+              "quantity": 1
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 475,
+        "outputTokens": 30
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "result": {
+        "id": "recipe-pizza.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1783.5624989999997,
+        "actual": {
+          "ingredients": [
+            {
+              "name": "Tomatoes",
+              "quantity": 1
+            },
+            {
+              "name": "Basil",
+              "quantity": 1
+            },
+            {
+              "name": "Olive Oil",
+              "quantity": 1
+            },
+            {
+              "name": "Pesto",
+              "quantity": 1
+            }
+          ]
+        },
+        "reason": "missing ingredient: mozzarella",
+        "promptTokens": 434,
+        "outputTokens": 43
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "result": {
+        "id": "recipe-carbonara.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 2349.791188000003,
+        "actual": {
+          "ingredients": [
+            {
+              "name": "Pasta",
+              "quantity": 1
+            },
+            {
+              "name": "Eggs",
+              "quantity": 2
+            },
+            {
+              "name": "Butter",
+              "quantity": 1
+            },
+            {
+              "name": "Pecorino Romano",
+              "quantity": 1
+            },
+            {
+              "name": "Parsley",
+              "quantity": 1
+            },
+            {
+              "name": "Salt",
+              "quantity": 1
+            }
+          ]
+        },
+        "reason": "missing ingredient: bacon/pancetta/guanciale",
+        "promptTokens": 434,
+        "outputTokens": 65
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "result": {
+        "id": "recipe-own.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 2712.258861000002,
+        "actual": {
+          "ingredients": [
+            {
+              "name": "beef",
+              "quantity": 1
+            },
+            {
+              "name": "tortilla",
+              "quantity": 2
+            },
+            {
+              "name": "lettuce",
+              "quantity": 1
+            },
+            {
+              "name": "cheese",
+              "quantity": 1
+            },
+            {
+              "name": "tomato",
+              "quantity": 1
+            },
+            {
+              "name": "onion",
+              "quantity": 1
+            },
+            {
+              "name": "avocado",
+              "quantity": 1
+            },
+            {
+              "name": "salsa",
+              "quantity": 1
+            }
+          ]
+        },
+        "reason": "ingredients: unexpected",
+        "promptTokens": 431,
+        "outputTokens": 79
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "result": {
+        "id": "recipe-preview.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1545.4968259999987,
+        "actual": {
+          "ingredients": [
+            {
+              "name": "Tomatoes",
+              "quantity": 1
+            },
+            {
+              "name": "Basil",
+              "quantity": 1
+            },
+            {
+              "name": "Olive Oil",
+              "quantity": 1
+            },
+            {
+              "name": "Pesto",
+              "quantity": 1
+            }
+          ]
+        },
+        "reason": "missing ingredient: mozzarella",
+        "promptTokens": 440,
+        "outputTokens": 43
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "result": {
+        "id": "recipe-guacamole.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1924.3066719999988,
+        "actual": {
+          "ingredients": [
+            {
+              "name": "avocado",
+              "quantity": 1
+            },
+            {
+              "name": "lemon",
+              "quantity": 1
+            },
+            {
+              "name": "salt",
+              "quantity": 1
+            },
+            {
+              "name": "pepper",
+              "quantity": 1
+            }
+          ]
+        },
+        "reason": "ingredients: unexpected",
+        "promptTokens": 432,
+        "outputTokens": 56
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "store-named.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 711.8405490000005,
+        "reason": "not an object",
+        "promptTokens": 653,
+        "outputTokens": 20
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "store-cheapest.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 847.1275760000062,
+        "reason": "not an object",
+        "promptTokens": 654,
+        "outputTokens": 20
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "store-organic.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 810.9590299999982,
+        "reason": "not an object",
+        "promptTokens": 653,
+        "outputTokens": 21
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "store-fastest.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 742.9049879999948,
+        "reason": "not an object",
+        "promptTokens": 653,
+        "outputTokens": 19
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "store-switch.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 770.8806419999964,
+        "reason": "not an object",
+        "promptTokens": 653,
+        "outputTokens": 21
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "search-cheese.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 2339.273049000003,
+        "reason": "not an object",
+        "promptTokens": 799,
+        "outputTokens": 25
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "search-apple.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 506.2869600000049,
+        "reason": "not an object",
+        "promptTokens": 799,
+        "outputTokens": 11
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "search-price.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 566.5186729999987,
+        "reason": "not an object",
+        "promptTokens": 802,
+        "outputTokens": 13
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "search-vegan.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 569.0858339999977,
+        "reason": "not an object",
+        "promptTokens": 797,
+        "outputTokens": 13
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "search-aisle.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 406.0885280000002,
+        "reason": "not an object",
+        "promptTokens": 800,
+        "outputTokens": 8
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "search-two-diets.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1213.930644999993,
+        "reason": "not an object",
+        "promptTokens": 801,
+        "outputTokens": 32
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "search-all-filters.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 874.4214890000003,
+        "reason": "not an object",
+        "promptTokens": 806,
+        "outputTokens": 21
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "search-bananas.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 373.8177609999984,
+        "reason": "not an object",
+        "promptTokens": 799,
+        "outputTokens": 7
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "search-organic.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 551.389396999999,
+        "reason": "not an object",
+        "promptTokens": 797,
+        "outputTokens": 12
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "search-yogurt.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 662.62788,
+        "reason": "not an object",
+        "promptTokens": 797,
+        "outputTokens": 15
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "search-kettle.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 580.344895000002,
+        "reason": "not an object",
+        "promptTokens": 801,
+        "outputTokens": 13
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "add-first-cheese.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 2011.6833320000005,
+        "reason": "not an object",
+        "promptTokens": 788,
+        "outputTokens": 16
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "add-three-apples.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 2176.9554449999996,
+        "actual": {
+          "items": [
+            {
+              "product": "Honeycrisp Apples",
+              "quantity": 3
+            },
+            {
+              "product": "Granny Smith Apples",
+              "quantity": 3
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 747,
+        "outputTokens": 52
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "add-cream-cheese.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 956.095401999999,
+        "reason": "not an object",
+        "promptTokens": 788,
+        "outputTokens": 14
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "add-it.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1189.1101640000052,
+        "reason": "not an object",
+        "promptTokens": 703,
+        "outputTokens": 29
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "add-apples-no-qty.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1491.4950709999976,
+        "reason": "not an object",
+        "promptTokens": 745,
+        "outputTokens": 30
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "update-set.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1971.9798680000022,
+        "reason": "not an object",
+        "promptTokens": 670,
+        "outputTokens": 25
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "update-remove.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1163.986782,
+        "reason": "not an object",
+        "promptTokens": 673,
+        "outputTokens": 29
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "update-named.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1068.2026590000023,
+        "reason": "not an object",
+        "promptTokens": 667,
+        "outputTokens": 25
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "update-only-two.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1259.4623160000046,
+        "reason": "not an object",
+        "promptTokens": 678,
+        "outputTokens": 29
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "recipe-pizza.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 4514.740007999993,
+        "reason": "not an object",
+        "promptTokens": 914,
+        "outputTokens": 73
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "recipe-carbonara.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 988.8129049999989,
+        "reason": "not an object",
+        "promptTokens": 914,
+        "outputTokens": 26
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "recipe-own.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1032.602577999991,
+        "reason": "not an object",
+        "promptTokens": 911,
+        "outputTokens": 28
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "recipe-preview.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 975.5856530000019,
+        "reason": "not an object",
+        "promptTokens": 920,
+        "outputTokens": 26
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "recipe-guacamole.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 2900.7400669999915,
+        "reason": "not an object",
+        "promptTokens": 912,
+        "outputTokens": 84
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "cart-show.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1103.2005539999955,
+        "reason": "not an object",
+        "promptTokens": 545,
+        "outputTokens": 13
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "cart-contents.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 791.3439660000004,
+        "reason": "not an object",
+        "promptTokens": 547,
+        "outputTokens": 19
+      }
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "schema",
+      "result": {
+        "id": "store-organic.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 858.5049390000058,
+        "actual": {
+          "store": "Greenleaf Market"
+        },
+        "reason": "store: \"Greenleaf Market\" ≠ \"Harbor Foods Co-op\"",
+        "promptTokens": 421,
+        "outputTokens": 8
+      }
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "schema",
+      "result": {
+        "id": "store-fastest.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 991.5173470000009,
+        "actual": {
+          "store": "Penny Pantry"
+        },
+        "reason": "store: \"Penny Pantry\" ≠ \"Greenleaf Market\"",
+        "promptTokens": 421,
+        "outputTokens": 10
+      }
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "schema",
+      "result": {
+        "id": "recipe-carbonara.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1213.3817779999808,
+        "actual": {},
+        "reason": "ingredients: missing",
+        "promptTokens": 430,
+        "outputTokens": 12
+      }
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "schema",
+      "result": {
+        "id": "recipe-own.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1473.667493999994,
+        "actual": {},
+        "reason": "recipe: missing",
+        "promptTokens": 427,
+        "outputTokens": 14
+      }
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "schema",
+      "result": {
+        "id": "recipe-preview.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1240.7939799999876,
+        "actual": {},
+        "reason": "ingredients: missing",
+        "promptTokens": 436,
+        "outputTokens": 13
+      }
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "schema",
+      "result": {
+        "id": "recipe-guacamole.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 5354.4596879999735,
+        "actual": {
+          "ingredients": [
+            {
+              "name": "avocado",
+              "quantity": 2
+            },
+            {
+              "name": "lime",
+              "quantity": 1
+            },
+            {
+              "name": "onion",
+              "quantity": 1
+            },
+            {
+              "name": "jalapeño",
+              "quantity": 1
+            },
+            {
+              "name": "salt",
+              "quantity": 1
+            },
+            {
+              "name": "chili powder",
+              "quantity": 1
+            }
+          ]
+        },
+        "reason": "ingredients: unexpected",
+        "promptTokens": 428,
+        "outputTokens": 72
+      }
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "native",
+      "result": {
+        "id": "search-cheese.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 4790.876331000007,
+        "reason": "not an object",
+        "promptTokens": 795,
+        "outputTokens": 11
+      }
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "native",
+      "result": {
+        "id": "search-apple.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 940.8924010000192,
+        "reason": "not an object",
+        "promptTokens": 795,
+        "outputTokens": 10
+      }
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "native",
+      "result": {
+        "id": "search-bananas.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1091.2844240000122,
+        "reason": "not an object",
+        "promptTokens": 795,
+        "outputTokens": 11
+      }
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "native",
+      "result": {
+        "id": "recipe-pizza.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 11504.815206,
+        "actual": {
+          "ingredients": [
+            {
+              "name": "tomato sauce",
+              "quantity": 1
+            },
+            {
+              "name": "mozzarella cheese",
+              "quantity": 2
+            },
+            {
+              "name": "fresh basil",
+              "quantity": 1
+            },
+            {
+              "name": "olive oil",
+              "quantity": 1
+            }
+          ]
+        },
+        "reason": "missing ingredient: flour/dough/crust",
+        "promptTokens": 910,
+        "outputTokens": 87
+      }
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "native",
+      "result": {
+        "id": "recipe-carbonara.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 2026.2067919999827,
+        "actual": {},
+        "reason": "ingredients: missing",
+        "promptTokens": 910,
+        "outputTokens": 24
+      }
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "native",
+      "result": {
+        "id": "recipe-preview.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 2421.213963999995,
+        "actual": {
+          "preview": true
+        },
+        "reason": "ingredients: missing",
+        "promptTokens": 916,
+        "outputTokens": 29
+      }
+    }
+  ]
+}

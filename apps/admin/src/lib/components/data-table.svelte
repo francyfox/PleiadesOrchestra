@@ -29,6 +29,7 @@
 		table,
 		emptyText,
 		rowClass,
+		onRowClick,
 		pageSize = DEFAULT_PAGE_SIZE,
 		server,
 		wrap = false,
@@ -37,6 +38,8 @@
 		/** Defaults to the common "No data". */
 		emptyText?: string;
 		rowClass?: (row: TData) => string;
+		/** Makes every row clickable (and reachable by keyboard: Enter / Space). */
+		onRowClick?: (row: TData) => void;
 		pageSize?: number;
 		server?: ServerPagination;
 		/** Let long cells wrap onto several lines instead of being cut with an ellipsis (reference tables). */
@@ -74,7 +77,20 @@
 		</UiTable.Header>
 		<UiTable.Body>
 			{#each rows as row (row.id)}
-				<UiTable.Row class={rowClass?.(row.original)}>
+				<UiTable.Row
+					class={[rowClass?.(row.original), onRowClick ? "cursor-pointer" : ""]}
+					tabindex={onRowClick ? 0 : undefined}
+					onclick={onRowClick ? () => onRowClick(row.original) : undefined}
+					onkeydown={onRowClick
+						? (event: KeyboardEvent) => {
+								if (event.target !== event.currentTarget) return;
+								if (event.key === "Enter" || event.key === " ") {
+									event.preventDefault();
+									onRowClick(row.original);
+								}
+							}
+						: undefined}
+				>
 					{#each row.getAllCells() as cell (cell.id)}
 						<UiTable.Cell class={wrap ? "align-top whitespace-normal" : "max-w-lg truncate"}><FlexRender {cell} /></UiTable.Cell>
 					{/each}

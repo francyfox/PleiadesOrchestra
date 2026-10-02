@@ -53,12 +53,46 @@ export function buildArguments(
 	state: WorldState,
 	inputSchema: McpToolDescriptor["inputSchema"],
 ): Record<string, unknown> {
-	const propertyNames = Object.keys(inputSchema.properties ?? {});
+	const properties = (inputSchema.properties ?? {}) as Record<string, unknown>;
 	const args: Record<string, unknown> = {};
-	for (const name of propertyNames) {
-		if (state[name] !== undefined) args[name] = state[name];
+	for (const [name, schema] of Object.entries(properties)) {
+		if (state[name] !== undefined) {
+			args[name] = state[name];
+			continue;
+		}
+		const list = listOfOneObject(state, schema);
+		if (list) args[name] = list;
 	}
 	return args;
+}
+
+/**
+ * For a parameter like `items: [{ product, quantity }]` (typical of
+ * add-to-cart tools): a one-element list whose object is filled from the
+ * facts named like its properties — `product` and `quantity` in the state
+ * become `[{ product, quantity }]`. `undefined` when the schema isn't such a
+ * list or a required property of the object has no fact yet.
+ */
+function listOfOneObject(
+	state: WorldState,
+	schema: unknown,
+): Record<string, unknown>[] | undefined {
+	const list = schema as {
+		type?: string;
+		items?: {
+			type?: string;
+			properties?: Record<string, unknown>;
+			required?: string[];
+		};
+	};
+	if (list.type !== "array" || list.items?.type !== "object") return undefined;
+
+	const item: Record<string, unknown> = {};
+	for (const name of Object.keys(list.items.properties ?? {})) {
+		if (state[name] !== undefined) item[name] = state[name];
+	}
+	const complete = (list.items.required ?? []).every((name) => name in item);
+	return complete && Object.keys(item).length > 0 ? [item] : undefined;
 }
 
 function toGoapAction(

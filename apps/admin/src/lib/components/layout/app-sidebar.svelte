@@ -8,6 +8,7 @@
 	import LightbulbIcon from "@lucide/svelte/icons/lightbulb";
 	import LogOutIcon from "@lucide/svelte/icons/log-out";
 	import NetworkIcon from "@lucide/svelte/icons/network";
+	import PlugIcon from "@lucide/svelte/icons/plug";
 	import ShieldIcon from "@lucide/svelte/icons/shield";
 	import UsersIcon from "@lucide/svelte/icons/users";
 	import { useIntlayer } from "svelte-intlayer";
@@ -22,7 +23,8 @@
 	const nav = [
 		{ href: "/", key: "dashboard", icon: ActivityIcon },
 		{ href: "/users", key: "users", icon: UsersIcon },
-		{ href: "/goap/actions", key: "goap", icon: NetworkIcon },
+		{ href: "/goap", key: "goap", icon: NetworkIcon },
+		{ href: "/mcp", key: "mcp", icon: PlugIcon },
 		{ href: "/agents", key: "agents", icon: BotIcon },
 		{ href: "/performance", key: "performance", icon: GaugeIcon },
 		{ href: "/recommendations", key: "recommendations", icon: LightbulbIcon },

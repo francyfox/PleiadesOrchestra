@@ -26,6 +26,14 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			LAYA_API_BASE_URL: z.url(),
 			LAYA_API_KEY: z.string().min(1),
 
+			// delta-function-call — writes the JSON arguments of WebMCP tool calls
+			// (see apps/delta-function-call). Optional: without a base URL the
+			// arguments are built mechanically from the facts of the run.
+			FUNCTION_CALL_BASE_URL: z.url().optional(),
+			FUNCTION_CALL_API_KEY: z.string().default(""),
+			// llama-server serves one model and ignores the name; it is for the usage ledger.
+			FUNCTION_CALL_MODEL: z.string().default("qwen3-1.7b"),
+
 			// Conservative default for a small self-hosted context window (CTX_SIZE
 			// on `albedo` defaults to 2048 tokens) — long messages get split on word
 			// boundaries into chunks of at most this many characters instead of
@@ -104,6 +112,12 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			// visible. Conservative defaults; raise alongside LAYA_THREADS/the
 			// beta-text thread count if the hardware has room.
 			LLM_MAX_CONCURRENCY: z.coerce.number().int().positive().default(4),
+			// delta-function-call runs with PARALLEL=1 (see its Dockerfile).
+			FUNCTION_CALL_MAX_CONCURRENCY: z.coerce
+				.number()
+				.int()
+				.positive()
+				.default(1),
 			LAYA_MAX_CONCURRENCY: z.coerce.number().int().positive().default(4),
 		},
 		runtimeEnv: env,

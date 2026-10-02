@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 
 /**
@@ -7,7 +8,11 @@ import { defineConfig } from "vite";
  * is enforced by `bun run build`.
  */
 export default defineConfig({
-	// TSX → calls of our own tiny `h` (src/ui/jsx.ts), not React — read from
+	// `src/...` imports, as tsconfig.json's `paths` (bun test reads those; Vite needs this alias).
+	resolve: {
+		alias: { src: fileURLToPath(new URL("./src", import.meta.url)) },
+	},
+	// TSX → calls of our own tiny `h` (src/components/jsx.ts), not React — read from
 	// tsconfig.json's jsx/jsxFactory/jsxFragmentFactory, Vite's transformer
 	// isn't esbuild here so an `esbuild: { jsx: ... }` override does nothing.
 	build: {

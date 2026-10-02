@@ -10,9 +10,12 @@ import type {
 	UpdateChannelInput,
 } from "../channels/channels.schema.ts";
 import type { PageQuery } from "../common/common.schema.ts";
-import type { DynamicActionInfo, GoapActionInfo } from "../goap/goap.schema.ts";
+import type { UpstreamMcpSites } from "../mcp/mcp.schema.ts";
 import type { PerformanceReport } from "../performance/performance.schema.ts";
-import type { RunDetails } from "../plan-runs/plan-runs.schema.ts";
+import type {
+	RequestsPage,
+	UpstreamRequestDetails,
+} from "../requests/requests.schema.ts";
 import type { Stats } from "../stats/stats.schema.ts";
 import type { UsageGroupBy, UsageRow } from "../usage/usage.schema.ts";
 import type {
@@ -129,14 +132,17 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 				"GET",
 				`/v1/admin/performance${toSearch(query)}`,
 			),
-		getRun: (id: string) =>
-			request<RunDetails>("GET", `/v1/admin/runs/${segment(id)}`),
-		/** `userId` also lists that user's dynamic actions (e.g. a WebMCP tool catalog seen in their own run history — see docs/laya-autonomous-webmcp.md), reconstructed from `plan_events`, not a live catalog. */
-		goapActions: (userId?: string) =>
-			request<{
-				actions: GoapActionInfo[];
-				dynamicActions?: DynamicActionInfo[];
-			}>("GET", `/v1/admin/goap/actions${toSearch({ userId })}`),
+		listRequests: (query: PageQuery = {}) =>
+			request<RequestsPage>(
+				"GET",
+				`/v1/admin/requests${toSearch({ ...query })}`,
+			),
+		getRequest: (id: string) =>
+			request<UpstreamRequestDetails>(
+				"GET",
+				`/v1/admin/requests/${segment(id)}`,
+			),
+		listMcp: () => request<UpstreamMcpSites>("GET", "/v1/admin/mcp"),
 		listChannels: (query: PageQuery = {}) =>
 			request<{ items: Channel[]; total: number }>(
 				"GET",

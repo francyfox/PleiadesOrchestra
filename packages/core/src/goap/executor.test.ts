@@ -508,3 +508,142 @@ describe("runPlan waiting", () => {
 		expect(resumed.finalState.inCart).toBe(true);
 	});
 });
+
+describe("runPlan maxActionFailures", () => {
+	test("gives up when the same action keeps finishing without its promised effects", async () => {
+		const never: GoapAction = {
+			name: "never",
+			cost: 1,
+			preconditions: {},
+			effects: { done: true },
+			execute: async () => ({}),
+		};
+		const result = await runPlan({
+			state: {},
+			goal: { done: true },
+			actions: [never],
+			ctx: {},
+			maxReplans: 10,
+			maxActionFailures: 2,
+		});
+		expect(result.succeeded).toBe(false);
+		expect(result.executedActions).toEqual(["never", "never"]);
+	});
+
+	test("is off unless asked for", async () => {
+		const never: GoapAction = {
+			name: "never",
+			cost: 1,
+			preconditions: {},
+			effects: { done: true },
+			execute: async () => ({}),
+		};
+		const result = await runPlan({
+			state: {},
+			goal: { done: true },
+			actions: [never],
+			ctx: {},
+			maxReplans: 3,
+		});
+		expect(result.executedActions).toHaveLength(4);
+	});
+});
+
+describe("runPlan onStep", () => {
+	const described = (
+		name: string,
+		effects: GoapAction["effects"],
+		produce: GoapAction["effects"],
+	): GoapAction => ({
+		name,
+		cost: 1,
+		preconditions: {},
+		effects,
+		execute: async () => produce,
+		describe: (state, phase) => `${name}:${phase}:${String(state.n ?? "-")}`,
+	});
+
+	test("reports each described action as running, then done, with the state after it", async () => {
+		const steps: unknown[] = [];
+		await runPlan({
+			state: {},
+			goal: { a: true },
+			actions: [described("A", { a: true }, { a: true, n: 7 })],
+			ctx: {},
+			onStep: (step) => steps.push(step),
+		});
+		expect(steps).toEqual([
+			{ action: "A", phase: "running", text: "A:running:-" },
+			{ action: "A", phase: "done", text: "A:done:7" },
+		]);
+	});
+
+	test("an action that did not deliver its effects is reported failed", async () => {
+		const steps: { phase: string }[] = [];
+		await runPlan({
+			state: {},
+			goal: { a: true },
+			actions: [described("A", { a: true }, {})],
+			ctx: {},
+			maxReplans: 0,
+			onStep: (step) => steps.push(step),
+		});
+		expect(steps.map((step) => step.phase)).toEqual(["running", "failed"]);
+	});
+
+	test("an action that throws is reported failed before the error goes on", async () => {
+		const steps: { phase: string }[] = [];
+		const boom: GoapAction = {
+			...described("A", { a: true }, {}),
+			execute: async () => {
+				throw new Error("boom");
+			},
+		};
+		await expect(
+			runPlan({
+				state: {},
+				goal: { a: true },
+				actions: [boom],
+				ctx: {},
+				onStep: (step) => steps.push(step),
+			}),
+		).rejects.toThrow("boom");
+		expect(steps.map((step) => step.phase)).toEqual(["running", "failed"]);
+	});
+
+	test("an action that waits has only announced itself so far", async () => {
+		const steps: { phase: string }[] = [];
+		const waits: GoapAction = {
+			...described("A", { a: true }, {}),
+			execute: async () => ({ waiting: { kind: "k", payload: {} } }),
+		};
+		await runPlan({
+			state: {},
+			goal: { a: true },
+			actions: [waits],
+			ctx: {},
+			onStep: (step) => steps.push(step),
+		});
+		expect(steps.map((step) => step.phase)).toEqual(["running"]);
+	});
+
+	test("actions without a description are silent, and a throwing listener changes nothing", async () => {
+		const silent: GoapAction = {
+			name: "S",
+			cost: 1,
+			preconditions: {},
+			effects: { s: true },
+			execute: async () => ({ s: true }),
+		};
+		const result = await runPlan({
+			state: {},
+			goal: { s: true, a: true },
+			actions: [silent, described("A", { a: true }, { a: true })],
+			ctx: {},
+			onStep: () => {
+				throw new Error("listener bug");
+			},
+		});
+		expect(result.succeeded).toBe(true);
+	});
+});

@@ -101,8 +101,44 @@ export const planRuns = sqliteTable(
 		attempts: integer("attempts").notNull(),
 		durationMs: integer("duration_ms").notNull(),
 		createdAt: integer("created_at").notNull(),
+		// One user message = a chain of runs (every browser tool result resumes
+		// the request in a new run). The first run of the chain is its root;
+		// `null` only on rows from before this column — read as the run itself.
+		rootRunId: text("root_run_id"),
+		// What the user wrote, set on the root run only (truncated).
+		prompt: text("prompt"),
 	},
-	(table) => [index("plan_runs_user_idx").on(table.userId, table.createdAt)],
+	(table) => [
+		index("plan_runs_user_idx").on(table.userId, table.createdAt),
+		index("plan_runs_root_idx").on(table.rootRunId),
+	],
+);
+
+/**
+ * The WebMCP tool catalogs a web channel's pages have announced (the widget
+ * posts its tools whenever its panel opens). One row per distinct catalog of a
+ * channel (`hash` of the canonical tool list); opening the panel again with the
+ * same tools only bumps `last_seen_at`/`registrations`.
+ */
+export const mcpCatalogs = sqliteTable(
+	"mcp_catalogs",
+	{
+		channelId: text("channel_id")
+			.notNull()
+			.references(() => channels.id, { onDelete: "cascade" }),
+		hash: text("hash").notNull(),
+		tools: text("tools", { mode: "json" })
+			.$type<{ name: string; description?: string; inputSchema?: unknown }[]>()
+			.notNull(),
+		toolCount: integer("tool_count").notNull(),
+		firstSeenAt: integer("first_seen_at").notNull(),
+		lastSeenAt: integer("last_seen_at").notNull(),
+		registrations: integer("registrations").notNull(),
+	},
+	(table) => [
+		primaryKey({ columns: [table.channelId, table.hash] }),
+		index("mcp_catalogs_seen_idx").on(table.channelId, table.lastSeenAt),
+	],
 );
 
 export const planEvents = sqliteTable(

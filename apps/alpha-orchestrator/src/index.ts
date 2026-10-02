@@ -3,11 +3,13 @@ import { createApp } from "./app.ts";
 import {
 	AGENT_MAX_HISTORY_MESSAGES,
 	agent,
+	productRequestAgent,
 } from "./modules/agents/agents.instance.ts";
 import { channelDirectory } from "./modules/channel-directory/channel-directory.instance.ts";
 import { config } from "./modules/config/config.service.ts";
 import { db } from "./modules/database/database.instance.ts";
 import { decisionAgent } from "./modules/decisions/decisions.instance.ts";
+import { functionCallAgent } from "./modules/function-calls/function-calls.instance.ts";
 import { assertRetentionCoversHistory } from "./modules/retention/retention.service.ts";
 import { startRetentionJobs } from "./modules/retention/retention.ts";
 import { runs } from "./modules/run-binding/run-binding.instance.ts";
@@ -37,6 +39,8 @@ function reportError(message: string) {
 const app = createApp({
 	agent,
 	decisionAgent,
+	productRequestAgent,
+	functionCallAgent,
 	apiKey: config.HARNESS_API_KEY,
 	adminApiKey: config.ADMIN_API_KEY,
 	maxChunkChars: config.HARNESS_MAX_CHUNK_CHARS,
@@ -62,6 +66,17 @@ const app = createApp({
 				baseUrl: config.LAYA_API_BASE_URL,
 				model: null,
 			},
+			...(config.FUNCTION_CALL_BASE_URL
+				? [
+						{
+							id: "delta-function-call",
+							name: "delta-function-call",
+							role: "function-call" as const,
+							baseUrl: config.FUNCTION_CALL_BASE_URL,
+							model: config.FUNCTION_CALL_MODEL,
+						},
+					]
+				: []),
 		],
 	},
 	widget: {

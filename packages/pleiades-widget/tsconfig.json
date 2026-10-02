@@ -15,7 +15,8 @@
 		"skipLibCheck": true,
 		"noFallthroughCasesInSwitch": true,
 		"noUncheckedIndexedAccess": true,
-		"noImplicitOverride": true
+		"noImplicitOverride": true,
+		"paths": { "src/*": ["./src/*"] }
 	},
 	"include": ["src", "types-test/dom.ts", "vite.config.ts"]
 }

@@ -20,6 +20,11 @@ const agentsContent = {
 		role: {
 			text: t({ ru: "текст", en: "text", kk: "мәтін" }),
 			decision: t({ ru: "решения", en: "decision", kk: "шешім" }),
+			"function-call": t({
+				ru: "вызов функций",
+				en: "function call",
+				kk: "функция шақыру",
+			}),
 		},
 		status: {
 			up: t({ ru: "работает", en: "up", kk: "жұмыс істеп тұр" }),

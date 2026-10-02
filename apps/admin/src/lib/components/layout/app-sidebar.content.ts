@@ -7,10 +7,11 @@ const appSidebarContent = {
 			dashboard: t({ ru: "Дашборд", en: "Dashboard", kk: "Бақылау тақтасы" }),
 			users: t({ ru: "Пользователи", en: "Users", kk: "Пайдаланушылар" }),
 			goap: t({
-				ru: "GOAP-действия",
-				en: "GOAP actions",
-				kk: "GOAP әрекеттері",
+				ru: "GOAP-запросы",
+				en: "GOAP requests",
+				kk: "GOAP сұраулары",
 			}),
+			mcp: t({ ru: "MCP", en: "MCP", kk: "MCP" }),
 			agents: t({ ru: "Агенты", en: "Agents", kk: "Агенттер" }),
 			performance: t({
 				ru: "Производительность",

@@ -32,7 +32,7 @@ FROM ghcr.io/ggml-org/llama.cpp:server-vulkan-b11176
 
 WORKDIR /app
 
-COPY apps/beta-text/entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY packages/llama-runtime/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Модель качается при старте контейнера (не на этапе билда), см. entrypoint.sh.

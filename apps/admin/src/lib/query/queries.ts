@@ -61,6 +61,24 @@ export const liveQueries = {
 			queryFn: () => unwrap(api().performance.get({ query: params })),
 			...pushed,
 		}),
+	requests: (params: LiveTopics["requests"]["params"]) =>
+		queryOptions({
+			queryKey: topicKey("requests", params),
+			queryFn: () => unwrap(api().requests.get({ query: params })),
+			...pushed,
+		}),
+	mcp: (params: LiveTopics["mcp"]["params"]) =>
+		queryOptions({
+			queryKey: topicKey("mcp", params),
+			queryFn: () => unwrap(api().mcp.get()),
+			...pushed,
+		}),
+	request: (params: LiveTopics["request"]["params"]) =>
+		queryOptions({
+			queryKey: topicKey("request", params),
+			queryFn: () => unwrap(api().requests({ id: params.id }).get()),
+			...pushed,
+		}),
 };
 
 /** Everything that is not pushed over `/api/live`. */
@@ -81,16 +99,5 @@ export const queries = {
 		queryOptions({
 			queryKey: ["channels", "all"],
 			queryFn: () => unwrap(api().channels.get({ query: {} })),
-		}),
-	/** `userId` also lists that user's dynamic actions (e.g. a WebMCP tool catalog seen in their own run history), reconstructed from `plan_events`, not a live catalog. */
-	goapActions: (userId?: string) =>
-		queryOptions({
-			queryKey: ["goap-actions", userId ?? null],
-			queryFn: () => unwrap(api().goap.actions.get({ query: { userId } })),
-		}),
-	run: (id: string) =>
-		queryOptions({
-			queryKey: ["run", id],
-			queryFn: () => unwrap(api().runs({ id }).get()),
 		}),
 };

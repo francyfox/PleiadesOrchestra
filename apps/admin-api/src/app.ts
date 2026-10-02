@@ -7,13 +7,13 @@ import { agentsRoutes } from "./modules/agents/agents.ts";
 import { blockedIpsRoutes } from "./modules/blocked-ips/blocked-ips.ts";
 import { channelsRoutes } from "./modules/channels/channels.ts";
 import { dashboardRoutes } from "./modules/dashboard/dashboard.ts";
-import { goapRoutes } from "./modules/goap/goap.ts";
 import { liveRoutes } from "./modules/live/live.ts";
 import { createLiveHub } from "./modules/live-hub/live-hub.ts";
 import { createLiveTopics } from "./modules/live-topics/live-topics.ts";
+import { mcpRoutes } from "./modules/mcp/mcp.ts";
 import { foreignOriginRejection } from "./modules/origin-guard/origin-guard.service.ts";
 import { performanceRoutes } from "./modules/performance/performance.ts";
-import { planRunsRoutes } from "./modules/plan-runs/plan-runs.ts";
+import { requestsRoutes } from "./modules/requests/requests.ts";
 import { sessionRoutes } from "./modules/session/session.ts";
 import { systemRoutes } from "./modules/system/system.ts";
 import { createSystemFeed } from "./modules/system-feed/system-feed.ts";
@@ -72,8 +72,8 @@ export function createApp(input: AdminApiDeps) {
 				.use(adminsRoutes(deps))
 				.use(dashboardRoutes(deps))
 				.use(performanceRoutes(deps))
-				.use(planRunsRoutes(deps))
-				.use(goapRoutes(deps))
+				.use(requestsRoutes(deps))
+				.use(mcpRoutes(deps))
 				.use(usersRoutes(deps))
 				.use(agentsRoutes(deps))
 				.use(channelsRoutes(deps))

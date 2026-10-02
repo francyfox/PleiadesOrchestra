@@ -31,8 +31,9 @@ export function trimUserHistory(
 				SELECT id FROM messages WHERE user_id = ?1 ORDER BY id DESC LIMIT ?2)`,
 		)
 		.run(userId, retentionPerUser);
-	// Traces go away with their messages: finished runs with no surviving
-	// messages, older than the oldest one that survives. A run still in
+	// Traces go away with their messages: finished runs whose request (the chain
+	// of runs sharing a root — one waited on the browser, a later one answered)
+	// has no surviving message, older than the oldest one that survives. A run still in
 	// flight (`attempts = 0` until `finishPlanRun`) is never touched — the
 	// same user's concurrent runs all exist before any of them appends, and
 	// deleting one broke its later message insert (FOREIGN KEY failure).
@@ -40,7 +41,9 @@ export function trimUserHistory(
 		.query(
 			`DELETE FROM plan_runs WHERE user_id = ?1
 				AND attempts > 0
-				AND id NOT IN (SELECT plan_run_id FROM messages WHERE user_id = ?1 AND plan_run_id IS NOT NULL)
+				AND COALESCE(root_run_id, id) NOT IN (
+					SELECT COALESCE(p.root_run_id, p.id) FROM messages m
+					JOIN plan_runs p ON p.id = m.plan_run_id WHERE m.user_id = ?1)
 				AND created_at < (SELECT MIN(created_at) FROM messages WHERE user_id = ?1)`,
 		)
 		.run(userId);

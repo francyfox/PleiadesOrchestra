@@ -3,21 +3,98 @@ import { type Dictionary, insert, t } from "intlayer";
 const goapContent = {
 	key: "goap",
 	content: {
-		noPlan: t({ ru: "нет плана", en: "no plan", kk: "жоспар жоқ" }),
+		title: t({
+			ru: "GOAP — запросы",
+			en: "GOAP — requests",
+			kk: "GOAP — сұраулар",
+		}),
+		hint: t({
+			ru: "Один запрос — одно сообщение пользователя: от промпта через план до ответа. Выберите запрос, чтобы увидеть граф решения.",
+			en: "One request is one user message: from the prompt through the plan to the answer. Pick one to see its decision graph.",
+			kk: "Бір сұрау — пайдаланушының бір хабарламасы: промптан жоспар арқылы жауапқа дейін. Шешім графын көру үшін біреуін таңдаңыз.",
+		}),
+		requests: {
+			title: t({
+				ru: "Последние запросы",
+				en: "Recent requests",
+				kk: "Соңғы сұраулар",
+			}),
+			empty: t({
+				ru: "Запросов пока не было",
+				en: "No requests yet",
+				kk: "Әзірге сұраулар болмады",
+			}),
+			noPrompt: t({ ru: "(без текста)", en: "(no text)", kk: "(мәтінсіз)" }),
+			columns: {
+				started: t({ ru: "Начат", en: "Started", kk: "Басталды" }),
+				prompt: t({ ru: "Запрос", en: "Request", kk: "Сұрау" }),
+				status: t({ ru: "Статус", en: "Status", kk: "Күйі" }),
+				intent: t({ ru: "Намерение", en: "Intent", kk: "Ниет" }),
+				steps: t({ ru: "Шаги", en: "Steps", kk: "Қадамдар" }),
+				duration: t({ ru: "Время", en: "Time", kk: "Уақыт" }),
+			},
+			status: {
+				running: t({ ru: "выполняется", en: "running", kk: "орындалуда" }),
+				waiting: t({
+					ru: "ждёт браузер",
+					en: "waiting for browser",
+					kk: "браузерді күтуде",
+				}),
+				succeeded: t({ ru: "готово", en: "done", kk: "дайын" }),
+				failed: t({ ru: "ошибка", en: "failed", kk: "қате" }),
+				abandoned: t({ ru: "брошен", en: "abandoned", kk: "тасталған" }),
+			},
+		},
+		graph: {
+			title: t({ ru: "Граф решения", en: "Decision graph", kk: "Шешім графы" }),
+			hint: t({
+				ru: "Слева направо: промпт → разбор → шаги плана → результат. Пунктир — перепланирование. Текущая операция подсвечена, время идёт на глазах.",
+				en: "Left to right: prompt → understanding → plan steps → result. Dashed edges are replans. The operation in progress is highlighted and its time keeps counting.",
+				kk: "Солдан оңға: промпт → талдау → жоспар қадамдары → нәтиже. Үзік сызық — қайта жоспарлау. Орындалып жатқан операция белгіленген, уақыты жүріп тұрады.",
+			}),
+			pick: t({
+				ru: "Выберите запрос в таблице выше.",
+				en: "Pick a request in the table above.",
+				kk: "Жоғарыдағы кестеден сұрауды таңдаңыз.",
+			}),
+			notFound: t({
+				ru: "Запрос не найден — возможно, его трассу уже удалили вместе с историей.",
+				en: "Request not found — its trace may have been deleted with the history.",
+				kk: "Сұрау табылмады — оның трассасы тарихпен бірге жойылған болуы мүмкін.",
+			}),
+			total: t({
+				ru: insert("всего {{time}}"),
+				en: insert("total {{time}}"),
+				kk: insert("барлығы {{time}}"),
+			}),
+			replan: t({
+				ru: "перепланирование",
+				en: "replan",
+				kk: "қайта жоспарлау",
+			}),
+		},
+		nodeKind: {
+			prompt: t({ ru: "Промпт", en: "Prompt", kk: "Промпт" }),
+			understand: t({
+				ru: "Разбор запроса",
+				en: "Understanding",
+				kk: "Сұрауды талдау",
+			}),
+			action: t({ ru: "Шаг", en: "Step", kk: "Қадам" }),
+			result: t({ ru: "Результат", en: "Result", kk: "Нәтиже" }),
+		},
 		nodeStatus: {
 			done: t({ ru: "выполнено", en: "done", kk: "орындалды" }),
+			running: t({ ru: "выполняется", en: "running", kk: "орындалуда" }),
+			browser: t({ ru: "в браузере", en: "in the browser", kk: "браузерде" }),
+			failed: t({ ru: "упало", en: "failed", kk: "сәтсіз" }),
+			skipped: t({ ru: "пропущено", en: "skipped", kk: "өткізілді" }),
 			diverged: t({
 				ru: "эффекты разошлись",
 				en: "effects diverged",
 				kk: "әсерлер сәйкес келмеді",
 			}),
-			skipped: t({
-				ru: "пропущено: предусловия",
-				en: "skipped: preconditions",
-				kk: "өткізілді: алғышарттар",
-			}),
-			failed: t({ ru: "упало", en: "failed", kk: "сәтсіз" }),
-			started: t({ ru: "начато", en: "started", kk: "басталды" }),
+			pending: t({ ru: "впереди", en: "ahead", kk: "алда" }),
 			not_reached: t({ ru: "не дошли", en: "not reached", kk: "жетпеді" }),
 			reached: t({
 				ru: "цель достигнута",
@@ -30,139 +107,62 @@ const goapContent = {
 				kk: "мақсатқа жетпеді",
 			}),
 		},
-		cost: t({
-			ru: insert("cost {{cost}}"),
-			en: insert("cost {{cost}}"),
-			kk: insert("cost {{cost}}"),
-		}),
-		tokens: t({
-			ru: insert("{{input}} → {{output}} ток."),
-			en: insert("{{input}} → {{output}} tok."),
-			kk: insert("{{input}} → {{output}} ток."),
-		}),
-		run: {
-			title: t({ ru: "GOAP-прогон", en: "GOAP run", kk: "GOAP іске қосылымы" }),
-			goal: t({
-				ru: insert("цель: {{goal}}"),
-				en: insert("goal: {{goal}}"),
-				kk: insert("мақсат: {{goal}}"),
+		detail: {
+			title: t({
+				ru: "Подробности шага",
+				en: "Step details",
+				kk: "Қадам мәліметтері",
 			}),
-			attempts: t({
-				ru: insert("попыток: {{count}}"),
-				en: insert("attempts: {{count}}"),
-				kk: insert("әрекеттер: {{count}}"),
+			pick: t({
+				ru: "Нажмите на узел графа, чтобы увидеть аргументы, ответ и вызовы моделей.",
+				en: "Click a node to see its arguments, answer and model calls.",
+				kk: "Аргументтерді, жауапты және модель шақыруларын көру үшін граф түйінін басыңыз.",
 			}),
-			user: t({ ru: "пользователь", en: "user", kk: "пайдаланушы" }),
-			plan: t({ ru: "План", en: "Plan", kk: "Жоспар" }),
-			planHint: t({
-				ru: "Одна строка — одна попытка планирования; пунктир — перепланирование.",
-				en: "One row per planning attempt; dashed edges are replans.",
-				kk: "Бір жол — жоспарлаудың бір әрекеті; үзік сызық — қайта жоспарлау.",
+			status: t({ ru: "Статус", en: "Status", kk: "Күйі" }),
+			time: t({ ru: "Время", en: "Time", kk: "Уақыт" }),
+			text: t({ ru: "Текст", en: "Text", kk: "Мәтін" }),
+			intent: t({ ru: "Намерение", en: "Intent", kk: "Ниет" }),
+			goal: t({ ru: "Цель плана", en: "Plan goal", kk: "Жоспар мақсаты" }),
+			tool: t({ ru: "Тул браузера", en: "Browser tool", kk: "Браузер тулы" }),
+			args: t({
+				ru: "Аргументы вызова",
+				en: "Call arguments",
+				kk: "Шақыру аргументтері",
 			}),
-			timeline: t({ ru: "Таймлайн", en: "Timeline", kk: "Уақыт шкаласы" }),
-			noActions: t({
-				ru: "Ни одно действие не выполнялось.",
-				en: "No action was executed.",
-				kk: "Бірде-бір әрекет орындалмады.",
+			browser: t({
+				ru: "Ответ браузера",
+				en: "Browser round trip",
+				kk: "Браузер жауабы",
 			}),
-			effects: t({
-				ru: "Ожидаемые и фактические эффекты",
-				en: "Expected vs observed effects",
-				kk: "Күтілген және нақты әсерлер",
-			}),
-			noEffects: t({
-				ru: "Нет выполненных действий",
-				en: "No executed actions",
-				kk: "Орындалған әрекеттер жоқ",
-			}),
+			answer: t({ ru: "Ответ тула", en: "Tool answer", kk: "Тул жауабы" }),
+			expected: t({ ru: "Ожидалось", en: "Expected", kk: "Күтілген" }),
+			effects: t({ ru: "Получено", en: "Observed", kk: "Алынған" }),
+			error: t({ ru: "Ошибка", en: "Error", kk: "Қате" }),
 			calls: t({
 				ru: "Вызовы моделей",
 				en: "Model calls",
 				kk: "Модель шақырулары",
 			}),
 			noCalls: t({
-				ru: "Вызовов не было",
-				en: "No calls",
-				kk: "Шақырулар болмады",
+				ru: "Вызовов моделей не было",
+				en: "No model calls",
+				kk: "Модель шақырулары болмады",
 			}),
-		},
-		columns: {
-			attempt: t({ ru: "Попытка", en: "Attempt", kk: "Әрекет" }),
-			action: t({ ru: "Действие", en: "Action", kk: "Әрекет" }),
-			fact: t({ ru: "Факт", en: "Fact", kk: "Факт" }),
-			expected: t({ ru: "Ожидалось", en: "Expected", kk: "Күтілген" }),
-			observed: t({ ru: "Получено", en: "Observed", kk: "Алынған" }),
-			kind: t({ ru: "Тип", en: "Type", kk: "Түрі" }),
-			model: t({ ru: "Модель", en: "Model", kk: "Модель" }),
-			input: t({ ru: "Вход", en: "Input", kk: "Кіріс" }),
-			output: t({ ru: "Выход", en: "Output", kk: "Шығыс" }),
-			latency: t({ ru: "Латентность", en: "Latency", kk: "Кідіріс" }),
-			preconditions: t({
-				ru: "Предусловия",
-				en: "Preconditions",
-				kk: "Алғышарттар",
+			tokens: t({
+				ru: insert("{{input}} → {{output}} ток."),
+				en: insert("{{input}} → {{output}} tok."),
+				kk: insert("{{input}} → {{output}} ток."),
 			}),
-			effects: t({ ru: "Эффекты", en: "Effects", kk: "Әсерлер" }),
-		},
-		match: {
-			mismatch: t({ ru: "расхождение", en: "mismatch", kk: "сәйкессіздік" }),
-			extra: t({ ru: "не объявлен", en: "undeclared", kk: "жарияланбаған" }),
-			ok: t({ ru: "ок", en: "ok", kk: "ок" }),
-		},
-		catalog: {
-			title: t({
-				ru: "Каталог GOAP-действий",
-				en: "GOAP action catalog",
-				kk: "GOAP әрекеттерінің каталогы",
+			reply: t({
+				ru: "Ответ пользователю",
+				en: "Reply to the user",
+				kk: "Пайдаланушыға жауап",
 			}),
-			graph: t({
-				ru: "Граф «факт → действие → факт»",
-				en: "“fact → action → fact” graph",
-				kk: "«факт → әрекет → факт» графы",
+			noReply: t({
+				ru: "Ответа нет (его сообщение уже удалено или запрос не дошёл до ответа).",
+				en: "No reply (its message was already removed, or the request never got that far).",
+				kk: "Жауап жоқ (хабарламасы жойылған немесе сұрау жауапқа жетпеді).",
 			}),
-			graphHint: t({
-				ru: "Колонки — глубина зависимостей; видно, какие цели вообще достижимы.",
-				en: "Columns are dependency depth — shows which goals are reachable at all.",
-				kk: "Бағандар — тәуелділік тереңдігі; қандай мақсаттарға жетуге болатыны көрінеді.",
-			}),
-			empty: t({
-				ru: "Каталог пуст",
-				en: "The catalog is empty",
-				kk: "Каталог бос",
-			}),
-			dynamic: {
-				title: t({
-					ru: "Динамические действия пользователя",
-					en: "User's dynamic actions",
-					kk: "Пайдаланушының динамикалық әрекеттері",
-				}),
-				hint: t({
-					ru: "Действия вне статического каталога — например, WebMCP-тулы, которые видел браузер посетителя. Восстановлено из истории прогонов этого пользователя, не живой список.",
-					en: "Actions outside the static catalog — e.g. WebMCP tools the visitor's browser saw. Reconstructed from this user's own run history, not a live list.",
-					kk: "Статикалық каталогтан тыс әрекеттер — мысалы, келуші браузері көрген WebMCP-тулдары. Осы пайдаланушының іске қосылымдар тарихынан қалпына келтірілген, тірі тізім емес.",
-				}),
-				userIdLabel: t({
-					ru: "ID пользователя",
-					en: "User ID",
-					kk: "Пайдаланушы ID",
-				}),
-				userIdPlaceholder: t({
-					ru: "вставьте id со страницы пользователей",
-					en: "paste an id from the users page",
-					kk: "пайдаланушылар бетінен id қойыңыз",
-				}),
-				load: t({ ru: "Показать", en: "Show", kk: "Көрсету" }),
-				empty: t({
-					ru: "Для этого пользователя динамических действий не найдено",
-					en: "No dynamic actions found for this user",
-					kk: "Бұл пайдаланушы үшін динамикалық әрекеттер табылмады",
-				}),
-				lastSeen: t({
-					ru: "Последний раз",
-					en: "Last seen",
-					kk: "Соңғы рет",
-				}),
-			},
 		},
 	},
 } satisfies Dictionary;

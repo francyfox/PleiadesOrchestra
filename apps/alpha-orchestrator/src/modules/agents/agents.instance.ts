@@ -6,6 +6,7 @@ import {
 import { config } from "../config/config.service.ts";
 import { historyStore } from "../history/history.instance.ts";
 import { usageRecorder } from "../usage-recorder/usage-recorder.instance.ts";
+import { productRequestPrompt } from "./agents.service.ts";
 
 /**
  * Messages of a thread the model sees as context: none. The 1B model copies
@@ -28,9 +29,27 @@ const baseAgent = createAgent({
 	usageRecorder,
 });
 
-// beta-text is one shared CPU-bound llama-server — bounds how many replies
-// stream concurrently instead of letting every request hit it at once.
-export const agent = withConcurrencyLimit(
-	baseAgent,
-	createConcurrencyLimiter(config.LLM_MAX_CONCURRENCY),
+// beta-text is one shared CPU-bound llama-server — bounds how many calls run
+// concurrently instead of letting every request hit it at once. Replies and
+// request extraction share the limit: it is the same server.
+const llmLimiter = createConcurrencyLimiter(config.LLM_MAX_CONCURRENCY);
+export const agent = withConcurrencyLimit(baseAgent, llmLimiter);
+
+/**
+ * Same model, different job: reads "what to buy" out of a shopping message and
+ * answers with JSON only. Own system prompt, a few tokens of output, and
+ * stateless — its calls reach the usage ledger but its exchanges are not
+ * stored as chat history.
+ */
+export const productRequestAgent = withConcurrencyLimit(
+	createAgent({
+		baseURL: config.LLM_BASE_URL,
+		apiKey: config.LLM_API_KEY,
+		model: config.LLM_MODEL,
+		systemPrompt: productRequestPrompt(),
+		maxHistoryMessages: 0,
+		maxOutputTokens: 48,
+		usageRecorder,
+	}),
+	llmLimiter,
 );

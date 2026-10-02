@@ -115,6 +115,51 @@ describe("SqliteHistoryStore", () => {
 		expect(db.select().from(planRuns).all()).toEqual([]);
 	});
 
+	test("keeps the runs of a request that waited on the browser for as long as its answer survives, then drops them together", async () => {
+		const { db, user, threadA, store } = setup(2);
+		const run = (id: string, rootRunId: string, createdAt: number) =>
+			db
+				.insert(planRuns)
+				.values({
+					id,
+					userId: user.id,
+					threadId: threadA,
+					goal: {},
+					succeeded: true,
+					attempts: 1,
+					durationMs: 1,
+					createdAt,
+					rootRunId,
+				})
+				.run();
+		// «купи сыр»: the first run only waited for the browser (no message), the
+		// second one wrote the answer.
+		run("waited", "waited", 10);
+		run("answered", "waited", 20);
+		await store.append(
+			{ threadId: threadA, userId: user.id, planRunId: "answered" },
+			[
+				{ role: "user", content: "q1" },
+				{ role: "assistant", content: "a1" },
+			],
+		);
+		const ids = () =>
+			db
+				.select({ id: planRuns.id })
+				.from(planRuns)
+				.all()
+				.map((r) => r.id)
+				.sort();
+		expect(ids()).toEqual(["answered", "waited"]);
+
+		// Two newer messages push the old answer out: the whole request goes.
+		await store.append({ threadId: threadA, userId: user.id }, [
+			{ role: "user", content: "q2" },
+			{ role: "assistant", content: "a2" },
+		]);
+		expect(ids()).toEqual([]);
+	});
+
 	test("keeps a user's still-running plan runs when another run's messages trigger trimming", async () => {
 		// Several messages from one user processed at once (e.g. Telegram
 		// redelivering a backlog): every run row exists before any of them

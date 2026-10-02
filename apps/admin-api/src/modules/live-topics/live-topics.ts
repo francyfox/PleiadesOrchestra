@@ -7,7 +7,12 @@ import type { FetchContext } from "../common/common.types.ts";
 import { fetchDashboard } from "../dashboard/dashboard.service.ts";
 import type { LiveTopic } from "../live/live.types.ts";
 import type { HubTopic } from "../live-hub/live-hub.ts";
+import { fetchMcpSites } from "../mcp/mcp.service.ts";
 import { fetchPerformance } from "../performance/performance.service.ts";
+import {
+	fetchRequests,
+	fetchRequestView,
+} from "../requests/requests.service.ts";
 import { UsersQuery } from "../users/users.schema.ts";
 
 /** How often the hub re-reads each topic while a page watches it. */
@@ -20,6 +25,10 @@ export const LIVE_INTERVALS_MS: Record<LiveTopic, number> = {
 	admins: 10000,
 	agents: 10000,
 	performance: 15000,
+	requests: 3000,
+	// The running step counts up from the snapshot, so a request in progress is re-read every second.
+	request: 1000,
+	mcp: 10000,
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -89,6 +98,21 @@ export function createLiveTopics(
 			intervalMs: every("performance"),
 			validate: strictly(PerformanceParams),
 			fetch: (params) => fetchPerformance(ctx, params as never),
+		},
+		requests: {
+			intervalMs: every("requests"),
+			validate: strictly(PageQuery),
+			fetch: (params) => fetchRequests(ctx, params as never),
+		},
+		mcp: {
+			intervalMs: every("mcp"),
+			validate: strictly(NoParams),
+			fetch: () => fetchMcpSites(ctx),
+		},
+		request: {
+			intervalMs: every("request"),
+			validate: strictly(UserParams),
+			fetch: (params) => fetchRequestView(ctx, (params as { id: string }).id),
 		},
 	};
 }

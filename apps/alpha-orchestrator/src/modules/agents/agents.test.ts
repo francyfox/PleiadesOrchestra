@@ -3,6 +3,7 @@ import {
 	type AgentSpec,
 	healthUrl,
 	probeAgents,
+	productRequestPrompt,
 	publicEndpoint,
 } from "./agents.service.ts";
 
@@ -131,5 +132,14 @@ describe("probeAgents", () => {
 
 	test("no agents configured → empty list", async () => {
 		expect(await probeAgents([], {})).toEqual([]);
+	});
+});
+
+describe("productRequestPrompt", () => {
+	test("asks for JSON only", () => {
+		const prompt = productRequestPrompt();
+		expect(prompt).toContain("по-английски");
+		expect(prompt).toContain('"query"');
+		expect(prompt).toContain('"quantity"');
 	});
 });

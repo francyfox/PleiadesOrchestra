@@ -1,7 +1,7 @@
 export interface AgentSpec {
 	id: string;
 	name: string;
-	role: "text" | "decision";
+	role: "text" | "decision" | "function-call";
 	/** As configured — may carry credentials; only `publicEndpoint()` of it leaves the process. */
 	baseUrl: string;
 	model: string | null;
@@ -10,7 +10,7 @@ export interface AgentSpec {
 export interface AgentHealth {
 	id: string;
 	name: string;
-	role: "text" | "decision";
+	role: "text" | "decision" | "function-call";
 	endpoint: string;
 	model: string | null;
 	status: "up" | "down";
@@ -84,5 +84,22 @@ export function probeAgents(
 				checkedAt,
 			};
 		}),
+	);
+}
+
+/**
+ * System prompt of the request-extraction agent. Short and example-driven: a
+ * 1B model follows "answer with this JSON, like these" far better than a rule
+ * list. The query is always English: tool catalogs are English.
+ */
+export function productRequestPrompt(): string {
+	return (
+		"Ты помогаешь покупателю. Из его сообщения выдели один товар и количество.\n" +
+		'Ответь ТОЛЬКО JSON, без пояснений: {"query": "<товар по-английски, 1-3 слова, единственное число>", "quantity": <целое число>}.\n' +
+		"Если количество не названо, quantity = 1.\n" +
+		"Примеры:\n" +
+		'«купи 1 сыр» → {"query": "cheese", "quantity": 1}\n' +
+		'«добавь три молока в корзину» → {"query": "milk", "quantity": 3}\n' +
+		'«хочу яблоки» → {"query": "apples", "quantity": 1}'
 	);
 }

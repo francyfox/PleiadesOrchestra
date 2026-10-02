@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { McpClient } from "./tool-source.ts";
-import { createMcpToolSource } from "./tool-source.ts";
+import { buildArguments, createMcpToolSource } from "./tool-source.ts";
 
 function fakeMcpClient(overrides: Partial<McpClient> = {}): McpClient & {
 	calls: Array<{ name: string; arguments?: Record<string, unknown> }>;
@@ -99,5 +99,39 @@ describe("createMcpToolSource", () => {
 		});
 		const [customAction] = await withCustom.listActions();
 		expect(customAction?.cost).toBe(42);
+	});
+});
+
+describe("buildArguments with a list of objects", () => {
+	const schema = {
+		type: "object" as const,
+		properties: {
+			items: {
+				type: "array",
+				items: {
+					type: "object",
+					properties: { product: {}, quantity: {} },
+					required: ["product"],
+				},
+			},
+		},
+	};
+
+	test("fills a one-element list from facts named like its properties", () => {
+		expect(
+			buildArguments({ product: "Swiss Cheese", quantity: 2 }, schema),
+		).toEqual({
+			items: [{ product: "Swiss Cheese", quantity: 2 }],
+		});
+	});
+
+	test("leaves the list out while a required property has no fact", () => {
+		expect(buildArguments({ quantity: 2 }, schema)).toEqual({});
+	});
+
+	test("a fact named like the list itself wins", () => {
+		expect(buildArguments({ items: "x", product: "y" }, schema)).toEqual({
+			items: "x",
+		});
 	});
 });

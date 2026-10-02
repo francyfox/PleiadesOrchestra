@@ -37,6 +37,27 @@ export const DEFAULT_WIDGET_OPTIONS: WidgetOptions = {
 	retentionPerUser: 10,
 };
 
+/** Longest page path+query the widget may send (it cuts at the same length). */
+export const MAX_PAGE_CHARS = 512;
+
+/** Per-request extras of a reply. */
+export interface ReplyOptions {
+	/** Stops the run when the client disconnects. */
+	signal?: AbortSignal;
+	customerContext?: CustomerContext;
+	/** Path and query of the page the visitor is on (`/ru/store/a?q=milk`), as their browser shows it. */
+	page?: string;
+}
+
+/** What a browser-side tool reported back. */
+export interface ToolOutcome {
+	tool: string;
+	isError: boolean;
+	result?: unknown;
+	/** The page the visitor is on after the tool ran — a tool may have navigated. */
+	page?: string;
+}
+
 /** What the widget needs from the reply machinery (see `modules/reply`). */
 export interface WidgetReply {
 	/** Runs the GOAP reply for an already-authorized user/thread (shared with /v1/messages). */
@@ -44,8 +65,7 @@ export interface WidgetReply {
 		user: UserRow,
 		threadId: string,
 		text: string,
-		signal?: AbortSignal,
-		customerContext?: CustomerContext,
+		options?: ReplyOptions,
 	): ReadableStream<Uint8Array>;
 	/**
 	 * Resumes a run that stopped on a `tool_call` line once the widget has
@@ -54,7 +74,7 @@ export interface WidgetReply {
 	resumeReply(
 		user: UserRow,
 		threadId: string,
-		toolResult: { tool: string; isError: boolean },
+		toolResult: ToolOutcome,
 		signal?: AbortSignal,
 	): ReadableStream<Uint8Array>;
 	/**

@@ -1,7 +1,7 @@
 import { type Static, t } from "elysia";
 import { nullable } from "../common/common.schema.ts";
 
-export const AgentRole = t.UnionEnum(["text", "decision"]);
+export const AgentRole = t.UnionEnum(["text", "decision", "function-call"]);
 
 export const AgentStatus = t.UnionEnum(["up", "down"]);
 

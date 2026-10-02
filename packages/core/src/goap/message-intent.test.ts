@@ -51,8 +51,12 @@ describe("classifyMessageIntent", () => {
 		await classifyMessageIntent({ decisionAgent }, "привет");
 
 		expect(decisionAgent.capturedState).toEqual({ message: "привет" });
-		expect(decisionAgent.capturedCriteria).toContain("chat");
-		expect(decisionAgent.capturedCriteria).toContain("addToCart");
+		// Described options, not bare labels: Laya mixed "go to the market" up with checkout.
+		const criteria = decisionAgent.capturedCriteria as Record<string, string>;
+		expect(Object.keys(criteria)).toContain("chat");
+		expect(Object.keys(criteria)).toContain("addToCart");
+		expect(Object.keys(criteria)).toContain("chooseStore");
+		expect(criteria.chooseStore).toContain("store");
 	});
 
 	test("falls back to chat when decide() doesn't answer the question", async () => {
@@ -133,5 +137,20 @@ describe("goalForIntent", () => {
 		const goal = goalForIntent("paginate", baseGoal, [paginate]);
 
 		expect(goal).toEqual({ replied: true });
+	});
+});
+
+describe("classifyMessageIntent with the visitor's page", () => {
+	test("hands the page to Laya next to the message", async () => {
+		const decisionAgent = fakeDecisionAgent(choiceAnswer("chat"));
+		await classifyMessageIntent({ decisionAgent }, "покажи корзину", {
+			page: "/ru/cart",
+			lang: "ru",
+		});
+		expect(decisionAgent.capturedState).toEqual({
+			message: "покажи корзину",
+			page: "/ru/cart",
+			lang: "ru",
+		});
 	});
 });

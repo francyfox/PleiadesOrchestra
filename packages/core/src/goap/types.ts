@@ -44,6 +44,16 @@ export interface WaitingOn {
 /** Either the real/expected effects, or a request to pause the run (see `WaitingOn`). */
 export type ActionResult = Partial<WorldState> | { waiting: WaitingOn };
 
+/** Where an action is, for the user-facing progress text (see `GoapAction.describe`). */
+export type StepPhase = "running" | "done" | "failed";
+
+/** One line of progress shown to the user: what is happening now, in their language. */
+export interface PlanStep {
+	action: string;
+	phase: StepPhase;
+	text: string;
+}
+
 export interface GoapAction {
 	name: string;
 	/** Real resource cost (calibrated latency/CPU), not an arbitrary number — see the plan doc. */
@@ -53,6 +63,13 @@ export interface GoapAction {
 	effects: Partial<WorldState>;
 	/** Actual effects observed — may differ (tool error, model refusal, ...); the executor (Phase 2) reconciles this. Or a `{ waiting }` request to pause the run (Phase 6/WebMCP). */
 	execute(ctx: ActionContext): Promise<ActionResult>;
+	/**
+	 * What to tell the user about this action ("Ищу «cheese»…"), or `undefined`
+	 * to stay silent. Called with the state before the action for `running` and
+	 * with the state after it for `done`/`failed`, so it can quote what the
+	 * action found. Text is user-facing, not a log line.
+	 */
+	describe?(state: WorldState, phase: StepPhase): string | undefined;
 }
 
 /**

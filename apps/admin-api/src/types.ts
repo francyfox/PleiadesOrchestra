@@ -33,10 +33,6 @@ export type {
 	WorldState,
 } from "./modules/common/common.schema.ts";
 export type {
-	DynamicActionInfo,
-	GoapActionInfo,
-} from "./modules/goap/goap.schema.ts";
-export type {
 	DashboardData,
 	LiveClientMessage,
 	LiveErrorCode,
@@ -46,16 +42,30 @@ export type {
 	PageParams,
 } from "./modules/live/live.types.ts";
 export type {
+	McpParam,
+	McpSite,
+	McpSites,
+	McpTool,
+} from "./modules/mcp/mcp.schema.ts";
+export type {
 	LatencyStats,
 	PerformanceReport,
 } from "./modules/performance/performance.schema.ts";
 export type {
-	PlanRun,
-	RunDetails,
-	RunLlmCall,
 	TraceEvent,
 	TraceEventType,
 } from "./modules/plan-runs/plan-runs.schema.ts";
+export type {
+	NodeCall,
+	NodeDetail,
+	NodeStatus,
+	RequestEdge,
+	RequestNode,
+	RequestStatus,
+	RequestSummary,
+	RequestsPage,
+	RequestView,
+} from "./modules/requests/requests.schema.ts";
 export type { Session } from "./modules/session/session.schema.ts";
 export type { Stats } from "./modules/stats/stats.schema.ts";
 export type {

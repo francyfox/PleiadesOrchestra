@@ -22,6 +22,10 @@ services:
       # Shared with the admin service — same root-.env pattern as HARNESS_API_KEY.
       ADMIN_API_KEY: ${ADMIN_API_KEY:?set ADMIN_API_KEY in .env (same value as admin)}
       DATABASE_PATH: /data/orchestrator.db
+      # Optional: without a reachable delta-function-call the tool arguments are
+      # built from facts (no depends_on — the model downloads on first start).
+      FUNCTION_CALL_BASE_URL: http://delta-function-call:8080/v1
+      FUNCTION_CALL_API_KEY: ${FUNCTION_CALL_API_KEY:-}
     # SQLite on the host, not in a Docker volume: visible, easy to back up,
     # survives `docker compose down -v`. ./data is gitignored.
     volumes:
@@ -46,6 +50,23 @@ services:
       - beta-text-models:/models
     # Vulkan на встроенном Radeon: рендер-нода GPU внутрь контейнера.
     # renderD128 на хосте и так crw-rw-rw-, group_add — на случай более строгих прав.
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "${RENDER_GID:-989}"
+      - "${VIDEO_GID:-985}"
+
+  # Fills in tool-call arguments for the GOAP planner (packages/core FunctionCallAgent).
+  delta-function-call:
+    build:
+      context: .
+      dockerfile: apps/delta-function-call/Dockerfile
+    environment:
+      API_KEY: ${FUNCTION_CALL_API_KEY:-}
+    ports:
+      - "8282:8080"
+    volumes:
+      - delta-function-call-models:/models
     devices:
       - /dev/dri:/dev/dri
     group_add:
@@ -184,6 +205,7 @@ services:
 
 volumes:
   beta-text-models:
+  delta-function-call-models:
   gamma-decision-models:
   gemini-mcp-state:
 #  turingdb-data:

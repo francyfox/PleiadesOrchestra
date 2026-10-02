@@ -1,10 +1,23 @@
 import type { GoapAction, WorldState } from "@repo/core";
-import { classifyMessageIntent, goalForIntent } from "@repo/core";
-import { customerFacts, REPLY_GOAL } from "../goap/goap.service.ts";
+import {
+	classifyMessageIntent,
+	goalForIntent,
+	MAX_TOOL_TEXT_CHARS,
+	PAGE_FACT,
+	PAGE_LANG_FACT,
+	parsePage,
+} from "@repo/core";
+import {
+	customerFacts,
+	REPLY_ACTION,
+	REPLY_GOAL,
+} from "../goap/goap.service.ts";
+import { joinRequest } from "../plan-runs/plan-runs.service.ts";
+import { sessionFacts } from "../run-stream/run-stream.ts";
 import type { PreparedRun } from "../run-stream/run-stream.types.ts";
 import { normalizeText } from "../text/text.service.ts";
 import type { UserRow } from "../users/users.types.ts";
-import type { CustomerContext } from "../widget/widget.types.ts";
+import type { ReplyOptions, ToolOutcome } from "../widget/widget.types.ts";
 import type { ReplyDeps } from "./reply.types.ts";
 
 /**
@@ -23,24 +36,45 @@ export async function resolveDynamicActions(
 	return [...threadActions, ...webmcpActions];
 }
 
-/** Starting facts of a new turn. They win over facts an earlier unfinished run left behind. */
+/**
+ * Facts about the page the visitor is on: `page:path` (path and query as the
+ * browser shows them) and `page:lang` (from `/ru/…` or `?lang=ru`). Planning
+ * uses them to skip steps that would only take the visitor where they already
+ * are. Empty when the client sent no page.
+ */
+export function pageFacts(page: string | undefined): WorldState {
+	const parsed = page ? parsePage(page) : undefined;
+	if (!page || !parsed) return {};
+	return {
+		[PAGE_FACT]: page,
+		...(parsed.lang ? { [PAGE_LANG_FACT]: parsed.lang } : {}),
+	};
+}
+
+/**
+ * Starting facts of a new turn: the conversation's own facts (which store the
+ * shopper is in) plus this message. Whatever else an earlier run left in the
+ * checkpoint is ignored — a run that waits on a browser tool continues through
+ * `prepareResume`, never through a new message.
+ */
 async function initialState(
 	deps: ReplyDeps,
 	user: UserRow,
 	threadId: string,
 	planRunId: string,
 	text: string,
-	customerContext: CustomerContext | undefined,
+	options: ReplyOptions,
 ): Promise<WorldState> {
 	const turn: WorldState = {
 		userMessage: normalizeText.apply(text),
 		threadId,
 		userId: user.id,
 		planRunId,
-		...customerFacts(customerContext),
+		...customerFacts(options.customerContext),
+		...pageFacts(options.page),
 	};
 	const checkpoint = await deps.worldStateStore.load(threadId);
-	return checkpoint ? { ...checkpoint.state, ...turn } : turn;
+	return checkpoint ? { ...sessionFacts(checkpoint.state), ...turn } : turn;
 }
 
 /** Plan inputs for a brand-new user message. */
@@ -50,7 +84,7 @@ export async function prepareNewMessage(
 	threadId: string,
 	planRunId: string,
 	text: string,
-	customerContext: CustomerContext | undefined,
+	options: ReplyOptions,
 ): Promise<PreparedRun> {
 	const state = await initialState(
 		deps,
@@ -58,7 +92,7 @@ export async function prepareNewMessage(
 		threadId,
 		planRunId,
 		text,
-		customerContext,
+		options,
 	);
 	const dynamicActions = await resolveDynamicActions(deps, threadId);
 	const actions = [...deps.actions, ...dynamicActions];
@@ -71,12 +105,67 @@ export async function prepareNewMessage(
 	const intent = await classifyMessageIntent(
 		{ decisionAgent: deps.decisionAgent },
 		String(state.userMessage ?? ""),
+		pageContext(state),
 	);
+	const goal = goalForIntent(intent, REPLY_GOAL, actions);
 	return {
 		state: { ...state, messageIntent: intent },
-		goal: goalForIntent(intent, REPLY_GOAL, actions),
-		actions,
+		goal,
+		actions: replyAfterTask(actions, goal),
 	};
+}
+
+/** The state without the page facts (they are replaced, never merged: a missing language must not survive). */
+function withoutPage(state: WorldState): WorldState {
+	const { [PAGE_FACT]: _path, [PAGE_LANG_FACT]: _lang, ...rest } = state;
+	return rest;
+}
+
+/** The visitor's page for Laya's message sorting: `{ page, lang }`, whichever is known. */
+function pageContext(state: WorldState): Record<string, string> {
+	const page = state[PAGE_FACT];
+	const lang = state[PAGE_LANG_FACT];
+	return {
+		...(typeof page === "string" ? { page } : {}),
+		...(typeof lang === "string" ? { lang } : {}),
+	};
+}
+
+/**
+ * The reply should report what was done, so it must come after the task: its
+ * preconditions become the task's own goal facts (`inCart` for "buy cheese").
+ * Without this the planner may put the reply first and answer before anything
+ * happened.
+ */
+export function replyAfterTask(
+	actions: GoapAction[],
+	goal: Partial<WorldState>,
+): GoapAction[] {
+	const taskFacts = Object.fromEntries(
+		Object.entries(goal).filter(([key]) => !(key in REPLY_GOAL)),
+	);
+	if (Object.keys(taskFacts).length === 0) return actions;
+	return actions.map((action) =>
+		action.name === REPLY_ACTION
+			? { ...action, preconditions: { ...action.preconditions, ...taskFacts } }
+			: action,
+	);
+}
+
+/** Text of a tool's answer: MCP `{content:[{text}]}`, a plain string, or JSON as a last resort. Capped. */
+export function toolResultText(result: unknown): string {
+	const text = (() => {
+		if (typeof result === "string") return result;
+		const content = (result as { content?: unknown } | null)?.content;
+		if (Array.isArray(content)) {
+			return content
+				.map((part) => (part as { text?: unknown })?.text)
+				.filter((part): part is string => typeof part === "string")
+				.join("\n");
+		}
+		return result === undefined ? "" : JSON.stringify(result);
+	})();
+	return text.slice(0, MAX_TOOL_TEXT_CHARS);
 }
 
 /**
@@ -88,7 +177,7 @@ export async function prepareResume(
 	deps: ReplyDeps,
 	threadId: string,
 	planRunId: string,
-	toolResult: { tool: string; isError: boolean },
+	toolResult: ToolOutcome,
 ): Promise<PreparedRun> {
 	const checkpoint = await deps.worldStateStore.load(threadId);
 	if (!checkpoint) {
@@ -96,16 +185,29 @@ export async function prepareResume(
 		// Reported in-band like any other failed run — the stream has started.
 		throw new Error("nothing to resume for this thread");
 	}
+	// The checkpoint still names the run that stopped to wait: this one
+	// continues its request.
+	if (typeof checkpoint.state.planRunId === "string") {
+		joinRequest(deps.db, planRunId, checkpoint.state.planRunId);
+	}
 	const dynamicActions = await resolveDynamicActions(deps, threadId);
 	return {
 		state: {
-			...checkpoint.state,
+			...withoutPage(checkpoint.state),
+			// Where the visitor is now — the tool may have navigated.
+			...pageFacts(toolResult.page),
 			// The resumed run is its own `plan_runs` row; usage made by what runs
 			// next (e.g. `generateReply`) links to it, not to the run that waited.
 			planRunId,
 			[`webmcp:${toolResult.tool}:result`]: toolResult.isError ? "error" : "ok",
+			// What the tool answered (e.g. the search hits): the next step reads
+			// it, for instance to pick the first product to add.
+			[`webmcp:${toolResult.tool}:text`]: toolResultText(toolResult.result),
 		},
 		goal: checkpoint.goal,
-		actions: [...deps.actions, ...dynamicActions],
+		actions: replyAfterTask(
+			[...deps.actions, ...dynamicActions],
+			checkpoint.goal,
+		),
 	};
 }

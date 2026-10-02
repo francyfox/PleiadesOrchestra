@@ -1,6 +1,7 @@
 import type {
 	Agent,
 	DecisionAgent,
+	FunctionCallAgent,
 	GoapAction,
 	RunLock,
 	WorldStateStore,
@@ -13,6 +14,7 @@ import {
 	onRequestGuard,
 } from "@repo/elysia-kit";
 import { accessRoutes } from "./modules/access/access.ts";
+import { ActiveRuns } from "./modules/active-runs/active-runs.ts";
 import type { AgentSpec, FetchLike } from "./modules/agents/agents.service.ts";
 import { agentsRoutes } from "./modules/agents/agents.ts";
 import { authorizeRequest } from "./modules/auth/auth.service.ts";
@@ -22,12 +24,12 @@ import { channelsRoutes } from "./modules/channels/channels.ts";
 import type { Db } from "./modules/database/database.ts";
 import { decisionsRoutes } from "./modules/decisions/decisions.ts";
 import { buildActions } from "./modules/goap/goap.service.ts";
-import { goapRoutes } from "./modules/goap/goap.ts";
 import { identifyRoutes } from "./modules/identify/identify.ts";
+import { mcpRoutes } from "./modules/mcp/mcp.ts";
 import { messagesRoutes } from "./modules/messages/messages.ts";
 import { performanceRoutes } from "./modules/performance/performance.ts";
-import { planRunsRoutes } from "./modules/plan-runs/plan-runs.ts";
 import { ReplyService } from "./modules/reply/reply.ts";
+import { requestsRoutes } from "./modules/requests/requests.ts";
 import type { RunBinding } from "./modules/run-binding/run-binding.ts";
 import { statsRoutes } from "./modules/stats/stats.ts";
 import { threadsRoutes } from "./modules/threads/threads.ts";
@@ -44,6 +46,10 @@ export type { WidgetOptions } from "./modules/widget/widget.ts";
 export interface AppDeps {
 	agent: Agent;
 	decisionAgent: DecisionAgent;
+	/** Extracts `{query, quantity}` from a shopping message; optional (tests leave it out). */
+	productRequestAgent?: Agent;
+	/** Writes the JSON arguments of WebMCP tool calls; without it they are built from the run's facts. */
+	functionCallAgent?: FunctionCallAgent;
 	/** Transport secret (telegram-bot, cli, integration backends). */
 	apiKey: string;
 	/** Separate secret for /v1/admin/* (apps/admin-api). */
@@ -63,6 +69,8 @@ export interface AppDeps {
 	worldStateStore?: WorldStateStore;
 	/** Serializes `runPlan` calls on one thread. In-memory default: fine for a single instance. */
 	runLock?: RunLock;
+	/** Runs executing right now; shared with `/v1/admin/requests`. In-memory default. */
+	activeRuns?: ActiveRuns;
 	/** Extra actions for one thread, resolved per request (e.g. an MCP catalog tied to a live session). */
 	threadActionsFor?: (threadId: string) => Promise<GoapAction[]> | GoapAction[];
 	/** Classified WebMCP actions per thread; in-memory default, lost on restart (the widget re-registers). */
@@ -86,14 +94,18 @@ export interface AppDeps {
 export function createApp(deps: AppDeps) {
 	const now = deps.now ?? Date.now;
 	const actions = buildActions(deps.agent, deps.maxChunkChars);
+	const activeRuns = deps.activeRuns ?? new ActiveRuns();
 	const reply = new ReplyService({
 		db: deps.db,
 		agent: deps.agent,
 		decisionAgent: deps.decisionAgent,
+		productRequestAgent: deps.productRequestAgent,
+		functionCallAgent: deps.functionCallAgent,
 		actions,
 		runs: deps.runs,
 		worldStateStore: deps.worldStateStore ?? new InMemoryWorldStateStore(),
 		runLock: deps.runLock ?? createRunLock(),
+		activeRuns,
 		webmcpCatalog: deps.webmcpCatalog ?? new Map(),
 		threadActionsFor: deps.threadActionsFor,
 		usageRecorder: deps.usageRecorder,
@@ -158,8 +170,8 @@ export function createApp(deps: AppDeps) {
 			.use(usageRoutes({ db, now }))
 			.use(statsRoutes({ db, now }))
 			.use(performanceRoutes({ db, now }))
-			.use(planRunsRoutes(db))
-			.use(goapRoutes({ db, actions }))
+			.use(requestsRoutes({ db, activeRuns, now }))
+			.use(mcpRoutes(db))
 			.use(agentsRoutes({ agents: deps.agents, now }))
 	);
 }

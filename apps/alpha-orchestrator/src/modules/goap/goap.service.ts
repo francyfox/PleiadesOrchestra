@@ -11,6 +11,9 @@ import type { CustomerContext } from "../widget/widget.types.ts";
  */
 export const REPLY_GOAL = { replied: true };
 
+/** Name of the action that writes the reply to the user. */
+export const REPLY_ACTION = "generateReply";
+
 /**
  * The static GOAP catalog: one `generateReply` action that wraps the text
  * `Agent`. Built once per app instance — nothing in it depends on a request.
@@ -22,14 +25,13 @@ export function buildActions(
 ): GoapAction[] {
 	return [
 		createTextAction({
-			name: "generateReply",
+			name: REPLY_ACTION,
 			// The only action for now, so its cost doesn't compete with anything yet.
 			cost: 5,
 			preconditions: {},
 			effects: { replied: true },
 			agent,
-			toChunks: (state) =>
-				chunkText(String(state.userMessage ?? ""), maxChunkChars),
+			toChunks: (state) => replyChunks(state, maxChunkChars),
 			threadId: (state) => String(state.threadId ?? ""),
 			userId: (state) => String(state.userId ?? ""),
 			toEffects: (replyText, meta) => ({
@@ -59,4 +61,26 @@ export function customerFacts(
 		facts[`customer:${key}`] = value;
 	}
 	return facts;
+}
+
+/**
+ * What the reply model is given. Normally the user's message; after a task
+ * that really changed something (an item put in a cart) it is that outcome, so
+ * the reply tells the user what happened instead of answering the request as
+ * if nothing had been done.
+ */
+export function replyChunks(
+	state: WorldState,
+	maxChunkChars: number,
+): string[] {
+	const message = String(state.userMessage ?? "");
+	if (state.inCart === true && typeof state.product === "string") {
+		const quantity = typeof state.quantity === "number" ? state.quantity : 1;
+		const store =
+			typeof state.store === "string" ? `, магазин ${state.store}` : "";
+		return [
+			`Пользователь написал: «${message}». Ты уже добавил в корзину: ${quantity} × ${state.product}${store}. Коротко сообщи ему об этом.`,
+		];
+	}
+	return chunkText(message, maxChunkChars);
 }

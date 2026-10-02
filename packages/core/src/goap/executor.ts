@@ -3,8 +3,10 @@ import type {
 	BaseContext,
 	Goal,
 	GoapAction,
+	PlanStep,
 	PlanTraceEvent,
 	PlanTracer,
+	StepPhase,
 	WaitingOn,
 	WorldState,
 } from "./types";
@@ -16,6 +18,19 @@ export interface RunPlanOptions {
 	ctx: BaseContext;
 	/** Cap on replanning attempts beyond the first — guards against a runaway loop eating CPU on one request. */
 	maxReplans?: number;
+	/**
+	 * Gives up once the same action has finished this many times in a run
+	 * without producing the effects it promised. Off by default. Without it, an
+	 * action that cannot succeed (a tool answering "error", a search with no
+	 * hits) is simply chosen again by every replan until `maxReplans` runs out.
+	 */
+	maxActionFailures?: number;
+	/**
+	 * Receives a line of user-facing progress for every action that has a
+	 * `describe`: `running` before it starts, `done`/`failed` when it ends.
+	 * A listener that throws is ignored.
+	 */
+	onStep?: (step: PlanStep) => void;
 	/** Receives planning/execution events (see `PlanTraceEvent`). Must not throw. */
 	tracer?: PlanTracer;
 	/** Checked before planning and before each action; also passed through to `execute()` as `ctx.signal` for actions that can abort their own work (e.g. a `fetch` call). Aborting stops the run between actions, not mid-`execute()` — see the KILLED state in `docs/goap-actions.md`. */
@@ -66,6 +81,27 @@ function unmet(
 	);
 }
 
+/** Tells `onStep` about an action, if it has something to say. Never throws. */
+function reportStep(
+	run: Run,
+	action: GoapAction,
+	state: WorldState,
+	phase: StepPhase,
+): void {
+	if (!run.onStep || !action.describe) return;
+	try {
+		const text = action.describe(state, phase);
+		if (text) run.onStep({ action: action.name, phase, text });
+	} catch {}
+}
+
+/** Counts one more failure of `name`; true once it reached `maxActionFailures`. */
+function tooManyFailures(run: Run, name: string): boolean {
+	const count = (run.failures.get(name) ?? 0) + 1;
+	run.failures.set(name, count);
+	return run.maxActionFailures !== undefined && count >= run.maxActionFailures;
+}
+
 /** Per-`runPlan` bookkeeping shared across (re)plan attempts. */
 interface Run {
 	goal: Goal;
@@ -77,6 +113,10 @@ interface Run {
 	/** Distributive, so each `PlanTraceEvent` variant keeps its own fields. */
 	emit: (event: DistributiveOmit<PlanTraceEvent, "at">) => void;
 	signal?: AbortSignal;
+	maxActionFailures?: number;
+	onStep?: (step: PlanStep) => void;
+	/** Times each action finished without its promised effects, across attempts. */
+	failures: Map<string, number>;
 }
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown
@@ -155,6 +195,7 @@ async function attempt(
 			attempt: attemptIndex,
 			action: action.name,
 		});
+		reportStep(run, action, nextState, "running");
 		const actionStartedAt = Date.now();
 		let outcome: Awaited<ReturnType<GoapAction["execute"]>>;
 		try {
@@ -167,6 +208,7 @@ async function attempt(
 				signal,
 			});
 		} catch (error) {
+			reportStep(run, action, nextState, "failed");
 			emit({
 				type: "action_failed",
 				attempt: attemptIndex,
@@ -203,6 +245,24 @@ async function attempt(
 		});
 		nextState = { ...nextState, ...observedEffects };
 		executedActions.push(action.name);
+		reportStep(
+			run,
+			action,
+			nextState,
+			satisfied(action.effects, observedEffects) ? "done" : "failed",
+		);
+
+		if (
+			!satisfied(action.effects, observedEffects) &&
+			tooManyFailures(run, action.name)
+		) {
+			return {
+				finalState: nextState,
+				executedActions,
+				succeeded: false,
+				killed: false,
+			};
+		}
 	}
 
 	if (satisfied(goal, nextState)) {
@@ -248,6 +308,8 @@ export async function runPlan(options: RunPlanOptions): Promise<RunPlanResult> {
 		maxReplans = 10,
 		tracer,
 		signal,
+		maxActionFailures,
+		onStep,
 	} = options;
 	const startedAt = Date.now();
 	const run: Run = {
@@ -257,6 +319,9 @@ export async function runPlan(options: RunPlanOptions): Promise<RunPlanResult> {
 		executedActions: [],
 		attempts: 0,
 		signal,
+		maxActionFailures,
+		onStep,
+		failures: new Map(),
 		emit: (event) => {
 			if (!tracer) return;
 			// Tracing is observability — a buggy tracer must never change the run.

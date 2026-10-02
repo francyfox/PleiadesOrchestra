@@ -1,3 +1,4 @@
+export { pruneUnproducibleFacts } from "./catalog";
 export type { DecisionActionConfig } from "./decision-action";
 export { createDecisionAction } from "./decision-action";
 export type { RunPlanOptions, RunPlanResult } from "./executor";
@@ -5,7 +6,9 @@ export { runPlan } from "./executor";
 export type { ToolIntent } from "./intent-taxonomy";
 export {
 	EFFECTS_BY_INTENT,
+	INTENT_DESCRIPTIONS,
 	PRECONDITIONS_BY_INTENT,
+	SESSION_FACTS,
 	TOOL_INTENTS,
 } from "./intent-taxonomy";
 export type { StdioMcpClientConfig } from "./mcp-client";
@@ -15,9 +18,21 @@ export type {
 	MessageIntent,
 } from "./message-intent";
 export { classifyMessageIntent, goalForIntent } from "./message-intent";
+export type { ParsedPage } from "./page";
+export { PAGE_FACT, PAGE_LANG_FACT, parsePage, samePage } from "./page";
 export { plan } from "./plan";
+export type {
+	ProductRequest,
+	ProductRequestActionConfig,
+} from "./product-request";
+export {
+	createProductRequestAction,
+	parseProductRequest,
+} from "./product-request";
 export type { RunLock } from "./run-lock";
 export { createRunLock } from "./run-lock";
+export type { StepLanguage } from "./step-text";
+export { stepLanguage } from "./step-text";
 export type {
 	StreamingContext,
 	TextActionConfig,
@@ -38,8 +53,10 @@ export type {
 	BaseContext,
 	Goal,
 	GoapAction,
+	PlanStep,
 	PlanTraceEvent,
 	PlanTracer,
+	StepPhase,
 	WaitingOn,
 	WorldState,
 } from "./types";
@@ -48,7 +65,11 @@ export type {
 	WebMcpToolCallPayload,
 	WebMcpToolDescriptor,
 } from "./webmcp-actions";
-export { createWebMcpActions } from "./webmcp-actions";
+export {
+	createWebMcpActions,
+	firstListedProductName,
+	MAX_TOOL_TEXT_CHARS,
+} from "./webmcp-actions";
 export type {
 	WorldStateCheckpoint,
 	WorldStateStore,

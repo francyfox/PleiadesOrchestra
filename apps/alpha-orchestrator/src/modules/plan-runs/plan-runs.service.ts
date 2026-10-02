@@ -55,10 +55,46 @@ export function startPlanRun(
 		threadId: string;
 		goal: Record<string, unknown>;
 		createdAt: number;
+		/** What the user wrote; set for a new message, not for a resumed run. */
+		prompt?: string;
 	},
 ): void {
+	const { prompt, ...rest } = run;
 	db.insert(planRuns)
-		.values({ ...run, succeeded: false, attempts: 0, durationMs: 0 })
+		.values({
+			...rest,
+			// Its own root until `joinRequest` says it continues another run.
+			rootRunId: run.id,
+			prompt: prompt?.slice(0, PROMPT_LIMIT) ?? null,
+			succeeded: false,
+			attempts: 0,
+			durationMs: 0,
+		})
+		.run();
+}
+
+/** Longest prompt kept on a run. */
+const PROMPT_LIMIT = 2000;
+
+/**
+ * Marks `runId` as a continuation of `previousRunId` (a run resumed after the
+ * browser ran its tool), so both belong to one request. Unknown previous run:
+ * nothing changes — the run stays the root of its own request.
+ */
+export function joinRequest(
+	db: Db,
+	runId: string,
+	previousRunId: string,
+): void {
+	const previous = db
+		.select({ root: planRuns.rootRunId })
+		.from(planRuns)
+		.where(eq(planRuns.id, previousRunId))
+		.get();
+	if (!previous) return;
+	db.update(planRuns)
+		.set({ rootRunId: previous.root ?? previousRunId })
+		.where(eq(planRuns.id, runId))
 		.run();
 }
 

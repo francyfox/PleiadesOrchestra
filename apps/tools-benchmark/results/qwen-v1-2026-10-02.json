@@ -1,0 +1,1137 @@
+{
+  "at": "2026-10-01T19:33:06.245Z",
+  "gpuLayers": 99,
+  "prompt": "v1",
+  "sanitize": false,
+  "rows": [
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "lang": "en",
+      "summary": {
+        "cases": 34,
+        "accuracy": 0.5,
+        "valid": 1,
+        "p50Ms": 651.5185280000005,
+        "p90Ms": 1180.0831940000007,
+        "meanMs": 748.3423320294116
+      },
+      "meanPromptTokens": 246.2941176470588,
+      "meanOutputTokens": 16.058823529411764
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "lang": "en",
+      "summary": {
+        "cases": 34,
+        "accuracy": 0.3235294117647059,
+        "valid": 0.7058823529411765,
+        "p50Ms": 1129.463063999996,
+        "p90Ms": 2083.6073380000016,
+        "meanMs": 1324.5421572058822
+      },
+      "meanPromptTokens": 557.5294117647059,
+      "meanOutputTokens": 31.5
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "schema",
+      "lang": "en",
+      "summary": {
+        "cases": 34,
+        "accuracy": 0.6764705882352942,
+        "valid": 1,
+        "p50Ms": 1213.8120739999868,
+        "p90Ms": 2398.1466699999874,
+        "meanMs": 1608.5303721470607
+      },
+      "meanPromptTokens": 242.2941176470588,
+      "meanOutputTokens": 17.029411764705884
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "native",
+      "lang": "en",
+      "summary": {
+        "cases": 34,
+        "accuracy": 0.8529411764705882,
+        "valid": 1,
+        "p50Ms": 2319.539194000012,
+        "p90Ms": 4277.751925999997,
+        "meanMs": 2737.3877917352984
+      },
+      "meanPromptTokens": 553.5294117647059,
+      "meanOutputTokens": 28.852941176470587
+    }
+  ],
+  "failures": [
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "result": {
+        "id": "store-cheapest.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 809.202832,
+        "actual": {
+          "store": "Harbor Foods Co-op"
+        },
+        "reason": "store: \"Harbor Foods Co-op\" ≠ \"Penny Pantry\"",
+        "promptTokens": 227,
+        "outputTokens": 16
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "result": {
+        "id": "store-organic.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 417.67364,
+        "actual": {
+          "store": "Greenleaf Market"
+        },
+        "reason": "store: \"Greenleaf Market\" ≠ \"Harbor Foods Co-op\"",
+        "promptTokens": 226,
+        "outputTokens": 9
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "result": {
+        "id": "store-fastest.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 651.5185280000005,
+        "actual": {
+          "store": "Harbor Foods Co-op"
+        },
+        "reason": "store: \"Harbor Foods Co-op\" ≠ \"Greenleaf Market\"",
+        "promptTokens": 226,
+        "outputTokens": 14
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "result": {
+        "id": "search-cheese.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 852.62428,
+        "actual": {
+          "query": "cheese",
+          "department": "Dairy & Eggs"
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 242,
+        "outputTokens": 14
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "result": {
+        "id": "search-apple.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 489.7556119999999,
+        "actual": {
+          "query": "apple",
+          "department": "Frozen"
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 242,
+        "outputTokens": 11
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "result": {
+        "id": "search-price.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 924.9843099999998,
+        "actual": {
+          "query": "oat milk",
+          "department": "Dairy & Eggs",
+          "max_price": 5
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 245,
+        "outputTokens": 25
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "result": {
+        "id": "search-vegan.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 353.4563109999999,
+        "actual": {
+          "query": "vegan chips"
+        },
+        "reason": "query: \"vegan chips\" ≠ \"chips\"",
+        "promptTokens": 240,
+        "outputTokens": 8
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "result": {
+        "id": "search-aisle.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 614.7063139999991,
+        "actual": {
+          "query": "bakery",
+          "department": "Bakery"
+        },
+        "reason": "query: unexpected",
+        "promptTokens": 243,
+        "outputTokens": 16
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "result": {
+        "id": "search-two-diets.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 791.061291,
+        "actual": {
+          "query": "gluten-free and dairy-free bread",
+          "department": "Bakery"
+        },
+        "reason": "query: \"gluten-free and dairy-free bread\" ≠ \"bread\"",
+        "promptTokens": 244,
+        "outputTokens": 21
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "result": {
+        "id": "search-organic.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 558.6960180000005,
+        "actual": {
+          "query": "organic bananas",
+          "department": "Frozen"
+        },
+        "reason": "query: \"organic bananas\" ≠ \"bananas\"",
+        "promptTokens": 240,
+        "outputTokens": 12
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "result": {
+        "id": "search-kettle.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 720.2536029999992,
+        "actual": {
+          "query": "kettle chips",
+          "department": "Snacks",
+          "max_price": 4
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 244,
+        "outputTokens": 18
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "result": {
+        "id": "add-apples-no-qty.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1621.3990150000027,
+        "actual": {
+          "items": [
+            {
+              "product": "Honeycrisp Apples",
+              "quantity": 1
+            },
+            {
+              "product": "Granny Smith Apples",
+              "quantity": 1
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 276,
+        "outputTokens": 38
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "result": {
+        "id": "recipe-pizza.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1188.749222999999,
+        "actual": {
+          "recipe": "Cheddar & Spinach Scramble",
+          "ingredients": []
+        },
+        "reason": "ingredients: missing",
+        "promptTokens": 235,
+        "outputTokens": 21
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "result": {
+        "id": "recipe-carbonara.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 644.4011600000013,
+        "actual": {
+          "recipe": "Cheddar & Spinach Scramble"
+        },
+        "reason": "ingredients: missing",
+        "promptTokens": 235,
+        "outputTokens": 15
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "result": {
+        "id": "recipe-own.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 964.1120130000018,
+        "actual": {
+          "recipe": "Tomato & Basil Bruschetta",
+          "ingredients": [],
+          "preview": true
+        },
+        "reason": "recipe: \"Tomato & Basil Bruschetta\" ≠ \"Weeknight Beef Tacos\"",
+        "promptTokens": 232,
+        "outputTokens": 23
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "result": {
+        "id": "recipe-preview.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 630.7320650000001,
+        "actual": {
+          "recipe": "Banana Oat Pancakes"
+        },
+        "reason": "ingredients: missing",
+        "promptTokens": 241,
+        "outputTokens": 13
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "schema",
+      "result": {
+        "id": "recipe-guacamole.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 825.4044990000002,
+        "actual": {
+          "recipe": "Guacamole & Chips",
+          "ingredients": []
+        },
+        "reason": "ingredients: unexpected",
+        "promptTokens": 233,
+        "outputTokens": 17
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "store-cheapest.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 734.507032999998,
+        "reason": "not an object",
+        "promptTokens": 455,
+        "outputTokens": 20
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "store-organic.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 759.2404979999992,
+        "reason": "not an object",
+        "promptTokens": 454,
+        "outputTokens": 21
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "store-fastest.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 696.930043999997,
+        "reason": "not an object",
+        "promptTokens": 454,
+        "outputTokens": 19
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "store-switch.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 788.1228940000001,
+        "reason": "not an object",
+        "promptTokens": 454,
+        "outputTokens": 21
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "search-cheese.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 2269.8549370000037,
+        "reason": "not an object",
+        "promptTokens": 600,
+        "outputTokens": 27
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "search-apple.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 897.6095480000004,
+        "reason": "not an object",
+        "promptTokens": 600,
+        "outputTokens": 24
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "search-price.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1274.0883710000053,
+        "actual": {
+          "query": "oat milk",
+          "department": "Beverages",
+          "max_price": 5
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 603,
+        "outputTokens": 37
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "search-vegan.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 991.7709360000008,
+        "reason": "not an object",
+        "promptTokens": 598,
+        "outputTokens": 28
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "search-aisle.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 992.4191500000015,
+        "actual": {
+          "query": "bread",
+          "department": "Bakery"
+        },
+        "reason": "query: unexpected",
+        "promptTokens": 601,
+        "outputTokens": 28
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "search-two-diets.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1431.9339560000008,
+        "actual": {
+          "query": "bread",
+          "department": "Pantry",
+          "dietary": [
+            "gluten-free",
+            "dairy-free"
+          ]
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 602,
+        "outputTokens": 42
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "search-bananas.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1051.4771559999936,
+        "actual": {
+          "query": "bananas",
+          "department": "Pantry"
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 600,
+        "outputTokens": 28
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "search-yogurt.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1086.9326589999982,
+        "actual": {
+          "query": "yogurt",
+          "department": "Dairy & Eggs"
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 598,
+        "outputTokens": 31
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "search-kettle.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1246.744473000006,
+        "actual": {
+          "query": "kettle chips",
+          "department": "Snacks",
+          "max_price": 4
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 602,
+        "outputTokens": 36
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "add-three-apples.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 2083.6073380000016,
+        "actual": {
+          "items": [
+            {
+              "product": "Honeycrisp Apples",
+              "quantity": 3
+            },
+            {
+              "product": "Granny Smith Apples",
+              "quantity": 3
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 548,
+        "outputTokens": 52
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "add-it.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1025.0342919999966,
+        "reason": "not an object",
+        "promptTokens": 504,
+        "outputTokens": 29
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "add-apples-no-qty.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 2024.8954239999948,
+        "actual": {
+          "items": [
+            {
+              "product": "Honeycrisp Apples",
+              "quantity": 1
+            },
+            {
+              "product": "Granny Smith Apples",
+              "quantity": 1
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 546,
+        "outputTokens": 52
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "recipe-pizza.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 4159.505825,
+        "actual": {
+          "ingredients": [
+            {
+              "name": "tomato",
+              "quantity": 1
+            },
+            {
+              "name": "mozzarella",
+              "quantity": 1
+            },
+            {
+              "name": "olive oil",
+              "quantity": 1
+            },
+            {
+              "name": "basil",
+              "quantity": 1
+            }
+          ]
+        },
+        "reason": "missing ingredient: flour/dough/crust",
+        "promptTokens": 715,
+        "outputTokens": 73
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "recipe-carbonara.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1282.8181239999976,
+        "actual": {
+          "recipe": "Sheet-Pan Salmon & Broccoli",
+          "preview": true
+        },
+        "reason": "ingredients: missing",
+        "promptTokens": 715,
+        "outputTokens": 33
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "recipe-own.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1108.4858289999975,
+        "actual": {
+          "recipe": "Weeknight Beef Tacos",
+          "preview": true
+        },
+        "reason": "preview: unexpected",
+        "promptTokens": 712,
+        "outputTokens": 31
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "recipe-preview.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1182.2599300000002,
+        "actual": {
+          "recipe": "Sheet-Pan Salmon & Broccoli",
+          "preview": true
+        },
+        "reason": "ingredients: missing",
+        "promptTokens": 721,
+        "outputTokens": 33
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "recipe-guacamole.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1339.1248469999991,
+        "actual": {
+          "ingredients": [
+            {
+              "name": "avocados",
+              "quantity": 2
+            }
+          ],
+          "preview": true
+        },
+        "reason": "ingredients: unexpected",
+        "promptTokens": 713,
+        "outputTokens": 38
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "cart-show.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 995.2952879999939,
+        "reason": "not an object",
+        "promptTokens": 346,
+        "outputTokens": 13
+      }
+    },
+    {
+      "model": "qwen3-1.7b-q4km",
+      "mode": "native",
+      "result": {
+        "id": "cart-contents.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 525.9386309999973,
+        "reason": "not an object",
+        "promptTokens": 348,
+        "outputTokens": 13
+      }
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "schema",
+      "result": {
+        "id": "store-organic.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 912.9005730000208,
+        "actual": {
+          "store": "Greenleaf Market"
+        },
+        "reason": "store: \"Greenleaf Market\" ≠ \"Harbor Foods Co-op\"",
+        "promptTokens": 222,
+        "outputTokens": 9
+      }
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "schema",
+      "result": {
+        "id": "search-cheese.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1842.6188829999883,
+        "actual": {
+          "query": "cheese",
+          "department": "Dairy & Eggs"
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 238,
+        "outputTokens": 14
+      }
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "schema",
+      "result": {
+        "id": "search-vegan.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 874.0769710000022,
+        "actual": {
+          "query": "vegan chips"
+        },
+        "reason": "query: \"vegan chips\" ≠ \"chips\"",
+        "promptTokens": 236,
+        "outputTokens": 8
+      }
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "schema",
+      "result": {
+        "id": "search-aisle.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1380.0427980000095,
+        "actual": {
+          "query": "bakery",
+          "department": "Bakery"
+        },
+        "reason": "query: unexpected",
+        "promptTokens": 239,
+        "outputTokens": 16
+      }
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "schema",
+      "result": {
+        "id": "search-two-diets.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 2063.4452200000233,
+        "actual": {
+          "query": "gluten-free bread",
+          "department": "Bakery",
+          "dietary": [
+            "gluten-free",
+            "dairy-free"
+          ]
+        },
+        "reason": "query: \"gluten-free bread\" ≠ \"bread\"",
+        "promptTokens": 240,
+        "outputTokens": 26
+      }
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "schema",
+      "result": {
+        "id": "search-organic.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 675.886697000009,
+        "actual": {
+          "query": "organic bananas"
+        },
+        "reason": "query: \"organic bananas\" ≠ \"bananas\"",
+        "promptTokens": 236,
+        "outputTokens": 7
+      }
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "schema",
+      "result": {
+        "id": "recipe-pizza.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 5741.865935000009,
+        "actual": {
+          "recipe": "Tomato & Basil Bruschetta",
+          "ingredients": [
+            {
+              "name": "tomato",
+              "quantity": 2
+            },
+            {
+              "name": "basil",
+              "quantity": 1
+            },
+            {
+              "name": "olive oil",
+              "quantity": 1
+            },
+            {
+              "name": "garlic",
+              "quantity": 1
+            }
+          ]
+        },
+        "reason": "missing ingredient: mozzarella",
+        "promptTokens": 231,
+        "outputTokens": 71
+      }
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "schema",
+      "result": {
+        "id": "recipe-carbonara.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1173.815792999987,
+        "actual": {
+          "recipe": "Banana Oat Pancakes"
+        },
+        "reason": "ingredients: missing",
+        "promptTokens": 231,
+        "outputTokens": 13
+      }
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "schema",
+      "result": {
+        "id": "recipe-own.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1816.6844170000113,
+        "actual": {
+          "recipe": "Tomato & Basil Bruschetta"
+        },
+        "reason": "recipe: \"Tomato & Basil Bruschetta\" ≠ \"Weeknight Beef Tacos\"",
+        "promptTokens": 228,
+        "outputTokens": 18
+      }
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "schema",
+      "result": {
+        "id": "recipe-preview.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1296.9212269999844,
+        "actual": {
+          "recipe": "Tomato & Basil Bruschetta"
+        },
+        "reason": "ingredients: missing",
+        "promptTokens": 237,
+        "outputTokens": 14
+      }
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "schema",
+      "result": {
+        "id": "recipe-guacamole.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 5848.432330999989,
+        "actual": {
+          "ingredients": [
+            {
+              "name": "avocado",
+              "quantity": 2
+            },
+            {
+              "name": "lime juice",
+              "quantity": 1
+            },
+            {
+              "name": "onion",
+              "quantity": 1
+            },
+            {
+              "name": "garlic",
+              "quantity": 1
+            },
+            {
+              "name": "salt",
+              "quantity": 1
+            },
+            {
+              "name": "chili powder",
+              "quantity": 1
+            }
+          ]
+        },
+        "reason": "ingredients: unexpected",
+        "promptTokens": 229,
+        "outputTokens": 83
+      }
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "native",
+      "result": {
+        "id": "search-aisle.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 2110.6129359999904,
+        "actual": {
+          "query": "",
+          "department": "Bakery"
+        },
+        "reason": "query: unexpected",
+        "promptTokens": 597,
+        "outputTokens": 26
+      }
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "native",
+      "result": {
+        "id": "recipe-pizza.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 9058.207477000018,
+        "actual": {
+          "recipe": "Simple Tomato Pasta",
+          "ingredients": [
+            {
+              "name": "tomato",
+              "quantity": 2
+            },
+            {
+              "name": "mozzarella",
+              "quantity": 1
+            },
+            {
+              "name": "basil",
+              "quantity": 1
+            }
+          ]
+        },
+        "reason": "missing ingredient: flour/dough/crust",
+        "promptTokens": 711,
+        "outputTokens": 67
+      }
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "native",
+      "result": {
+        "id": "recipe-carbonara.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1923.793279000034,
+        "actual": {
+          "recipe": "Simple Tomato Pasta"
+        },
+        "reason": "ingredients: missing",
+        "promptTokens": 711,
+        "outputTokens": 24
+      }
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "native",
+      "result": {
+        "id": "recipe-preview.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 2341.7403519999934,
+        "actual": {
+          "recipe": "Simple Tomato Pasta",
+          "preview": true
+        },
+        "reason": "ingredients: missing",
+        "promptTokens": 717,
+        "outputTokens": 29
+      }
+    },
+    {
+      "model": "qwen3-4b-2507",
+      "mode": "native",
+      "result": {
+        "id": "recipe-guacamole.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 2413.5469230000162,
+        "actual": {
+          "recipe": "Guacamole & Chips",
+          "preview": true
+        },
+        "reason": "preview: unexpected",
+        "promptTokens": 709,
+        "outputTokens": 31
+      }
+    }
+  ]
+}

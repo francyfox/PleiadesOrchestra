@@ -42,12 +42,9 @@ export function messagesRoutes({ db, directory, reply, now }: MessagesDeps) {
 				body.threadId,
 				timestamp,
 			);
-			const stream = reply.startReply(
-				user,
-				threadId,
-				body.text,
-				request.signal,
-			);
+			const stream = reply.startReply(user, threadId, body.text, {
+				signal: request.signal,
+			});
 			return ndjsonResponse(stream, request);
 		},
 		{

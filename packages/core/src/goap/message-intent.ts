@@ -1,6 +1,7 @@
 import type { DecisionAgent } from "../decision-types";
 import {
 	EFFECTS_BY_INTENT,
+	INTENT_DESCRIPTIONS,
 	TOOL_INTENTS,
 	type ToolIntent,
 } from "./intent-taxonomy";
@@ -28,18 +29,21 @@ export interface ClassifyMessageIntentConfig {
 export async function classifyMessageIntent(
 	config: ClassifyMessageIntentConfig,
 	message: string,
+	/** Where the visitor is, e.g. `{ page: "/store/greenleaf", lang: "ru" }`: "show the cart" on the cart page is not a task. */
+	context: Record<string, string> = {},
 ): Promise<MessageIntent> {
 	const answers = await config.decisionAgent.decide(
-		{ message },
+		{ message, ...context },
 		{
 			intent: {
 				type: "choice",
 				instructions:
-					"Is the user just chatting, or asking to do something that needs " +
-					"searching, filtering, selecting, adding/removing something from a " +
-					"cart, checking out, paging through results, or comparing options? " +
-					"Pick the single closest match; when unsure, pick chat.",
-				criteria: [...MESSAGE_INTENTS],
+					"Is the user just chatting, or asking to do something in an online " +
+					"shop? Pick the single closest match; when unsure, pick chat.",
+				criteria: {
+					chat: "greeting, small talk or a question that is not about shopping",
+					...INTENT_DESCRIPTIONS,
+				},
 			},
 		},
 	);

@@ -64,7 +64,7 @@
 									</span>
 								{/if}
 								{#if message.planRunId}
-									<a class="underline" href={`/runs/${encodeURIComponent(message.planRunId)}`}>
+									<a class="underline" href={`/goap?id=${encodeURIComponent(message.planRunId)}`}>
 										{$content.messages.plan.value}
 									</a>
 								{/if}

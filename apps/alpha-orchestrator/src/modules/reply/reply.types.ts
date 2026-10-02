@@ -1,10 +1,12 @@
 import type {
 	Agent,
 	DecisionAgent,
+	FunctionCallAgent,
 	GoapAction,
 	RunLock,
 	WorldStateStore,
 } from "@repo/core";
+import type { ActiveRuns } from "../active-runs/active-runs.ts";
 import type { Db } from "../database/database.ts";
 import type { RunBinding } from "../run-binding/run-binding.ts";
 
@@ -12,6 +14,10 @@ export interface ReplyDeps {
 	db: Db;
 	agent: Agent;
 	decisionAgent: DecisionAgent;
+	/** Text model with the "reply with {query, quantity} JSON" prompt; without it a task has no `query`/`quantity` facts. */
+	productRequestAgent?: Agent;
+	/** `delta-function-call`: fills in WebMCP tool arguments as JSON; unset = built from facts. */
+	functionCallAgent?: FunctionCallAgent;
 	/** The static GOAP catalog (`buildActions`). */
 	actions: GoapAction[];
 	/** Shared with the history store / usage recorder so their writes get linked to the running plan. */
@@ -20,6 +26,8 @@ export interface ReplyDeps {
 	worldStateStore: WorldStateStore;
 	/** Serializes `runPlan` calls that share a `threadId`. */
 	runLock: RunLock;
+	/** Runs executing right now, shared with the admin routes. */
+	activeRuns?: ActiveRuns;
 	/** Classified WebMCP actions per thread, registered when the widget's panel opens. */
 	webmcpCatalog: Map<string, GoapAction[]>;
 	/**

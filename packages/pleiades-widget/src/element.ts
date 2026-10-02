@@ -1,21 +1,22 @@
-import { createWidgetApi } from "./lib/api";
-import { type Chat, createChat } from "./lib/chat";
+// `?inline` gives the string this class injects into the shadow root at
+// runtime; the plain import (unused otherwise) makes Vite also emit the
+// same, identically-processed stylesheet as a standalone `dist/pleiades-widget.css`
+// asset — a reference for integrators, see the "Theming" section of the README.
+import css from "src/components/styles.css?inline";
+import { createWidgetApi } from "src/lib/api/api.ts";
+import { type Chat, createChat } from "src/lib/chat/chat.ts";
 import {
 	describeConfigError,
 	normalizePosition,
 	parseCustomerContext,
 	resolveConfig,
-} from "./lib/config";
-import { pickLang, strings } from "./lib/i18n";
-import { createSessionStore } from "./lib/storage";
-import { createNavigatorWebMcpProvider } from "./lib/webmcp";
-// `?inline` gives the string this class injects into the shadow root at
-// runtime; the plain import (unused otherwise) makes Vite also emit the
-// same, identically-processed stylesheet as a standalone `dist/pleiades-widget.css`
-// asset — a reference for integrators, see the "Theming" section of the README.
-import css from "./ui/styles.css?inline";
-import "./ui/styles.css";
-import { createUi, type Ui } from "./ui/ui";
+} from "src/lib/config/config.ts";
+import { pickLang, strings } from "src/lib/i18n/i18n.ts";
+import { currentPage } from "src/lib/page/page.ts";
+import { createSessionStore } from "src/lib/storage/storage.ts";
+import { createNavigatorWebMcpProvider } from "src/lib/webmcp/webmcp.ts";
+import "src/components/styles.css";
+import { createUi, type Ui } from "src/components/ui.tsx";
 
 /** Mirrors the server's `WIDGET_MAX_TEXT_CHARS` default. */
 const MAX_CHARS = 2000;
@@ -70,6 +71,7 @@ export class PleiadesChat extends HTMLElement {
 	}
 
 	disconnectedCallback() {
+		this.#chat?.dispose();
 		this.#off?.();
 		this.#off = this.#chat = this.#ui = undefined;
 		this.#scope = "";
@@ -137,6 +139,8 @@ export class PleiadesChat extends HTMLElement {
 				// checked per `send()`, not just here, so the mode toggle needs no
 				// `#mount()` beyond what already runs for any attribute change.
 				webmcp: createNavigatorWebMcpProvider(),
+				// Read at every request: the page changes under a single-page app.
+				page: () => currentPage(),
 				maxChars: MAX_CHARS,
 			});
 			this.#scope = scope;

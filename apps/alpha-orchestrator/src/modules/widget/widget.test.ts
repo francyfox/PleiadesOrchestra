@@ -14,7 +14,13 @@ import { type AppDeps, createApp } from "../../app.ts";
 import { createBlockedIp } from "../blocked-ips/blocked-ips.service.ts";
 import { ChannelDirectory } from "../channel-directory/channel-directory.ts";
 import { createWebChannel } from "../channels/channels.service.ts";
-import { channels, users, visitorTokens } from "../database/database.schema.ts";
+import {
+	channels,
+	mcpCatalogs,
+	planRuns,
+	users,
+	visitorTokens,
+} from "../database/database.schema.ts";
 import { testDb } from "../database/database.testing.ts";
 import { SqliteHistoryStore } from "../history/history.ts";
 import { RunBinding } from "../run-binding/run-binding.ts";
@@ -739,6 +745,85 @@ describe("widget WebMCP round trip", () => {
 		expect(ctx.calls).toHaveLength(1);
 	});
 
+	test("the run that resumes after a tool result belongs to the same request as the one that waited", async () => {
+		const ctx = setup(
+			{},
+			{ decisionAgent: classifyingDecisionAgent("search") },
+		);
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+		await registerTools(ctx, token, threadId, [searchTool]);
+		await ctx.app
+			.handle(
+				widgetRequest("/v1/widget/messages", {
+					token,
+					body: { threadId, text: "add the cheapest laptop to my cart" },
+				}),
+			)
+			.then((response) => response.text());
+		await ctx.app
+			.handle(
+				widgetRequest("/v1/widget/tool-results", {
+					token,
+					body: {
+						threadId,
+						callId: "call-1",
+						tool: "search_products",
+						result: { ok: true },
+						isError: false,
+					},
+				}),
+			)
+			.then((response) => response.text());
+
+		const runs = ctx.db
+			.select()
+			.from(planRuns)
+			.orderBy(planRuns.createdAt, planRuns.id)
+			.all();
+		expect(runs).toHaveLength(2);
+		const root = runs.find((run) => run.prompt !== null);
+		expect(root?.prompt).toBe("add the cheapest laptop to my cart");
+		expect(runs.map((run) => run.rootRunId)).toEqual([
+			root?.id ?? null,
+			root?.id ?? null,
+		]);
+	});
+
+	test("the same tool catalog opened again is not classified again, and is remembered for the admin MCP page; a changed one is", async () => {
+		let classifications = 0;
+		const counting: DecisionAgent = {
+			async decide(_state, questions) {
+				const result: Record<string, DecisionAnswer> = {};
+				if (questions.intent) {
+					classifications += 1;
+					result.intent = choiceAnswer("search");
+				}
+				return result;
+			},
+		};
+		const ctx = setup({}, { decisionAgent: counting });
+		const token = await newVisitor(ctx);
+		const first = await newThread(ctx, token);
+		const second = await newThread(ctx, token);
+
+		await registerTools(ctx, token, first, [searchTool]);
+		expect(classifications).toBe(1);
+
+		// Same tools, another thread (or the panel opened again): no new Laya call.
+		await registerTools(ctx, token, second, [searchTool]);
+		await registerTools(ctx, token, first, [searchTool]);
+		expect(classifications).toBe(1);
+
+		await registerTools(ctx, token, first, [
+			{ ...searchTool, description: "Search the catalog by words" },
+		]);
+		expect(classifications).toBe(2);
+
+		const rows = ctx.db.select().from(mcpCatalogs).all();
+		expect(rows.map((row) => row.registrations).sort()).toEqual([1, 3]);
+	});
+
 	test("a tool catalog too large for a single message no longer 413s /v1/widget/messages — it's registered separately, once", async () => {
 		const ctx = setup(
 			{ maxTextChars: 50 },
@@ -858,5 +943,382 @@ describe("widget WebMCP round trip", () => {
 		);
 
 		expect(response.status).toBe(404);
+	});
+});
+
+describe("widget shopping flow: «купи 1 сыр»", () => {
+	const choice = (value: string): DecisionAnswer => ({
+		type: "choice",
+		choice: value,
+		probabilities: { [value]: 1 },
+		confidence: 1,
+		rl_agent: { act_probability: 1 },
+	});
+
+	const INTENT_OF_TOOL: Record<string, string> = {
+		choose_store: "chooseStore",
+		search_products: "search",
+		add_to_cart: "addToCart",
+	};
+
+	/** Laya stand-in: tools by name, the message as a purchase, the store as Penny Pantry. */
+	const laya: DecisionAgent = {
+		async decide(state, questions) {
+			const name = (state as { name?: string }).name;
+			const answers: Record<string, DecisionAnswer> = {};
+			for (const key of Object.keys(questions)) {
+				answers[key] =
+					key === "intent"
+						? choice(name ? (INTENT_OF_TOOL[name] ?? "other") : "addToCart")
+						: choice("Penny Pantry");
+			}
+			return answers;
+		},
+	};
+
+	const productRequestAgent: Agent = {
+		async *handleMessageStream() {
+			yield { type: "delta", text: '{"query":"cheese","quantity":1}' };
+			yield { type: "done", elapsedMs: 1 };
+		},
+		async resetThread() {},
+	};
+
+	const tools: WebMcpToolDescriptor[] = [
+		{
+			name: "choose_store",
+			description: "Open one of the stores",
+			inputSchema: {
+				type: "object",
+				properties: {
+					store: {
+						type: "string",
+						enum: ["Greenleaf Market", "Penny Pantry"],
+					},
+				},
+				required: ["store"],
+			} as WebMcpToolDescriptor["inputSchema"],
+		},
+		{
+			name: "search_products",
+			description: "Search the open store",
+			inputSchema: { type: "object", properties: { query: {} } },
+		},
+		{
+			name: "add_to_cart",
+			description: "Add products to the cart",
+			inputSchema: {
+				type: "object",
+				properties: {
+					items: {
+						type: "array",
+						items: {
+							type: "object",
+							properties: { product: {}, quantity: {} },
+							required: ["product"],
+						},
+					},
+				},
+				required: ["items"],
+			} as WebMcpToolDescriptor["inputSchema"],
+		},
+	];
+
+	const parseLines = (text: string) =>
+		text
+			.trim()
+			.split("\n")
+			.map((line) => JSON.parse(line));
+
+	test("the browser is asked for the three tools in order, then the reply says what was done", async () => {
+		const ctx = setup({}, { decisionAgent: laya, productRequestAgent });
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+		await registerTools(ctx, token, threadId, tools);
+
+		const answers: Record<string, string> = {
+			choose_store: "Penny Pantry is open.",
+			search_products:
+				"Showing 2:\n- Aged Cheddar — $5 — OUT OF STOCK\n- Mozzarella Cheese — $3.99 (8 oz) — in stock",
+			add_to_cart: "Added 1 × Mozzarella Cheese.",
+		};
+
+		const asked: { tool: string; arguments: unknown }[] = [];
+		// What the user is shown while it happens: `step` lines of every stream.
+		const flow: string[] = [];
+		const noteSteps = (
+			lines: { type: string; id?: string; phase?: string; text?: string }[],
+		) => {
+			for (const line of lines) {
+				if (line.type !== "step") continue;
+				const text = `${line.phase}: ${line.text}`;
+				if (flow.at(-1) !== text) flow.push(text);
+			}
+		};
+		let lines = parseLines(
+			await (await sendMessage(ctx, token, threadId, "купи 1 сыр")).text(),
+		);
+		noteSteps(lines);
+		for (let step = 0; step < 6 && lines.at(-1)?.type === "tool_call"; step++) {
+			const call = lines.at(-1);
+			asked.push({ tool: call.tool, arguments: call.arguments });
+			const response = await ctx.app.handle(
+				widgetRequest("/v1/widget/tool-results", {
+					token,
+					body: {
+						threadId,
+						callId: call.callId,
+						tool: call.tool,
+						result: { content: [{ type: "text", text: answers[call.tool] }] },
+						isError: false,
+					},
+				}),
+			);
+			lines = parseLines(await response.text());
+			noteSteps(lines);
+		}
+
+		expect(asked).toEqual([
+			{ tool: "choose_store", arguments: { store: "Penny Pantry" } },
+			{ tool: "search_products", arguments: { query: "cheese" } },
+			{
+				tool: "add_to_cart",
+				arguments: { items: [{ product: "Mozzarella Cheese", quantity: 1 }] },
+			},
+		]);
+		expect(flow).toEqual([
+			"running: Разбираю запрос…",
+			"done: Понял: 1 × «cheese»",
+			"running: Выбираю магазин…",
+			"done: Выбран магазин: Penny Pantry",
+			"running: Открываю магазин Penny Pantry…",
+			"done: Магазин открыт: Penny Pantry",
+			"running: Ищу «cheese»…",
+			"done: Нашёл: Mozzarella Cheese",
+			"running: Добавляю в корзину: 1 × Mozzarella Cheese…",
+			"done: Добавлено в корзину: 1 × Mozzarella Cheese",
+		]);
+		expect(lines.at(-1)).toMatchObject({ type: "done" });
+		// The reply is written last and is told what happened.
+		expect(ctx.calls.at(-1)?.chunks[0]).toContain("1 × Mozzarella Cheese");
+	});
+
+	test("the next request in the same conversation reuses the store that is already open", async () => {
+		const ctx = setup({}, { decisionAgent: laya, productRequestAgent });
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+		await registerTools(ctx, token, threadId, tools);
+
+		const run = async () => {
+			const asked: string[] = [];
+			let lines = parseLines(
+				await (await sendMessage(ctx, token, threadId, "купи 1 сыр")).text(),
+			);
+			for (
+				let step = 0;
+				step < 6 && lines.at(-1)?.type === "tool_call";
+				step++
+			) {
+				const call = lines.at(-1);
+				asked.push(call.tool);
+				lines = parseLines(
+					await (
+						await ctx.app.handle(
+							widgetRequest("/v1/widget/tool-results", {
+								token,
+								body: {
+									threadId,
+									callId: call.callId,
+									tool: call.tool,
+									result:
+										call.tool === "search_products"
+											? "- Swiss Cheese — $4 — in stock"
+											: "ok",
+									isError: false,
+								},
+							}),
+						)
+					).text(),
+				);
+			}
+			return asked;
+		};
+
+		expect(await run()).toEqual([
+			"choose_store",
+			"search_products",
+			"add_to_cart",
+		]);
+		// Searched/added facts belong to the first request; the store stays.
+		expect(await run()).toEqual(["search_products", "add_to_cart"]);
+	});
+
+	test("a search that finds nothing ends with an error line, not a loop", async () => {
+		const ctx = setup({}, { decisionAgent: laya, productRequestAgent });
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+		await registerTools(ctx, token, threadId, tools);
+
+		let lines = parseLines(
+			await (await sendMessage(ctx, token, threadId, "купи 1 сыр")).text(),
+		);
+		let toolCalls = 0;
+		for (let step = 0; step < 8 && lines.at(-1)?.type === "tool_call"; step++) {
+			const call = lines.at(-1);
+			toolCalls++;
+			lines = parseLines(
+				await (
+					await ctx.app.handle(
+						widgetRequest("/v1/widget/tool-results", {
+							token,
+							body: {
+								threadId,
+								callId: call.callId,
+								tool: call.tool,
+								result:
+									call.tool === "search_products"
+										? 'No products found at Penny Pantry for "cheese".'
+										: "ok",
+								isError: false,
+							},
+						}),
+					)
+				).text(),
+			);
+		}
+		expect(toolCalls).toBe(2); // choose_store, search_products — and no add_to_cart
+		expect(lines.at(-1)).toMatchObject({ type: "error" });
+	});
+});
+
+describe("the page the visitor is on", () => {
+	const intentSeen: unknown[] = [];
+	const laya: DecisionAgent = {
+		async decide(state, questions) {
+			if (questions.intent) intentSeen.push(state);
+			return {};
+		},
+	};
+
+	/** An action that records the state it runs with — cheaper than `generateReply`, so it wins the plan. */
+	function stateRecorder() {
+		const seen: Record<string, unknown>[] = [];
+		const action: GoapAction = {
+			name: "recorder",
+			cost: 0,
+			preconditions: {},
+			effects: { replied: true },
+			async execute(ctx) {
+				seen.push({ ...ctx.state });
+				return { replied: true };
+			},
+		};
+		return { seen, action };
+	}
+
+	test("a message carries the page into the world state, with its language", async () => {
+		const { seen, action } = stateRecorder();
+		const ctx = setup(
+			{},
+			{ decisionAgent: laya, threadActionsFor: () => [action] },
+		);
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+
+		await (
+			await ctx.app.handle(
+				widgetRequest("/v1/widget/messages", {
+					token,
+					body: {
+						threadId,
+						text: "hi",
+						page: "/ru/store/greenleaf?q=milk&utm_source=x",
+					},
+				}),
+			)
+		).text();
+
+		expect(seen[0]).toMatchObject({
+			"page:path": "/ru/store/greenleaf?q=milk&utm_source=x",
+			"page:lang": "ru",
+		});
+	});
+
+	test("Laya is told where the visitor is when it sorts the message", async () => {
+		intentSeen.length = 0;
+		const { action } = stateRecorder();
+		const ctx = setup(
+			{},
+			{ decisionAgent: laya, threadActionsFor: () => [action] },
+		);
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+		await (
+			await ctx.app.handle(
+				widgetRequest("/v1/widget/messages", {
+					token,
+					body: { threadId, text: "покажи корзину", page: "/en/cart" },
+				}),
+			)
+		).text();
+		expect(intentSeen[0]).toEqual({
+			message: "покажи корзину",
+			page: "/en/cart",
+			lang: "en",
+		});
+	});
+
+	test("no page is fine: no page facts", async () => {
+		const { seen, action } = stateRecorder();
+		const ctx = setup(
+			{},
+			{ decisionAgent: laya, threadActionsFor: () => [action] },
+		);
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+		await (await sendMessage(ctx, token, threadId, "hi")).text();
+		expect(seen[0]?.["page:path"]).toBeUndefined();
+		expect(seen[0]?.["page:lang"]).toBeUndefined();
+	});
+
+	test("a page longer than 512 characters is refused", async () => {
+		const ctx = setup();
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+		const response = await ctx.app.handle(
+			widgetRequest("/v1/widget/messages", {
+				token,
+				body: { threadId, text: "hi", page: `/${"a".repeat(600)}` },
+			}),
+		);
+		expect(response.status).toBe(422);
+	});
+
+	test("after a tool ran, the page the tool left the visitor on replaces the old one", async () => {
+		const ctx = setup({}, { decisionAgent: laya });
+		const store = new InMemoryWorldStateStore();
+		const threadId = "thread-x";
+		await store.save(threadId, {
+			state: { "page:path": "/old", "page:lang": "ru" },
+			goal: { replied: true },
+		});
+		const { prepareResume } = await import("../reply/reply.service.ts");
+		const prepared = await prepareResume(
+			{
+				worldStateStore: store,
+				webmcpCatalog: new Map(),
+				actions: [],
+			} as never,
+			threadId,
+			"run",
+			{
+				tool: "search_products",
+				isError: false,
+				page: "/store/greenleaf?q=cheese",
+			},
+		);
+		expect(prepared.state["page:path"]).toBe("/store/greenleaf?q=cheese");
+		expect(prepared.state["page:lang"]).toBeUndefined();
+		void ctx;
 	});
 });

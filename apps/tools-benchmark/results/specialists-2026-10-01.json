@@ -1,0 +1,3311 @@
+{
+  "at": "2026-10-01T19:05:15.951Z",
+  "gpuLayers": 99,
+  "rows": [
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "schema",
+      "lang": "en",
+      "summary": {
+        "cases": 29,
+        "accuracy": 0.3793103448275862,
+        "valid": 1,
+        "p50Ms": 379.47807500000636,
+        "p90Ms": 865.740644999998,
+        "meanMs": 417.5898563103454
+      },
+      "meanPromptTokens": 244.20689655172413,
+      "meanOutputTokens": 18.75862068965517
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "lang": "en",
+      "summary": {
+        "cases": 29,
+        "accuracy": 0,
+        "valid": 0,
+        "p50Ms": 583.3186739999946,
+        "p90Ms": 948.165691999995,
+        "meanMs": 596.8755978620686
+      },
+      "meanPromptTokens": 724.4137931034483,
+      "meanOutputTokens": 31
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "schema",
+      "lang": "en",
+      "summary": {
+        "cases": 29,
+        "accuracy": 0.4827586206896552,
+        "valid": 1,
+        "p50Ms": 1157.1175379999913,
+        "p90Ms": 1874.5766859999858,
+        "meanMs": 1234.1675107241358
+      },
+      "meanPromptTokens": 244.20689655172413,
+      "meanOutputTokens": 24.75862068965517
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "lang": "en",
+      "summary": {
+        "cases": 29,
+        "accuracy": 0,
+        "valid": 0,
+        "p50Ms": 1884.2001099999761,
+        "p90Ms": 2966.0674550000113,
+        "meanMs": 2083.8394891724056
+      },
+      "meanPromptTokens": 724.4137931034483,
+      "meanOutputTokens": 43.310344827586206
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "schema",
+      "lang": "en",
+      "summary": {
+        "cases": 29,
+        "accuracy": 0.5517241379310345,
+        "valid": 1,
+        "p50Ms": 861.1125500000198,
+        "p90Ms": 1834.870012999978,
+        "meanMs": 978.2103441724161
+      },
+      "meanPromptTokens": 249.20689655172413,
+      "meanOutputTokens": 18.79310344827586
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "lang": "en",
+      "summary": {
+        "cases": 29,
+        "accuracy": 0,
+        "valid": 0,
+        "p50Ms": 0,
+        "p90Ms": 2017.220530999999,
+        "meanMs": 517.0971032068984
+      },
+      "meanPromptTokens": 484.375,
+      "meanOutputTokens": 39.75
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "schema",
+      "lang": "en",
+      "summary": {
+        "cases": 29,
+        "accuracy": 0.4827586206896552,
+        "valid": 1,
+        "p50Ms": 1129.129106999957,
+        "p90Ms": 1961.3909749999875,
+        "meanMs": 1275.9856574137832
+      },
+      "meanPromptTokens": 250.3448275862069,
+      "meanOutputTokens": 23.06896551724138
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "native",
+      "lang": "en",
+      "summary": {
+        "cases": 29,
+        "accuracy": 0.5172413793103449,
+        "valid": 1,
+        "p50Ms": 1802.9897770000389,
+        "p90Ms": 2540.0465110000223,
+        "meanMs": 1728.3256634827421
+      },
+      "meanPromptTokens": 472.1034482758621,
+      "meanOutputTokens": 26.137931034482758
+    },
+    {
+      "model": "arch-function-1.5b",
+      "mode": "schema",
+      "lang": "en",
+      "summary": {
+        "cases": 29,
+        "accuracy": 0.4482758620689655,
+        "valid": 1,
+        "p50Ms": 834.3424400000367,
+        "p90Ms": 1763.4994850000367,
+        "meanMs": 1000.1127145517385
+      },
+      "meanPromptTokens": 244.20689655172413,
+      "meanOutputTokens": 19.482758620689655
+    },
+    {
+      "model": "arch-function-1.5b",
+      "mode": "native",
+      "lang": "en",
+      "summary": {
+        "cases": 29,
+        "accuracy": 0.7931034482758621,
+        "valid": 1,
+        "p50Ms": 1289.8304729999509,
+        "p90Ms": 2309.461724999943,
+        "meanMs": 1449.5960376896487
+      },
+      "meanPromptTokens": 526.3448275862069,
+      "meanOutputTokens": 29.24137931034483
+    }
+  ],
+  "failures": [
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "schema",
+      "result": {
+        "id": "store-cheapest.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 492.6679260000019,
+        "actual": {
+          "store": "Greenleaf Market"
+        },
+        "reason": "store: \"Greenleaf Market\" ≠ \"Penny Pantry\"",
+        "promptTokens": 223,
+        "outputTokens": 19
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "schema",
+      "result": {
+        "id": "store-organic.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 455.3844519999984,
+        "actual": {
+          "store": "Greenleaf Market"
+        },
+        "reason": "store: \"Greenleaf Market\" ≠ \"Harbor Foods Co-op\"",
+        "promptTokens": 222,
+        "outputTokens": 19
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "schema",
+      "result": {
+        "id": "store-fastest.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 405.3765760000024,
+        "actual": {
+          "store": "Penny Pantry"
+        },
+        "reason": "store: \"Penny Pantry\" ≠ \"Greenleaf Market\"",
+        "promptTokens": 222,
+        "outputTokens": 17
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-cheese.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 269.22496800000226,
+        "actual": {},
+        "reason": "query: missing",
+        "promptTokens": 238,
+        "outputTokens": 7
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-apple.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 248.12120499999583,
+        "actual": {},
+        "reason": "query: missing",
+        "promptTokens": 238,
+        "outputTokens": 7
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-price.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 185.71154100000422,
+        "actual": {},
+        "reason": "query: missing",
+        "promptTokens": 241,
+        "outputTokens": 7
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-vegan.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 252.07936999999947,
+        "actual": {},
+        "reason": "query: missing",
+        "promptTokens": 236,
+        "outputTokens": 7
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-two-diets.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 182.80262400000356,
+        "actual": {},
+        "reason": "query: missing",
+        "promptTokens": 240,
+        "outputTokens": 7
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-all-filters.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 185.06253599999764,
+        "actual": {},
+        "reason": "query: missing",
+        "promptTokens": 245,
+        "outputTokens": 7
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-bananas.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 181.42235600000276,
+        "actual": {},
+        "reason": "query: missing",
+        "promptTokens": 238,
+        "outputTokens": 7
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-organic.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 171.4113189999989,
+        "actual": {},
+        "reason": "query: missing",
+        "promptTokens": 236,
+        "outputTokens": 7
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-yogurt.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 163.83824399999867,
+        "actual": {},
+        "reason": "query: missing",
+        "promptTokens": 236,
+        "outputTokens": 7
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-kettle.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 174.20897500000137,
+        "actual": {},
+        "reason": "query: missing",
+        "promptTokens": 240,
+        "outputTokens": 7
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "schema",
+      "result": {
+        "id": "add-first-cheese.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1386.629181999997,
+        "actual": {
+          "items": [
+            {
+              "product": "Sharp Cheddar Cheese",
+              "quantity": 1
+            },
+            {
+              "product": "Shredded Mexican Blend Cheese",
+              "quantity": 1
+            },
+            {
+              "product": "Goat Cheese Log",
+              "quantity": 1
+            },
+            {
+              "product": "Cream Cheese",
+              "quantity": 1
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 315,
+        "outputTokens": 71
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "schema",
+      "result": {
+        "id": "add-three-apples.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 895.1091719999968,
+        "actual": {
+          "items": [
+            {
+              "product": "Honeycrisp Apples",
+              "quantity": 3
+            },
+            {
+              "product": "Granny Smith Apples",
+              "quantity": 3
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 274,
+        "outputTokens": 43
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "schema",
+      "result": {
+        "id": "add-apples-no-qty.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 865.740644999998,
+        "actual": {
+          "items": [
+            {
+              "product": "Honeycrisp Apples",
+              "quantity": 1
+            },
+            {
+              "product": "Granny Smith Apples",
+              "quantity": 1
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 272,
+        "outputTokens": 43
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "schema",
+      "result": {
+        "id": "add-two-bananas.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 793.572245000003,
+        "actual": {
+          "items": [
+            {
+              "product": "Bananas",
+              "quantity": 2
+            },
+            {
+              "product": "Organic Bananas",
+              "quantity": 1
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 270,
+        "outputTokens": 38
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "schema",
+      "result": {
+        "id": "update-named.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 379.47807500000636,
+        "actual": {
+          "product": "cream cheese",
+          "quantity": 0
+        },
+        "reason": "quantity: 0 ≠ 4",
+        "promptTokens": 228,
+        "outputTokens": 20
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "store-named.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 425.63472799999,
+        "reason": "not an object",
+        "promptTokens": 648,
+        "outputTokens": 25
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "store-cheapest.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 490.2395289999986,
+        "reason": "not an object",
+        "promptTokens": 649,
+        "outputTokens": 26
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "store-organic.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 488.876826000007,
+        "reason": "not an object",
+        "promptTokens": 648,
+        "outputTokens": 26
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "store-fastest.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 331.30283800000325,
+        "reason": "not an object",
+        "promptTokens": 648,
+        "outputTokens": 18
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "store-switch.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 439.38794800000323,
+        "reason": "not an object",
+        "promptTokens": 648,
+        "outputTokens": 26
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "search-cheese.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 636.9099100000021,
+        "reason": "not an object",
+        "promptTokens": 794,
+        "outputTokens": 5
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "search-apple.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 104.90203100000508,
+        "reason": "not an object",
+        "promptTokens": 794,
+        "outputTokens": 5
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "search-price.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 551.3122379999986,
+        "reason": "not an object",
+        "promptTokens": 797,
+        "outputTokens": 31
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "search-vegan.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 578.0838690000091,
+        "reason": "not an object",
+        "promptTokens": 792,
+        "outputTokens": 33
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "search-aisle.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 583.3186739999946,
+        "reason": "not an object",
+        "promptTokens": 795,
+        "outputTokens": 31
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "search-two-diets.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 660.9676260000124,
+        "reason": "not an object",
+        "promptTokens": 796,
+        "outputTokens": 37
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "search-all-filters.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 677.8610939999926,
+        "reason": "not an object",
+        "promptTokens": 801,
+        "outputTokens": 41
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "search-bananas.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 665.7614610000019,
+        "reason": "not an object",
+        "promptTokens": 794,
+        "outputTokens": 38
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "search-organic.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 611.8297259999963,
+        "reason": "not an object",
+        "promptTokens": 792,
+        "outputTokens": 37
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "search-yogurt.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 634.5860050000047,
+        "reason": "not an object",
+        "promptTokens": 792,
+        "outputTokens": 39
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "search-kettle.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 113.9502749999956,
+        "reason": "not an object",
+        "promptTokens": 796,
+        "outputTokens": 5
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "add-first-cheese.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1754.4063900000037,
+        "reason": "not an object",
+        "promptTokens": 783,
+        "outputTokens": 81
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "add-three-apples.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 951.8195689999993,
+        "reason": "not an object",
+        "promptTokens": 742,
+        "outputTokens": 54
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "add-cream-cheese.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 695.5016929999983,
+        "reason": "not an object",
+        "promptTokens": 783,
+        "outputTokens": 34
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "add-it.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 122.1868140000006,
+        "reason": "not an object",
+        "promptTokens": 698,
+        "outputTokens": 5
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "add-oat-milk.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 717.9457770000008,
+        "reason": "not an object",
+        "promptTokens": 788,
+        "outputTokens": 35
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "add-apples-no-qty.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 948.165691999995,
+        "reason": "not an object",
+        "promptTokens": 740,
+        "outputTokens": 54
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "add-two-bananas.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 828.0354119999975,
+        "reason": "not an object",
+        "promptTokens": 738,
+        "outputTokens": 49
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "update-set.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 788.1167240000068,
+        "reason": "not an object",
+        "promptTokens": 665,
+        "outputTokens": 30
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "update-remove.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 590.9139789999899,
+        "reason": "not an object",
+        "promptTokens": 668,
+        "outputTokens": 34
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "update-named.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 505.2406120000087,
+        "reason": "not an object",
+        "promptTokens": 662,
+        "outputTokens": 30
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "update-only-two.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 580.9332099999883,
+        "reason": "not an object",
+        "promptTokens": 673,
+        "outputTokens": 34
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "cart-show.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 493.51400899999135,
+        "reason": "not an object",
+        "promptTokens": 541,
+        "outputTokens": 18
+      }
+    },
+    {
+      "model": "hammer2.1-0.5b",
+      "mode": "native",
+      "result": {
+        "id": "cart-contents.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 337.6876789999951,
+        "reason": "not an object",
+        "promptTokens": 543,
+        "outputTokens": 18
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "store-organic.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 751.0822549999866,
+        "actual": {
+          "store": "Penny Pantry"
+        },
+        "reason": "store: \"Penny Pantry\" ≠ \"Harbor Foods Co-op\"",
+        "promptTokens": 222,
+        "outputTokens": 15
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "store-fastest.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 756.4926269999996,
+        "actual": {
+          "store": "Penny Pantry"
+        },
+        "reason": "store: \"Penny Pantry\" ≠ \"Greenleaf Market\"",
+        "promptTokens": 222,
+        "outputTokens": 15
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-cheese.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1792.2780689999927,
+        "actual": {
+          "query": "cheese",
+          "department": "Pantry",
+          "dietary": [],
+          "max_price": 0
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 238,
+        "outputTokens": 32
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-apple.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1580.1083919999946,
+        "actual": {
+          "query": "apple",
+          "department": "Frozen",
+          "dietary": [],
+          "max_price": 0
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 238,
+        "outputTokens": 33
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-price.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1286.8542959999759,
+        "actual": {
+          "query": "oat milk",
+          "department": "Produce",
+          "max_price": 5
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 241,
+        "outputTokens": 28
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-vegan.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1644.1732680000132,
+        "actual": {
+          "query": "vegan chips",
+          "department": "Snacks",
+          "dietary": [
+            "vegan"
+          ],
+          "max_price": 0
+        },
+        "reason": "query: \"vegan chips\" ≠ \"chips\"",
+        "promptTokens": 236,
+        "outputTokens": 36
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-aisle.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 972.1550799999968,
+        "actual": {
+          "query": "bakery",
+          "department": "Bakery"
+        },
+        "reason": "query: unexpected",
+        "promptTokens": 239,
+        "outputTokens": 21
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-two-diets.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1694.7250749999948,
+        "actual": {
+          "query": "gluten-free bread",
+          "dietary": [
+            "dairy-free",
+            "gluten-free"
+          ],
+          "max_price": 0
+        },
+        "reason": "query: \"gluten-free bread\" ≠ \"bread\"",
+        "promptTokens": 240,
+        "outputTokens": 36
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-bananas.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1047.7312559999991,
+        "actual": {
+          "query": "bananas",
+          "department": "Frozen"
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 238,
+        "outputTokens": 22
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-organic.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1007.3272599999909,
+        "actual": {
+          "query": "organic bananas",
+          "department": "Frozen"
+        },
+        "reason": "query: \"organic bananas\" ≠ \"bananas\"",
+        "promptTokens": 236,
+        "outputTokens": 22
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-yogurt.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1463.1735040000058,
+        "actual": {
+          "query": "yogurt",
+          "department": "Produce",
+          "dietary": [],
+          "max_price": 0
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 236,
+        "outputTokens": 33
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-kettle.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1294.1812630000059,
+        "actual": {
+          "query": "kettle chips",
+          "department": "Pantry",
+          "max_price": 4
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 240,
+        "outputTokens": 28
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "add-three-apples.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 2146.011507999996,
+        "actual": {
+          "items": [
+            {
+              "product": "Honeycrisp Apples",
+              "quantity": 3
+            },
+            {
+              "product": "Granny Smith Apples",
+              "quantity": 3
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 274,
+        "outputTokens": 43
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "add-apples-no-qty.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 2138.5379609999945,
+        "actual": {
+          "items": [
+            {
+              "product": "Honeycrisp Apples",
+              "quantity": 1
+            },
+            {
+              "product": "Granny Smith Apples",
+              "quantity": 1
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 272,
+        "outputTokens": 43
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "add-two-bananas.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1874.5766859999858,
+        "actual": {
+          "items": [
+            {
+              "product": "Bananas",
+              "quantity": 2
+            },
+            {
+              "product": "Organic Bananas",
+              "quantity": 2
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 270,
+        "outputTokens": 38
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "store-named.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1407.891146000009,
+        "reason": "not an object",
+        "promptTokens": 648,
+        "outputTokens": 34
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "store-cheapest.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1475.0621600000013,
+        "reason": "not an object",
+        "promptTokens": 649,
+        "outputTokens": 34
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "store-organic.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1551.322153999994,
+        "reason": "not an object",
+        "promptTokens": 648,
+        "outputTokens": 35
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "store-fastest.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1548.1358109999856,
+        "reason": "not an object",
+        "promptTokens": 648,
+        "outputTokens": 33
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "store-switch.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1552.4556079999893,
+        "reason": "not an object",
+        "promptTokens": 648,
+        "outputTokens": 35
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "search-cheese.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 3162.6222750000015,
+        "reason": "not an object",
+        "promptTokens": 794,
+        "outputTokens": 42
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "search-apple.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1627.0466820000147,
+        "reason": "not an object",
+        "promptTokens": 794,
+        "outputTokens": 38
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "search-price.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1852.898533999978,
+        "reason": "not an object",
+        "promptTokens": 797,
+        "outputTokens": 40
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "search-vegan.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1413.0711529999971,
+        "reason": "not an object",
+        "promptTokens": 792,
+        "outputTokens": 33
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "search-aisle.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1452.5747669999837,
+        "reason": "not an object",
+        "promptTokens": 795,
+        "outputTokens": 33
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "search-two-diets.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 2005.739421999955,
+        "reason": "not an object",
+        "promptTokens": 796,
+        "outputTokens": 46
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "search-all-filters.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 2266.226995999983,
+        "reason": "not an object",
+        "promptTokens": 801,
+        "outputTokens": 50
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "search-bananas.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1461.396854999999,
+        "reason": "not an object",
+        "promptTokens": 794,
+        "outputTokens": 32
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "search-organic.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1642.7848809999996,
+        "reason": "not an object",
+        "promptTokens": 792,
+        "outputTokens": 39
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "search-yogurt.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1420.9246909999638,
+        "reason": "not an object",
+        "promptTokens": 792,
+        "outputTokens": 33
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "search-kettle.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1755.5543710000347,
+        "reason": "not an object",
+        "promptTokens": 796,
+        "outputTokens": 40
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "add-first-cheese.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 3883.718739999982,
+        "reason": "not an object",
+        "promptTokens": 783,
+        "outputTokens": 58
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "add-three-apples.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 2913.404032999999,
+        "reason": "not an object",
+        "promptTokens": 742,
+        "outputTokens": 63
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "add-cream-cheese.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 2850.8065139999962,
+        "reason": "not an object",
+        "promptTokens": 783,
+        "outputTokens": 58
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "add-it.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1892.5335699999705,
+        "reason": "not an object",
+        "promptTokens": 698,
+        "outputTokens": 43
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "add-oat-milk.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 2164.3946729999734,
+        "reason": "not an object",
+        "promptTokens": 788,
+        "outputTokens": 44
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "add-apples-no-qty.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 2839.132737000007,
+        "reason": "not an object",
+        "promptTokens": 740,
+        "outputTokens": 63
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "add-two-bananas.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 2660.6157419999945,
+        "reason": "not an object",
+        "promptTokens": 738,
+        "outputTokens": 58
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "update-set.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 2579.0054219999583,
+        "reason": "not an object",
+        "promptTokens": 665,
+        "outputTokens": 39
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "update-remove.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1903.262173999974,
+        "reason": "not an object",
+        "promptTokens": 668,
+        "outputTokens": 43
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "update-named.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1798.3661399999983,
+        "reason": "not an object",
+        "promptTokens": 662,
+        "outputTokens": 39
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "update-only-two.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1884.2001099999761,
+        "reason": "not an object",
+        "promptTokens": 673,
+        "outputTokens": 43
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "cart-show.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 2966.0674550000113,
+        "reason": "not an object",
+        "promptTokens": 541,
+        "outputTokens": 54
+      }
+    },
+    {
+      "model": "hammer2.1-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "cart-contents.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 2500.130370000028,
+        "reason": "not an object",
+        "promptTokens": 543,
+        "outputTokens": 54
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "schema",
+      "result": {
+        "id": "store-organic.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 649.9770549999666,
+        "actual": {
+          "store": "Greenleaf Market"
+        },
+        "reason": "store: \"Greenleaf Market\" ≠ \"Harbor Foods Co-op\"",
+        "promptTokens": 227,
+        "outputTokens": 11
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "schema",
+      "result": {
+        "id": "store-fastest.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 639.0777300000191,
+        "actual": {
+          "store": "Penny Pantry"
+        },
+        "reason": "store: \"Penny Pantry\" ≠ \"Greenleaf Market\"",
+        "promptTokens": 227,
+        "outputTokens": 12
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "schema",
+      "result": {
+        "id": "search-cheese.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 955.6166950000334,
+        "actual": {
+          "query": "cheese",
+          "department": "Produce"
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 243,
+        "outputTokens": 15
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "schema",
+      "result": {
+        "id": "search-apple.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 707.2678479999886,
+        "actual": {
+          "query": "apple",
+          "department": "Frozen"
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 243,
+        "outputTokens": 14
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "schema",
+      "result": {
+        "id": "search-vegan.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 828.469654000015,
+        "actual": {
+          "query": "vegan chips",
+          "department": "Snacks"
+        },
+        "reason": "query: \"vegan chips\" ≠ \"chips\"",
+        "promptTokens": 241,
+        "outputTokens": 16
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "schema",
+      "result": {
+        "id": "search-aisle.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 876.6549270000542,
+        "actual": {
+          "query": "bakery",
+          "department": "Bakery"
+        },
+        "reason": "query: unexpected",
+        "promptTokens": 244,
+        "outputTokens": 18
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "schema",
+      "result": {
+        "id": "search-bananas.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 743.5874429999967,
+        "actual": {
+          "query": "bananas",
+          "department": "Frozen"
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 243,
+        "outputTokens": 15
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "schema",
+      "result": {
+        "id": "search-organic.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 703.4387269999715,
+        "actual": {
+          "query": "organic bananas",
+          "department": "Frozen"
+        },
+        "reason": "query: \"organic bananas\" ≠ \"bananas\"",
+        "promptTokens": 241,
+        "outputTokens": 15
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "schema",
+      "result": {
+        "id": "search-yogurt.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 820.1227969999891,
+        "actual": {
+          "query": "yogurt",
+          "department": "Dairy & Eggs"
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 241,
+        "outputTokens": 18
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "schema",
+      "result": {
+        "id": "add-first-cheese.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 3359.2991540000075,
+        "actual": {
+          "items": [
+            {
+              "product": "Sharp Cheddar Cheese",
+              "quantity": 1
+            },
+            {
+              "product": "Shredded Mexican Blend Cheese",
+              "quantity": 1
+            },
+            {
+              "product": "Goat Cheese Log",
+              "quantity": 1
+            },
+            {
+              "product": "Cream Cheese",
+              "quantity": 1
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 320,
+        "outputTokens": 66
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "schema",
+      "result": {
+        "id": "add-three-apples.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 2007.3145420000073,
+        "actual": {
+          "items": [
+            {
+              "product": "Honeycrisp Apples",
+              "quantity": 3
+            },
+            {
+              "product": "Granny Smith Apples",
+              "quantity": 3
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 279,
+        "outputTokens": 39
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "schema",
+      "result": {
+        "id": "add-it.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1024.627245999989,
+        "actual": {
+          "items": [
+            {
+              "product": "Whole Milk"
+            },
+            {
+              "product": "Raisins"
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 235,
+        "outputTokens": 21
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "schema",
+      "result": {
+        "id": "add-apples-no-qty.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1834.870012999978,
+        "actual": {
+          "items": [
+            {
+              "product": "Honeycrisp Apples",
+              "quantity": 1
+            },
+            {
+              "product": "Granny Smith Apples",
+              "quantity": 1
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 277,
+        "outputTokens": 38
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "store-named.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 0,
+        "reason": "500 {\"error\":{\"code\":500,\"message\":\"The model produced output that does not match the expected peg-native format\",\"type\":\"server_error\"}}"
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "store-cheapest.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 0,
+        "reason": "500 {\"error\":{\"code\":500,\"message\":\"The model produced output that does not match the expected peg-native format\",\"type\":\"server_error\"}}"
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "store-organic.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1261.2315660000313,
+        "reason": "not an object",
+        "promptTokens": 411,
+        "outputTokens": 27
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "store-fastest.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 3362.6012780000456,
+        "reason": "not an object",
+        "promptTokens": 411,
+        "outputTokens": 79
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "store-switch.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 0,
+        "reason": "500 {\"error\":{\"code\":500,\"message\":\"The model produced output that does not match the expected peg-native format\",\"type\":\"server_error\"}}"
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "search-cheese.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 2017.220530999999,
+        "reason": "not an object",
+        "promptTokens": 586,
+        "outputTokens": 21
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "search-apple.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 911.0152450000169,
+        "reason": "not an object",
+        "promptTokens": 586,
+        "outputTokens": 20
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "search-price.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 0,
+        "reason": "500 {\"error\":{\"code\":500,\"message\":\"The model produced output that does not match the expected peg-native format\",\"type\":\"server_error\"}}"
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "search-vegan.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 0,
+        "reason": "500 {\"error\":{\"code\":500,\"message\":\"The model produced output that does not match the expected peg-native format\",\"type\":\"server_error\"}}"
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "search-aisle.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 0,
+        "reason": "500 {\"error\":{\"code\":500,\"message\":\"The model produced output that does not match the expected peg-native format\",\"type\":\"server_error\"}}"
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "search-two-diets.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 0,
+        "reason": "500 {\"error\":{\"code\":500,\"message\":\"The model produced output that does not match the expected peg-native format\",\"type\":\"server_error\"}}"
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "search-all-filters.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 0,
+        "reason": "500 {\"error\":{\"code\":500,\"message\":\"The model produced output that does not match the expected peg-native format\",\"type\":\"server_error\"}}"
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "search-bananas.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 954.3743300000206,
+        "reason": "not an object",
+        "promptTokens": 586,
+        "outputTokens": 21
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "search-organic.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 0,
+        "reason": "500 {\"error\":{\"code\":500,\"message\":\"The model produced output that does not match the expected peg-native format\",\"type\":\"server_error\"}}"
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "search-yogurt.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 846.4557769999956,
+        "reason": "not an object",
+        "promptTokens": 584,
+        "outputTokens": 18
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "search-kettle.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 0,
+        "reason": "500 {\"error\":{\"code\":500,\"message\":\"The model produced output that does not match the expected peg-native format\",\"type\":\"server_error\"}}"
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "add-first-cheese.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 0,
+        "reason": "500 {\"error\":{\"code\":500,\"message\":\"The model produced output that does not match the expected peg-native format\",\"type\":\"server_error\"}}"
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "add-three-apples.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 0,
+        "reason": "500 {\"error\":{\"code\":500,\"message\":\"The model produced output that does not match the expected peg-native format\",\"type\":\"server_error\"}}"
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "add-cream-cheese.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 0,
+        "reason": "500 {\"error\":{\"code\":500,\"message\":\"The model produced output that does not match the expected peg-native format\",\"type\":\"server_error\"}}"
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "add-it.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 0,
+        "reason": "500 {\"error\":{\"code\":500,\"message\":\"The model produced output that does not match the expected peg-native format\",\"type\":\"server_error\"}}"
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "add-oat-milk.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 0,
+        "reason": "500 {\"error\":{\"code\":500,\"message\":\"The model produced output that does not match the expected peg-native format\",\"type\":\"server_error\"}}"
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "add-apples-no-qty.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 0,
+        "reason": "500 {\"error\":{\"code\":500,\"message\":\"The model produced output that does not match the expected peg-native format\",\"type\":\"server_error\"}}"
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "add-two-bananas.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 0,
+        "reason": "500 {\"error\":{\"code\":500,\"message\":\"The model produced output that does not match the expected peg-native format\",\"type\":\"server_error\"}}"
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "update-set.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 0,
+        "reason": "500 {\"error\":{\"code\":500,\"message\":\"The model produced output that does not match the expected peg-native format\",\"type\":\"server_error\"}}"
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "update-remove.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 0,
+        "reason": "500 {\"error\":{\"code\":500,\"message\":\"The model produced output that does not match the expected peg-native format\",\"type\":\"server_error\"}}"
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "update-named.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 1761.218155999959,
+        "reason": "not an object",
+        "promptTokens": 426,
+        "outputTokens": 40
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "update-only-two.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 0,
+        "reason": "500 {\"error\":{\"code\":500,\"message\":\"The model produced output that does not match the expected peg-native format\",\"type\":\"server_error\"}}"
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "cart-show.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 0,
+        "reason": "500 {\"error\":{\"code\":500,\"message\":\"The model produced output that does not match the expected peg-native format\",\"type\":\"server_error\"}}"
+      }
+    },
+    {
+      "model": "xlam-2-1b",
+      "mode": "native",
+      "result": {
+        "id": "cart-contents.en",
+        "lang": "en",
+        "ok": false,
+        "valid": false,
+        "latencyMs": 3881.699109999987,
+        "reason": "not an object",
+        "promptTokens": 285,
+        "outputTokens": 92
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "schema",
+      "result": {
+        "id": "store-organic.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 929.2648049999843,
+        "actual": {
+          "store": "Greenleaf Market"
+        },
+        "reason": "store: \"Greenleaf Market\" ≠ \"Harbor Foods Co-op\"",
+        "promptTokens": 229,
+        "outputTokens": 12
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "schema",
+      "result": {
+        "id": "store-fastest.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 973.9163260000059,
+        "actual": {
+          "store": "Penny Pantry"
+        },
+        "reason": "store: \"Penny Pantry\" ≠ \"Greenleaf Market\"",
+        "promptTokens": 231,
+        "outputTokens": 14
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "schema",
+      "result": {
+        "id": "search-cheese.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1819.144282000023,
+        "actual": {
+          "query": "cheese",
+          "department": "Dairy & Eggs",
+          "dietary": [],
+          "max_price": 0
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 242,
+        "outputTokens": 41
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "schema",
+      "result": {
+        "id": "search-apple.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1784.698182000022,
+        "actual": {
+          "query": "apple",
+          "department": "Frozen",
+          "dietary": [],
+          "max_price": 0.99
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 242,
+        "outputTokens": 40
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "schema",
+      "result": {
+        "id": "search-price.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1720.7569270000677,
+        "actual": {
+          "query": "oat milk",
+          "department": "Dairy & Eggs",
+          "dietary": [],
+          "max_price": 5
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 246,
+        "outputTokens": 35
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "schema",
+      "result": {
+        "id": "search-vegan.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 842.5074879999738,
+        "actual": {
+          "query": "vegan chips"
+        },
+        "reason": "query: \"vegan chips\" ≠ \"chips\"",
+        "promptTokens": 240,
+        "outputTokens": 10
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "schema",
+      "result": {
+        "id": "search-aisle.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 830.8501959999558,
+        "actual": {
+          "query": "bakery"
+        },
+        "reason": "query: unexpected",
+        "promptTokens": 244,
+        "outputTokens": 10
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "schema",
+      "result": {
+        "id": "search-two-diets.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 2001.0624179999577,
+        "actual": {
+          "query": "gluten-free and dairy-free bread",
+          "department": "Bakery",
+          "dietary": [
+            "gluten-free",
+            "dairy-free"
+          ],
+          "max_price": 2.99
+        },
+        "reason": "query: \"gluten-free and dairy-free bread\" ≠ \"bread\"",
+        "promptTokens": 244,
+        "outputTokens": 48
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "schema",
+      "result": {
+        "id": "search-all-filters.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1812.9065319999354,
+        "actual": {
+          "query": "milk under $4.50",
+          "department": "Dairy & Eggs",
+          "dietary": [],
+          "max_price": 4.5
+        },
+        "reason": "query: \"milk under $4.50\" ≠ \"milk\"",
+        "promptTokens": 248,
+        "outputTokens": 41
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "schema",
+      "result": {
+        "id": "search-organic.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 798.8603069999954,
+        "actual": {
+          "query": "organic bananas"
+        },
+        "reason": "query: \"organic bananas\" ≠ \"bananas\"",
+        "promptTokens": 240,
+        "outputTokens": 9
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "schema",
+      "result": {
+        "id": "search-kettle.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 983.9454799999949,
+        "actual": {
+          "query": "kettle chips under 4 dollars"
+        },
+        "reason": "query: \"kettle chips under 4 dollars\" ≠ \"kettle chips\"",
+        "promptTokens": 245,
+        "outputTokens": 14
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "schema",
+      "result": {
+        "id": "add-three-apples.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1954.6406009999337,
+        "actual": {
+          "items": [
+            {
+              "product": "Honeycrisp Apples",
+              "quantity": 3
+            },
+            {
+              "product": "Granny Smith Apples",
+              "quantity": 3
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 282,
+        "outputTokens": 43
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "schema",
+      "result": {
+        "id": "add-cream-cheese.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1961.3909749999875,
+        "actual": {
+          "items": [
+            {
+              "product": "Cream Cheese",
+              "quantity": 2
+            },
+            {
+              "product": "Cream Cheese",
+              "quantity": 1
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 327,
+        "outputTokens": 39
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "schema",
+      "result": {
+        "id": "add-apples-no-qty.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 2021.5828999999212,
+        "actual": {
+          "items": [
+            {
+              "product": "Honeycrisp Apples",
+              "quantity": 2
+            },
+            {
+              "product": "Granny Smith Apples",
+              "quantity": 2
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 280,
+        "outputTokens": 43
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "schema",
+      "result": {
+        "id": "add-two-bananas.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1807.6204889999935,
+        "actual": {
+          "items": [
+            {
+              "product": "Bananas",
+              "quantity": 2
+            },
+            {
+              "product": "Organic Bananas",
+              "quantity": 1
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 276,
+        "outputTokens": 38
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "native",
+      "result": {
+        "id": "search-cheese.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 2107.5314179999987,
+        "actual": {
+          "query": "cheese",
+          "department": "Dairy & Eggs",
+          "dietary": [
+            "dairy-free"
+          ]
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 544,
+        "outputTokens": 29
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "native",
+      "result": {
+        "id": "search-apple.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1913.1883740000194,
+        "actual": {
+          "query": "apple",
+          "department": "Frozen",
+          "dietary": [],
+          "max_price": 1
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 544,
+        "outputTokens": 29
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "native",
+      "result": {
+        "id": "search-price.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1881.4889959999127,
+        "actual": {
+          "query": "oat milk",
+          "department": "Beverages",
+          "max_price": 5
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 548,
+        "outputTokens": 26
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "native",
+      "result": {
+        "id": "search-vegan.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1734.551603000029,
+        "actual": {
+          "query": "vegan chips",
+          "dietary": [
+            "vegan"
+          ]
+        },
+        "reason": "query: \"vegan chips\" ≠ \"chips\"",
+        "promptTokens": 542,
+        "outputTokens": 21
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "native",
+      "result": {
+        "id": "search-aisle.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1732.0660259999568,
+        "actual": {
+          "query": "bakery",
+          "department": "Bakery"
+        },
+        "reason": "query: unexpected",
+        "promptTokens": 546,
+        "outputTokens": 21
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "native",
+      "result": {
+        "id": "search-two-diets.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 2168.0600629999535,
+        "actual": {
+          "query": "gluten-free and dairy-free bread",
+          "dietary": [
+            "gluten-free",
+            "dairy-free"
+          ],
+          "department": "Bakery"
+        },
+        "reason": "query: \"gluten-free and dairy-free bread\" ≠ \"bread\"",
+        "promptTokens": 546,
+        "outputTokens": 37
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "native",
+      "result": {
+        "id": "search-all-filters.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 2152.835269000032,
+        "actual": {
+          "query": "milk",
+          "department": "Dairy & Eggs",
+          "dietary": [
+            "dairy-free"
+          ],
+          "max_price": 4.5
+        },
+        "reason": "dietary: unexpected",
+        "promptTokens": 550,
+        "outputTokens": 36
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "native",
+      "result": {
+        "id": "search-bananas.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1810.8627850000048,
+        "actual": {
+          "query": "bananas",
+          "department": "Frozen",
+          "dietary": [
+            "organic"
+          ]
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 544,
+        "outputTokens": 25
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "native",
+      "result": {
+        "id": "search-organic.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1903.210764999967,
+        "actual": {
+          "query": "organic bananas",
+          "department": "Frozen",
+          "dietary": [
+            "organic"
+          ]
+        },
+        "reason": "query: \"organic bananas\" ≠ \"bananas\"",
+        "promptTokens": 542,
+        "outputTokens": 25
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "native",
+      "result": {
+        "id": "search-yogurt.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 2011.7640899999533,
+        "actual": {
+          "query": "yogurt",
+          "department": "Dairy & Eggs",
+          "dietary": [
+            "dairy-free"
+          ]
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 542,
+        "outputTokens": 30
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "native",
+      "result": {
+        "id": "search-kettle.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1802.9897770000389,
+        "actual": {
+          "query": "kettle chips",
+          "department": "Snacks",
+          "max_price": 4
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 547,
+        "outputTokens": 25
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "native",
+      "result": {
+        "id": "add-first-cheese.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 2540.0465110000223,
+        "actual": {
+          "items": [
+            {
+              "product": "Sharp Cheddar Cheese",
+              "quantity": 1
+            },
+            {
+              "product": "Goat Cheese Log",
+              "quantity": 1
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 534,
+        "outputTokens": 49
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "native",
+      "result": {
+        "id": "add-three-apples.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 2671.6665609999327,
+        "actual": {
+          "items": [
+            {
+              "product": "Honeycrisp Apples",
+              "quantity": 3
+            },
+            {
+              "product": "Granny Smith Apples",
+              "quantity": 3
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 489,
+        "outputTokens": 50
+      }
+    },
+    {
+      "model": "lfm2-1.2b-tool",
+      "mode": "native",
+      "result": {
+        "id": "add-apples-no-qty.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 2633.3909310000017,
+        "actual": {
+          "items": [
+            {
+              "product": "Honeycrisp Apples",
+              "quantity": 2
+            },
+            {
+              "product": "Granny Smith Apples",
+              "quantity": 3
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 487,
+        "outputTokens": 50
+      }
+    },
+    {
+      "model": "arch-function-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "store-organic.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 652.7638290000614,
+        "actual": {
+          "store": "Penny Pantry"
+        },
+        "reason": "store: \"Penny Pantry\" ≠ \"Harbor Foods Co-op\"",
+        "promptTokens": 222,
+        "outputTokens": 12
+      }
+    },
+    {
+      "model": "arch-function-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "store-fastest.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 668.6129220000003,
+        "actual": {
+          "store": "Penny Pantry"
+        },
+        "reason": "store: \"Penny Pantry\" ≠ \"Greenleaf Market\"",
+        "promptTokens": 222,
+        "outputTokens": 12
+      }
+    },
+    {
+      "model": "arch-function-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-cheese.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1003.8698860000586,
+        "actual": {
+          "query": "cheese",
+          "department": "Produce"
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 238,
+        "outputTokens": 15
+      }
+    },
+    {
+      "model": "arch-function-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-apple.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 760.0688560000854,
+        "actual": {
+          "query": "apple",
+          "department": "Frozen"
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 238,
+        "outputTokens": 14
+      }
+    },
+    {
+      "model": "arch-function-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-price.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 788.7252200000221,
+        "actual": {
+          "query": "oat milk",
+          "department": "Produce"
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 241,
+        "outputTokens": 16
+      }
+    },
+    {
+      "model": "arch-function-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-vegan.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 834.3424400000367,
+        "actual": {
+          "query": "vegan chips",
+          "department": "Snacks"
+        },
+        "reason": "query: \"vegan chips\" ≠ \"chips\"",
+        "promptTokens": 236,
+        "outputTokens": 16
+      }
+    },
+    {
+      "model": "arch-function-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-aisle.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 818.7162839999655,
+        "actual": {
+          "query": "biscuit",
+          "department": "Bakery"
+        },
+        "reason": "query: unexpected",
+        "promptTokens": 239,
+        "outputTokens": 17
+      }
+    },
+    {
+      "model": "arch-function-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-two-diets.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1043.5838629999198,
+        "actual": {
+          "query": "gluten-free and dairy-free bread",
+          "department": "Bakery"
+        },
+        "reason": "query: \"gluten-free and dairy-free bread\" ≠ \"bread\"",
+        "promptTokens": 240,
+        "outputTokens": 23
+      }
+    },
+    {
+      "model": "arch-function-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-bananas.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 721.5354349999689,
+        "actual": {
+          "query": "bananas",
+          "department": "Frozen"
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 238,
+        "outputTokens": 15
+      }
+    },
+    {
+      "model": "arch-function-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-organic.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 707.7242400000105,
+        "actual": {
+          "query": "organic bananas",
+          "department": "Frozen"
+        },
+        "reason": "query: \"organic bananas\" ≠ \"bananas\"",
+        "promptTokens": 236,
+        "outputTokens": 15
+      }
+    },
+    {
+      "model": "arch-function-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-yogurt.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 856.9813849999337,
+        "actual": {
+          "query": "yogurt",
+          "department": "Dairy & Eggs"
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 236,
+        "outputTokens": 18
+      }
+    },
+    {
+      "model": "arch-function-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "search-kettle.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 805.6760280000744,
+        "actual": {
+          "query": "kettle chips",
+          "department": "Snacks"
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 240,
+        "outputTokens": 16
+      }
+    },
+    {
+      "model": "arch-function-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "add-first-cheese.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 3156.3238370000618,
+        "actual": {
+          "items": [
+            {
+              "product": "Sharp Cheddar Cheese",
+              "quantity": 1
+            },
+            {
+              "product": "Shredded Mexican Blend Cheese",
+              "quantity": 1
+            },
+            {
+              "product": "Goat Cheese Log",
+              "quantity": 1
+            },
+            {
+              "product": "Cream Cheese",
+              "quantity": 1
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 315,
+        "outputTokens": 65
+      }
+    },
+    {
+      "model": "arch-function-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "add-three-apples.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 2176.4771290000062,
+        "actual": {
+          "items": [
+            {
+              "product": "Honeycrisp Apples",
+              "quantity": 3
+            },
+            {
+              "product": "Granny Smith Apples",
+              "quantity": 3
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 274,
+        "outputTokens": 45
+      }
+    },
+    {
+      "model": "arch-function-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "add-apples-no-qty.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1763.4994850000367,
+        "actual": {
+          "items": [
+            {
+              "product": "Honeycrisp Apples",
+              "quantity": 1
+            },
+            {
+              "product": "Granny Smith Apples",
+              "quantity": 1
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 272,
+        "outputTokens": 38
+      }
+    },
+    {
+      "model": "arch-function-1.5b",
+      "mode": "schema",
+      "result": {
+        "id": "add-two-bananas.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1469.6645070000086,
+        "actual": {
+          "items": [
+            {
+              "product": "bananas",
+              "quantity": 2
+            },
+            {
+              "product": "organic bananas",
+              "quantity": 2
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 270,
+        "outputTokens": 31
+      }
+    },
+    {
+      "model": "arch-function-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "search-vegan.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1230.057310000062,
+        "actual": {
+          "query": "vegan chips",
+          "department": "Snacks"
+        },
+        "reason": "query: \"vegan chips\" ≠ \"chips\"",
+        "promptTokens": 594,
+        "outputTokens": 29
+      }
+    },
+    {
+      "model": "arch-function-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "search-two-diets.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1971.2431000000797,
+        "actual": {
+          "query": "bread",
+          "department": "Bakery",
+          "dietary": [
+            "gluten-free",
+            "dairy-free"
+          ]
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 598,
+        "outputTokens": 43
+      }
+    },
+    {
+      "model": "arch-function-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "search-bananas.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1249.4027370000258,
+        "actual": {
+          "query": "bananas",
+          "department": "Frozen"
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 596,
+        "outputTokens": 28
+      }
+    },
+    {
+      "model": "arch-function-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "search-organic.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 1531.7166910000378,
+        "actual": {
+          "query": "bananas",
+          "department": "Frozen",
+          "dietary": [
+            "organic"
+          ]
+        },
+        "reason": "department: unexpected",
+        "promptTokens": 594,
+        "outputTokens": 36
+      }
+    },
+    {
+      "model": "arch-function-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "add-three-apples.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 2435.7770589999855,
+        "actual": {
+          "items": [
+            {
+              "product": "Honeycrisp Apples",
+              "quantity": 3
+            },
+            {
+              "product": "Granny Smith Apples",
+              "quantity": 3
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 544,
+        "outputTokens": 52
+      }
+    },
+    {
+      "model": "arch-function-1.5b",
+      "mode": "native",
+      "result": {
+        "id": "add-apples-no-qty.en",
+        "lang": "en",
+        "ok": false,
+        "valid": true,
+        "latencyMs": 2309.461724999943,
+        "actual": {
+          "items": [
+            {
+              "product": "Honeycrisp Apples",
+              "quantity": 1
+            },
+            {
+              "product": "Granny Smith Apples",
+              "quantity": 1
+            }
+          ]
+        },
+        "reason": "items: array differs",
+        "promptTokens": 542,
+        "outputTokens": 52
+      }
+    }
+  ]
+}

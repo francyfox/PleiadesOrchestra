@@ -502,7 +502,7 @@ describe("createApp — GOAP process lifecycle", () => {
 		expect(await store.load(threadId)).toBeUndefined();
 	});
 
-	test("saves the WorldState when a run is killed by an already-aborted signal, instead of running any action", async () => {
+	test("a run killed by an already-aborted signal runs no action and leaves nothing of itself behind", async () => {
 		const db = testDb();
 		const store = new InMemoryWorldStateStore();
 		const threadId = internalThreadId(db);
@@ -532,32 +532,36 @@ describe("createApp — GOAP process lifecycle", () => {
 
 		expect(agentCalled).toBe(false);
 		expect(events).toEqual([{ type: "error", message: "run cancelled" }]);
-		expect(await store.load(threadId)).toMatchObject({
-			state: { userMessage: "hi", threadId },
-		});
+		// Only the run that stopped to wait on a browser tool is worth resuming;
+		// a cancelled one would poison the next message with its leftovers.
+		expect(await store.load(threadId)).toBeUndefined();
 	});
 
-	test("resumes from persisted WorldState, and the current turn's own facts win over stale ones", async () => {
+	test("a new message starts from the conversation's store only — leftovers of an earlier run are ignored, the turn's own facts win", async () => {
 		const db = testDb();
 		const store = new InMemoryWorldStateStore();
 		const threadId = internalThreadId(db);
 		await store.save(threadId, {
-			state: { userMessage: "stale", budget: 500 },
+			state: {
+				userMessage: "stale",
+				storeOpen: true,
+				store: "Penny Pantry",
+				"webmcp:search_products:result": "error",
+				catalogSearched: true,
+			},
 			goal: { replied: true },
 		});
 
-		let seenBudget: unknown;
-		let seenUserMessage: unknown;
+		let seen: Record<string, unknown> = {};
 		const cheapReply: GoapAction = {
 			name: "cheapReply",
 			// Cheaper than the static `generateReply` (cost 5) — the planner
-			// picks this one, so its `execute()` observes the merged state.
+			// picks this one, so its `execute()` observes the starting state.
 			cost: 0,
 			preconditions: {},
 			effects: { replied: true },
 			async execute(ctx) {
-				seenBudget = ctx.state.budget;
-				seenUserMessage = ctx.state.userMessage;
+				seen = ctx.state;
 				return { replied: true };
 			},
 		};
@@ -582,8 +586,11 @@ describe("createApp — GOAP process lifecycle", () => {
 		);
 		await readNdjson(response);
 
-		expect(seenBudget).toBe(500);
-		expect(seenUserMessage).toBe("new message");
+		expect(seen.userMessage).toBe("new message");
+		expect(seen.storeOpen).toBe(true);
+		expect(seen.store).toBe("Penny Pantry");
+		expect(seen["webmcp:search_products:result"]).toBeUndefined();
+		expect(seen.catalogSearched).toBeUndefined();
 	});
 
 	test("serializes two requests on the same thread through runLock, and leaves a different thread unaffected", async () => {
