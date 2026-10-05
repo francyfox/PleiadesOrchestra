@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { createNavigatorWebMcpProvider } from "src/lib/webmcp/webmcp.ts";
+import { createNavigatorWebMcpProvider } from "@/lib/webmcp/webmcp.ts";
 
 afterEach(() => {
 	(globalThis as { document?: unknown }).document = undefined;

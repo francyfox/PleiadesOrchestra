@@ -3,7 +3,7 @@
 	"version": "0.1.0",
 	"private": true,
 	"type": "module",
-	"description": "Chat widget for PleiadesOrchestra: a framework-agnostic <pleiades-chat> web component in vanilla TSX, under 10 kB.",
+	"description": "Chat widget for PleiadesOrchestra: a framework-agnostic <pleiades-chat> web component on Alpine.js (CSP build), under 40 kB.",
 	"main": "dist/pleiades-widget.js",
 	"module": "dist/pleiades-widget.js",
 	"exports": {
@@ -30,6 +30,7 @@
 	},
 	"devDependencies": {
 		"@size-limit/file": "^14.1.0",
+		"@types/alpinejs": "^3.17.0",
 		"@types/bun": "catalog:",
 		"@types/react": "^19",
 		"cssnano": "^9.1.0",
@@ -39,5 +40,8 @@
 		"typescript": "catalog:",
 		"vite": "^8.0.16"
 	},
-	"types": "types/index.d.ts"
+	"types": "types/index.d.ts",
+	"dependencies": {
+		"@alpinejs/csp": "^3.17.4"
+	}
 }

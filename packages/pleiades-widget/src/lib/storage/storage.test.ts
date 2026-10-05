@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createSessionStore } from "src/lib/storage/storage.ts";
+import { createSessionStore } from "@/lib/storage/storage.ts";
 
 function memoryStorage(): Storage {
 	const data = new Map<string, string>();

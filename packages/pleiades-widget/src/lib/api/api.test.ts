@@ -4,7 +4,7 @@ import {
 	createWidgetApi,
 	type FetchLike,
 	type StreamEvent,
-} from "src/lib/api/api.ts";
+} from "@/lib/api/api.ts";
 
 const enc = new TextEncoder();
 const scope = {

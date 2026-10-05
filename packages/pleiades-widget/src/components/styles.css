@@ -28,7 +28,7 @@
 	--accent-fg: var(--pleiades-accent-fg, oklch(1 0 0));
 	--bg: var(--pleiades-bg, oklch(0.9885 0.0057 84.5659));
 	--fg: var(--pleiades-fg, oklch(0.366 0.0251 49.6085));
-	--muted: var(--pleiades-muted, oklch(0.9363 0.0218 83.2637));
+	--muted: var(--pleiades-muted, oklch(0.92 0 0));
 	--muted-fg: var(--pleiades-muted-fg, oklch(0.5534 0.0116 58.0708));
 	--border: var(--pleiades-border, oklch(0.8866 0.0404 89.6994));
 	--destructive: var(--pleiades-destructive, oklch(0.4437 0.1613 26.8994));
@@ -58,7 +58,7 @@
 	/* Launcher: the corner comes from data-pos, e.g. "bottom-left". */
 	.launcher {
 		position: fixed;
-		z-index: 2147483000;
+		z-index: 999;
 		display: grid;
 		place-items: center;
 		width: 52px;
@@ -98,21 +98,17 @@
 		width: min(380px, 100vw);
 		background: var(--bg);
 		box-shadow: 0px 8px 10px -1px hsl(28 18% 25% / 0.28);
+		/* Closed: out of sight. The slide in and out is the Web Animations API (motion.ts), which
+		   only reveals the panel (.open) when it starts and hides it when it ends. */
 		visibility: hidden;
-		/* Hidden only after the slide-out ends, so a closed panel can't take focus. */
-		transition:
-			transform 0.2s,
-			visibility 0s 0.2s;
 	}
 
 	&[data-pos$="left"] .panel {
 		left: 0;
-		transform: translateX(-100%);
 	}
 
 	&[data-pos$="right"] .panel {
 		right: 0;
-		transform: translateX(100%);
 	}
 
 	/* The panel takes the launcher's place while open; its own × closes it. */
@@ -120,14 +116,9 @@
 		display: none;
 	}
 
-	/* After the position rules on purpose: same specificity, the later one wins. */
+	/* Visible at once when opening, so it can be focused right away. */
 	.panel.open {
-		transform: none;
 		visibility: visible;
-		/* Visible at once when opening, so it can be focused right away. */
-		transition:
-			transform 0.2s,
-			visibility 0s;
 	}
 
 	header {
@@ -157,7 +148,9 @@
 	}
 
 	.message {
-		max-width: 85%;
+		display: flex;
+		flex-direction: column;
+		max-width: 100%;
 		margin: 0;
 		padding: 8px 12px;
 		border-radius: calc(var(--radius) * 3);
@@ -212,10 +205,25 @@
 		content: "✕";
 	}
 
-	/* An assistant bubble with no text yet: the "typing…" indicator. */
-	.typing::after {
-		content: "…";
-		animation: blink 1s infinite;
+	/* An assistant bubble with no text yet: three dots, bounced by the Web Animations API. */
+	.dots {
+		display: none;
+		gap: 3px;
+		align-items: center;
+		vertical-align: middle;
+
+		i {
+			display: block;
+			width: 5px;
+			height: 5px;
+			border-radius: 50%;
+			background: currentColor;
+			opacity: 0.6;
+		}
+	}
+
+	.typing .dots {
+		display: inline-flex;
 	}
 
 	.error {
@@ -367,11 +375,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.widget .panel {
-		transition: none;
-	}
-
-	.widget .typing::after,
 	.widget .step.running::before {
 		animation: none;
 	}

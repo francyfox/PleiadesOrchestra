@@ -1,9 +1,9 @@
-import { ApiError, isAbortError, type WidgetApi } from "src/lib/api/api.ts";
-import type { CustomerContext } from "src/lib/config/config.ts";
-import type { SessionStore, ToolMode } from "src/lib/storage/storage.ts";
-import type { WebMcpProvider } from "src/lib/webmcp/webmcp.ts";
+import { ApiError, isAbortError, type WidgetApi } from "@/lib/api/api.ts";
+import type { CustomerContext } from "@/lib/config/config.ts";
+import type { SessionStore, ToolMode } from "@/lib/storage/storage.ts";
+import type { WebMcpProvider } from "@/lib/webmcp/webmcp.ts";
 
-export type { ToolMode } from "src/lib/storage/storage.ts";
+export type { ToolMode } from "@/lib/storage/storage.ts";
 
 export type ChatError =
 	| "forbidden"

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { pickLang, strings } from "src/lib/i18n/i18n.ts";
+import { pickLang, strings } from "@/lib/i18n/i18n.ts";
 
 describe("pickLang", () => {
 	test("uses the language subtag, case-insensitively", () => {

@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { ApiError, type StreamEvent, type WidgetApi } from "src/lib/api/api.ts";
-import { type ChatState, createChat } from "src/lib/chat/chat.ts";
-import type { CustomerContext } from "src/lib/config/config.ts";
-import { createSessionStore } from "src/lib/storage/storage.ts";
+import { ApiError, type StreamEvent, type WidgetApi } from "@/lib/api/api.ts";
+import { type ChatState, createChat } from "@/lib/chat/chat.ts";
+import type { CustomerContext } from "@/lib/config/config.ts";
+import { createSessionStore } from "@/lib/storage/storage.ts";
 import type {
 	WebMcpProvider,
 	WebMcpToolDescriptor,
-} from "src/lib/webmcp/webmcp.ts";
+} from "@/lib/webmcp/webmcp.ts";
 
 function memoryStorage(): Storage {
 	const data = new Map<string, string>();

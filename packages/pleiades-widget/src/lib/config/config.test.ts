@@ -5,7 +5,7 @@ import {
 	normalizePosition,
 	parseCustomerContext,
 	resolveConfig,
-} from "src/lib/config/config.ts";
+} from "@/lib/config/config.ts";
 
 const key = "pk_abcdefghijklmnop";
 

@@ -2,21 +2,21 @@
 // runtime; the plain import (unused otherwise) makes Vite also emit the
 // same, identically-processed stylesheet as a standalone `dist/pleiades-widget.css`
 // asset — a reference for integrators, see the "Theming" section of the README.
-import css from "src/components/styles.css?inline";
-import { createWidgetApi } from "src/lib/api/api.ts";
-import { type Chat, createChat } from "src/lib/chat/chat.ts";
+import css from "@/components/styles.css?inline";
+import { createWidgetApi } from "@/lib/api/api.ts";
+import { type Chat, createChat } from "@/lib/chat/chat.ts";
 import {
 	describeConfigError,
 	normalizePosition,
 	parseCustomerContext,
 	resolveConfig,
-} from "src/lib/config/config.ts";
-import { pickLang, strings } from "src/lib/i18n/i18n.ts";
-import { currentPage } from "src/lib/page/page.ts";
-import { createSessionStore } from "src/lib/storage/storage.ts";
-import { createNavigatorWebMcpProvider } from "src/lib/webmcp/webmcp.ts";
-import "src/components/styles.css";
-import { createUi, type Ui } from "src/components/ui.tsx";
+} from "@/lib/config/config.ts";
+import { pickLang, strings } from "@/lib/i18n/i18n.ts";
+import { currentPage } from "@/lib/page/page.ts";
+import { createSessionStore } from "@/lib/storage/storage.ts";
+import { createNavigatorWebMcpProvider } from "@/lib/webmcp/webmcp.ts";
+import "@/components/styles.css";
+import { createWidget, type Widget } from "@/components/widget/widget.ts";
 
 /** Mirrors the server's `WIDGET_MAX_TEXT_CHARS` default. */
 const MAX_CHARS = 2000;
@@ -39,7 +39,7 @@ type Prop = keyof typeof ATTRIBUTES;
  * `<pleiades-chat agent-url="…" publishable-key="pk_…">` — a launcher button
  * and a side panel with the chat, in a shadow root so the host page's CSS
  * can't reach it. All state lives in `lib/chat`; this class only wires
- * attributes to it and mounts `ui/`.
+ * attributes to it and mounts the widget (`components/`).
  */
 export class PleiadesChat extends HTMLElement {
 	static observedAttributes = [...Object.values(ATTRIBUTES), "open"];
@@ -56,7 +56,7 @@ export class PleiadesChat extends HTMLElement {
 	#root = this.attachShadow({ mode: "open" });
 	#chat?: Chat;
 	#scope = "";
-	#ui?: Ui;
+	#ui?: Widget;
 	#off?: () => void;
 	#pending = false;
 	#timer?: ReturnType<typeof setTimeout>;
@@ -73,6 +73,7 @@ export class PleiadesChat extends HTMLElement {
 	disconnectedCallback() {
 		this.#chat?.dispose();
 		this.#off?.();
+		this.#ui?.destroy();
 		this.#off = this.#chat = this.#ui = undefined;
 		this.#scope = "";
 		this.#root.replaceChildren();
@@ -114,6 +115,7 @@ export class PleiadesChat extends HTMLElement {
 
 		clearTimeout(this.#timer);
 		this.#off?.();
+		this.#ui?.destroy();
 		if (!config.ok) {
 			this.#chat = this.#ui = this.#off = undefined;
 			this.#scope = "";
@@ -153,7 +155,7 @@ export class PleiadesChat extends HTMLElement {
 					attr("lang") || document.documentElement.lang || navigator.language,
 				)
 			];
-		const ui = createUi({
+		const ui = createWidget({
 			s,
 			position: normalizePosition(attr("position")),
 			heading: attr("heading") || s.title,
@@ -174,6 +176,8 @@ export class PleiadesChat extends HTMLElement {
 		const style = document.createElement("style");
 		style.textContent = css;
 		this.#root.replaceChildren(style, ui.el);
+		// Alpine starts on the element once it is in the shadow root.
+		ui.start();
 		this.#syncOpen();
 	}
 

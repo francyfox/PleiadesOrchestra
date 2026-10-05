@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { currentPage, MAX_PAGE_CHARS } from "src/lib/page/page.ts";
+import { currentPage, MAX_PAGE_CHARS } from "@/lib/page/page.ts";
 
 describe("currentPage", () => {
 	test("is the path with the language prefix and the query, without origin or hash", () => {

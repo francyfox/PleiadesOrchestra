@@ -1,5 +1,5 @@
-import type { CustomerContext } from "src/lib/config/config.ts";
-import type { WebMcpToolDescriptor } from "src/lib/webmcp/webmcp.ts";
+import type { CustomerContext } from "@/lib/config/config.ts";
+import type { WebMcpToolDescriptor } from "@/lib/webmcp/webmcp.ts";
 
 export type FetchLike = (url: string, init: RequestInit) => Promise<Response>;
 
