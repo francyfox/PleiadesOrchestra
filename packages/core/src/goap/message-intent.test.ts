@@ -34,23 +34,31 @@ function choiceAnswer(choice: string): DecisionAnswer {
 }
 
 describe("classifyMessageIntent", () => {
-	test("returns the classified tool intent for a task-shaped message", async () => {
+	test("returns Laya's tool intent for a message no word decides", async () => {
 		const decisionAgent = fakeDecisionAgent(choiceAnswer("addToCart"));
 
 		const intent = await classifyMessageIntent(
 			{ decisionAgent },
-			"добавь самый дешёвый ноутбук в корзину",
+			"ноутбук, пожалуйста",
 		);
 
 		expect(intent).toBe("addToCart");
 	});
 
-	test("passes the message through and offers chat plus every tool intent as criteria", async () => {
+	test("passes only the message through (no page, no language) and offers chat plus every tool intent as criteria", async () => {
 		const decisionAgent = fakeDecisionAgent(choiceAnswer("chat"));
 
-		await classifyMessageIntent({ decisionAgent }, "привет");
+		// No lexical cue in it: Laya decides.
+		await classifyMessageIntent(
+			{ decisionAgent },
+			"сколько будет два плюс два?",
+		);
 
-		expect(decisionAgent.capturedState).toEqual({ message: "привет" });
+		// The page the visitor is on used to be sent along; Laya then answered
+		// "привет" with `navigate` and «купи 1 сыр» with `checkout`.
+		expect(decisionAgent.capturedState).toEqual({
+			message: "сколько будет два плюс два?",
+		});
 		// Described options, not bare labels: Laya mixed "go to the market" up with checkout.
 		const criteria = decisionAgent.capturedCriteria as Record<string, string>;
 		expect(Object.keys(criteria)).toContain("chat");
@@ -59,10 +67,55 @@ describe("classifyMessageIntent", () => {
 		expect(criteria.chooseStore).toContain("store");
 	});
 
+	test("a message whose words say what it wants is sorted without asking Laya", async () => {
+		const decisionAgent = fakeDecisionAgent(choiceAnswer("removeFromCart"));
+
+		const intent = await classifyMessageIntent({ decisionAgent }, "купи 1 сыр");
+
+		expect(intent).toBe("addToCart");
+		expect(decisionAgent.capturedState).toBeUndefined();
+	});
+
+	test("Laya alone can never start a checkout or empty the cart: those need the words for it", async () => {
+		for (const risky of ["checkout", "removeFromCart"]) {
+			const decisionAgent = fakeDecisionAgent(choiceAnswer(risky));
+
+			// Nothing in this message asks for either.
+			const intent = await classifyMessageIntent(
+				{ decisionAgent },
+				"сколько будет два плюс два?",
+			);
+
+			expect(intent).toBe("chat");
+		}
+	});
+
+	test("Laya's other answers stand when no word decides", async () => {
+		const decisionAgent = fakeDecisionAgent(choiceAnswer("search"));
+
+		const intent = await classifyMessageIntent(
+			{ decisionAgent },
+			"что-нибудь вкусное к чаю",
+		);
+
+		expect(intent).toBe("search");
+	});
+
+	test("cues: false asks Laya for everything (to measure it alone)", async () => {
+		const decisionAgent = fakeDecisionAgent(choiceAnswer("search"));
+
+		const intent = await classifyMessageIntent(
+			{ decisionAgent, cues: false },
+			"купи 1 сыр",
+		);
+
+		expect(intent).toBe("search");
+	});
+
 	test("falls back to chat when decide() doesn't answer the question", async () => {
 		const decisionAgent = fakeDecisionAgent(undefined);
 
-		const intent = await classifyMessageIntent({ decisionAgent }, "hi");
+		const intent = await classifyMessageIntent({ decisionAgent }, "hmm");
 
 		expect(intent).toBe("chat");
 	});
@@ -70,7 +123,7 @@ describe("classifyMessageIntent", () => {
 	test("falls back to chat when decide() answers with a value outside the taxonomy", async () => {
 		const decisionAgent = fakeDecisionAgent(choiceAnswer("nonsense"));
 
-		const intent = await classifyMessageIntent({ decisionAgent }, "hi");
+		const intent = await classifyMessageIntent({ decisionAgent }, "hmm");
 
 		expect(intent).toBe("chat");
 	});
@@ -82,9 +135,48 @@ describe("classifyMessageIntent", () => {
 			rl_agent: { act_probability: 1 },
 		});
 
-		const intent = await classifyMessageIntent({ decisionAgent }, "hi");
+		const intent = await classifyMessageIntent({ decisionAgent }, "hmm");
 
 		expect(intent).toBe("chat");
+	});
+});
+
+describe("classifyMessageIntent with an English translation", () => {
+	test("Laya is given the English text, not the original", async () => {
+		const decisionAgent = fakeDecisionAgent(choiceAnswer("search"));
+
+		const intent = await classifyMessageIntent(
+			{ decisionAgent },
+			"ноутбук, пожалуйста",
+			"a laptop, please",
+		);
+
+		expect(intent).toBe("search");
+		expect(decisionAgent.capturedState).toEqual({
+			message: "a laptop, please",
+		});
+	});
+
+	test("the words of the original still decide first (a translation can lose them: «оформи заказ» → «Order»)", async () => {
+		const decisionAgent = fakeDecisionAgent(choiceAnswer("search"));
+
+		expect(
+			await classifyMessageIntent({ decisionAgent }, "оформи заказ", "Order"),
+		).toBe("checkout");
+		expect(decisionAgent.capturedState).toBeUndefined();
+	});
+
+	test("and the words of the translation decide when the original has none", async () => {
+		const decisionAgent = fakeDecisionAgent(choiceAnswer("search"));
+
+		expect(
+			await classifyMessageIntent(
+				{ decisionAgent },
+				"мне бы ноутбук подешевле, если можно",
+				"I'd like to buy a laptop, if possible",
+			),
+		).toBe("addToCart");
+		expect(decisionAgent.capturedState).toBeUndefined();
 	});
 });
 
@@ -137,20 +229,5 @@ describe("goalForIntent", () => {
 		const goal = goalForIntent("paginate", baseGoal, [paginate]);
 
 		expect(goal).toEqual({ replied: true });
-	});
-});
-
-describe("classifyMessageIntent with the visitor's page", () => {
-	test("hands the page to Laya next to the message", async () => {
-		const decisionAgent = fakeDecisionAgent(choiceAnswer("chat"));
-		await classifyMessageIntent({ decisionAgent }, "покажи корзину", {
-			page: "/ru/cart",
-			lang: "ru",
-		});
-		expect(decisionAgent.capturedState).toEqual({
-			message: "покажи корзину",
-			page: "/ru/cart",
-			lang: "ru",
-		});
 	});
 });

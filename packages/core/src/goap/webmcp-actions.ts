@@ -9,6 +9,7 @@ import {
 	type ToolIntent,
 } from "./intent-taxonomy";
 import { PAGE_FACT, samePage } from "./page";
+import { intentFromToolCues, specialistPenalty } from "./tool-cues";
 import { buildArguments } from "./tool-source";
 import type {
 	ActionContext,
@@ -63,10 +64,17 @@ const PARAM_CHOICE_COST = 1;
 /** Longest tool answer kept in the world state (`webmcp:<tool>:text`). */
 export const MAX_TOOL_TEXT_CHARS = 4000;
 
-async function classifyToolIntent(
+/**
+ * The tool's name decides when it can (`intentFromToolCues`); Laya sorts the
+ * rest. Laya never starts a checkout or empties the cart on its own account:
+ * a tool gets those intents only when its name says so.
+ */
+export async function classifyToolIntent(
 	decisionAgent: DecisionAgent,
 	tool: WebMcpToolDescriptor,
 ): Promise<ToolIntent> {
+	const byName = intentFromToolCues(tool);
+	if (byName) return byName;
 	const answers = await decisionAgent.decide(
 		{ name: tool.name, description: tool.description ?? "" },
 		{
@@ -80,9 +88,12 @@ async function classifyToolIntent(
 	);
 	const answer = answers.intent;
 	const choice = answer?.type === "choice" ? answer.choice : undefined;
-	return choice && (TOOL_INTENTS as readonly string[]).includes(choice)
-		? (choice as ToolIntent)
-		: "other";
+	if (!choice || !(TOOL_INTENTS as readonly string[]).includes(choice)) {
+		return "other";
+	}
+	return choice === "checkout" || choice === "removeFromCart"
+		? "other"
+		: (choice as ToolIntent);
 }
 
 // --- reading what the tool answered ------------------------------------
@@ -138,6 +149,7 @@ const INTERNAL_FACTS = new Set([
 	"userId",
 	"planRunId",
 	"messageIntent",
+	"catalogLang",
 ]);
 const INTERNAL_PREFIXES = ["webmcp:", "toolResult:", "param:", "page:"];
 const MAX_FACT_CHARS = 200;
@@ -209,7 +221,7 @@ async function argumentsFor(
 			},
 			facts: factsForModel(state),
 			lastAnswer: lastSearchAnswer(state, searchTools),
-			request: String(state.userMessage ?? ""),
+			request: String(state.userMessageEn ?? state.userMessage ?? ""),
 			context: {
 				threadId: String(state.threadId ?? ""),
 				userId: String(state.userId ?? ""),
@@ -375,7 +387,8 @@ export async function createWebMcpActions(
 
 			const action: GoapAction = {
 				name: tool.name,
-				cost: costFor(tool),
+				// A specialist (add_recipe_to_cart) costs more than the plain tool of its intent (add_to_cart).
+				cost: costFor(tool) + specialistPenalty(tool.name, intent),
 				preconditions: { ...PRECONDITIONS_BY_INTENT[intent], ...needsChoices },
 				effects: { ...EFFECTS_BY_INTENT[intent], [toolResultKey]: true },
 				describe: describeTool(tool, intent),

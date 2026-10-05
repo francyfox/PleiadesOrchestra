@@ -26,25 +26,34 @@ export const TOOL_INTENTS = [
 export type ToolIntent = (typeof TOOL_INTENTS)[number];
 
 /**
- * One line per intent, passed to Laya as the `choice` criteria descriptions.
- * Bare labels ("checkout", "search") were easy to confuse — "go to the
- * Greenleaf market" came back as `checkout` — so each option says what it
- * means and what it is not.
+ * One line per intent, passed to Laya as the `choice` criteria descriptions —
+ * the cases the lexical cues (`message-cues.ts`, `tool-cues.ts`) leave to it.
+ * Bare labels were easy to confuse ("go to the Greenleaf market" came back as
+ * `checkout`), so each option says what it means and gives examples in both
+ * languages; with examples Laya's accuracy on shopper messages went 55% → 68%
+ * (`bun run eval:intents`).
  */
 export const INTENT_DESCRIPTIONS: Record<ToolIntent, string> = {
 	chooseStore:
-		'open, enter or switch to a particular store or shop ("go to the Greenleaf market")',
+		'go to, enter or switch to one particular store ("go to the Greenleaf market", "switch to another store", "перейди в магазин Penny Pantry")',
 	navigate:
-		'go to a page of the site ("open the cart", "show my orders") that is not a store or a search',
-	search: 'look for or list products without buying them yet ("find cheese")',
-	filter: "narrow the current results by price, department or diet",
-	select: "open or pick one specific product from the results",
+		'open a page of the site: the cart, orders, recipes ("open the cart", "show my orders", "открой корзину", "что в корзине")',
+	search:
+		'look for products or ask what is available ("find cheese", "do you have milk", "найди сыр", "что есть из молочки")',
+	filter:
+		'narrow the shown products by diet, price or department ("only vegan", "cheaper than 3 dollars", "только веганские")',
+	select:
+		'open or pick ONE product from the results ("open the first one", "tell me more about Brie", "расскажи про Brie")',
 	addToCart:
-		'buy, order or put a product into the cart ("buy 1 cheese", "add milk")',
-	removeFromCart: "take a product out of the cart or reduce its quantity",
-	checkout: "pay, place the order or finish the purchase",
-	paginate: "show the next or previous page of results",
-	compare: "compare two or more products with each other",
+		'buy a product or put it into the cart ("buy 1 cheese", "add milk", "купи сыр", "добавь молоко в корзину", "хочу яблоки")',
+	removeFromCart:
+		'take a product out of the cart ("remove the cheese", "убери молоко", "удали из корзины")',
+	checkout:
+		'pay and place the order, finish shopping ("checkout", "place my order", "оформи заказ", "оплатить")',
+	paginate:
+		'show the next or previous page of results ("show more", "next", "дальше")',
+	compare:
+		'compare two or more products ("compare these", "сравни Brie и Gouda", "что лучше")',
 	other: "anything else that is not one of the above",
 };
 

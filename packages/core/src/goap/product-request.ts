@@ -58,6 +58,155 @@ export function parseProductRequest(
 	};
 }
 
+const NUMBER_WORDS: Record<string, number> = {
+	a: 1,
+	an: 1,
+	one: 1,
+	two: 2,
+	three: 3,
+	four: 4,
+	five: 5,
+	six: 6,
+	seven: 7,
+	eight: 8,
+	nine: 9,
+	ten: 10,
+	eleven: 11,
+	twelve: 12,
+	dozen: 12,
+	couple: 2,
+	fifteen: 15,
+	twenty: 20,
+};
+
+/** What the shopper asks for before the product: verbs, politeness, determiners. */
+const LEADING =
+	/^(?:please\s+)?(?:(?:can|could)\s+you\s+)?(?:(?:i\s*)?(?:want|need|would\s+like|'d\s+like)(?:\s+to\s+(?:buy|order|get|have))?|(?:buy|add|order|put|get|find|search(?:\s+for)?|look(?:\s+for)?|show|give|take|bring|throw|purchase|toss|drop)(?:\s+(?:me|down|in|on|up|out))?|let'?s\s+(?:buy|get))\b/i;
+/** Where it goes, and the courtesies after it. */
+const TRAILING =
+	/\s*(?:\b(?:to|in|into|from|on)\s+(?:the|my|your)?\s*(?:cart|basket|bag|list|order)\b|\bplease\b|\bfor\s+me\b|\bthanks?\b)\s*$/i;
+const DETERMINERS = /^(?:the|a|an|some|any|my|more|another|few|several)\s+/i;
+const CONTAINERS =
+	/^(?:bottles?|loaves|loaf|packs?|packages?|pieces?|cans?|cartons?|boxes|box|bags?|jars?|kg|kilos?|kilograms?|pounds?|lbs?|liters?|litres?|bunch(?:es)?|dozen)\s+of\s+/i;
+
+/**
+ * Reads what to buy and how many out of the shopper's message **translated to
+ * English** — no model. The verbs and politeness of a shop request are a small
+ * closed set, so peeling them off leaves the product: «buy two bottles of
+ * milk» → 2 × «milk». It replaces the text-model call
+ * (`parseProductRequest`, ~400 ms) whenever a translation exists; without
+ * one (no translator) that call is still used. Weak spots are the
+ * translator's own: a product it renders wrongly stays wrong.
+ */
+export function extractProductRequest(
+	english: string,
+	userMessage: string,
+): ProductRequest {
+	let text = english
+		.trim()
+		.toLowerCase()
+		.replace(/[.!?…]+$/g, "")
+		.replace(/\s+/g, " ");
+
+	text = text.replace(LEADING, "").trim();
+	for (let i = 0; i < 2; i++) text = text.replace(TRAILING, "").trim();
+
+	// A count: digits, or a number word at the front ("three bananas", "a dozen eggs").
+	let quantity: number | undefined;
+	const digits = text.match(/^(\d+)\s+/);
+	if (digits) {
+		quantity = clampQuantity(Number(digits[1]));
+		text = text.slice(digits[0].length);
+	} else {
+		// "a dozen eggs", "two dozen eggs": a number word, then maybe "dozen".
+		const dozens = text.match(/^(?:([a-z]+)\s+)?dozen\s+(?:of\s+)?/);
+		const word = text.match(/^([a-z]+)\s+/);
+		if (dozens) {
+			const times = dozens[1] ? NUMBER_WORDS[dozens[1]] : 1;
+			quantity = clampQuantity((times ?? 1) * 12);
+			text = text.slice(dozens[0].length);
+		} else {
+			const value = word ? NUMBER_WORDS[word[1] as string] : undefined;
+			if (word && value !== undefined) {
+				quantity = clampQuantity(value);
+				text = text.slice(word[0].length);
+			}
+		}
+	}
+	text = text.replace(DETERMINERS, "").replace(CONTAINERS, "").trim();
+
+	const query = text.split(" ").slice(0, 4).join(" ").trim();
+	return query
+		? { query, quantity: quantity ?? 1 }
+		: { query: userMessage.trim(), quantity: quantity ?? 1 };
+}
+
+const RU_NUMBERS: Record<string, number> = {
+	один: 1,
+	одна: 1,
+	одну: 1,
+	одно: 1,
+	два: 2,
+	две: 2,
+	три: 3,
+	четыре: 4,
+	пять: 5,
+	шесть: 6,
+	семь: 7,
+	восемь: 8,
+	девять: 9,
+	десять: 10,
+	дюжина: 12,
+	дюжину: 12,
+};
+const RU_LEADING =
+	/^(?:пожалуйста,?\s+)?(?:(?:мне|нам)\s+)?(?:нуж\p{L}*|надо|хочу(?:\s+купить)?|хотел(?:а)?\s+бы(?:\s+купить)?|купи(?:ть|те)?|куплю|закажи(?:те)?|заказать|добавь(?:те)?|положи(?:те)?|закинь|бери(?:те)?|найди(?:те)?|найти|поищи(?:те)?|ищи|покажи(?:те)?)(?:\s+мне)?(?![\p{L}])/iu;
+const RU_WHERE = /(?:^|\s)в\s+(?:мою\s+)?(?:корзину|корзинку)(?=\s|,|$)/giu;
+// (JS `\b` is ASCII-only, so Cyrillic word edges are spelled out.)
+const RU_POLITE = /[\s,]*(?<![\p{L}])(?:пожалуйста|спасибо)(?![\p{L}])\s*$/iu;
+const RU_CONTAINERS =
+	/^(?:пачк\p{L}*|пакет\p{L}*|бутылк\p{L}*|упаковк\p{L}*|банк\p{L}*|коробк\p{L}*|булк\p{L}*|кусо\p{L}*|штук\p{L}*|кг|килограмм\p{L}*|литр\p{L}*|грамм\p{L}*)\s+(?:из\s+)?/iu;
+
+/**
+ * Same job as {@link extractProductRequest}, for a shop whose catalog is in
+ * Russian: its search needs the Russian word, so the shopper's own message is
+ * used, never the English translation. Verbs, «в корзину», politeness, a count
+ * («три», «2»), a container («пакета», «бутылки») are peeled off; the product
+ * keeps the form the shopper typed («банана» stays «банана» — the shop's search
+ * is expected to stem). A number that is part of a model name (iPhone 15)
+ * stays, because only a leading number is a count.
+ */
+export function extractProductRequestRu(message: string): ProductRequest {
+	let text = message.trim().replace(/[.!?…]+$/g, "");
+	text = text.replace(RU_LEADING, "").replace(RU_WHERE, " ").trim();
+	text = text
+		.replace(RU_POLITE, "")
+		.replace(/^[\s,]+/, "")
+		.trim();
+
+	let quantity: number | undefined;
+	const digits = text.match(/^(\d+)\s+(?=\p{L})/u);
+	if (digits) {
+		quantity = clampQuantity(Number(digits[1]));
+		text = text.slice(digits[0].length);
+	} else {
+		const word = text.match(/^(\p{L}+)\s+/u);
+		const value = word
+			? RU_NUMBERS[(word[1] as string).toLowerCase()]
+			: undefined;
+		if (word && value !== undefined) {
+			quantity = clampQuantity(value);
+			text = text.slice(word[0].length);
+		}
+	}
+	text = text.replace(RU_CONTAINERS, "").trim();
+
+	const query = text.split(/\s+/).slice(0, 4).join(" ").trim();
+	return query
+		? { query, quantity: quantity ?? 1 }
+		: { query: message.trim(), quantity: quantity ?? 1 };
+}
+
 export interface ProductRequestActionConfig {
 	/**
 	 * An `Agent` whose system prompt asks for `{"query": …, "quantity": …}` and
@@ -106,6 +255,25 @@ export function createProductRequestAction(
 		async execute(ctx: ActionContext) {
 			const { state } = ctx;
 			const message = String(state.userMessage ?? "");
+			// The search goes to the site's tool, so the query is in the language of
+			// the site's catalog (`catalogLang`, default English), not the shopper's.
+			const catalogLang = String(state.catalogLang ?? "en").split("-")[0];
+			if (catalogLang === "ru") {
+				return { requestParsed: true, ...extractProductRequestRu(message) };
+			}
+			if (catalogLang !== "en") {
+				// No rules for this language: its own words are the best query there is.
+				return { requestParsed: true, ...parseProductRequest("", message) };
+			}
+			// A translation exists: the verbs and politeness are peeled off the
+			// English text, no model call (~0 ms instead of ~400 ms).
+			if (typeof state.userMessageEn === "string" && state.userMessageEn) {
+				const { query, quantity } = extractProductRequest(
+					state.userMessageEn,
+					message,
+				);
+				return { requestParsed: true, query, quantity };
+			}
 			let reply = "";
 			for await (const event of config.agent.handleMessageStream({
 				threadId: String(state.threadId ?? ""),

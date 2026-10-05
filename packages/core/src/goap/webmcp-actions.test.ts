@@ -39,10 +39,12 @@ describe("createWebMcpActions", () => {
 	test("classifies each tool once and builds preconditions/effects from its intent", async () => {
 		const decisionAgent = fakeDecisionAgent("addToCart");
 
+		// A name that says nothing: Laya sorts it (a name like `add_to_cart` is
+		// read without asking, see `tool-cues.ts`).
 		const actions = await createWebMcpActions({
 			tools: [
 				{
-					name: "add_to_cart",
+					name: "cart_helper",
 					description: "Add an item to the cart",
 					inputSchema: { type: "object", properties: { itemId: {} } },
 				},
@@ -52,17 +54,17 @@ describe("createWebMcpActions", () => {
 
 		expect(actions).toHaveLength(1);
 		expect(actions[0]).toMatchObject({
-			name: "add_to_cart",
+			name: "cart_helper",
 			// Needs a store, a search and the parsed request first.
 			preconditions: {
 				storeOpen: true,
 				catalogSearched: true,
 				requestParsed: true,
 			},
-			effects: { inCart: true, "toolResult:add_to_cart": true },
+			effects: { inCart: true, "toolResult:cart_helper": true },
 		});
 		expect(decisionAgent.capturedState).toEqual({
-			name: "add_to_cart",
+			name: "cart_helper",
 			description: "Add an item to the cart",
 		});
 		expect(Object.keys(decisionAgent.capturedCriteria as object)).toContain(
@@ -377,6 +379,21 @@ describe("tool arguments written by the function-call model", () => {
 		expect(request?.lastAnswer).toBeUndefined();
 	});
 
+	test("the model is shown the English translation of the request when there is one", async () => {
+		const agent = fakeFunctionCall({ query: "cheese" });
+		const action = await searchAction(agent);
+
+		await action.execute({
+			state: {
+				userMessage: "купи 1 сыр",
+				userMessageEn: "buy one cheese",
+				query: "cheese",
+			},
+		});
+
+		expect(agent.requests[0]?.request).toBe("buy one cheese");
+	});
+
 	test("a failed or unusable model answer falls back to arguments built from the facts", async () => {
 		const action = await searchAction(fakeFunctionCall(new Error("503")));
 		const outcome = await action.execute({ state: { query: "cheese" } });
@@ -426,5 +443,54 @@ describe("tool arguments written by the function-call model", () => {
 		expect(errors).toContain(
 			"Error: search_products: query is required (arguments for the call are incomplete)",
 		);
+	});
+});
+
+describe("tool classification by name", () => {
+	test("a tool whose name says what it does is sorted without asking Laya", async () => {
+		const decisionAgent = fakeDecisionAgent("removeFromCart");
+
+		const actions = await createWebMcpActions({
+			tools: [
+				{ name: "add_to_cart", description: "Add products to the cart" },
+				{ name: "get_cart", description: "Read the cart, add what is missing" },
+			],
+			decisionAgent,
+		});
+
+		expect(decisionAgent.capturedState).toBeUndefined();
+		expect(
+			actions.find((a) => a.name === "add_to_cart")?.effects,
+		).toMatchObject({
+			inCart: true,
+		});
+		// A read has no shop effect, whatever its description mentions.
+		expect(actions.find((a) => a.name === "get_cart")?.effects).toEqual({
+			"toolResult:get_cart": true,
+		});
+	});
+
+	test("Laya alone never makes a tool a checkout or a removal", async () => {
+		for (const risky of ["checkout", "removeFromCart"]) {
+			const actions = await createWebMcpActions({
+				tools: [{ name: "do_thing", description: "Does a thing" }],
+				decisionAgent: fakeDecisionAgent(risky),
+			});
+			expect(actions[0]?.effects).toEqual({ "toolResult:do_thing": true });
+		}
+	});
+
+	test("the plain tool of an intent wins the tie against its specialists on cost", async () => {
+		const actions = await createWebMcpActions({
+			tools: [
+				{ name: "add_recipe_to_cart" },
+				{ name: "add_to_cart" },
+				{ name: "add_staples_to_cart" },
+			],
+			decisionAgent: fakeDecisionAgent("other"),
+		});
+		const cost = (name: string) => actions.find((a) => a.name === name)?.cost;
+		expect(cost("add_to_cart")).toBeLessThan(cost("add_recipe_to_cart") ?? 0);
+		expect(cost("add_to_cart")).toBeLessThan(cost("add_staples_to_cart") ?? 0);
 	});
 });

@@ -5,6 +5,7 @@ import {
 	TOOL_INTENTS,
 	type ToolIntent,
 } from "./intent-taxonomy";
+import { intentFromCues } from "./message-cues";
 import type { GoapAction, WorldState } from "./types";
 
 export type MessageIntent = "chat" | ToolIntent;
@@ -13,7 +14,15 @@ const MESSAGE_INTENTS: readonly MessageIntent[] = ["chat", ...TOOL_INTENTS];
 
 export interface ClassifyMessageIntentConfig {
 	decisionAgent: DecisionAgent;
+	/** `false` skips the lexical cues and asks Laya for everything — only to measure Laya alone (`bun run eval:intents`). */
+	cues?: boolean;
 }
+
+/** Intents with a side effect the shopper must have asked for in so many words. */
+const NEEDS_THE_WORDS: ReadonlySet<MessageIntent> = new Set([
+	"checkout",
+	"removeFromCart",
+]);
 
 /**
  * One cheap Laya `choice` call that decides whether a turn needs the WebMCP/
@@ -29,11 +38,25 @@ export interface ClassifyMessageIntentConfig {
 export async function classifyMessageIntent(
 	config: ClassifyMessageIntentConfig,
 	message: string,
-	/** Where the visitor is, e.g. `{ page: "/store/greenleaf", lang: "ru" }`: "show the cart" on the cart page is not a task. */
-	context: Record<string, string> = {},
+	/** The message translated to English, when it wasn't English: Laya reads that. */
+	english?: string,
 ): Promise<MessageIntent> {
+	// The words of the original first (they were written for it, and a
+	// translation can lose them: «оформи заказ» → "Order"), then the words of
+	// the translation; Laya only for what neither says.
+	const byWords =
+		config.cues === false
+			? undefined
+			: (intentFromCues(message) ??
+				(english ? intentFromCues(english) : undefined));
+	if (byWords) return byWords;
+
+	// Only the message goes to Laya. The visitor's page and language used to go
+	// along, and Laya let them outweigh the message: "привет" came back as
+	// `navigate`, «купи 1 сыр» as `checkout` (measured, docs/laya-autonomous-webmcp.md).
+	// "Already on that page" is handled where the page is known (`samePage`).
 	const answers = await config.decisionAgent.decide(
-		{ message, ...context },
+		{ message: english ?? message },
 		{
 			intent: {
 				type: "choice",
@@ -41,7 +64,7 @@ export async function classifyMessageIntent(
 					"Is the user just chatting, or asking to do something in an online " +
 					"shop? Pick the single closest match; when unsure, pick chat.",
 				criteria: {
-					chat: "greeting, small talk or a question that is not about shopping",
+					chat: 'greeting, thanks, small talk, or a question that has nothing to do with shopping ("hi", "thanks", "how are you", "what is the weather")',
 					...INTENT_DESCRIPTIONS,
 				},
 			},
@@ -49,9 +72,15 @@ export async function classifyMessageIntent(
 	);
 	const answer = answers.intent;
 	const choice = answer?.type === "choice" ? answer.choice : undefined;
-	return choice && (MESSAGE_INTENTS as readonly string[]).includes(choice)
-		? (choice as MessageIntent)
-		: "chat";
+	if (!choice || !(MESSAGE_INTENTS as readonly string[]).includes(choice)) {
+		return "chat";
+	}
+	// Laya was measured to call «оформи заказ» `compare` and «удали сыр»
+	// `addToCart`; paying or emptying the cart by mistake is not recoverable by
+	// a replan, so those two are only ever taken from the words themselves.
+	return NEEDS_THE_WORDS.has(choice as MessageIntent)
+		? "chat"
+		: (choice as MessageIntent);
 }
 
 /**

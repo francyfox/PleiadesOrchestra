@@ -10,7 +10,9 @@
 	"scripts": {
 		"check-types": "tsc --noEmit",
 		"lint": "biome check .",
-		"test": "bun test"
+		"test": "bun test",
+		"eval:intents": "bun eval/intents.ts",
+		"eval:tools": "bun eval/tools.ts"
 	},
 	"dependencies": {
 		"@ai-sdk/openai-compatible": "^3.0.20",
