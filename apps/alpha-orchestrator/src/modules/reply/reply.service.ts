@@ -65,8 +65,15 @@ async function initialState(
 	text: string,
 	options: ReplyOptions,
 ): Promise<WorldState> {
+	const userMessage = normalizeText.apply(text);
+	const english = translateMessage(deps, userMessage);
 	const turn: WorldState = {
-		userMessage: normalizeText.apply(text),
+		userMessage,
+		// What the planner and the small models read; the reply is still about
+		// the original. Absent for a message that needed no translation.
+		...(english ? { userMessageEn: english } : {}),
+		// The query for the site's search must be in its catalog's language.
+		catalogLang: deps.catalogLanguage?.(user.channelId) ?? "en",
 		threadId,
 		userId: user.id,
 		planRunId,
@@ -75,6 +82,25 @@ async function initialState(
 	};
 	const checkpoint = await deps.worldStateStore.load(threadId);
 	return checkpoint ? { ...sessionFacts(checkpoint.state), ...turn } : turn;
+}
+
+/** Any letter that is not Latin: the message is not (only) English. */
+const NOT_ENGLISH = /(?!\p{Script=Latin})\p{L}/u;
+
+/**
+ * The message in English, the first thing done with it: Laya and the small
+ * models read English far better than Russian. `undefined` when it already is
+ * English, when there is no translator, or when the translator fails (reported,
+ * never fatal — the message just goes on in its own language).
+ */
+function translateMessage(deps: ReplyDeps, text: string): string | undefined {
+	if (!deps.translate || !NOT_ENGLISH.test(text)) return undefined;
+	try {
+		return deps.translate(text) || undefined;
+	} catch (error) {
+		deps.onError?.(error);
+		return undefined;
+	}
 }
 
 /** Plan inputs for a brand-new user message. */
@@ -105,7 +131,7 @@ export async function prepareNewMessage(
 	const intent = await classifyMessageIntent(
 		{ decisionAgent: deps.decisionAgent },
 		String(state.userMessage ?? ""),
-		pageContext(state),
+		typeof state.userMessageEn === "string" ? state.userMessageEn : undefined,
 	);
 	const goal = goalForIntent(intent, REPLY_GOAL, actions);
 	return {
@@ -119,16 +145,6 @@ export async function prepareNewMessage(
 function withoutPage(state: WorldState): WorldState {
 	const { [PAGE_FACT]: _path, [PAGE_LANG_FACT]: _lang, ...rest } = state;
 	return rest;
-}
-
-/** The visitor's page for Laya's message sorting: `{ page, lang }`, whichever is known. */
-function pageContext(state: WorldState): Record<string, string> {
-	const page = state[PAGE_FACT];
-	const lang = state[PAGE_LANG_FACT];
-	return {
-		...(typeof page === "string" ? { page } : {}),
-		...(typeof lang === "string" ? { lang } : {}),
-	};
 }
 
 /**

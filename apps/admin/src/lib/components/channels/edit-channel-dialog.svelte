@@ -31,6 +31,13 @@
 					<AccessModeSelect id="edit-access" value={channel.accessMode} />
 				</div>
 				{#if channel.kind === "web"}
+					<FormField
+						id="edit-catalog-language"
+						name="catalogLanguage"
+						label={$content.catalogLanguage.value}
+						value={channel.catalogLanguage}
+					/>
+					<p class="-mt-2 text-xs text-muted-foreground">{$content.catalogLanguageHint.value}</p>
 					<div class="grid gap-2">
 						<Label for="edit-origins">{$content.allowedOrigins.value}</Label>
 						<Textarea id="edit-origins" name="allowedOrigins" value={channel.allowedOrigins.join("\n")} />

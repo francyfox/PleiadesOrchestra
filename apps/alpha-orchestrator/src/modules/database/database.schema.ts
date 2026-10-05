@@ -25,6 +25,9 @@ export const channels = sqliteTable("channels", {
 		.default([]),
 	disabledAt: integer("disabled_at"),
 	createdAt: integer("created_at").notNull(),
+	// Language the site's catalog is written in (ISO 639-1, `ru`, `en-GB`…): the
+	// search query sent to the site's tools must be in it, whatever the shopper typed.
+	catalogLanguage: text("catalog_language").notNull().default("en"),
 });
 
 export const users = sqliteTable(

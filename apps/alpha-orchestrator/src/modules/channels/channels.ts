@@ -17,6 +17,8 @@ export interface ChannelsDeps {
 }
 
 const AccessModeSchema = oneOf(["whitelist", "open"]);
+/** `ru`, `en`, `kk`, `pt-BR` — a language code, not a language name. */
+const LanguageSchema = t.String({ pattern: "^[a-z]{2}(-[A-Z]{2})?$" });
 const SlugSchema = t.String({ pattern: "^[a-z0-9][a-z0-9-]*$", maxLength: 64 });
 
 /** Admin routes for channels. Auth is enforced by the app's `onRequest` guard. */
@@ -34,6 +36,7 @@ export function channelsRoutes({ db, directory, now }: ChannelsDeps) {
 							name: body.name,
 							accessMode: body.accessMode,
 							allowedOrigins: body.allowedOrigins,
+							catalogLanguage: body.catalogLanguage,
 						},
 						now(),
 					);
@@ -53,6 +56,7 @@ export function channelsRoutes({ db, directory, now }: ChannelsDeps) {
 					kind: t.Literal("web"),
 					accessMode: AccessModeSchema,
 					allowedOrigins: t.Array(t.String()),
+					catalogLanguage: t.Optional(LanguageSchema),
 				}),
 			},
 		)
@@ -69,6 +73,7 @@ export function channelsRoutes({ db, directory, now }: ChannelsDeps) {
 					name: t.Optional(t.String({ minLength: 1 })),
 					accessMode: t.Optional(AccessModeSchema),
 					allowedOrigins: t.Optional(t.Array(t.String())),
+					catalogLanguage: t.Optional(LanguageSchema),
 					disabled: t.Optional(t.Boolean()),
 				}),
 			},

@@ -48,6 +48,8 @@ export interface AppDeps {
 	decisionAgent: DecisionAgent;
 	/** Extracts `{query, quantity}` from a shopping message; optional (tests leave it out). */
 	productRequestAgent?: Agent;
+	/** Russian → English for a message as it comes in (Opus-MT, ~30 ms); unset = the text stays as typed. */
+	translate?: (text: string) => string;
 	/** Writes the JSON arguments of WebMCP tool calls; without it they are built from the run's facts. */
 	functionCallAgent?: FunctionCallAgent;
 	/** Transport secret (telegram-bot, cli, integration backends). */
@@ -100,6 +102,9 @@ export function createApp(deps: AppDeps) {
 		agent: deps.agent,
 		decisionAgent: deps.decisionAgent,
 		productRequestAgent: deps.productRequestAgent,
+		translate: deps.translate,
+		catalogLanguage: (channelId) =>
+			deps.channels.byId(channelId)?.catalogLanguage,
 		functionCallAgent: deps.functionCallAgent,
 		actions,
 		runs: deps.runs,

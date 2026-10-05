@@ -49,6 +49,9 @@
 				header: () => $content.columns.origins.value,
 				cell: (ctx) => renderSnippet(origins, ctx.getValue()),
 			}),
+			helper.accessor("catalogLanguage", {
+				header: () => $content.columns.catalogLanguage.value,
+			}),
 			helper.accessor("publishableKey", {
 				header: () => $content.columns.publishableKey.value,
 				cell: (ctx) => renderSnippet(publishableKey, ctx.getValue()),

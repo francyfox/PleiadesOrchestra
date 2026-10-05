@@ -26,6 +26,7 @@ const CHANNEL = {
 	kind: "web",
 	accessMode: "open",
 	allowedOrigins: [],
+	catalogLanguage: "en",
 	publishableKey: "pk",
 	disabledAt: null,
 	createdAt: 1,

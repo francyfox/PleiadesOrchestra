@@ -14,6 +14,11 @@ const channelsContent = {
 				en: "Public key (pk_)",
 				kk: "Жария кілт (pk_)",
 			}),
+			catalogLanguage: t({
+				ru: "Язык каталога",
+				en: "Catalog language",
+				kk: "Каталог тілі",
+			}),
 			created: t({ ru: "Создан", en: "Created", kk: "Құрылған" }),
 		},
 		accessMode: {
@@ -162,7 +167,22 @@ const channelsContent = {
 			en: "Allowed origins",
 			kk: "Рұқсат етілген домендер",
 		}),
+		catalogLanguage: t({
+			ru: "Язык каталога",
+			en: "Catalog language",
+			kk: "Каталог тілі",
+		}),
+		catalogLanguageHint: t({
+			ru: "Код языка, на котором на сайте написаны названия товаров (en, ru, kk…). Поисковый запрос уходит в тул сайта именно на нём, что бы ни написал покупатель.",
+			en: "Language code of the product names on the site (en, ru, kk…). The search query reaches the site's tool in exactly that language, whatever the shopper typed.",
+			kk: "Сайттағы тауар атаулары жазылған тілдің коды (en, ru, kk…). Іздеу сұрауы сатып алушы не жазса да, сайт тулына дәл осы тілде жіберіледі.",
+		}),
 		errors: {
+			invalid_language: t({
+				ru: "Язык — это код из двух букв (en, ru, kk) или с регионом (pt-BR), а не название",
+				en: "Language is a two-letter code (en, ru, kk), optionally with a region (pt-BR), not a name",
+				kk: "Тіл — екі әріптен тұратын код (en, ru, kk) немесе аймақпен (pt-BR), атауы емес",
+			}),
 			invalid_channel: t({
 				ru: "Slug — строчные латинские буквы, цифры и дефис; имя обязательно",
 				en: "Slug: lowercase latin letters, digits and dashes; name is required",

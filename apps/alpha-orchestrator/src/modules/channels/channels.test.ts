@@ -182,4 +182,62 @@ describe("admin channels", () => {
 			422,
 		);
 	});
+
+	test("the language of the site's catalog: English unless said, settable on create and later, validated", async () => {
+		const { app } = setupAdminApp();
+		const post = (body: Record<string, unknown>) =>
+			app.handle(
+				admin("/channels", {
+					method: "POST",
+					body: {
+						name: "Shop",
+						kind: "web",
+						accessMode: "open",
+						allowedOrigins: [],
+						...body,
+					},
+				}),
+			);
+
+		const plain = await json(await post({ slug: "plain" }));
+		expect(plain.channel.catalogLanguage).toBe("en");
+
+		const russian = await json(
+			await post({ slug: "ru-shop", catalogLanguage: "ru" }),
+		);
+		expect(russian.channel.catalogLanguage).toBe("ru");
+
+		const patched = await json(
+			await app.handle(
+				admin(`/channels/${russian.channel.id}`, {
+					method: "PATCH",
+					body: { catalogLanguage: "kk" },
+				}),
+			),
+		);
+		expect(patched.channel.catalogLanguage).toBe("kk");
+
+		// A patch without it leaves it alone.
+		const renamed = await json(
+			await app.handle(
+				admin(`/channels/${russian.channel.id}`, {
+					method: "PATCH",
+					body: { name: "Renamed" },
+				}),
+			),
+		);
+		expect(renamed.channel.catalogLanguage).toBe("kk");
+
+		// A language code, not free text.
+		for (const bad of ["русский", "english", "e", "EN", ""]) {
+			expect((await post({ slug: "bad", catalogLanguage: bad })).status).toBe(
+				422,
+			);
+		}
+		const list = await json(await app.handle(admin("/channels")));
+		expect(
+			list.items.find((c: { slug: string }) => c.slug === "ru-shop")
+				.catalogLanguage,
+		).toBe("kk");
+	});
 });

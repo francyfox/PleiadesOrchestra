@@ -159,6 +159,7 @@ export const channelActions = {
 					name: text(form, "name"),
 					accessMode: accessMode(form),
 					allowedOrigins: parseOrigins(form.get("allowedOrigins")),
+					catalogLanguage: text(form, "catalogLanguage") || undefined,
 				}),
 			),
 		),
@@ -172,6 +173,7 @@ export const channelActions = {
 					allowedOrigins: form.has("allowedOrigins")
 						? parseOrigins(form.get("allowedOrigins"))
 						: undefined,
+					catalogLanguage: text(form, "catalogLanguage") || undefined,
 				}),
 		),
 	toggle: (form: FormData) =>

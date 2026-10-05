@@ -673,7 +673,7 @@ describe("widget WebMCP round trip", () => {
 				token,
 				body: {
 					threadId,
-					text: "add the cheapest laptop to my cart",
+					text: "the cheapest laptop please",
 				},
 			}),
 		);
@@ -718,7 +718,7 @@ describe("widget WebMCP round trip", () => {
 					token,
 					body: {
 						threadId,
-						text: "add the cheapest laptop to my cart",
+						text: "the cheapest laptop please",
 					},
 				}),
 			)
@@ -757,7 +757,7 @@ describe("widget WebMCP round trip", () => {
 			.handle(
 				widgetRequest("/v1/widget/messages", {
 					token,
-					body: { threadId, text: "add the cheapest laptop to my cart" },
+					body: { threadId, text: "the cheapest laptop please" },
 				}),
 			)
 			.then((response) => response.text());
@@ -783,7 +783,7 @@ describe("widget WebMCP round trip", () => {
 			.all();
 		expect(runs).toHaveLength(2);
 		const root = runs.find((run) => run.prompt !== null);
-		expect(root?.prompt).toBe("add the cheapest laptop to my cart");
+		expect(root?.prompt).toBe("the cheapest laptop please");
 		expect(runs.map((run) => run.rootRunId)).toEqual([
 			root?.id ?? null,
 			root?.id ?? null,
@@ -804,19 +804,24 @@ describe("widget WebMCP round trip", () => {
 		};
 		const ctx = setup({}, { decisionAgent: counting });
 		const token = await newVisitor(ctx);
+		// A name that says nothing, so Laya is asked (names like `search_products` are read without it).
+		const tool: WebMcpToolDescriptor = {
+			name: "helper_tool",
+			description: "Search the catalog",
+		};
 		const first = await newThread(ctx, token);
 		const second = await newThread(ctx, token);
 
-		await registerTools(ctx, token, first, [searchTool]);
+		await registerTools(ctx, token, first, [tool]);
 		expect(classifications).toBe(1);
 
 		// Same tools, another thread (or the panel opened again): no new Laya call.
-		await registerTools(ctx, token, second, [searchTool]);
-		await registerTools(ctx, token, first, [searchTool]);
+		await registerTools(ctx, token, second, [tool]);
+		await registerTools(ctx, token, first, [tool]);
 		expect(classifications).toBe(1);
 
 		await registerTools(ctx, token, first, [
-			{ ...searchTool, description: "Search the catalog by words" },
+			{ ...tool, description: "Search the catalog by words" },
 		]);
 		expect(classifications).toBe(2);
 
@@ -1244,7 +1249,7 @@ describe("the page the visitor is on", () => {
 		});
 	});
 
-	test("Laya is told where the visitor is when it sorts the message", async () => {
+	test("Laya gets only the message when it sorts it, never the page: the page used to outweigh the words", async () => {
 		intentSeen.length = 0;
 		const { action } = stateRecorder();
 		const ctx = setup(
@@ -1257,15 +1262,12 @@ describe("the page the visitor is on", () => {
 			await ctx.app.handle(
 				widgetRequest("/v1/widget/messages", {
 					token,
-					body: { threadId, text: "покажи корзину", page: "/en/cart" },
+					// No word in it decides, so Laya is asked.
+					body: { threadId, text: "ноутбук, пожалуйста", page: "/en/cart" },
 				}),
 			)
 		).text();
-		expect(intentSeen[0]).toEqual({
-			message: "покажи корзину",
-			page: "/en/cart",
-			lang: "en",
-		});
+		expect(intentSeen[0]).toEqual({ message: "ноутбук, пожалуйста" });
 	});
 
 	test("no page is fine: no page facts", async () => {

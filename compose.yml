@@ -30,6 +30,8 @@ services:
     # survives `docker compose down -v`. ./data is gitignored.
     volumes:
       - ./data/alpha-orchestrator:/data
+      # The Opus-MT translation model downloads here on first start.
+      - alpha-orchestrator-models:/models
     ports:
       - "3000:3000"
     depends_on:
@@ -204,6 +206,7 @@ services:
     restart: unless-stopped
 
 volumes:
+  alpha-orchestrator-models:
   beta-text-models:
   delta-function-call-models:
   gamma-decision-models:

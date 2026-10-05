@@ -16,6 +16,7 @@ export function toChannel(row: ChannelRow) {
 		kind: row.kind,
 		accessMode: row.accessMode,
 		allowedOrigins: row.allowedOrigins,
+		catalogLanguage: row.catalogLanguage,
 		publishableKey: row.publishableKey,
 		disabledAt: row.disabledAt,
 		createdAt: row.createdAt,
@@ -58,6 +59,8 @@ export interface NewWebChannel {
 	name: string;
 	accessMode: AccessMode;
 	allowedOrigins: string[];
+	/** Defaults to `en`. */
+	catalogLanguage?: string;
 }
 
 /** Only web channels are created at runtime; telegram/cli come from the seed migration. */
@@ -79,6 +82,7 @@ export function createWebChannel(db: Db, input: NewWebChannel, now: number) {
 			kind: "web",
 			accessMode: input.accessMode,
 			allowedOrigins: input.allowedOrigins,
+			catalogLanguage: input.catalogLanguage ?? "en",
 			publishableKey,
 			secretKeyHash,
 			createdAt: now,
@@ -92,6 +96,7 @@ export interface ChannelPatch {
 	name?: string;
 	accessMode?: AccessMode;
 	allowedOrigins?: string[];
+	catalogLanguage?: string;
 	disabled?: boolean;
 }
 
@@ -119,6 +124,7 @@ export function updateChannel(
 			name: patch.name ?? existing.name,
 			accessMode: patch.accessMode ?? existing.accessMode,
 			allowedOrigins: patch.allowedOrigins ?? existing.allowedOrigins,
+			catalogLanguage: patch.catalogLanguage ?? existing.catalogLanguage,
 			disabledAt: nextDisabledAt(existing.disabledAt, patch.disabled, now),
 		})
 		.where(eq(channels.id, id))

@@ -34,6 +34,18 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			// llama-server serves one model and ignores the name; it is for the usage ledger.
 			FUNCTION_CALL_MODEL: z.string().default("qwen3-1.7b"),
 
+			// Translating a message to English as it comes in (Opus-MT through
+			// CTranslate2, called over bun:ffi — see native/ and the Dockerfile).
+			// Unset = no translation: the Russian text goes on as typed.
+			TRANSLATE_LIB_PATH: z.string().optional(),
+			TRANSLATE_MODEL_DIR: z.string().default("/models/opus-ru-en"),
+			// Pre-converted CTranslate2 model, fetched into TRANSLATE_MODEL_DIR on first start.
+			TRANSLATE_MODEL_REPO: z
+				.string()
+				.default("gaudi/opus-mt-ru-en-ctranslate2"),
+			TRANSLATE_THREADS: z.coerce.number().int().positive().default(4),
+			TRANSLATE_COMPUTE_TYPE: z.string().default("int8"),
+
 			// Conservative default for a small self-hosted context window (CTX_SIZE
 			// on `albedo` defaults to 2048 tokens) — long messages get split on word
 			// boundaries into chunks of at most this many characters instead of

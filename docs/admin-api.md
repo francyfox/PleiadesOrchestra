@@ -110,6 +110,7 @@ interface AdminMessage {
 interface Channel extends ChannelRef {
   accessMode: "whitelist" | "open";
   allowedOrigins: string[];
+  catalogLanguage: string;       // язык названий товаров на сайте, код `en`/`ru`/`pt-BR` (по умолчанию `en`)
   publishableKey: string | null;
   disabledAt: number | null;
   createdAt: number;
@@ -273,8 +274,8 @@ live-тема `mcp` (10 с).
 | Метод | Путь | Тело | Ответ |
 |---|---|---|---|
 | GET | `/v1/admin/channels?page=&pageSize=` | — | `{ "items": [Channel], "total": 3 }` |
-| POST | `/v1/admin/channels` | `{ "slug", "name", "kind": "web", "accessMode", "allowedOrigins": [] }` | `{ "channel": Channel, "secretKey": "..." }` |
-| PATCH | `/v1/admin/channels/:id` | `{ "name"?, "accessMode"?, "allowedOrigins"?, "disabled"?: boolean }` | `{ "channel": Channel }` |
+| POST | `/v1/admin/channels` | `{ "slug", "name", "kind": "web", "accessMode", "allowedOrigins": [], "catalogLanguage"?: "ru" }` | `{ "channel": Channel, "secretKey": "..." }` |
+| PATCH | `/v1/admin/channels/:id` | `{ "name"?, "accessMode"?, "allowedOrigins"?, "catalogLanguage"?, "disabled"?: boolean }` | `{ "channel": Channel }` |
 | POST | `/v1/admin/channels/:id/rotate-keys` | — | `{ "channel": Channel, "secretKey": "..." }` |
 
 `secretKey` возвращается только в этих двух ответах — хранится хешем. Через API создаются только
@@ -290,6 +291,12 @@ live-тема `mcp` (10 с).
 Каналы — не только «сайт»: это любая точка входа (telegram, discord, slack, cli, jira, виджет
 на сайте…). `kind: "web"` — единственный вид, который создаётся через API и у которого есть
 ключи виджета и `allowedOrigins`.
+
+`catalogLanguage` — код языка (`^[a-z]{2}(-[A-Z]{2})?$`, не название; иначе `422` у оркестратора и
+`400 invalid_language` у admin-api), на котором на сайте написаны названия товаров. Поисковый запрос уходит в
+тул сайта именно на нём, что бы ни написал покупатель: для `en` — из английского перевода сообщения, для `ru` —
+из самого сообщения (правила `extractProductRequestRu`), для остальных языков — слова покупателя как есть.
+Попадает в `WorldState` как факт `catalogLang` (служебный, модели delta его не видят).
 
 ### Блокировки по IP
 

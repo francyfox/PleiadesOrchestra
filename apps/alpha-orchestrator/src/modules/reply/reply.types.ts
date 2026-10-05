@@ -16,6 +16,10 @@ export interface ReplyDeps {
 	decisionAgent: DecisionAgent;
 	/** Text model with the "reply with {query, quantity} JSON" prompt; without it a task has no `query`/`quantity` facts. */
 	productRequestAgent?: Agent;
+	/** The language the channel's site writes its catalog in (`en` when unknown). */
+	catalogLanguage?: (channelId: string) => string | undefined;
+	/** Translates a message that is not English; absent when no translator is loaded. */
+	translate?: (text: string) => string;
 	/** `delta-function-call`: fills in WebMCP tool arguments as JSON; unset = built from facts. */
 	functionCallAgent?: FunctionCallAgent;
 	/** The static GOAP catalog (`buildActions`). */

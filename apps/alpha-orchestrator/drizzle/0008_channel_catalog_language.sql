@@ -1,0 +1,1 @@
+ALTER TABLE `channels` ADD `catalog_language` text DEFAULT 'en' NOT NULL;

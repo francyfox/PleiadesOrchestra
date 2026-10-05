@@ -57,6 +57,13 @@
 			"when": 1790936173576,
 			"tag": "0007_mcp_catalogs",
 			"breakpoints": true
+		},
+		{
+			"idx": 8,
+			"version": "6",
+			"when": 1790943642794,
+			"tag": "0008_channel_catalog_language",
+			"breakpoints": true
 		}
 	]
 }

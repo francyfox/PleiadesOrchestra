@@ -43,6 +43,8 @@ export interface NewChannel {
 	kind: "web";
 	accessMode: AccessMode;
 	allowedOrigins: string[];
+	/** Left out = the orchestrator's default, English. */
+	catalogLanguage?: string;
 }
 
 export interface OrchestratorClientConfig {

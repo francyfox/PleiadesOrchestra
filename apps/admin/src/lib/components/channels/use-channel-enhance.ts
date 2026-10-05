@@ -19,8 +19,8 @@ export function useChannelEnhance(
 		},
 		quietSuccess: (data) => Boolean(data.secret),
 		errorText: (code) =>
-			code === "invalid_channel"
-				? get(content).errors.invalid_channel.value
+			code === "invalid_channel" || code === "invalid_language"
+				? get(content).errors[code].value
 				: undefined,
 	});
 }

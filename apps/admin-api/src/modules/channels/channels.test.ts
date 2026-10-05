@@ -56,4 +56,42 @@ describe("channels (proxied)", () => {
 		});
 		expect(upstream[0]?.body).toEqual({ disabled: true });
 	});
+
+	test("the catalog language goes to the orchestrator as a language code; anything else is refused here", async () => {
+		const cookie = await signedIn();
+		setRespond(() => json({ channel: CHANNEL, secretKey: "sk" }));
+
+		await call("/api/channels", {
+			method: "POST",
+			cookie,
+			body: { slug: "ru-site", name: "Ru", catalogLanguage: "ru" },
+		});
+		expect(upstream[0]?.body).toMatchObject({ catalogLanguage: "ru" });
+
+		await call("/api/channels", {
+			method: "POST",
+			cookie,
+			body: { slug: "plain", name: "Plain" },
+		});
+		// Left out, so the orchestrator's own default (English) applies.
+		expect(upstream[1]?.body).not.toHaveProperty("catalogLanguage");
+
+		const before = upstream.length;
+		for (const bad of ["русский", "english", "EN", "e"]) {
+			const refused = await call("/api/channels", {
+				method: "POST",
+				cookie,
+				body: { slug: "x", name: "X", catalogLanguage: bad },
+			});
+			expect(await refused.json()).toEqual({ error: "invalid_language" });
+		}
+		expect(upstream).toHaveLength(before);
+
+		const patch = await call("/api/channels/c1", {
+			method: "PATCH",
+			cookie,
+			body: { catalogLanguage: "русский" },
+		});
+		expect(await patch.json()).toEqual({ error: "invalid_language" });
+	});
 });

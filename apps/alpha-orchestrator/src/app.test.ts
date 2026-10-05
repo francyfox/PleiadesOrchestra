@@ -11,6 +11,7 @@ import type {
 import { InMemoryWorldStateStore } from "@repo/core";
 import { type AppDeps, createApp } from "./app.ts";
 import { ChannelDirectory } from "./modules/channel-directory/channel-directory.ts";
+import { createWebChannel } from "./modules/channels/channels.service.ts";
 import { testDb } from "./modules/database/database.testing.ts";
 import { RunBinding } from "./modules/run-binding/run-binding.ts";
 import { resolveThreadId } from "./modules/threads/threads.service.ts";
@@ -765,5 +766,154 @@ describe("createApp — message intent routing", () => {
 		expect(
 			events.some((event) => (event as { type: string }).type === "done"),
 		).toBe(true);
+	});
+});
+
+describe("createApp — the message is translated as it comes in", () => {
+	function post(app: ReturnType<typeof createTestApp>, text: string) {
+		return app.handle(
+			authedRequest("http://harness.local/v1/messages", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({ threadId: "t1", userId: "u1", text }),
+			}),
+		);
+	}
+
+	/** An action that records the state it runs with; cheaper than the reply, so it wins the plan. */
+	function stateRecorder() {
+		const seen: Record<string, unknown>[] = [];
+		const action: GoapAction = {
+			name: "recorder",
+			cost: 0,
+			preconditions: {},
+			effects: { replied: true },
+			async execute(ctx) {
+				seen.push({ ...ctx.state });
+				return { replied: true };
+			},
+		};
+		return { seen, action };
+	}
+
+	test("a Russian message reaches the plan next to its English translation; the original stays", async () => {
+		const asked: string[] = [];
+		const { seen, action } = stateRecorder();
+		const app = createTestApp({
+			agent: fakeAgent(singleDeltaStream),
+			decisionAgent: fakeDecisionAgent(),
+			threadActionsFor: () => [action],
+			translate: (text) => {
+				asked.push(text);
+				return "buy one cheese";
+			},
+		});
+
+		await readNdjson(await post(app, "купи 1 сыр"));
+
+		expect(asked).toEqual(["купи 1 сыр"]);
+		expect(seen[0]).toMatchObject({
+			userMessage: "купи 1 сыр",
+			userMessageEn: "buy one cheese",
+		});
+	});
+
+	test("the language of the channel's catalog travels with the message (English unless the channel says otherwise)", async () => {
+		const db = testDb();
+		createWebChannel(
+			db,
+			{
+				slug: "ru-shop",
+				name: "Ru shop",
+				accessMode: "open",
+				allowedOrigins: [],
+				catalogLanguage: "ru",
+			},
+			1,
+		);
+		const { seen, action } = stateRecorder();
+		const app = createTestApp({
+			db,
+			agent: fakeAgent(singleDeltaStream),
+			decisionAgent: fakeDecisionAgent(),
+			threadActionsFor: () => [action],
+		});
+		const send = (channel: string) =>
+			app.handle(
+				authedRequest("http://harness.local/v1/messages", {
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({
+						threadId: `t-${channel}`,
+						userId: "u1",
+						text: "привет",
+						channel,
+					}),
+				}),
+			);
+
+		await readNdjson(await send("ru-shop"));
+		await readNdjson(await send("cli"));
+
+		expect(seen.map((state) => state.catalogLang)).toEqual(["ru", "en"]);
+	});
+
+	test("a message already in English is not translated", async () => {
+		const asked: string[] = [];
+		const { seen, action } = stateRecorder();
+		const app = createTestApp({
+			agent: fakeAgent(singleDeltaStream),
+			decisionAgent: fakeDecisionAgent(),
+			threadActionsFor: () => [action],
+			translate: (text) => {
+				asked.push(text);
+				return "x";
+			},
+		});
+
+		await readNdjson(await post(app, "buy 1 cheese"));
+
+		expect(asked).toEqual([]);
+		expect(seen[0]?.userMessageEn).toBeUndefined();
+	});
+
+	test("a translator that fails costs the translation, not the message", async () => {
+		const { seen, action } = stateRecorder();
+		const errors: unknown[] = [];
+		const app = createTestApp({
+			agent: fakeAgent(singleDeltaStream),
+			decisionAgent: fakeDecisionAgent(),
+			threadActionsFor: () => [action],
+			translate: () => {
+				throw new Error("model not loaded");
+			},
+			onError: (error) => errors.push(String(error)),
+		});
+
+		const events = await readNdjson(await post(app, "купи 1 сыр"));
+
+		expect(seen[0]?.userMessageEn).toBeUndefined();
+		expect(events.some((e) => (e as { type: string }).type === "done")).toBe(
+			true,
+		);
+		expect(errors).toEqual(["Error: model not loaded"]);
+	});
+
+	test("Laya sorts the English text when no word of the message decides", async () => {
+		const seenByLaya: unknown[] = [];
+		const { action } = stateRecorder();
+		const app = createTestApp({
+			agent: fakeAgent(singleDeltaStream),
+			decisionAgent: fakeDecisionAgent(async (state) => {
+				seenByLaya.push(state);
+				return {};
+			}),
+			threadActionsFor: () => [action],
+			translate: () => "a laptop, please",
+		});
+
+		await readNdjson(await post(app, "ноутбук, пожалуйста"));
+
+		expect(seenByLaya).toEqual([{ message: "a laptop, please" }]);
 	});
 });

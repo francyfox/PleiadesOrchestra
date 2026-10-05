@@ -27,6 +27,13 @@
 				<Label for="accessMode">{$content.columns.access.value}</Label>
 				<AccessModeSelect id="accessMode" />
 			</div>
+			<FormField
+				id="catalogLanguage"
+				label={$content.catalogLanguage.value}
+				placeholder="en"
+				value="en"
+			/>
+			<p class="-mt-2 text-xs text-muted-foreground">{$content.catalogLanguageHint.value}</p>
 			<div class="grid gap-2">
 				<Label for="allowedOrigins">{$content.create.origins.value}</Label>
 				<Textarea id="allowedOrigins" name="allowedOrigins" placeholder="https://example.com" />

@@ -13,6 +13,7 @@ import { functionCallAgent } from "./modules/function-calls/function-calls.insta
 import { assertRetentionCoversHistory } from "./modules/retention/retention.service.ts";
 import { startRetentionJobs } from "./modules/retention/retention.ts";
 import { runs } from "./modules/run-binding/run-binding.instance.ts";
+import { loadTranslator } from "./modules/translate/translate.instance.ts";
 import { usageRecorder } from "./modules/usage-recorder/usage-recorder.instance.ts";
 import { SqliteWorldStateStore } from "./modules/world-state/world-state.ts";
 
@@ -36,7 +37,17 @@ function reportError(message: string) {
 	};
 }
 
+// Loaded in the background: the first start downloads ~150 MB, and the service
+// must answer meanwhile. Messages that arrive before it is ready simply go on
+// untranslated (an empty answer means "no translation").
+let translator: Awaited<ReturnType<typeof loadTranslator>>;
+void loadTranslator(reportError("translator_unavailable")).then((loaded) => {
+	translator = loaded;
+	if (loaded) logger.info({ message: "translator ready" });
+});
+
 const app = createApp({
+	translate: (text) => translator?.translate(text) ?? "",
 	agent,
 	decisionAgent,
 	productRequestAgent,
@@ -103,6 +114,7 @@ serve(app, {
 	port: config.PORT,
 	observability,
 	onShutdown: () => {
+		translator?.close();
 		stopRetentionJobs();
 		usageRecorder.flush();
 		db.$client.close();

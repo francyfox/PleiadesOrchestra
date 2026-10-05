@@ -10,7 +10,7 @@ import {
 	CreateChannelInput,
 	UpdateChannelInput,
 } from "./channels.schema.ts";
-import { isValidSlug } from "./channels.service.ts";
+import { isValidLanguage, isValidSlug } from "./channels.service.ts";
 
 export function channelsRoutes({ auth, orchestrator }: RouteDeps) {
 	return new Elysia({ name: "admin-api.channels", tags: ["orchestrator"] })
@@ -38,12 +38,22 @@ export function channelsRoutes({ auth, orchestrator }: RouteDeps) {
 						if (!isValidSlug(slug) || !name) {
 							return status(400, { error: "invalid_channel" });
 						}
+						if (
+							body.catalogLanguage !== undefined &&
+							!isValidLanguage(body.catalogLanguage)
+						) {
+							return status(400, { error: "invalid_language" });
+						}
 						return orchestrator.as(admin.id).createChannel({
 							slug,
 							name,
 							kind: "web",
 							accessMode: body.accessMode ?? "open",
 							allowedOrigins: body.allowedOrigins ?? [],
+							// Left out when not given: the orchestrator's default (English) applies.
+							...(body.catalogLanguage
+								? { catalogLanguage: body.catalogLanguage }
+								: {}),
 						});
 					},
 					{
@@ -57,15 +67,26 @@ export function channelsRoutes({ auth, orchestrator }: RouteDeps) {
 				)
 				.patch(
 					"/channels/:id",
-					({ params, body, admin }) =>
-						orchestrator.as(admin.id).updateChannel(params.id, {
+					({ params, body, admin, status }) => {
+						if (
+							body.catalogLanguage !== undefined &&
+							!isValidLanguage(body.catalogLanguage)
+						) {
+							return status(400, { error: "invalid_language" });
+						}
+						return orchestrator.as(admin.id).updateChannel(params.id, {
 							...body,
 							name: body.name?.trim() || undefined,
-						}),
+						});
+					},
 					{
 						params: IdParams,
 						body: UpdateChannelInput,
-						response: { 200: t.Object({ channel: Channel }), ...Upstream },
+						response: {
+							200: t.Object({ channel: Channel }),
+							400: ApiError,
+							...Upstream,
+						},
 						detail: { summary: "Update / enable / disable a channel" },
 					},
 				)

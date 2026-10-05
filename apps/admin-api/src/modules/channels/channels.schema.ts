@@ -25,6 +25,8 @@ export const Channel = t.Composite([
 	t.Object({
 		accessMode: AccessMode,
 		allowedOrigins: t.Array(t.String()),
+		/** Language the site's catalog is written in; search queries are sent in it. */
+		catalogLanguage: t.String(),
 		publishableKey: nullable(t.String()),
 		disabledAt: nullable(t.Number()),
 		createdAt: t.Number(),
@@ -37,12 +39,14 @@ export const CreateChannelInput = t.Object({
 	name: t.String(),
 	accessMode: t.Optional(oneOf(ACCESS_MODES)),
 	allowedOrigins: t.Optional(t.Array(t.String())),
+	catalogLanguage: t.Optional(t.String()),
 });
 
 export const UpdateChannelInput = t.Object({
 	name: t.Optional(t.String()),
 	accessMode: t.Optional(oneOf(ACCESS_MODES)),
 	allowedOrigins: t.Optional(t.Array(t.String())),
+	catalogLanguage: t.Optional(t.String()),
 	disabled: t.Optional(t.Boolean()),
 });
 
