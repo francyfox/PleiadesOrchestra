@@ -213,7 +213,10 @@ export function createAgent(config: AgentConfig): Agent {
 				inFlight = undefined;
 
 				await history.append(callContext, [
-					{ role: "user", content: message.chunks.join(" ") },
+					{
+						role: "user",
+						content: message.historyText ?? message.chunks.join(" "),
+					},
 					{ role: "assistant", content: fullText },
 				]);
 

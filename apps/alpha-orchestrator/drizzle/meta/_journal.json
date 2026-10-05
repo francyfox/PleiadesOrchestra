@@ -64,6 +64,20 @@
 			"when": 1790943642794,
 			"tag": "0008_channel_catalog_language",
 			"breakpoints": true
+		},
+		{
+			"idx": 9,
+			"version": "6",
+			"when": 1791198523437,
+			"tag": "0009_intent_examples",
+			"breakpoints": true
+		},
+		{
+			"idx": 10,
+			"version": "6",
+			"when": 1791201968932,
+			"tag": "0010_plan_run_steps",
+			"breakpoints": true
 		}
 	]
 }

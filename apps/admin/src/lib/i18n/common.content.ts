@@ -69,6 +69,7 @@ const commonContent = {
 			ingest: t({ ru: "Ingest", en: "Ingest", kk: "Ingest" }),
 			decision: t({ ru: "Laya", en: "Laya", kk: "Laya" }),
 			translate: t({ ru: "Перевод", en: "Translation", kk: "Аударма" }),
+			classify: t({ ru: "Намерение", en: "Intent", kk: "Ниет" }),
 		},
 	},
 } satisfies Dictionary;

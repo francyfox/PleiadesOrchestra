@@ -15,6 +15,12 @@ export interface IncomingMessage {
 	 * get processed instead of overflowing or erroring out.
 	 */
 	chunks: string[];
+	/**
+	 * What to keep in the conversation history as the user's turn, when it
+	 * isn't the chunks — the user's own words with their line breaks, while the
+	 * model was given a normalized or rewritten prompt. Defaults to the chunks.
+	 */
+	historyText?: string;
 }
 
 /**
@@ -74,9 +80,16 @@ export interface HistoryStore {
 /**
  * What a recorded call was for. `translate` is not a language model at all
  * (the message translator, CTranslate2) — it is in the same ledger so the
- * admin's graph and latency charts see it next to the models.
+ * admin's graph and latency charts see it next to the models. `classify` is
+ * the message's intent being decided: by Laya, the site's memory or the words
+ * (`provider` says which).
  */
-export type LlmCallKind = "ingest" | "generate" | "decision" | "translate";
+export type LlmCallKind =
+	| "ingest"
+	| "generate"
+	| "decision"
+	| "translate"
+	| "classify";
 
 /** One model call. Token fields are `undefined` when the provider didn't report usage — never coerce to 0. */
 export interface LlmCallRecord extends CallContext {

@@ -10,6 +10,9 @@ export type ChatError =
 	| "rate_limited"
 	| "too_long"
 	| "network"
+	/** The server answered but could not do what was asked (nothing found, a tool refused) — fix the request. */
+	| "request"
+	/** Something broke on the server's side. */
 	| "failed";
 
 /** One line of the flow shown above a reply: what was done, or is being done. */
@@ -42,6 +45,8 @@ export interface ChatState {
 	 */
 	connection: "online" | "offline";
 	error?: ChatError;
+	/** For a `request` error: what the site advised (its own last answer), if it said anything. */
+	errorHint?: string;
 	/** Which tool integration the site uses — a standing preference, not tied to any one conversation. Defaults to "webmcp". */
 	toolMode: ToolMode;
 }
@@ -121,6 +126,11 @@ function withStep(steps: ChatStep[] | undefined, step: ChatStep): ChatStep[] {
 		: list.map((known, i) => (i === at ? line : known));
 }
 
+/** What a finished stream means for the chat's error line: nothing, or what went wrong. */
+function errorOf(result: "ok" | "failed" | "request"): ChatError | undefined {
+	return result === "ok" ? undefined : result;
+}
+
 export function createChat({
 	api,
 	store,
@@ -143,6 +153,8 @@ export function createChat({
 	const listeners = new Set<(state: ChatState) => void>();
 	let session: Session | undefined;
 	let initPromise: Promise<void> | undefined;
+	/** The site's advice from the last `task_failed` line, until `send` reads it. */
+	let requestHint: string | undefined;
 	let counter = 0;
 	let pingTimer: ReturnType<typeof setInterval> | undefined;
 	/** The in-flight `send()`, if any — `stop()` flags it before aborting so the abort is told apart from an idle-timeout one. */
@@ -252,6 +264,7 @@ export function createChat({
 				id: `h-${item.id}`,
 				role: item.role,
 				content: item.content,
+				...(item.steps ? { steps: item.steps } : {}),
 			}))
 			.slice(-maxMessages);
 
@@ -335,7 +348,7 @@ export function createChat({
 		signal: AbortSignal,
 		onEvent: () => void,
 		customerContext?: CustomerContext,
-	): Promise<"ok" | "failed"> {
+	): Promise<"ok" | "failed" | "request"> {
 		let stream = api.streamMessage(
 			current.visitorToken,
 			current.threadId,
@@ -357,6 +370,10 @@ export function createChat({
 					target.steps = withStep(target.steps, event);
 					emit();
 				} else if (event.type === "error") {
+					if (event.code === "task_failed") {
+						requestHint = event.hint;
+						return "request";
+					}
 					return "failed";
 				} else if (event.type === "tool_call") {
 					toolCall = event;
@@ -394,6 +411,8 @@ export function createChat({
 		}
 		state.busy = true;
 		state.error = undefined;
+		state.errorHint = undefined;
+		requestHint = undefined;
 		emit();
 
 		await init();
@@ -424,33 +443,31 @@ export function createChat({
 		let cleanStop = false;
 		try {
 			try {
-				outcome =
-					(await readReply(
+				outcome = errorOf(
+					await readReply(
 						text,
 						session,
 						assistant,
 						controller.signal,
 						resetIdleTimer,
 						customerContext,
-					)) === "failed"
-						? "failed"
-						: undefined;
+					),
+				);
 			} catch (cause) {
 				if (isAbortError(cause)) throw cause;
 				// A stale token is fixed once, and only if nothing was streamed yet.
 				if (!isUnauthorized(cause) || hasOutput(assistant)) throw cause;
 				session = await renew();
-				outcome =
-					(await readReply(
+				outcome = errorOf(
+					await readReply(
 						text,
 						session,
 						assistant,
 						controller.signal,
 						resetIdleTimer,
 						customerContext,
-					)) === "failed"
-						? "failed"
-						: undefined;
+					),
+				);
 			}
 		} catch (cause) {
 			if (isAbortError(cause)) {
@@ -477,7 +494,11 @@ export function createChat({
 				(message) => message !== assistant,
 			);
 		}
-		update({ busy: false, error: cleanStop ? undefined : outcome });
+		update({
+			busy: false,
+			error: cleanStop ? undefined : outcome,
+			errorHint: outcome === "request" && !cleanStop ? requestHint : undefined,
+		});
 	}
 
 	/** Aborts the reply in progress, if any — the partial text already streamed is kept, no error is shown. */

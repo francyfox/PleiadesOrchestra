@@ -10,6 +10,12 @@ import type {
 	UpdateChannelInput,
 } from "../channels/channels.schema.ts";
 import type { PageQuery } from "../common/common.schema.ts";
+import type {
+	IntentExample,
+	IntentsPage,
+	IntentsQuery,
+	IntentVerdictInput,
+} from "../intents/intents.schema.ts";
 import type { UpstreamMcpSites } from "../mcp/mcp.schema.ts";
 import type { PerformanceReport } from "../performance/performance.schema.ts";
 import type {
@@ -151,6 +157,8 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 				"GET",
 				`/v1/admin/channels${toSearch({ ...query })}`,
 			),
+		listIntents: (query: IntentsQuery = {}) =>
+			request<IntentsPage>("GET", `/v1/admin/intents${toSearch({ ...query })}`),
 		listBlockedIps: (query: PageQuery = {}) =>
 			request<{ items: BlockedIp[]; total: number }>(
 				"GET",
@@ -203,6 +211,12 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 				),
 			createBlockedIp: (input: CreateBlockedIpInput) =>
 				write<{ item: BlockedIp }>("POST", "/v1/admin/blocked-ips", input),
+			judgeIntent: (id: string, verdict: IntentVerdictInput) =>
+				write<{ item: IntentExample }>(
+					"PATCH",
+					`/v1/admin/intents/${segment(id)}`,
+					verdict,
+				),
 			deleteBlockedIp: (id: string) =>
 				write<void>("DELETE", `/v1/admin/blocked-ips/${segment(id)}`),
 		};

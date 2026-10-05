@@ -45,11 +45,16 @@ export function viewToGraph(view: RequestView): RequestGraph {
 		(a, b) => a - b,
 	);
 
-	// A translated message has one more column (prompt → translation →
-	// understanding); the plan's rounds start right after the understanding.
-	const understandColumn = view.nodes.some((node) => node.kind === "translate")
-		? 2
-		: 1;
+	// The front of the request is a column each: prompt → [translation] →
+	// [intent decision] → understanding; the plan's rounds start right after.
+	const frontKinds = ["prompt", "translate", "classify", "understand"] as const;
+	const frontColumn = new Map<string, number>();
+	for (const kind of frontKinds) {
+		if (kind === "prompt" || view.nodes.some((node) => node.kind === kind)) {
+			frontColumn.set(kind, frontColumn.size);
+		}
+	}
+	const understandColumn = frontColumn.get("understand") ?? frontColumn.size;
 	// Where each round starts: the first right after the understanding, every
 	// later one after the end of the round before it.
 	const startColumn = new Map<number, number>();
@@ -68,11 +73,8 @@ export function viewToGraph(view: RequestView): RequestGraph {
 		if (node.kind === "prompt") {
 			x = 0;
 			y = 0;
-		} else if (node.kind === "translate") {
-			x = 1;
-			y = 0;
-		} else if (node.kind === "understand") {
-			x = understandColumn;
+		} else if (frontColumn.has(node.kind)) {
+			x = frontColumn.get(node.kind) as number;
 			y = 0;
 		} else if (node.kind === "result") {
 			x = column;

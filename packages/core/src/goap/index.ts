@@ -3,6 +3,8 @@ export type { DecisionActionConfig } from "./decision-action";
 export { createDecisionAction } from "./decision-action";
 export type { RunPlanOptions, RunPlanResult } from "./executor";
 export { runPlan } from "./executor";
+export type { IntentExample, IntentHit, IntentModel } from "./intent-memory";
+export { createIntentModel, normalizeIntentText } from "./intent-memory";
 export type { ToolIntent } from "./intent-taxonomy";
 export {
 	EFFECTS_BY_INTENT,
@@ -15,9 +17,15 @@ export type { StdioMcpClientConfig } from "./mcp-client";
 export { connectStdioMcpClient } from "./mcp-client";
 export type {
 	ClassifyMessageIntentConfig,
+	IntentSource,
+	IntentVerdict,
 	MessageIntent,
 } from "./message-intent";
-export { classifyMessageIntent, goalForIntent } from "./message-intent";
+export {
+	classifyMessageIntent,
+	classifyMessageIntentDetailed,
+	goalForIntent,
+} from "./message-intent";
 export type { ParsedPage } from "./page";
 export { PAGE_FACT, PAGE_LANG_FACT, parsePage, samePage } from "./page";
 export { plan } from "./plan";

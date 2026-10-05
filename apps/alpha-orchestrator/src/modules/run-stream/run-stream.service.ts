@@ -51,6 +51,24 @@ export function doneEvent(
 	};
 }
 
+/** Longest site answer passed on to the visitor. */
+const HINT_CHARS = 400;
+
+/**
+ * What the site's last tool said (`webmcp:<tool>:text`) — when it could not do
+ * what was asked, that is its own recommendation («try a broader word…»),
+ * which beats any wording of ours.
+ */
+function lastSiteAnswer(state: WorldState): string | undefined {
+	const keys = Object.keys(state).filter(
+		(key) => key.startsWith("webmcp:") && key.endsWith(":text"),
+	);
+	const value = keys.length > 0 ? state[keys[keys.length - 1] as string] : "";
+	return typeof value === "string" && value.trim() !== ""
+		? value.trim().slice(0, HINT_CHARS)
+		: undefined;
+}
+
 /** The terminal line that tells the caller how a finished `runPlan` ended. */
 export function outcomeEvent(
 	result: RunPlanResult,
@@ -58,9 +76,15 @@ export function outcomeEvent(
 ): StreamEvent {
 	if (result.waiting) return toolCallEvent(result.waiting);
 	if (!result.succeeded) {
+		if (result.killed) return { type: "error", message: "run cancelled" };
+		const hint = lastSiteAnswer(result.finalState);
 		return {
 			type: "error",
-			message: result.killed ? "run cancelled" : "no plan reached the goal",
+			// A task the site couldn't do — the visitor's request, not a broken
+			// server: the widget tells it apart from a lost connection.
+			code: "task_failed",
+			message: "no plan reached the goal",
+			...(hint ? { hint } : {}),
 		};
 	}
 	return doneEvent(result.finalState, fallbackElapsedMs);

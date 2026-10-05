@@ -1,6 +1,10 @@
 import type { PlanTraceEvent } from "@repo/core";
 import { eq } from "drizzle-orm";
-import { planEvents, planRuns } from "../database/database.schema.ts";
+import {
+	planEvents,
+	planRuns,
+	type StoredStep,
+} from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
 
 /** World state carries user/model text — the full text already lives in `messages`, traces keep a preview. */
@@ -113,7 +117,13 @@ function countAttempts(events: PlanTraceEvent[]): number {
 export function finishPlanRun(
 	db: Db,
 	runId: string,
-	result: { succeeded: boolean; durationMs: number; events: PlanTraceEvent[] },
+	result: {
+		succeeded: boolean;
+		durationMs: number;
+		events: PlanTraceEvent[];
+		/** The flow lines the visitor saw during the run. */
+		steps?: StoredStep[];
+	},
 ): void {
 	const eventRows = result.events.map((event, seq) =>
 		toEventRow(runId, seq, event),
@@ -125,6 +135,7 @@ export function finishPlanRun(
 				succeeded: result.succeeded,
 				attempts: countAttempts(result.events),
 				durationMs: result.durationMs,
+				steps: result.steps && result.steps.length > 0 ? result.steps : null,
 			})
 			.where(eq(planRuns.id, runId))
 			.run();

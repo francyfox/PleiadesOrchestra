@@ -10,10 +10,22 @@ export interface BubbleView {
 	steps: { id: string; cls: string; text: string }[];
 }
 
-/** Messages → what the template's `x-for` draws; keyed by id so a streamed reply only rewrites its own bubble. */
-export function bubbleViews(messages: readonly ChatMessage[]): BubbleView[] {
-	return messages.map((message) => {
-		const typing = message.role === "assistant" && message.content === "";
+/**
+ * Messages → what the template's `x-for` draws; keyed by id so a streamed reply
+ * only rewrites its own bubble. The typing dots show only on the newest bubble
+ * and only while a reply is being made (`busy`): a bubble left with flow lines
+ * and no text (a task that failed) is finished, not still typing.
+ */
+export function bubbleViews(
+	messages: readonly ChatMessage[],
+	busy: boolean,
+): BubbleView[] {
+	return messages.map((message, index) => {
+		const typing =
+			busy &&
+			index === messages.length - 1 &&
+			message.role === "assistant" &&
+			message.content === "";
 		return {
 			id: message.id,
 			cls: `message ${message.role === "user" ? "user" : "assistant"}${typing ? " typing" : ""}`,
@@ -32,8 +44,8 @@ export function createMessagesModel(greeting: string) {
 	return {
 		greeting,
 		messages: [] as BubbleView[],
-		render(messages: readonly ChatMessage[]) {
-			this.messages = bubbleViews(messages);
+		render(messages: readonly ChatMessage[], busy: boolean) {
+			this.messages = bubbleViews(messages, busy);
 		},
 	};
 }

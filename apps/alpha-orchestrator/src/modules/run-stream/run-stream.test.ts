@@ -92,6 +92,7 @@ describe("outcomeEvent", () => {
 	test("a failed run says why", () => {
 		expect(outcomeEvent(result({ succeeded: false }), 1)).toEqual({
 			type: "error",
+			code: "task_failed",
 			message: "no plan reached the goal",
 		});
 		expect(outcomeEvent(result({ succeeded: false, killed: true }), 1)).toEqual(
@@ -99,6 +100,39 @@ describe("outcomeEvent", () => {
 				type: "error",
 				message: "run cancelled",
 			},
+		);
+	});
+
+	test("a failed task carries what the site last answered, as the hint the visitor can act on", () => {
+		const event = outcomeEvent(
+			result({
+				succeeded: false,
+				finalState: {
+					"webmcp:choose_store:text": "Opened Penny Pantry",
+					"webmcp:search_products:text":
+						'No products matched "french baget". Try a broader word, or browse the Bakery department.',
+				},
+			}),
+			1,
+		);
+		expect(event).toEqual({
+			type: "error",
+			code: "task_failed",
+			message: "no plan reached the goal",
+			hint: 'No products matched "french baget". Try a broader word, or browse the Bakery department.',
+		});
+	});
+
+	test("a long site answer is cut", () => {
+		const event = outcomeEvent(
+			result({
+				succeeded: false,
+				finalState: { "webmcp:search_products:text": "x".repeat(2000) },
+			}),
+			1,
+		);
+		expect(event.type === "error" && event.hint?.length).toBeLessThanOrEqual(
+			400,
 		);
 	});
 

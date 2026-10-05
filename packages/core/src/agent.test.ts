@@ -239,6 +239,27 @@ describe("createAgent", () => {
 		expect(JSON.stringify(secondRequest?.messages)).toContain("first");
 	});
 
+	test("the history keeps the user's own text when one is given, the model still gets the chunks", async () => {
+		const { agent, llm, historyStore } = setup();
+
+		await collect(
+			agent.handleMessageStream(
+				message({
+					chunks: ["what the model is told: one two"],
+					historyText: "one\n\ntwo",
+				}),
+			),
+		);
+
+		expect(await historyStore.get("t1", 10)).toEqual([
+			{ role: "user", content: "one\n\ntwo" },
+			{ role: "assistant", content: "Hi" },
+		]);
+		expect(JSON.stringify(llm.requests.at(-1)?.messages)).toContain(
+			"what the model is told",
+		);
+	});
+
 	test("with a history window of 0 the model sees only the current message, yet the exchange is still stored", async () => {
 		const { agent, llm, historyStore } = setup({}, { maxHistoryMessages: 0 });
 

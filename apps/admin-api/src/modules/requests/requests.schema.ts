@@ -93,6 +93,7 @@ export const UpstreamRequestDetails = t.Object({
 export const NodeKind = t.UnionEnum([
 	"prompt",
 	"translate",
+	"classify",
 	"understand",
 	"action",
 	"result",

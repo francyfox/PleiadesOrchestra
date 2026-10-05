@@ -190,6 +190,86 @@ describe("buildRequestView", () => {
 		]);
 	});
 
+	test("the intent decision is a node of its own, with who decided it, and the understanding no longer counts that time", () => {
+		const view = buildRequestView(
+			details([run("r1", T0, [planned(T0 + 400, ["generateReply"])])], {
+				calls: [
+					{
+						planRunId: "r1",
+						actionName: "classify",
+						kind: "classify",
+						provider: "laya",
+						model: "gamma-decision",
+						inputTokens: null,
+						outputTokens: null,
+						latencyMs: 120,
+						ok: true,
+						error: null,
+						at: T0 + 300,
+					},
+				],
+			}),
+		);
+
+		expect(view.nodes.map((n) => n.kind)).toEqual([
+			"prompt",
+			"classify",
+			"understand",
+			"action",
+			"result",
+		]);
+		const classify = view.nodes[1];
+		expect(classify).toMatchObject({
+			label: "addToCart",
+			status: "done",
+			durationMs: 120,
+		});
+		expect(classify?.detail.intent).toBe("addToCart");
+		expect(classify?.detail.calls[0]).toMatchObject({ provider: "laya" });
+		expect(view.nodes[2]?.durationMs).toBe(280);
+		expect(view.nodes[2]?.label).toBe("replied=true");
+		expect(view.edges.slice(0, 2).map((e) => [e.from, e.to])).toEqual([
+			["prompt", "classify"],
+			["classify", "understand"],
+		]);
+	});
+
+	test("with a translation too: prompt → translate → classify → understand", () => {
+		const call = (kind: string, latencyMs: number, at: number) => ({
+			planRunId: "r1",
+			actionName: kind,
+			kind,
+			provider: "p",
+			model: "m",
+			inputTokens: null,
+			outputTokens: null,
+			latencyMs,
+			ok: true,
+			error: null,
+			at,
+		});
+		const view = buildRequestView(
+			details([run("r1", T0, [planned(T0 + 400, ["generateReply"])])], {
+				calls: [
+					call("translate", 50, T0 + 60),
+					call("classify", 100, T0 + 200),
+				],
+			}),
+		);
+		expect(view.nodes.map((n) => n.kind).slice(0, 4)).toEqual([
+			"prompt",
+			"translate",
+			"classify",
+			"understand",
+		]);
+		expect(view.edges.slice(0, 3).map((e) => [e.from, e.to])).toEqual([
+			["prompt", "translate"],
+			["translate", "classify"],
+			["classify", "understand"],
+		]);
+		expect(view.nodes[3]?.durationMs).toBe(250);
+	});
+
 	test("a translation that failed shows as a failed node with its error", () => {
 		const view = buildRequestView(
 			details([run("r1", T0, [planned(T0 + 400, ["generateReply"])])], {

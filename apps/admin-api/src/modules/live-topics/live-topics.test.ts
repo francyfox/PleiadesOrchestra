@@ -67,6 +67,7 @@ describe("createLiveTopics: validation", () => {
 				"blocked-ips",
 				"channels",
 				"dashboard",
+				"intents",
 				"mcp",
 				"performance",
 				"request",
@@ -87,6 +88,7 @@ describe("createLiveTopics: validation", () => {
 			requests: 3000,
 			request: 1000,
 			mcp: 10000,
+			intents: 5000,
 		});
 		for (const [name, topic] of Object.entries(t)) {
 			expect(topic.intervalMs).toBe(

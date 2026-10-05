@@ -87,6 +87,13 @@ export const threads = sqliteTable(
 	],
 );
 
+/** A flow line as the visitor saw it: the widget draws `phase` as … / ✓ / ✗ before `text`. */
+export interface StoredStep {
+	id: string;
+	phase: "running" | "done" | "failed";
+	text: string;
+}
+
 export const planRuns = sqliteTable(
 	"plan_runs",
 	{
@@ -110,6 +117,9 @@ export const planRuns = sqliteTable(
 		rootRunId: text("root_run_id"),
 		// What the user wrote, set on the root run only (truncated).
 		prompt: text("prompt"),
+		// The flow lines the visitor saw while this run went (✓ Нашёл: …), one per
+		// step id with its last phase — so a reloaded chat shows them again.
+		steps: text("steps", { mode: "json" }).$type<StoredStep[]>(),
 	},
 	(table) => [
 		index("plan_runs_user_idx").on(table.userId, table.createdAt),
@@ -209,7 +219,7 @@ export const llmCalls = sqliteTable(
 		}),
 		actionName: text("action_name"),
 		kind: text("kind", {
-			enum: ["ingest", "generate", "decision", "translate"],
+			enum: ["ingest", "generate", "decision", "translate", "classify"],
 		}).notNull(),
 		provider: text("provider").notNull(),
 		model: text("model").notNull(),
@@ -278,6 +288,44 @@ export const blockedIps = sqliteTable(
 	(table) => [index("blocked_ips_hash_idx").on(table.ipHash)],
 );
 
+/**
+ * What a site's classifier has learned: an English message and the intent it
+ * stands for. A row Laya produced is `pending` — kept for a person to judge,
+ * never used to decide anything; only `approved` rows (approved or corrected
+ * by an admin) feed the model. `rejected` rows stay so the same wrong guess
+ * isn't offered again.
+ */
+export const intentExamples = sqliteTable(
+	"intent_examples",
+	{
+		id: text("id").primaryKey(),
+		channelId: text("channel_id")
+			.notNull()
+			.references(() => channels.id, { onDelete: "cascade" }),
+		// `normalizeIntentText` of the English text: the key of the example.
+		textKey: text("text_key").notNull(),
+		// The text as it came, for the admin to read.
+		sample: text("sample").notNull(),
+		intent: text("intent").notNull(),
+		// Who produced the label: Laya, or an admin's correction.
+		source: text("source", { enum: ["laya", "admin"] }).notNull(),
+		status: text("status", {
+			enum: ["pending", "approved", "rejected"],
+		}).notNull(),
+		// The run the label first came from, to open its graph.
+		planRunId: text("plan_run_id").references(() => planRuns.id, {
+			onDelete: "set null",
+		}),
+		seenCount: integer("seen_count").notNull().default(1),
+		createdAt: integer("created_at").notNull(),
+		updatedAt: integer("updated_at").notNull(),
+	},
+	(table) => [
+		uniqueIndex("intent_examples_key_idx").on(table.channelId, table.textKey),
+		index("intent_examples_status_idx").on(table.status, table.updatedAt),
+	],
+);
+
 export const schema = {
 	channels,
 	users,
@@ -288,5 +336,6 @@ export const schema = {
 	llmCalls,
 	visitorTokens,
 	blockedIps,
+	intentExamples,
 	threadWorldState,
 };

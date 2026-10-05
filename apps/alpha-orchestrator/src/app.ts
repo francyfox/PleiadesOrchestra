@@ -3,6 +3,7 @@ import type {
 	DecisionAgent,
 	FunctionCallAgent,
 	GoapAction,
+	HistoryStore,
 	RunLock,
 	UsageRecorder,
 	WorldStateStore,
@@ -26,6 +27,8 @@ import type { Db } from "./modules/database/database.ts";
 import { decisionsRoutes } from "./modules/decisions/decisions.ts";
 import { buildActions } from "./modules/goap/goap.service.ts";
 import { identifyRoutes } from "./modules/identify/identify.ts";
+import { IntentMemory } from "./modules/intents/intents.service.ts";
+import { intentsRoutes } from "./modules/intents/intents.ts";
 import { mcpRoutes } from "./modules/mcp/mcp.ts";
 import { messagesRoutes } from "./modules/messages/messages.ts";
 import { performanceRoutes } from "./modules/performance/performance.ts";
@@ -62,6 +65,8 @@ export interface AppDeps {
 	channels: ChannelDirectory;
 	/** Shared with the history store / usage recorder so their writes get linked to the running plan. */
 	runs: RunBinding;
+	/** Where a templated reply is stored like a model's would be (the same store the agent writes to). */
+	historyStore?: HistoryStore;
 	/** Flushed once a message's stream is done — `SqliteUsageRecorder` in production. */
 	usageRecorder?: { flush(): void; record?: UsageRecorder["record"] };
 	/**
@@ -96,14 +101,20 @@ export interface AppDeps {
  */
 export function createApp(deps: AppDeps) {
 	const now = deps.now ?? Date.now;
-	const actions = buildActions(deps.agent, deps.maxChunkChars);
+	const actions = buildActions(
+		deps.agent,
+		deps.maxChunkChars,
+		deps.historyStore,
+	);
 	const activeRuns = deps.activeRuns ?? new ActiveRuns();
+	const intentMemory = new IntentMemory(deps.db);
 	const reply = new ReplyService({
 		db: deps.db,
 		agent: deps.agent,
 		decisionAgent: deps.decisionAgent,
 		productRequestAgent: deps.productRequestAgent,
 		translate: deps.translate,
+		intentMemory,
 		catalogLanguage: (channelId) =>
 			deps.channels.byId(channelId)?.catalogLanguage,
 		functionCallAgent: deps.functionCallAgent,
@@ -173,6 +184,7 @@ export function createApp(deps: AppDeps) {
 			.use(usersRoutes({ db, now }))
 			.use(channelsRoutes({ db, directory, now }))
 			.use(blockedIpsRoutes({ db, ipHashSalt: deps.ipHashSalt, now }))
+			.use(intentsRoutes({ db, memory: intentMemory, now }))
 			.use(usageRoutes({ db, now }))
 			.use(statsRoutes({ db, now }))
 			.use(performanceRoutes({ db, now }))

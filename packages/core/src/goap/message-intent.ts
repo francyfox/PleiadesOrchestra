@@ -1,4 +1,5 @@
 import type { DecisionAgent } from "../decision-types";
+import type { IntentHit } from "./intent-memory";
 import {
 	EFFECTS_BY_INTENT,
 	INTENT_DESCRIPTIONS,
@@ -12,8 +13,26 @@ export type MessageIntent = "chat" | ToolIntent;
 
 const MESSAGE_INTENTS: readonly MessageIntent[] = ["chat", ...TOOL_INTENTS];
 
+/** Where an intent came from — shown in the admin's graph, and what decides whether to learn from it. */
+export type IntentSource = "words" | "memory" | "laya" | "fallback";
+
+export interface IntentVerdict {
+	intent: MessageIntent;
+	source: IntentSource;
+	/** Memory's own confidence; Laya's is saturated (1.00 even when wrong) and not reported. */
+	confidence?: number;
+}
+
 export interface ClassifyMessageIntentConfig {
 	decisionAgent: DecisionAgent;
+	/**
+	 * `all` (default): every word rule is taken first, then Laya. `guarded`:
+	 * only the words of checkout and removal are rules — everything else goes to
+	 * the site's memory and then Laya, so a new shop needs no hand-written words.
+	 */
+	rules?: "all" | "guarded";
+	/** What this site has been taught (approved examples): asked about the English text before Laya. */
+	memory?: (text: string) => IntentHit | undefined;
 	/** `false` skips the lexical cues and asks Laya for everything — only to measure Laya alone (`bun run eval:intents`). */
 	cues?: boolean;
 }
@@ -41,46 +60,91 @@ export async function classifyMessageIntent(
 	/** The message translated to English, when it wasn't English: Laya reads that. */
 	english?: string,
 ): Promise<MessageIntent> {
-	// The words of the original first (they were written for it, and a
-	// translation can lose them: «оформи заказ» → "Order"), then the words of
-	// the translation; Laya only for what neither says.
-	const byWords =
-		config.cues === false
-			? undefined
-			: (intentFromCues(message) ??
-				(english ? intentFromCues(english) : undefined));
-	if (byWords) return byWords;
+	return (await classifyMessageIntentDetailed(config, message, english)).intent;
+}
+
+/** The words of the original first (a translation can lose them: «оформи заказ» → "Order"), then of the translation. */
+function intentByWords(
+	config: ClassifyMessageIntentConfig,
+	message: string,
+	english: string | undefined,
+): MessageIntent | undefined {
+	if (config.cues === false) return undefined;
+	const found =
+		intentFromCues(message) ?? (english ? intentFromCues(english) : undefined);
+	// Guarded: the words only decide what must never come from a model.
+	return config.rules === "guarded" && found && !NEEDS_THE_WORDS.has(found)
+		? undefined
+		: found;
+}
+
+/**
+ * Same decision as `classifyMessageIntent`, with where it came from: the
+ * words, the site's memory, Laya, or the fallback after Laya failed.
+ * Order: words (all of them, or only the dangerous two when `rules` is
+ * `guarded`) → memory → Laya on the English text → chat.
+ */
+export async function classifyMessageIntentDetailed(
+	config: ClassifyMessageIntentConfig,
+	message: string,
+	english?: string,
+): Promise<IntentVerdict> {
+	const byWords = intentByWords(config, message, english);
+	if (byWords) return { intent: byWords, source: "words" };
+
+	const remembered = config.memory?.(english ?? message);
+	if (remembered) {
+		return {
+			intent: remembered.intent,
+			source: "memory",
+			confidence: remembered.confidence,
+		};
+	}
 
 	// Only the message goes to Laya. The visitor's page and language used to go
 	// along, and Laya let them outweigh the message: "привет" came back as
 	// `navigate`, «купи 1 сыр» as `checkout` (measured, docs/laya-autonomous-webmcp.md).
 	// "Already on that page" is handled where the page is known (`samePage`).
-	const answers = await config.decisionAgent.decide(
-		{ message: english ?? message },
-		{
-			intent: {
-				type: "choice",
-				instructions:
-					"Is the user just chatting, or asking to do something in an online " +
-					"shop? Pick the single closest match; when unsure, pick chat.",
-				criteria: {
-					chat: 'greeting, thanks, small talk, or a question that has nothing to do with shopping ("hi", "thanks", "how are you", "what is the weather")',
-					...INTENT_DESCRIPTIONS,
+	let answers: Awaited<ReturnType<DecisionAgent["decide"]>>;
+	try {
+		answers = await config.decisionAgent.decide(
+			{ message: english ?? message },
+			{
+				intent: {
+					type: "choice",
+					instructions:
+						"Is the user just chatting, or asking to do something in an online " +
+						"shop? Pick the single closest match; when unsure, pick chat.",
+					criteria: {
+						chat: 'greeting, thanks, small talk, or a question that has nothing to do with shopping ("hi", "thanks", "how are you", "what is the weather")',
+						...INTENT_DESCRIPTIONS,
+					},
 				},
 			},
-		},
-	);
+		);
+	} catch {
+		// Laya being down must not lose the message: whatever the words say, else chat.
+		const rescue =
+			config.cues === false
+				? undefined
+				: (intentFromCues(message) ??
+					(english ? intentFromCues(english) : undefined));
+		return { intent: rescue ?? "chat", source: "fallback" };
+	}
 	const answer = answers.intent;
 	const choice = answer?.type === "choice" ? answer.choice : undefined;
 	if (!choice || !(MESSAGE_INTENTS as readonly string[]).includes(choice)) {
-		return "chat";
+		return { intent: "chat", source: "laya" };
 	}
 	// Laya was measured to call «оформи заказ» `compare` and «удали сыр»
 	// `addToCart`; paying or emptying the cart by mistake is not recoverable by
 	// a replan, so those two are only ever taken from the words themselves.
-	return NEEDS_THE_WORDS.has(choice as MessageIntent)
-		? "chat"
-		: (choice as MessageIntent);
+	return {
+		intent: NEEDS_THE_WORDS.has(choice as MessageIntent)
+			? "chat"
+			: (choice as MessageIntent),
+		source: "laya",
+	};
 }
 
 /**

@@ -87,8 +87,8 @@ export function createWidget(options: WidgetOptions) {
 			started = false;
 		},
 		render(state: ChatState) {
-			messages.render(state.messages, el);
-			errorLine.model.render(state.error);
+			messages.render(state.messages, state.busy, el);
+			errorLine.model.render(state.error, state.errorHint);
 			modeSwitch.model.render(state.toolMode);
 			composer.model.render(state);
 		},

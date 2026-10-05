@@ -29,13 +29,22 @@ export type StreamEvent =
 			arguments: Record<string, unknown>;
 			callId: string;
 	  }
-	| { type: "error"; message: string };
+	| {
+			type: "error";
+			message: string;
+			/** `task_failed`: the server worked but the site couldn't do it (a request problem, not a connection or server one). */
+			code?: "task_failed";
+			/** The site's own last answer — its advice on what to try instead. */
+			hint?: string;
+	  };
 
 export interface HistoryItem {
 	id: string;
 	role: "user" | "assistant";
 	content: string;
 	createdAt: number;
+	/** What the assistant did to produce this reply (the flow lines), on a reply that used tools. */
+	steps?: { id: string; phase: "running" | "done" | "failed"; text: string }[];
 }
 
 export interface WidgetApi {

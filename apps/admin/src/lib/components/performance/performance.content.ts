@@ -25,6 +25,11 @@ const performanceContent = {
 				en: "CTranslate2: message translation ru→en",
 				kk: "CTranslate2: хабарлама аудармасы ru→en",
 			}),
+			classify: t({
+				ru: "определение намерения: Laya, память сайта или слова",
+				en: "intent decision: Laya, the site's memory or words",
+				kk: "ниетті анықтау: Laya, сайт жады немесе сөздер",
+			}),
 			decision: t({
 				ru: "gamma-decision: typed decision",
 				en: "gamma-decision: typed decision",

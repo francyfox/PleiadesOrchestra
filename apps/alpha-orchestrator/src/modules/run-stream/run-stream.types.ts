@@ -19,7 +19,18 @@ export type StreamEvent =
 	 */
 	| { type: "step"; id: string; phase: StepPhase; text: string }
 	| { type: "tool_call"; tool: string; arguments: unknown; callId: string }
-	| { type: "error"; message: string };
+	/**
+	 * A run that ended badly. With `code: "task_failed"` the server worked and
+	 * the site couldn't do what was asked (`hint` = the site's own last answer,
+	 * its advice); without a code it is a fault on our side. A lost connection
+	 * never reaches here — the client sees that itself.
+	 */
+	| {
+			type: "error";
+			message: string;
+			code?: "task_failed";
+			hint?: string;
+	  };
 
 /** The plan run a stream belongs to. */
 export interface RunContext {

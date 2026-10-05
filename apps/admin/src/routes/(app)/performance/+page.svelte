@@ -14,7 +14,13 @@
 	const content = useIntlayer("performance");
 	const common = useIntlayer("common");
 
-	const KINDS: CallKind[] = ["generate", "ingest", "decision", "translate"];
+	const KINDS: CallKind[] = [
+		"generate",
+		"ingest",
+		"decision",
+		"translate",
+		"classify",
+	];
 	let selected = $state<CallKind>("generate");
 
 	const rows = $derived(report.rows.filter((row) => row.kind === selected));

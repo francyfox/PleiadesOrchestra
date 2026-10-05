@@ -48,7 +48,10 @@ function setup(
 			await store.append(
 				{ threadId: message.threadId, userId: message.userId },
 				[
-					{ role: "user", content: message.chunks.join(" ") },
+					{
+						role: "user",
+						content: message.historyText ?? message.chunks.join(" "),
+					},
 					{ role: "assistant", content: "reply" },
 				],
 			);
@@ -67,6 +70,7 @@ function setup(
 		db,
 		channels: directory,
 		runs,
+		historyStore: store,
 		ipHashSalt: SALT,
 		now: () => clock.now,
 		widget: { trustProxy: true, ...widget },
@@ -373,6 +377,30 @@ describe("widget threads and messages", () => {
 			["user", "hello"],
 			["assistant", "reply"],
 		]);
+	});
+
+	test("the history gives back what the user typed, line breaks and indentation included — the model's prompt is normalized, the stored turn is not", async () => {
+		const ctx = setup();
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+		const typed = "Список:\n- сыр\n- молоко\n\n\tс отступом";
+
+		await (await sendMessage(ctx, token, threadId, typed)).text();
+
+		// What the model is told is still one line.
+		expect(ctx.calls[0]?.chunks.join(" ")).toBe(
+			"Список: - сыр - молоко с отступом",
+		);
+		const history = await ctx.app.handle(
+			widgetRequest(`/v1/widget/threads/${threadId}/messages`, {
+				method: "GET",
+				token,
+			}),
+		);
+		const body = (await history.json()) as {
+			items: { role: string; content: string }[];
+		};
+		expect(body.items[0]).toMatchObject({ role: "user", content: typed });
 	});
 
 	test("gzips the NDJSON stream when the client sends accept-encoding: gzip", async () => {
@@ -1104,8 +1132,41 @@ describe("widget shopping flow: «купи 1 сыр»", () => {
 			"done: Добавлено в корзину: 1 × Mozzarella Cheese",
 		]);
 		expect(lines.at(-1)).toMatchObject({ type: "done" });
-		// The reply is written last and is told what happened.
-		expect(ctx.calls.at(-1)?.chunks[0]).toContain("1 × Mozzarella Cheese");
+		// A reload shows the same flow lines above the reply, from every run of the
+		// request (the browser tools split it into three), each in its last phase.
+		const reloaded = await ctx.app.handle(
+			widgetRequest(`/v1/widget/threads/${threadId}/messages`, {
+				method: "GET",
+				token,
+			}),
+		);
+		const { items } = (await reloaded.json()) as {
+			items: {
+				role: string;
+				steps?: { id: string; phase: string; text: string }[];
+			}[];
+		};
+		const assistant = items.filter((item) => item.role === "assistant").at(-1);
+		expect(
+			assistant?.steps?.map((step) => `${step.phase}: ${step.text}`),
+		).toEqual(flow.filter((line) => line.startsWith("done")));
+		// The user's turn carries none.
+		expect(items.find((item) => item.role === "user")?.steps).toBeUndefined();
+
+		// The reply to a finished purchase is the template, streamed as a delta —
+		// the text model is not asked to say it.
+		const reply = lines
+			.filter((line) => line.type === "delta")
+			.map((line) => line.text)
+			.join("");
+		expect(reply).toBe(
+			"Добавил в корзину: 1 × Mozzarella Cheese (Penny Pantry).",
+		);
+		expect(
+			ctx.calls.some((call) =>
+				call.chunks.some((chunk: string) => chunk.includes("Mozzarella")),
+			),
+		).toBe(false);
 	});
 
 	test("the next request in the same conversation reuses the store that is already open", async () => {
@@ -1158,7 +1219,7 @@ describe("widget shopping flow: «купи 1 сыр»", () => {
 		expect(await run()).toEqual(["search_products", "add_to_cart"]);
 	});
 
-	test("a search that finds nothing ends with an error line, not a loop", async () => {
+	test("a search that finds nothing is explained by the text model, with the site's own answer — not a bare error line, and not a loop", async () => {
 		const ctx = setup({}, { decisionAgent: laya, productRequestAgent });
 		const token = await newVisitor(ctx);
 		const threadId = await newThread(ctx, token);
@@ -1192,7 +1253,65 @@ describe("widget shopping flow: «купи 1 сыр»", () => {
 			);
 		}
 		expect(toolCalls).toBe(2); // choose_store, search_products — and no add_to_cart
-		expect(lines.at(-1)).toMatchObject({ type: "error" });
+		// The turn ends with an answer, written by the model from what the site said.
+		expect(lines.at(-1)).toMatchObject({ type: "done" });
+		expect(lines.some((line) => line.type === "delta")).toBe(true);
+		const prompt = ctx.calls.at(-1)?.chunks.join(" ") ?? "";
+		expect(prompt).toContain("не удалось");
+		expect(prompt).toContain('No products found at Penny Pantry for "cheese".');
+		// The history keeps what the user typed, not that prompt.
+		expect(ctx.calls.at(-1)?.historyText).toBe("купи 1 сыр");
+	});
+	test("if the text model is down too, the visitor still gets the site's own advice in the error line", async () => {
+		const ctx = setup(
+			{},
+			{
+				decisionAgent: laya,
+				productRequestAgent,
+				agent: {
+					// biome-ignore lint/correctness/useYield: it fails before saying anything
+					async *handleMessageStream() {
+						throw new Error("beta-text is down");
+					},
+					async resetThread() {},
+				},
+			},
+		);
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+		await registerTools(ctx, token, threadId, tools);
+
+		let lines = parseLines(
+			await (await sendMessage(ctx, token, threadId, "купи 1 сыр")).text(),
+		);
+		for (let step = 0; step < 8 && lines.at(-1)?.type === "tool_call"; step++) {
+			const call = lines.at(-1);
+			lines = parseLines(
+				await (
+					await ctx.app.handle(
+						widgetRequest("/v1/widget/tool-results", {
+							token,
+							body: {
+								threadId,
+								callId: call.callId,
+								tool: call.tool,
+								result:
+									call.tool === "search_products"
+										? 'No products found at Penny Pantry for "cheese".'
+										: "ok",
+								isError: false,
+							},
+						}),
+					)
+				).text(),
+			);
+		}
+
+		expect(lines.at(-1)).toMatchObject({
+			type: "error",
+			code: "task_failed",
+			hint: 'No products found at Penny Pantry for "cheese".',
+		});
 	});
 });
 

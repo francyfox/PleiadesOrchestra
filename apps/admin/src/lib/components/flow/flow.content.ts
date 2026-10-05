@@ -120,6 +120,11 @@ const flowContent = {
 		nodeKind: {
 			prompt: t({ ru: "Промпт", en: "Prompt", kk: "Промпт" }),
 			translate: t({ ru: "Перевод", en: "Translation", kk: "Аударма" }),
+			classify: t({
+				ru: "Намерение",
+				en: "Intent",
+				kk: "Ниет",
+			}),
 			understand: t({
 				ru: "Разбор запроса",
 				en: "Understanding",

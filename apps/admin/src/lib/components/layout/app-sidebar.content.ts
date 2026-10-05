@@ -11,6 +11,7 @@ const appSidebarContent = {
 				en: "Flow requests",
 				kk: "Flow сұраулары",
 			}),
+			intents: t({ ru: "Намерения", en: "Intents", kk: "Ниеттер" }),
 			mcp: t({ ru: "MCP", en: "MCP", kk: "MCP" }),
 			agents: t({ ru: "Агенты", en: "Agents", kk: "Агенттер" }),
 			performance: t({

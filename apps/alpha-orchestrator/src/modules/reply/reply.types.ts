@@ -9,6 +9,7 @@ import type {
 } from "@repo/core";
 import type { ActiveRuns } from "../active-runs/active-runs.ts";
 import type { Db } from "../database/database.ts";
+import type { IntentMemory } from "../intents/intents.service.ts";
 import type { RunBinding } from "../run-binding/run-binding.ts";
 
 export interface ReplyDeps {
@@ -19,6 +20,8 @@ export interface ReplyDeps {
 	productRequestAgent?: Agent;
 	/** The language the channel's site writes its catalog in (`en` when unknown). */
 	catalogLanguage?: (channelId: string) => string | undefined;
+	/** What each site's classifier has been taught; asked before Laya. */
+	intentMemory?: IntentMemory;
 	/** Translates a message that is not English; absent when no translator is loaded. */
 	translate?: (text: string) => string;
 	/** `delta-function-call`: fills in WebMCP tool arguments as JSON; unset = built from facts. */

@@ -192,6 +192,45 @@ describe("createChat.init", () => {
 		]);
 	});
 
+	test("a reply's flow lines come back with the history, a user turn has none", async () => {
+		const steps = [
+			{
+				id: "search_products",
+				phase: "done" as const,
+				text: "Нашёл: Honeycrisp Apples",
+			},
+			{
+				id: "add_to_cart",
+				phase: "done" as const,
+				text: "Добавлено в корзину: 1 × Honeycrisp Apples",
+			},
+		];
+		const { chat, store } = harness({
+			history: async () => ({
+				items: [
+					{ id: "1", role: "user", content: "купи яблоко", createdAt: 1 },
+					{
+						id: "2",
+						role: "assistant",
+						content: "Готово",
+						createdAt: 2,
+						steps,
+					},
+					{ id: "3", role: "assistant", content: "Привет", createdAt: 3 },
+				],
+			}),
+		});
+		store.save({ visitorToken: "old", expiresAt: 9999, threadId: "tOld" });
+
+		await chat.init();
+
+		expect(chat.state.messages.map((m) => m.steps)).toEqual([
+			undefined,
+			steps,
+			undefined,
+		]);
+	});
+
 	test("history longer than maxMessages is trimmed to the most recent ones", async () => {
 		const items = Array.from({ length: 14 }, (_, i) => ({
 			id: String(i),
@@ -372,14 +411,75 @@ describe("createChat.send", () => {
 		}
 	});
 
-	test("a stream `error` line drops the empty assistant bubble and reports failure", async () => {
+	test("a stream `error` line without a code is a fault on the server's side: it drops the empty assistant bubble and reports failure", async () => {
 		const { chat } = harness({
-			stream: () =>
-				replies({ type: "error", message: "no plan reached the goal" }),
+			stream: () => replies({ type: "error", message: "boom" }),
 		});
 		await chat.send("hi");
 		expect(chat.state.error).toBe("failed");
+		expect(chat.state.errorHint).toBeUndefined();
 		expect(chat.state.messages.map((m) => m.role)).toEqual(["user"]);
+	});
+
+	test("a task the site couldn't do is a request error, not a lost connection — it carries the site's own advice and locks nothing", async () => {
+		let fail = true;
+		const { chat, log } = harness({
+			stream: () =>
+				fail
+					? replies(
+							{
+								type: "step",
+								id: "search_products",
+								phase: "failed",
+								text: "Nothing found for «french baget»",
+							},
+							{
+								type: "error",
+								code: "task_failed",
+								message: "no plan reached the goal",
+								hint: "Try a broader word, or browse the Bakery department.",
+							},
+						)
+					: replies(
+							{ type: "delta", text: "ok" },
+							{ type: "done", elapsedMs: 1 },
+						),
+		});
+
+		await chat.send("buy a french baget");
+
+		expect(chat.state.error).toBe("request");
+		expect(chat.state.errorHint).toBe(
+			"Try a broader word, or browse the Bakery department.",
+		);
+		// Not offline: the connection is fine, so nothing pings and nothing blocks.
+		expect(chat.state.connection).toBe("online");
+		expect(chat.state.busy).toBe(false);
+		// The flow line the visitor saw stays.
+		expect(chat.state.messages.at(-1)?.steps?.[0]).toMatchObject({
+			phase: "failed",
+		});
+
+		// The next message goes out at once, and clears the error and its advice.
+		fail = false;
+		await chat.send("buy bread");
+		expect(log.filter((entry) => entry.startsWith("send:"))).toHaveLength(2);
+		expect(chat.state.error).toBeUndefined();
+		expect(chat.state.errorHint).toBeUndefined();
+	});
+
+	test("a task failure without advice is still a request error", async () => {
+		const { chat } = harness({
+			stream: () =>
+				replies({
+					type: "error",
+					code: "task_failed",
+					message: "no plan reached the goal",
+				}),
+		});
+		await chat.send("hi");
+		expect(chat.state.error).toBe("request");
+		expect(chat.state.errorHint).toBeUndefined();
 	});
 
 	test("a later successful send clears the error", async () => {

@@ -189,7 +189,7 @@ Query: `channel` (slug), `kind`, `status`, `q` (поиск по displayName/exte
 }
 ```
 
-- `rows` — по дням (UTC) × `kind` (`ingest` / `generate` / `decision` / `translate`; `translate` — не LLM, а переводчик сообщения CTranslate2, `provider: ctranslate2`, `action_name: translate`, токенов нет), `overall` — по `kind` за весь период.
+- `rows` — по дням (UTC) × `kind` (`ingest` / `generate` / `decision` / `translate`; `translate` — не LLM, а переводчик сообщения CTranslate2, `provider: ctranslate2`, `action_name: translate`, токенов нет; `classify` — определение намерения сообщения, `action_name: classify`, `provider` = `laya` / `memory` / `rules` — кто решил), `overall` — по `kind` за весь период.
 - Перцентили — nearest-rank по `latencyMs` всех вызовов, включая упавшие (`failed` — их число).
 - `tokensPerSecond` — медиана `outputTokens / latency` по успешным вызовам с usage; `null`, если
   таких нет (у Laya токенов нет).
@@ -239,7 +239,7 @@ Query: `channel` (slug), `kind`, `status`, `q` (поиск по displayName/exte
 
 **admin-api (BFF) → панель.** Панель не склеивает прогоны и не угадывает статусы: `GET /api/requests`
 отдаёт ту же страницу, а `GET /api/requests/:id` — `RequestView`, уже готовый к отрисовке:
-`nodes` (`prompt` → `translate` (только если сообщение переводилось: его вызов есть в `llm_calls` первого прогона; `label`/`detail.text` — английский текст, `durationMs` — время перевода, вызов в `detail.calls`) → `understand` (его время без перевода) → шаги плана → `result`; у каждого `round`, `status`
+`nodes` (`prompt` → `translate` (только если сообщение переводилось: его вызов есть в `llm_calls` первого прогона; `label`/`detail.text` — английский текст, `durationMs` — время перевода, вызов в `detail.calls`) → `classify` (если намерение определялось в этом запросе: `label` — намерение, `detail.calls[0].provider` — кто решил; без каталога инструментов у треда определения нет) → `understand` (его время без перевода и определения намерения; при наличии `classify` его `label` — цель плана `ключ=значение …`) → шаги плана → `result`; у каждого `round`, `status`
 `done|running|browser|failed|skipped|diverged|pending|not_reached|reached|missed`, `startedAt`,
 `durationMs`, `detail` с аргументами тула, временем браузера, ответом тула, эффектами, ошибкой и
 вызовами моделей) и `edges` (`next`/`replan`). Браузерный тул — один шаг, хотя сервер останавливается
@@ -441,6 +441,26 @@ Visitor-токен: 32 случайных байта (base64url), в БД — т
 { "type": "step", "id": "search_products", "phase": "done", "text": "Нашёл: Mozzarella Cheese" }
 ```
 
+Терминальная строка `error` различает два случая:
+
+```json
+{ "type": "error", "code": "task_failed", "message": "no plan reached the goal",
+  "hint": "No products matched \"french baget\". Try a broader word…" }
+{ "type": "error", "message": "…" }
+```
+
+Когда задачу выполнить не удалось (ничего не нашёл, тул отказал), оркестратор не отдаёт голую ошибку:
+он запускает ещё один `runPlan` с целью `{ replied: true }`, и **beta-text** сам объясняет, что не
+вышло, и передаёт совет сайта (в промпт ответа попадают сбойный шаг и последний ответ тула) — такой
+ход заканчивается обычным `done` после `delta`, а сам запрос в админке остаётся `failed`. Строка
+`error` с `code: "task_failed"` приходит, только если и объяснить не удалось (текстовая модель
+недоступна): сервер отработал, а сайт не смог выполнить просьбу — проблема запроса, не соединения. `hint` — последний ответ тула сайта
+(`webmcp:*:text`, до 400 символов): его собственный совет, что попробовать. Без `code` — сбой на
+стороне сервера. Потерянное соединение клиент определяет сам (ответа нет вовсе). Виджет показывает
+три разные строки (`request` + `hint`, `failed`, `network`), и только `network`/`forbidden` блокируют
+отправку.
+
+
 `step` — «что сейчас происходит» для пользователя, готовым текстом на его языке (`page:lang`:
 русский/казахский → русский, остальные → английский; без языка страницы — русский). `id` — имя действия
 плана; следующая строка с тем же `id` **заменяет** предыдущую (начал → закончил). `phase`:
@@ -486,8 +506,14 @@ Visitor-токен: 32 случайных байта (base64url), в БД — т
 
 ### `GET /v1/widget/threads/:id/messages`
 
-→ `200` `{ "items": [{ "id": "1", "role": "user" | "assistant", "content": "...", "createdAt": 0 }] }`
-— последние сообщения треда (≤ `MESSAGE_RETENTION_PER_USER`), от старых к новым.
+→ `200` `{ "items": [{ "id": "1", "role": "user" | "assistant", "content": "...", "createdAt": 0,
+"steps": [{ "id": "search_products", "phase": "done" | "failed", "text": "Нашёл: …" }] }] }`
+— последние сообщения треда (≤ `MESSAGE_RETENTION_PER_USER`), от старых к новым. `content` реплики
+пользователя — текст как он был набран (с переносами строк и отступами), а не нормализованная
+строка, которую видит модель. `steps` (только у ответа, который использовал инструменты) — строки
+«flow» (✓ Нашёл: …), которые посетитель видел в стриме: сохраняются в `plan_runs.steps` каждого
+прогона и склеиваются по цепочке запроса (шаг сохраняет первое место и последнюю фазу; строка,
+оставшаяся `running`, не показывается).
 
 ### Общие статусы для запросов с visitor-токеном
 
@@ -530,3 +556,24 @@ Visitor-токен: 32 случайных байта (base64url), в БД — т
 | `401` | неверный секретный ключ (или канал не web) |
 | `404` | неизвестный slug; токен неизвестен, истёк или выдан другим каналом |
 | `409` | токен уже привязан к другому `externalUserId` |
+
+
+### Намерения (`intent_examples`)
+
+Классификатор намерения сообщения (`classifyMessageIntentDetailed`, только когда у треда есть каталог
+инструментов сайта) идёт так: слова `checkout`/`removeFromCart` (только слова, никогда модель) →
+**память канала** (одобренные примеры: точное совпадение нормализованного английского текста, затем
+наивный Байес, молчит при уверенности < 0.85 или если победитель — `checkout`/`removeFromCart`) →
+**Laya** на английском переводе → `chat`. Если Laya недоступна — слова, иначе `chat`. Ответ Laya
+сохраняется как пример со статусом `pending` и **ни на что не влияет**, пока админ его не одобрит;
+успех плана не считается подтверждением (план мог выполниться и с неверной целью), повторы тоже
+(Laya детерминирована). Память у каждого канала своя; новый сайт стартует пустым.
+
+`GET /v1/admin/intents?page=&pageSize=&status=&channelId=` (новые первыми) →
+`{ "items": [{ "id", "channelId", "channelName", "textKey", "sample", "intent", "source": "laya" | "admin",
+"status": "pending" | "approved" | "rejected", "planRunId", "seenCount", "createdAt", "updatedAt" }], "total" }`.
+
+`PATCH /v1/admin/intents/:id` `{ status?, intent? }` → `{ item }` (неизвестный id — `404`, неизвестное
+значение — `422`). Новый `intent` — метка админа (`source: admin`) и сразу `approved`; после любого
+решения модель канала пересобирается. admin-api: `GET /api/intents`, `PATCH /api/intents/:id`,
+live-тема `intents` (5 с).

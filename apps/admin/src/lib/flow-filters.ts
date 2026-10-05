@@ -9,11 +9,12 @@ export const REQUEST_STATUSES = [
 ] as const satisfies readonly RequestStatus[];
 
 /**
- * The intents a message can be classified as (`TOOL_INTENTS` in
+ * The intents a message can be classified as (`chat` plus `TOOL_INTENTS` in
  * `packages/core/src/goap/intent-taxonomy.ts`; the panel doesn't import core).
  * An intent outside the list still filters if it comes in the URL.
  */
 export const REQUEST_INTENTS = [
+	"chat",
 	"chooseStore",
 	"navigate",
 	"search",

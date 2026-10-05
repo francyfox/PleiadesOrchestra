@@ -28,6 +28,26 @@ const state = (patch: Partial<ChatState> = {}): ChatState => ({
 });
 
 describe("composer", () => {
+	test("only a forbidden channel or a lost connection locks sending; a request or server error never does", () => {
+		const { model } = setup();
+		model.draft = "next try";
+		for (const error of [
+			"request",
+			"failed",
+			"rate_limited",
+			"too_long",
+		] as const) {
+			model.render(state({ error }));
+			expect(model.sendDisabled).toBe(false);
+			expect(model.inputDisabled).toBe(false);
+		}
+		model.render(state({ connection: "offline", error: "network" }));
+		expect(model.sendDisabled).toBe(true);
+		model.render(state({ error: "forbidden" }));
+		expect(model.sendDisabled).toBe(true);
+		expect(model.inputDisabled).toBe(true);
+	});
+
 	test("sending needs text; whitespace alone is not text", () => {
 		const { model } = setup();
 		expect(model.sendDisabled).toBe(true);

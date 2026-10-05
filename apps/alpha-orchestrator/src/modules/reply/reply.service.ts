@@ -1,6 +1,11 @@
-import type { CallContext, GoapAction, WorldState } from "@repo/core";
+import type {
+	CallContext,
+	GoapAction,
+	IntentVerdict,
+	WorldState,
+} from "@repo/core";
 import {
-	classifyMessageIntent,
+	classifyMessageIntentDetailed,
 	goalForIntent,
 	MAX_TOOL_TEXT_CHARS,
 	PAGE_FACT,
@@ -13,6 +18,7 @@ import {
 	REPLY_ACTION,
 	REPLY_GOAL,
 } from "../goap/goap.service.ts";
+import { learnIntent } from "../intents/intents.service.ts";
 import { joinRequest } from "../plan-runs/plan-runs.service.ts";
 import { sessionFacts } from "../run-stream/run-stream.ts";
 import type { PreparedRun } from "../run-stream/run-stream.types.ts";
@@ -74,6 +80,9 @@ async function initialState(
 	});
 	const turn: WorldState = {
 		userMessage,
+		// As typed, only cleaned of control characters: what the history keeps,
+		// so a reloaded chat keeps its line breaks (`userMessage` is one line).
+		userMessageRaw: typedText(text),
 		// What the planner and the small models read; the reply is still about
 		// the original. Absent for a message that needed no translation.
 		...(english ? { userMessageEn: english } : {}),
@@ -91,6 +100,15 @@ async function initialState(
 
 /** Shown next to the call in the ledger and the graph (the files `translate-engine.ts` downloads). */
 const TRANSLATE_MODEL = "opus-mt-ru-en";
+
+/** The text as the user typed it: canonical unicode, `\n` line ends, no control characters other than line breaks and tabs. */
+export function typedText(text: string): string {
+	return text
+		.normalize("NFC")
+		.replace(/\r\n?/g, "\n")
+		.replace(/[^\P{Cc}\n\t]/gu, "")
+		.trim();
+}
 
 /** Any letter that is not Latin: the message is not (only) English. */
 const NOT_ENGLISH = /(?!\p{Script=Latin})\p{L}/u;
@@ -136,6 +154,37 @@ function translateMessage(
 	}
 }
 
+/** Who decided the intent, as the ledger names it (shown in the graph). */
+const INTENT_PROVIDERS = {
+	words: { provider: "rules", model: "message-cues" },
+	memory: { provider: "memory", model: "intent-memory" },
+	laya: { provider: "laya", model: "gamma-decision" },
+	fallback: { provider: "rules", model: "message-cues" },
+} as const;
+
+function reportIntent(
+	deps: ReplyDeps,
+	verdict: IntentVerdict,
+	context: CallContext & { latencyMs: number },
+): void {
+	const { latencyMs, ...call } = context;
+	const recorder = deps.usageRecorder?.record
+		? { record: deps.usageRecorder.record.bind(deps.usageRecorder) }
+		: undefined;
+	recordCall(recorder, {
+		...call,
+		actionName: "classify",
+		kind: "classify",
+		...INTENT_PROVIDERS[verdict.source],
+		latencyMs,
+		at: deps.now(),
+		ok: verdict.source !== "fallback",
+		...(verdict.source === "fallback"
+			? { error: "Laya did not answer; decided by words or chat" }
+			: {}),
+	});
+}
+
 /** Plan inputs for a brand-new user message. */
 export async function prepareNewMessage(
 	deps: ReplyDeps,
@@ -161,11 +210,44 @@ export async function prepareNewMessage(
 	if (dynamicActions.length === 0) {
 		return { state, goal: REPLY_GOAL, actions };
 	}
-	const intent = await classifyMessageIntent(
-		{ decisionAgent: deps.decisionAgent },
-		String(state.userMessage ?? ""),
-		typeof state.userMessageEn === "string" ? state.userMessageEn : undefined,
+	const english =
+		typeof state.userMessageEn === "string" ? state.userMessageEn : undefined;
+	const original = String(state.userMessage ?? "");
+	const startedAt = performance.now();
+	const verdict = await classifyMessageIntentDetailed(
+		{
+			decisionAgent: deps.decisionAgent,
+			// A new site has no hand-written words: only checkout and removal are
+			// taken from words; the rest comes from what the site has been taught,
+			// then from Laya.
+			rules: "guarded",
+			memory: (text) => deps.intentMemory?.classify(user.channelId, text),
+		},
+		original,
+		english,
 	);
+	const intent = verdict.intent;
+	reportIntent(deps, verdict, {
+		threadId,
+		userId: user.id,
+		planRunId,
+		latencyMs: Math.round(performance.now() - startedAt),
+	});
+	// Only what Laya decided is kept for a person to judge: the words are
+	// rules, and memory is already what a person approved.
+	if (verdict.source === "laya") {
+		try {
+			learnIntent(deps.db, {
+				channelId: user.channelId,
+				text: english ?? original,
+				intent,
+				planRunId,
+				now: deps.now(),
+			});
+		} catch (error) {
+			deps.onError?.(error);
+		}
+	}
 	const goal = goalForIntent(intent, REPLY_GOAL, actions);
 	return {
 		state: { ...state, messageIntent: intent },

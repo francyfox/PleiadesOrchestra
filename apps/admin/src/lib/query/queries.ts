@@ -43,6 +43,12 @@ export const liveQueries = {
 			queryFn: () => unwrap(api()["blocked-ips"].get({ query: params })),
 			...pushed,
 		}),
+	intents: (params: LiveTopics["intents"]["params"]) =>
+		queryOptions({
+			queryKey: topicKey("intents", params),
+			queryFn: () => unwrap(api().intents.get({ query: params })),
+			...pushed,
+		}),
 	admins: (params: LiveTopics["admins"]["params"]) =>
 		queryOptions({
 			queryKey: topicKey("admins", params),

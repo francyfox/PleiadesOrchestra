@@ -2,6 +2,7 @@ import type { AdminsPage } from "../admins/admins.schema.ts";
 import type { Agent } from "../agents/agents.schema.ts";
 import type { BlockedIp } from "../blocked-ips/blocked-ips.schema.ts";
 import type { Channel } from "../channels/channels.schema.ts";
+import type { IntentsPage, IntentsQuery } from "../intents/intents.schema.ts";
 import type { McpSites } from "../mcp/mcp.schema.ts";
 import type { PerformanceReport } from "../performance/performance.schema.ts";
 import type {
@@ -41,6 +42,7 @@ export interface LiveTopics {
 	users: { params: UsersQuery; data: UsersPage };
 	user: { params: { id: string }; data: UserDetails };
 	channels: { params: PageParams; data: { items: Channel[]; total: number } };
+	intents: { params: IntentsQuery; data: IntentsPage };
 	"blocked-ips": {
 		params: PageParams;
 		data: { items: BlockedIp[]; total: number };

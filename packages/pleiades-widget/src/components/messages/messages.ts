@@ -14,8 +14,8 @@ export function createMessages(greeting: string) {
 	);
 	return {
 		...component,
-		render(messages: readonly ChatMessage[], root: ParentNode) {
-			component.model.render(messages);
+		render(messages: readonly ChatMessage[], busy: boolean, root: ParentNode) {
+			component.model.render(messages, busy);
 			// Alpine updates the DOM on the next microtask; move what it drew after that.
 			Alpine.nextTick(() => {
 				const list = root.querySelector<HTMLElement>(".messages");

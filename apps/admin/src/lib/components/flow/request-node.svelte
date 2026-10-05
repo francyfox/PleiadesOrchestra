@@ -50,6 +50,7 @@
 	const kindTone: Record<string, string> = {
 		prompt: "border-primary bg-primary/5",
 		translate: "border-primary/40 bg-background",
+		classify: "border-primary/50 bg-background",
 		understand: "border-primary/60 bg-background",
 	};
 

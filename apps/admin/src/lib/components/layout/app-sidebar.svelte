@@ -2,6 +2,7 @@
 	import ActivityIcon from "@lucide/svelte/icons/activity";
 	import BanIcon from "@lucide/svelte/icons/ban";
 	import BotIcon from "@lucide/svelte/icons/bot";
+	import BrainIcon from "@lucide/svelte/icons/brain";
 	import CircleQuestionMarkIcon from "@lucide/svelte/icons/circle-question-mark";
 	import GaugeIcon from "@lucide/svelte/icons/gauge";
 	import GlobeIcon from "@lucide/svelte/icons/globe";
@@ -24,6 +25,7 @@
 		{ href: "/", key: "dashboard", icon: ActivityIcon },
 		{ href: "/users", key: "users", icon: UsersIcon },
 		{ href: "/flow", key: "flow", icon: NetworkIcon },
+		{ href: "/intents", key: "intents", icon: BrainIcon },
 		{ href: "/mcp", key: "mcp", icon: PlugIcon },
 		{ href: "/agents", key: "agents", icon: BotIcon },
 		{ href: "/performance", key: "performance", icon: GaugeIcon },

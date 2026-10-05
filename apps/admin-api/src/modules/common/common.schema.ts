@@ -38,6 +38,7 @@ export const CallKind = t.UnionEnum([
 	"generate",
 	"decision",
 	"translate",
+	"classify",
 ]);
 
 /** Optional offset paging; without `pageSize` the whole list comes back. */

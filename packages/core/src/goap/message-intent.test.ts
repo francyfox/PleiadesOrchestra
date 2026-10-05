@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import type { DecisionAgent, DecisionAnswer } from "../decision-types.ts";
-import { classifyMessageIntent, goalForIntent } from "./message-intent.ts";
+import {
+	classifyMessageIntent,
+	classifyMessageIntentDetailed,
+	goalForIntent,
+} from "./message-intent.ts";
 import type { GoapAction } from "./types.ts";
 
 function fakeDecisionAgent(
@@ -32,6 +36,107 @@ function choiceAnswer(choice: string): DecisionAnswer {
 		rl_agent: { act_probability: 1 },
 	};
 }
+
+describe("classifyMessageIntentDetailed", () => {
+	const hit = (intent: "addToCart" | "chat") => ({
+		intent,
+		via: "model" as const,
+		confidence: 0.97,
+	});
+
+	test("what the site's memory knows is answered without asking Laya", async () => {
+		const decisionAgent = fakeDecisionAgent(choiceAnswer("search"));
+		const asked: string[] = [];
+
+		const verdict = await classifyMessageIntentDetailed(
+			{
+				decisionAgent,
+				rules: "guarded",
+				memory: (text) => {
+					asked.push(text);
+					return hit("addToCart");
+				},
+			},
+			"положи куртку в корзину",
+			"put the jacket in the cart",
+		);
+
+		expect(verdict).toEqual({
+			intent: "addToCart",
+			source: "memory",
+			confidence: 0.97,
+		});
+		// The memory is asked about the English text, as Laya would be.
+		expect(asked).toEqual(["put the jacket in the cart"]);
+		expect(decisionAgent.capturedState).toBeUndefined();
+	});
+
+	test("without a memory answer Laya decides, and the verdict says so", async () => {
+		const decisionAgent = fakeDecisionAgent(choiceAnswer("search"));
+
+		const verdict = await classifyMessageIntentDetailed(
+			{ decisionAgent, rules: "guarded", memory: () => undefined },
+			"что-нибудь вкусное к чаю",
+			"something tasty for tea",
+		);
+
+		expect(verdict).toMatchObject({ intent: "search", source: "laya" });
+		expect(decisionAgent.capturedState).toEqual({
+			message: "something tasty for tea",
+		});
+	});
+
+	test("guarded rules: only the words of checkout/removal are taken from rules, everything else goes to memory and Laya", async () => {
+		const decisionAgent = fakeDecisionAgent(choiceAnswer("search"));
+
+		// «купи 1 сыр» is a plain rule hit in the default mode; guarded, Laya decides.
+		expect(
+			await classifyMessageIntentDetailed(
+				{ decisionAgent, rules: "guarded" },
+				"купи 1 сыр",
+			),
+		).toMatchObject({ intent: "search", source: "laya" });
+
+		// But «оформи заказ» is still decided by its words, before memory and Laya.
+		const verdict = await classifyMessageIntentDetailed(
+			{ decisionAgent, rules: "guarded", memory: () => hit("addToCart") },
+			"оформи заказ",
+		);
+		expect(verdict).toMatchObject({ intent: "checkout", source: "words" });
+	});
+
+	test("a Laya that fails costs the answer, not the message: the words decide, else chat", async () => {
+		const decisionAgent: DecisionAgent = {
+			async decide() {
+				throw new Error("laya is down");
+			},
+		};
+
+		expect(
+			await classifyMessageIntentDetailed(
+				{ decisionAgent, rules: "guarded" },
+				"купи 1 сыр",
+			),
+		).toMatchObject({ intent: "addToCart", source: "fallback" });
+		expect(
+			await classifyMessageIntentDetailed(
+				{ decisionAgent, rules: "guarded" },
+				"сколько будет два плюс два?",
+			),
+		).toMatchObject({ intent: "chat", source: "fallback" });
+	});
+
+	test("the default mode still takes every word rule before memory and Laya", async () => {
+		const decisionAgent = fakeDecisionAgent(choiceAnswer("search"));
+
+		expect(
+			await classifyMessageIntentDetailed(
+				{ decisionAgent, memory: () => hit("chat") },
+				"купи 1 сыр",
+			),
+		).toMatchObject({ intent: "addToCart", source: "words" });
+	});
+});
 
 describe("classifyMessageIntent", () => {
 	test("returns Laya's tool intent for a message no word decides", async () => {

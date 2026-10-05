@@ -1,6 +1,7 @@
 import type { AccessMode, BulkAction } from "$lib/api-types";
 import { api } from "./api/client";
 import { type ActionResult, submitted } from "./api/result";
+import { REQUEST_INTENTS } from "./flow-filters";
 import { queryClient } from "./query/client";
 
 /**
@@ -148,6 +149,25 @@ export const userActions = {
 	unblock: (id: string) => submitted(api().users({ id }).unblock.post()),
 	deleteMessages: (id: string) =>
 		submitted(api().users({ id }).messages.delete()),
+};
+
+const INTENT_STATUSES = ["pending", "approved", "rejected"] as const;
+
+/** A person's verdict on a learned example: approve, reject, or a corrected intent (which approves it). */
+export const intentActions = {
+	judge: (form: FormData) =>
+		submitted(
+			api()
+				.intents({ id: text(form, "id") })
+				.patch({
+					status: INTENT_STATUSES.find(
+						(status) => status === form.get("status"),
+					),
+					intent: REQUEST_INTENTS.find(
+						(intent) => intent === form.get("intent"),
+					),
+				}),
+		),
 };
 
 export const channelActions = {

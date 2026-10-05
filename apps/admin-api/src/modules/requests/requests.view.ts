@@ -110,17 +110,51 @@ export function buildRequestView(upstream: Upstream): RequestView {
 	}
 	const translateMs = translation?.latencyMs ?? 0;
 
+	// Who decided the message's intent (the site's memory, Laya, or the words);
+	// a thread with no tool catalog skips the decision and has no such call.
+	const classification = llmCalls.find(
+		(call) => call.kind === "classify" && call.planRunId === runs[0]?.id,
+	);
+	if (classification) {
+		nodes.push({
+			id: "classify",
+			kind: "classify",
+			label: request.intent ?? "",
+			round: 0,
+			status: classification.ok ? "done" : "failed",
+			startedAt: Math.max(
+				request.startedAt + translateMs,
+				classification.at - classification.latencyMs,
+			),
+			durationMs: classification.latencyMs,
+			detail: {
+				...emptyDetail(),
+				intent: request.intent,
+				error: classification.error,
+				calls: [toNodeCall(classification)],
+			},
+		});
+	}
+	const classifyMs = classification?.latencyMs ?? 0;
+	const beforePlanMs = translateMs + classifyMs;
+
 	nodes.push({
 		id: "understand",
 		kind: "understand",
-		label: request.intent ?? "",
+		// The intent has its own node when it was decided in this request; then
+		// this one is about the plan's goal. Older requests keep the intent here.
+		label: classification
+			? Object.entries(request.goal)
+					.map(([key, value]) => `${key}=${value}`)
+					.join(" ")
+			: (request.intent ?? ""),
 		round: 0,
 		status: firstPlanned ? "done" : live ? "running" : "failed",
-		startedAt: request.startedAt + translateMs,
+		startedAt: request.startedAt + beforePlanMs,
 		durationMs: firstPlanned
-			? Math.max(0, firstPlanned.at - request.startedAt - translateMs)
+			? Math.max(0, firstPlanned.at - request.startedAt - beforePlanMs)
 			: live
-				? Math.max(0, now - request.startedAt - translateMs)
+				? Math.max(0, now - request.startedAt - beforePlanMs)
 				: null,
 		detail: { ...emptyDetail(), intent: request.intent, goal: request.goal },
 	});
@@ -359,12 +393,18 @@ export function buildRequestView(upstream: Upstream): RequestView {
 	});
 
 	// --- edges: a chain inside each round, replan edges between rounds -------
-	const edges: RequestEdge[] = translation
-		? [
-				{ from: "prompt", to: "translate", kind: "next" },
-				{ from: "translate", to: "understand", kind: "next" },
-			]
-		: [{ from: "prompt", to: "understand", kind: "next" }];
+	// prompt → [translate] → [classify] → understand, whichever of them happened.
+	const front = [
+		"prompt",
+		...(translation ? ["translate"] : []),
+		...(classification ? ["classify"] : []),
+		"understand",
+	];
+	const edges: RequestEdge[] = front
+		.slice(1)
+		.map(
+			(to, i): RequestEdge => ({ from: front[i] as string, to, kind: "next" }),
+		);
 	const previous = "understand";
 	let previousRound: number | undefined;
 	let tail = "understand";

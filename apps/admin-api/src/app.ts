@@ -7,6 +7,7 @@ import { agentsRoutes } from "./modules/agents/agents.ts";
 import { blockedIpsRoutes } from "./modules/blocked-ips/blocked-ips.ts";
 import { channelsRoutes } from "./modules/channels/channels.ts";
 import { dashboardRoutes } from "./modules/dashboard/dashboard.ts";
+import { intentsRoutes } from "./modules/intents/intents.ts";
 import { liveRoutes } from "./modules/live/live.ts";
 import { createLiveHub } from "./modules/live-hub/live-hub.ts";
 import { createLiveTopics } from "./modules/live-topics/live-topics.ts";
@@ -78,6 +79,7 @@ export function createApp(input: AdminApiDeps) {
 				.use(agentsRoutes(deps))
 				.use(channelsRoutes(deps))
 				.use(blockedIpsRoutes(deps))
+				.use(intentsRoutes(deps))
 				.use(systemRoutes(deps))
 				.use(liveRoutes(deps)),
 		);

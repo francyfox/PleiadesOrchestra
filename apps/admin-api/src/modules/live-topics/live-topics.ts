@@ -5,6 +5,7 @@ import { fetchAdminsPage } from "../admins/admins.service.ts";
 import { PageQuery } from "../common/common.schema.ts";
 import type { FetchContext } from "../common/common.types.ts";
 import { fetchDashboard } from "../dashboard/dashboard.service.ts";
+import { IntentsQuery } from "../intents/intents.schema.ts";
 import type { LiveTopic } from "../live/live.types.ts";
 import type { HubTopic } from "../live-hub/live-hub.ts";
 import { fetchMcpSites } from "../mcp/mcp.service.ts";
@@ -23,6 +24,7 @@ export const LIVE_INTERVALS_MS: Record<LiveTopic, number> = {
 	user: 3000,
 	channels: 10000,
 	"blocked-ips": 10000,
+	intents: 5000,
 	admins: 10000,
 	agents: 10000,
 	performance: 15000,
@@ -79,6 +81,11 @@ export function createLiveTopics(
 			intervalMs: every("channels"),
 			validate: strictly(PageQuery),
 			fetch: (params) => orchestrator.listChannels(params as never),
+		},
+		intents: {
+			intervalMs: every("intents"),
+			validate: strictly(IntentsQuery),
+			fetch: (params) => orchestrator.listIntents(params as never),
 		},
 		"blocked-ips": {
 			intervalMs: every("blocked-ips"),

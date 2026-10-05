@@ -10,6 +10,7 @@ import { config } from "./modules/config/config.service.ts";
 import { db } from "./modules/database/database.instance.ts";
 import { decisionAgent } from "./modules/decisions/decisions.instance.ts";
 import { functionCallAgent } from "./modules/function-calls/function-calls.instance.ts";
+import { historyStore } from "./modules/history/history.instance.ts";
 import { assertRetentionCoversHistory } from "./modules/retention/retention.service.ts";
 import { startRetentionJobs } from "./modules/retention/retention.ts";
 import { runs } from "./modules/run-binding/run-binding.instance.ts";
@@ -59,6 +60,7 @@ const app = createApp({
 	channels: channelDirectory,
 	runs,
 	usageRecorder,
+	historyStore,
 	worldStateStore: new SqliteWorldStateStore(db),
 	ipHashSalt: config.IP_HASH_SALT,
 	agents: {

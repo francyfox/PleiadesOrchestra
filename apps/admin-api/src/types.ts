@@ -33,6 +33,12 @@ export type {
 	WorldState,
 } from "./modules/common/common.schema.ts";
 export type {
+	IntentExample,
+	IntentsPage,
+	IntentsQuery,
+	IntentVerdictInput,
+} from "./modules/intents/intents.schema.ts";
+export type {
 	DashboardData,
 	LiveClientMessage,
 	LiveErrorCode,

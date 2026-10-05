@@ -95,6 +95,32 @@ describe("viewToGraph", () => {
 		expect(x("1:a")).toBeLessThan(x("result") ?? 0);
 	});
 
+	test("translation, intent decision and understanding each get a column before the plan", () => {
+		const graph = viewToGraph(
+			view(
+				[
+					node("prompt", "prompt", 0),
+					node("translate", "translate", 0),
+					node("classify", "classify", 0),
+					node("understand", "understand", 0),
+					node("1:a", "action", 1),
+					node("result", "result", 0, "reached"),
+				],
+				[],
+			),
+		);
+		const columns = [
+			"prompt",
+			"translate",
+			"classify",
+			"understand",
+			"1:a",
+			"result",
+		].map((id) => graph.nodes.find((n) => n.id === id)?.position.x ?? -1);
+		expect([...columns].sort((a, b) => a - b)).toEqual(columns);
+		expect(new Set(columns).size).toBe(6);
+	});
+
 	test("a replan round drops to its own row and continues to the right", () => {
 		const graph = viewToGraph(
 			view(

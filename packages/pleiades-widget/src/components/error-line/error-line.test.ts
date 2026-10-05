@@ -14,6 +14,18 @@ describe("error line", () => {
 		expect(model.text).toBe("");
 	});
 
+	test("a request error shows the site's advice after its own sentence; a lost connection never does", () => {
+		const model = createErrorLineModel(s);
+		model.render("request", "Try a broader word.");
+		expect(model.text).toBe(`${s.request} Try a broader word.`);
+		model.render("request");
+		expect(model.text).toBe(s.request);
+		model.render("network", "ignored");
+		expect(model.text).toBe(s.network);
+		expect(s.request).not.toBe(s.network);
+		expect(s.request).not.toBe(s.failed);
+	});
+
 	test("every kind of error has a text", () => {
 		const model = createErrorLineModel(s);
 		for (const error of [
@@ -22,6 +34,7 @@ describe("error line", () => {
 			"too_long",
 			"network",
 			"failed",
+			"request",
 		] as const) {
 			model.render(error);
 			expect(model.text).not.toBe("");

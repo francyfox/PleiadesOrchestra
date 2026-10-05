@@ -14,6 +14,7 @@ import { type AppDeps, createApp } from "./app.ts";
 import { ChannelDirectory } from "./modules/channel-directory/channel-directory.ts";
 import { createWebChannel } from "./modules/channels/channels.service.ts";
 import { testDb } from "./modules/database/database.testing.ts";
+import { listIntentExamples } from "./modules/intents/intents.service.ts";
 import { RunBinding } from "./modules/run-binding/run-binding.ts";
 import { resolveThreadId } from "./modules/threads/threads.service.ts";
 import { upsertIdentifiedUser } from "./modules/users/users.service.ts";
@@ -879,15 +880,17 @@ describe("createApp — the message is translated as it comes in", () => {
 				"купи 1 сыр",
 			),
 		);
-		expect(recorded).toHaveLength(1);
-		expect(recorded[0]).toMatchObject({
+		const translations = () =>
+			recorded.filter((call) => call.kind === "translate");
+		expect(translations()).toHaveLength(1);
+		expect(translations()[0]).toMatchObject({
 			kind: "translate",
 			provider: "ctranslate2",
 			actionName: "translate",
 			ok: true,
 		});
-		expect(recorded[0]?.planRunId).toBeString();
-		expect(recorded[0]?.latencyMs).toBeGreaterThanOrEqual(0);
+		expect(translations()[0]?.planRunId).toBeString();
+		expect(translations()[0]?.latencyMs).toBeGreaterThanOrEqual(0);
 
 		recorded.length = 0;
 		await readNdjson(
@@ -901,7 +904,7 @@ describe("createApp — the message is translated as it comes in", () => {
 				"купи 1 сыр",
 			),
 		);
-		expect(recorded[0]).toMatchObject({
+		expect(translations()[0]).toMatchObject({
 			kind: "translate",
 			ok: false,
 			error: "model not loaded",
@@ -914,7 +917,7 @@ describe("createApp — the message is translated as it comes in", () => {
 				"buy 1 cheese",
 			),
 		);
-		expect(recorded).toEqual([]);
+		expect(translations()).toEqual([]);
 	});
 
 	test("a message already in English is not translated", async () => {
@@ -974,5 +977,121 @@ describe("createApp — the message is translated as it comes in", () => {
 		await readNdjson(await post(app, "ноутбук, пожалуйста"));
 
 		expect(seenByLaya).toEqual([{ message: "a laptop, please" }]);
+	});
+});
+
+describe("createApp — the intent is decided by memory first, then Laya, and what Laya says is kept for a person to judge", () => {
+	function setup(decide: DecisionAgent["decide"]) {
+		const db = testDb();
+		const recorded: LlmCallRecord[] = [];
+		const { channel } = createWebChannel(
+			db,
+			{ slug: "shop", name: "Shop", accessMode: "open", allowedOrigins: [] },
+			1,
+		);
+		const action: GoapAction = {
+			name: "recorder",
+			cost: 0,
+			preconditions: {},
+			effects: { replied: true },
+			execute: async () => ({ replied: true }),
+		};
+		const app = createTestApp({
+			db,
+			agent: fakeAgent(singleDeltaStream),
+			decisionAgent: fakeDecisionAgent(decide),
+			threadActionsFor: () => [action],
+			usageRecorder: { flush() {}, record: (call) => recorded.push(call) },
+		});
+		const send = (text: string) =>
+			app
+				.handle(
+					authedRequest("http://harness.local/v1/messages", {
+						method: "POST",
+						headers: { "content-type": "application/json" },
+						body: JSON.stringify({
+							threadId: "t1",
+							userId: "u1",
+							text,
+							channel: "shop",
+						}),
+					}),
+				)
+				.then(readNdjson);
+		const classified = () =>
+			recorded.filter((call) => call.kind === "classify");
+		/** An admin's verdict over HTTP, which also tells the site's memory to rebuild. */
+		const judge = (id: string, body: object) =>
+			app.handle(
+				new Request(`http://harness.local/v1/admin/intents/${id}`, {
+					method: "PATCH",
+					headers: {
+						authorization: "Bearer test-admin-key",
+						"x-admin-id": "admin-1",
+						"content-type": "application/json",
+					},
+					body: JSON.stringify(body),
+				}),
+			);
+		return { db, channel, send, classified, judge };
+	}
+
+	const laya =
+		(choice: string): DecisionAgent["decide"] =>
+		async () => ({
+			intent: {
+				type: "choice",
+				choice,
+				probabilities: { [choice]: 1 },
+				confidence: 1,
+				rl_agent: { act_probability: 1 },
+			},
+		});
+
+	test("Laya's answer is reported and kept as a pending example, not used yet", async () => {
+		const { db, send, classified } = setup(laya("search"));
+
+		await send("something tasty for tea");
+
+		expect(classified()).toHaveLength(1);
+		expect(classified()[0]).toMatchObject({
+			provider: "laya",
+			actionName: "classify",
+			ok: true,
+		});
+		const { items } = listIntentExamples(db, {});
+		expect(items).toHaveLength(1);
+		expect(items[0]).toMatchObject({
+			sample: "something tasty for tea",
+			intent: "search",
+			status: "pending",
+		});
+	});
+
+	test("an approved example answers the same text without Laya, and nothing new is kept", async () => {
+		let layaCalls = 0;
+		const { db, send, classified, judge } = setup(async (...args) => {
+			layaCalls++;
+			return laya("search")(...args);
+		});
+		await send("something tasty for tea");
+		const [row] = listIntentExamples(db, {}).items;
+		await judge(row?.id ?? "", { intent: "addToCart" });
+		layaCalls = 0;
+
+		await send("Something tasty for tea!");
+
+		expect(layaCalls).toBe(0);
+		expect(classified().at(-1)).toMatchObject({ provider: "memory" });
+		expect(listIntentExamples(db, {}).items).toHaveLength(1);
+	});
+
+	test("the words of a payment are decided by words, and not kept for judging", async () => {
+		const { db, send, classified } = setup(laya("search"));
+
+		await send("pay for my order");
+
+		expect(classified()[0]).toMatchObject({ provider: "rules" });
+		expect(listIntentExamples(db, {}).total).toBe(0);
 	});
 });

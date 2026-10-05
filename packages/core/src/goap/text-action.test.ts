@@ -49,6 +49,29 @@ describe("createTextAction", () => {
 		expect(effects).toEqual({ replied: true, replyText: "Hello, world." });
 	});
 
+	test("hands the agent the text to keep in the history, when the config says what it is", async () => {
+		const agent = fakeAgent([{ type: "done", elapsedMs: 1 }]);
+		const action = createTextAction({
+			name: "generateReply",
+			cost: 5,
+			preconditions: {},
+			effects: { replied: true },
+			agent,
+			toChunks: () => ["a prompt written for the model"],
+			toHistoryText: (state) => String(state.userMessageRaw),
+			threadId: () => "t1",
+			userId: () => "u1",
+			toEffects: () => ({ replied: true }),
+		});
+
+		await action.execute({ state: { userMessageRaw: "line 1\nline 2" } });
+
+		expect(agent.capturedMessage?.historyText).toBe("line 1\nline 2");
+		expect(agent.capturedMessage?.chunks).toEqual([
+			"a prompt written for the model",
+		]);
+	});
+
 	test("builds the IncomingMessage from live world state via threadId/userId/toChunks", async () => {
 		const agent = fakeAgent([{ type: "done", elapsedMs: 1 }]);
 

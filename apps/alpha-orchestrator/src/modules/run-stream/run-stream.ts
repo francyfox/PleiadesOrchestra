@@ -1,4 +1,5 @@
 import type {
+	GoapAction,
 	PlanTraceEvent,
 	RunLock,
 	WorldState,
@@ -6,7 +7,9 @@ import type {
 } from "@repo/core";
 import { runPlan, SESSION_FACTS } from "@repo/core";
 import type { ActiveRuns } from "../active-runs/active-runs.ts";
+import type { StoredStep } from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
+import { REPLY_ACTION, REPLY_GOAL } from "../goap/goap.service.ts";
 import { finishPlanRun } from "../plan-runs/plan-runs.service.ts";
 import type { RunBinding } from "../run-binding/run-binding.ts";
 import { encodeNdjsonLine } from "../streaming/streaming.service.ts";
@@ -52,6 +55,8 @@ interface RunOutcome {
 	waiting: boolean;
 	finalState: WorldState;
 	prepared: PreparedRun | undefined;
+	/** The flow lines sent to the visitor, one per step id in its last phase (kept so a reload shows them). */
+	steps: Map<string, StoredStep>;
 }
 
 /**
@@ -81,6 +86,7 @@ export function streamPlanRun(
 				waiting: false,
 				finalState: {},
 				prepared: undefined,
+				steps: new Map(),
 			};
 
 			try {
@@ -113,35 +119,87 @@ async function executeRun(
 	outcome.prepared = prepared;
 	outcome.finalState = prepared.state;
 
-	const result = await deps.runLock.withLock(input.run.threadId, () =>
-		runPlan({
-			state: prepared.state,
-			goal: prepared.goal,
-			actions: prepared.actions,
-			signal: input.signal,
-			// A tool that answers "error" (or a search with no hits) is not worth
-			// a third try: replanning would only pick the same action again.
-			maxActionFailures: MAX_ACTION_FAILURES,
-			onStep: (step) =>
-				send({
-					type: "step",
-					id: step.action,
-					phase: step.phase,
-					text: step.text,
-				}),
-			tracer: (event) => {
-				trace.push(event);
-				deps.activeRuns?.push(input.run.planRunId, event);
-			},
-			ctx: {
-				onDelta: (text: string) => send({ type: "delta", text }),
-			},
-		}),
+	const runOptions = {
+		signal: input.signal,
+		// A tool that answers "error" (or a search with no hits) is not worth
+		// a third try: replanning would only pick the same action again.
+		maxActionFailures: MAX_ACTION_FAILURES,
+		onStep: (step: {
+			action: string;
+			phase: StoredStep["phase"];
+			text: string;
+		}) => {
+			// Same id replaces its earlier line, as in the widget.
+			outcome.steps.set(step.action, {
+				id: step.action,
+				phase: step.phase,
+				text: step.text,
+			});
+			send({
+				type: "step",
+				id: step.action,
+				phase: step.phase,
+				text: step.text,
+			});
+		},
+		tracer: (event: PlanTraceEvent) => {
+			trace.push(event);
+			deps.activeRuns?.push(input.run.planRunId, event);
+		},
+		ctx: {
+			onDelta: (text: string) => send({ type: "delta", text }),
+		},
+	};
+
+	const { result, explained } = await deps.runLock.withLock(
+		input.run.threadId,
+		async () => {
+			const result = await runPlan({
+				state: prepared.state,
+				goal: prepared.goal,
+				actions: prepared.actions,
+				...runOptions,
+			});
+			if (result.succeeded || result.waiting || result.killed) {
+				return { result, explained: undefined };
+			}
+			// The task could not be done. Rather than a bare error line, the text
+			// model tells the visitor what happened and passes on the site's own
+			// advice (`replyChunks` hands it the failure and the site's last answer).
+			try {
+				const reply = await runPlan({
+					state: result.finalState,
+					goal: REPLY_GOAL,
+					actions: replyOnly(prepared.actions),
+					...runOptions,
+				});
+				return { result, explained: reply.succeeded ? reply : undefined };
+			} catch (error) {
+				deps.onError?.(error);
+				return { result, explained: undefined };
+			}
+		},
 	);
 	outcome.succeeded = result.succeeded;
 	outcome.waiting = result.waiting !== undefined;
-	outcome.finalState = result.finalState;
-	send(outcomeEvent(result, deps.now() - startedAt));
+	outcome.finalState = explained?.finalState ?? result.finalState;
+	// The run still counts as failed (the task wasn't done); the visitor got an answer.
+	send(
+		explained
+			? outcomeEvent(explained, deps.now() - startedAt)
+			: outcomeEvent(result, deps.now() - startedAt),
+	);
+}
+
+/**
+ * The actions for answering after a failed task: the reply no longer waits for
+ * the task's facts (`replyAfterTask` made it wait for e.g. `inCart`, which is
+ * exactly what did not happen).
+ */
+function replyOnly(actions: GoapAction[]): GoapAction[] {
+	return actions.map((action) =>
+		action.name === REPLY_ACTION ? { ...action, preconditions: {} } : action,
+	);
 }
 
 /** Saves the trace and usage, then the world-state checkpoint. Failures are reported, not thrown. */
@@ -157,6 +215,7 @@ async function persistRun(
 			succeeded: outcome.succeeded,
 			durationMs: deps.now() - startedAt,
 			events: trace,
+			steps: [...outcome.steps.values()],
 		});
 		deps.usageRecorder?.flush();
 		await saveCheckpoint(deps.worldStateStore, run.threadId, outcome);
