@@ -10,14 +10,12 @@
 	import DataTable from "$lib/components/data-table.svelte";
 	import { useFormat } from "$lib/i18n/use-format";
 
-	/** The sites that announced WebMCP functions; clicking a row shows that site's functions. */
+	/** The sites that announced WebMCP functions; clicking a row opens the site's own page. */
 	let {
 		sites,
-		selectedId,
 		onSelect,
 	}: {
 		sites: McpSite[];
-		selectedId: string | null;
 		onSelect: (channelId: string) => void;
 	} = $props();
 
@@ -65,6 +63,5 @@
 <DataTable
 	{table}
 	emptyText={$content.sites.empty.value}
-	rowClass={(site) => (site.channelId === selectedId ? "bg-muted" : "")}
 	onRowClick={(site) => onSelect(site.channelId)}
 />

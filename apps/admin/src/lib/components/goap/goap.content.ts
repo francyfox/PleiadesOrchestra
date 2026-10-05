@@ -9,9 +9,9 @@ const goapContent = {
 			kk: "GOAP — сұраулар",
 		}),
 		hint: t({
-			ru: "Один запрос — одно сообщение пользователя: от промпта через план до ответа. Выберите запрос, чтобы увидеть граф решения.",
-			en: "One request is one user message: from the prompt through the plan to the answer. Pick one to see its decision graph.",
-			kk: "Бір сұрау — пайдаланушының бір хабарламасы: промптан жоспар арқылы жауапқа дейін. Шешім графын көру үшін біреуін таңдаңыз.",
+			ru: "Один запрос — одно сообщение пользователя: от промпта через план до ответа. Откройте запрос, чтобы увидеть его граф решения.",
+			en: "One request is one user message: from the prompt through the plan to the answer. Open one to see its decision graph.",
+			kk: "Бір сұрау — пайдаланушының бір хабарламасы: промптан жоспар арқылы жауапқа дейін. Шешім графын көру үшін біреуін ашыңыз.",
 		}),
 		requests: {
 			title: t({
@@ -52,10 +52,10 @@ const goapContent = {
 				en: "Left to right: prompt → understanding → plan steps → result. Dashed edges are replans. The operation in progress is highlighted and its time keeps counting.",
 				kk: "Солдан оңға: промпт → талдау → жоспар қадамдары → нәтиже. Үзік сызық — қайта жоспарлау. Орындалып жатқан операция белгіленген, уақыты жүріп тұрады.",
 			}),
-			pick: t({
-				ru: "Выберите запрос в таблице выше.",
-				en: "Pick a request in the table above.",
-				kk: "Жоғарыдағы кестеден сұрауды таңдаңыз.",
+			back: t({
+				ru: "Все запросы",
+				en: "All requests",
+				kk: "Барлық сұраулар",
 			}),
 			notFound: t({
 				ru: "Запрос не найден — возможно, его трассу уже удалили вместе с историей.",

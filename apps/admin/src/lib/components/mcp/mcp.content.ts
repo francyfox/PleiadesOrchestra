@@ -9,6 +9,24 @@ const mcpContent = {
 			en: "Functions (WebMCP tools) the sites' pages announced when a visitor opened the widget. The newest catalog version of each site is shown; identical catalogs are not classified again.",
 			kk: "Келуші виджетті ашқанда сайт беттері жариялаған функциялар (WebMCP-тулдар). Әр сайттың каталогының соңғы нұсқасы көрсетіледі; бірдей каталогтар қайта жіктелмейді.",
 		}),
+		back: t({ ru: "Все сайты", en: "All sites", kk: "Барлық сайттар" }),
+		detail: {
+			tools: t({
+				ru: insert("функций: {{count}}"),
+				en: insert("{{count}} functions"),
+				kk: insert("функциялар: {{count}}"),
+			}),
+			versions: t({
+				ru: insert("версий: {{count}}"),
+				en: insert("{{count}} versions"),
+				kk: insert("нұсқалар: {{count}}"),
+			}),
+			lastSeen: t({
+				ru: insert("последний раз {{time}}"),
+				en: insert("last seen {{time}}"),
+				kk: insert("соңғы рет {{time}}"),
+			}),
+		},
 		sites: {
 			title: t({ ru: "Сайты", en: "Sites", kk: "Сайттар" }),
 			empty: t({
@@ -30,11 +48,6 @@ const mcpContent = {
 			},
 		},
 		tools: {
-			title: t({
-				ru: insert("Функции — {{site}}"),
-				en: insert("Functions — {{site}}"),
-				kk: insert("Функциялар — {{site}}"),
-			}),
 			empty: t({
 				ru: "У сайта нет функций",
 				en: "The site has no functions",

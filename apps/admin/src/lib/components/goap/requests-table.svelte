@@ -12,21 +12,19 @@
 	import { useFormat } from "$lib/i18n/use-format";
 	import { DEFAULT_PAGE_SIZE } from "$lib/pagination";
 
-	/** One server-cut page of requests; clicking a row opens its graph. */
+	/** One server-cut page of requests; clicking a row opens the request's own page. */
 	let {
 		requests,
 		total,
 		page,
-		selectedId,
 		hrefFor,
 		onSelect,
 	}: {
 		requests: RequestSummary[];
 		total: number;
 		page: number;
-		selectedId: string | null;
-		/** URL that shows `id` (or, for `null`, just a page) — keeps the other query parameter. */
-		hrefFor: (change: { page?: number; id?: string | null }) => string;
+		/** URL of a page of the list. */
+		hrefFor: (page: number) => string;
 		/** A row was clicked: open that request. */
 		onSelect: (id: string) => void;
 	} = $props();
@@ -87,12 +85,11 @@
 <DataTable
 	{table}
 	emptyText={$content.requests.empty.value}
-	rowClass={(request) => (request.id === selectedId ? "bg-muted" : "")}
 	onRowClick={(request) => onSelect(request.id)}
 	server={{
 		page,
 		pageSize: DEFAULT_PAGE_SIZE,
 		total,
-		href: (target) => hrefFor({ page: target }),
+		href: hrefFor,
 	}}
 />
