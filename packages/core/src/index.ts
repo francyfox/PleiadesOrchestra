@@ -88,6 +88,7 @@ export {
 } from "./goap";
 export { groundArguments } from "./ground-arguments";
 export { InMemoryHistoryStore } from "./history";
+export { recordCall } from "./record-call";
 export { repairArguments } from "./repair-arguments";
 export type { LlmStateFields, MessageEventFields } from "./telemetry";
 export { createTelemetry, jsonReporter, telemetry } from "./telemetry";

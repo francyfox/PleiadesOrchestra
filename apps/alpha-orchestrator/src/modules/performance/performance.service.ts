@@ -1,7 +1,8 @@
+import type { LlmCallKind } from "@repo/core";
 import type { Db } from "../database/database.ts";
 import { dayOf } from "../usage/usage.sql.ts";
 
-type Kind = "ingest" | "generate" | "decision";
+type Kind = LlmCallKind;
 
 export interface LatencyStats {
 	calls: number;

@@ -11,7 +11,7 @@
 	 */
 	let { data, selected }: NodeProps = $props();
 
-	const content = useIntlayer("goap");
+	const content = useIntlayer("flow");
 	const format = useFormat();
 
 	const status = $derived(String(data.status));
@@ -49,6 +49,7 @@
 	};
 	const kindTone: Record<string, string> = {
 		prompt: "border-primary bg-primary/5",
+		translate: "border-primary/40 bg-background",
 		understand: "border-primary/60 bg-background",
 	};
 

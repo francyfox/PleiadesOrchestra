@@ -99,6 +99,21 @@ describe("requests (proxied and shaped)", () => {
 		expect(upstream[0]?.url).toContain("/v1/admin/requests?page=2&pageSize=10");
 	});
 
+	test("the status and intent filters reach the orchestrator; an unknown status is refused", async () => {
+		const cookie = await signedIn();
+		setRespond(() => json({ items: [], total: 0 }));
+
+		const ok = await call("/api/requests?status=failed&intent=search", {
+			cookie,
+		});
+		expect(ok.status).toBe(200);
+		expect(upstream[0]?.url).toContain("status=failed");
+		expect(upstream[0]?.url).toContain("intent=search");
+
+		const bad = await call("/api/requests?status=nope", { cookie });
+		expect(bad.status).toBe(422);
+	});
+
 	test("one request comes back already shaped for drawing", async () => {
 		const cookie = await signedIn();
 		setRespond(() => json(DETAILS));

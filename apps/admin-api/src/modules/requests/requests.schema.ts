@@ -1,13 +1,29 @@
 import { type Static, t } from "elysia";
-import { nullable, WorldState } from "../common/common.schema.ts";
+import {
+	nullable,
+	oneOf,
+	PageQuery,
+	WorldState,
+} from "../common/common.schema.ts";
 import { TraceEvent } from "../plan-runs/plan-runs.schema.ts";
 
-export const RequestStatus = t.UnionEnum([
+const REQUEST_STATUSES = [
 	"running",
 	"waiting",
 	"succeeded",
 	"failed",
 	"abandoned",
+] as const;
+
+export const RequestStatus = t.UnionEnum(REQUEST_STATUSES);
+
+/** Paging plus optional filters; an omitted filter means "all". */
+export const RequestsQuery = t.Composite([
+	PageQuery,
+	t.Object({
+		status: t.Optional(oneOf(REQUEST_STATUSES)),
+		intent: t.Optional(t.String({ minLength: 1, maxLength: 64 })),
+	}),
 ]);
 
 /** One row of the requests table: a user message and what became of it. */
@@ -76,6 +92,7 @@ export const UpstreamRequestDetails = t.Object({
 
 export const NodeKind = t.UnionEnum([
 	"prompt",
+	"translate",
 	"understand",
 	"action",
 	"result",
@@ -149,6 +166,7 @@ export const RequestView = t.Object({
 	now: t.Number(),
 });
 
+export type RequestsQuery = Static<typeof RequestsQuery>;
 export type RequestStatus = Static<typeof RequestStatus>;
 export type RequestSummary = Static<typeof RequestSummary>;
 export type RequestsPage = Static<typeof RequestsPage>;

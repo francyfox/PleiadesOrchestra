@@ -8,6 +8,8 @@ import { type IssuedSecret, issued } from "./issued-secret.svelte";
 export function useChannelEnhance(
 	run: (form: FormData) => Promise<ActionResult>,
 	onSettled?: () => void,
+	/** Only after a successful call (e.g. close the create dialog; a failed one stays open with its input). */
+	onDone?: () => void,
 ) {
 	const content = useIntlayer("channels");
 	return useActionEnhance({
@@ -16,6 +18,7 @@ export function useChannelEnhance(
 		resetOnSuccess: true,
 		onSuccess: (data) => {
 			if (data.secret) issued.current = data.secret as IssuedSecret;
+			onDone?.();
 		},
 		quietSuccess: (data) => Boolean(data.secret),
 		errorText: (code) =>

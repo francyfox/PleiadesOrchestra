@@ -7,11 +7,14 @@ import { useActionEnhance } from "$lib/components/use-action-enhance";
 export function useAdminEnhance(
 	run: (form: FormData) => Promise<ActionResult>,
 	onSettled?: () => void,
+	/** Only after a successful call (e.g. close the create dialog; a failed one stays open with its input). */
+	onDone?: () => void,
 ) {
 	const content = useIntlayer("admins");
 	return useActionEnhance({
 		run,
 		onSettled,
+		onSuccess: () => onDone?.(),
 		resetOnSuccess: true,
 		errorText: (code, data) => {
 			const errors = get(content).errors;

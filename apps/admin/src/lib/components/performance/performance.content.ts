@@ -20,6 +20,11 @@ const performanceContent = {
 				en: "beta-text: digest of a long message's part",
 				kk: "beta-text: ұзын хабарлама бөлігінің конспектісі",
 			}),
+			translate: t({
+				ru: "CTranslate2: перевод сообщения ru→en",
+				en: "CTranslate2: message translation ru→en",
+				kk: "CTranslate2: хабарлама аудармасы ru→en",
+			}),
 			decision: t({
 				ru: "gamma-decision: typed decision",
 				en: "gamma-decision: typed decision",

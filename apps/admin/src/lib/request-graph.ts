@@ -45,10 +45,15 @@ export function viewToGraph(view: RequestView): RequestGraph {
 		(a, b) => a - b,
 	);
 
+	// A translated message has one more column (prompt → translation →
+	// understanding); the plan's rounds start right after the understanding.
+	const understandColumn = view.nodes.some((node) => node.kind === "translate")
+		? 2
+		: 1;
 	// Where each round starts: the first right after the understanding, every
 	// later one after the end of the round before it.
 	const startColumn = new Map<number, number>();
-	let column = 2;
+	let column = understandColumn + 1;
 	for (const round of rounds) {
 		startColumn.set(round, column);
 		column += actions.filter((node) => node.round === round).length;
@@ -63,8 +68,11 @@ export function viewToGraph(view: RequestView): RequestGraph {
 		if (node.kind === "prompt") {
 			x = 0;
 			y = 0;
-		} else if (node.kind === "understand") {
+		} else if (node.kind === "translate") {
 			x = 1;
+			y = 0;
+		} else if (node.kind === "understand") {
+			x = understandColumn;
 			y = 0;
 		} else if (node.kind === "result") {
 			x = column;
@@ -72,7 +80,7 @@ export function viewToGraph(view: RequestView): RequestGraph {
 		} else {
 			const index = seen.get(node.round) ?? 0;
 			seen.set(node.round, index + 1);
-			x = (startColumn.get(node.round) ?? 2) + index;
+			x = (startColumn.get(node.round) ?? understandColumn + 1) + index;
 			y = row.get(node.round) ?? 0;
 		}
 		return {

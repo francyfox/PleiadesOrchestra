@@ -1,5 +1,6 @@
 import { groundArguments } from "./ground-arguments";
 import { createBearerJsonClient } from "./http-client";
+import { recordCall } from "./record-call";
 import { repairArguments } from "./repair-arguments";
 import {
 	type createTelemetry,
@@ -136,23 +137,21 @@ export function createFunctionCallAgent(
 			| { ok: false; error: string },
 	) {
 		const latencyMs = Date.now() - startedAt;
-		telemetry.logLlmState({
-			provider: "delta",
-			model: config.model,
-			latencyMs,
-			...outcome,
-		});
-		config.usageRecorder?.record({
-			...request.context,
-			threadId: request.context?.threadId ?? "",
-			userId: request.context?.userId ?? "",
-			kind: "decision",
-			provider: "delta",
-			model: config.model,
-			latencyMs,
-			at: Date.now(),
-			...outcome,
-		});
+		recordCall(
+			config.usageRecorder,
+			{
+				...request.context,
+				threadId: request.context?.threadId ?? "",
+				userId: request.context?.userId ?? "",
+				kind: "decision",
+				provider: "delta",
+				model: config.model,
+				latencyMs,
+				at: Date.now(),
+				...outcome,
+			},
+			telemetry,
+		);
 	}
 
 	return {

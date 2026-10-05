@@ -75,6 +75,26 @@ describe("viewToGraph", () => {
 		expect(at("result")?.y).toBe(0);
 	});
 
+	test("a translation sits between the prompt and the understanding and pushes the rest one column right", () => {
+		const graph = viewToGraph(
+			view(
+				[
+					node("prompt", "prompt", 0),
+					node("translate", "translate", 0),
+					node("understand", "understand", 0),
+					node("1:a", "action", 1),
+					node("result", "result", 0, "reached"),
+				],
+				[],
+			),
+		);
+		const x = (id: string) => graph.nodes.find((n) => n.id === id)?.position.x;
+		expect(x("prompt")).toBeLessThan(x("translate") ?? 0);
+		expect(x("translate")).toBeLessThan(x("understand") ?? 0);
+		expect(x("understand")).toBeLessThan(x("1:a") ?? 0);
+		expect(x("1:a")).toBeLessThan(x("result") ?? 0);
+	});
+
 	test("a replan round drops to its own row and continues to the right", () => {
 		const graph = viewToGraph(
 			view(

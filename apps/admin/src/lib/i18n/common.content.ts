@@ -15,6 +15,7 @@ const commonContent = {
 		no: t({ ru: "нет", en: "no", kk: "жоқ" }),
 		cancel: t({ ru: "Отмена", en: "Cancel", kk: "Бас тарту" }),
 		save: t({ ru: "Сохранить", en: "Save", kk: "Сақтау" }),
+		add: t({ ru: "Добавить", en: "Add", kk: "Қосу" }),
 		create: t({ ru: "Создать", en: "Create", kk: "Құру" }),
 		delete: t({ ru: "Удалить", en: "Delete", kk: "Жою" }),
 		done: t({ ru: "Готово", en: "Done", kk: "Дайын" }),
@@ -67,6 +68,7 @@ const commonContent = {
 			generate: t({ ru: "Генерация", en: "Generation", kk: "Генерация" }),
 			ingest: t({ ru: "Ingest", en: "Ingest", kk: "Ingest" }),
 			decision: t({ ru: "Laya", en: "Laya", kk: "Laya" }),
+			translate: t({ ru: "Перевод", en: "Translation", kk: "Аударма" }),
 		},
 	},
 } satisfies Dictionary;

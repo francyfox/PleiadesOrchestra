@@ -1,4 +1,4 @@
-import type { GoapAction, WorldState } from "@repo/core";
+import type { CallContext, GoapAction, WorldState } from "@repo/core";
 import {
 	classifyMessageIntent,
 	goalForIntent,
@@ -6,6 +6,7 @@ import {
 	PAGE_FACT,
 	PAGE_LANG_FACT,
 	parsePage,
+	recordCall,
 } from "@repo/core";
 import {
 	customerFacts,
@@ -66,7 +67,11 @@ async function initialState(
 	options: ReplyOptions,
 ): Promise<WorldState> {
 	const userMessage = normalizeText.apply(text);
-	const english = translateMessage(deps, userMessage);
+	const english = translateMessage(deps, userMessage, {
+		threadId,
+		userId: user.id,
+		planRunId,
+	});
 	const turn: WorldState = {
 		userMessage,
 		// What the planner and the small models read; the reply is still about
@@ -84,6 +89,9 @@ async function initialState(
 	return checkpoint ? { ...sessionFacts(checkpoint.state), ...turn } : turn;
 }
 
+/** Shown next to the call in the ledger and the graph (the files `translate-engine.ts` downloads). */
+const TRANSLATE_MODEL = "opus-mt-ru-en";
+
 /** Any letter that is not Latin: the message is not (only) English. */
 const NOT_ENGLISH = /(?!\p{Script=Latin})\p{L}/u;
 
@@ -93,11 +101,36 @@ const NOT_ENGLISH = /(?!\p{Script=Latin})\p{L}/u;
  * English, when there is no translator, or when the translator fails (reported,
  * never fatal — the message just goes on in its own language).
  */
-function translateMessage(deps: ReplyDeps, text: string): string | undefined {
+function translateMessage(
+	deps: ReplyDeps,
+	text: string,
+	context: CallContext,
+): string | undefined {
 	if (!deps.translate || !NOT_ENGLISH.test(text)) return undefined;
+	const startedAt = performance.now();
+	const recorder = deps.usageRecorder?.record
+		? { record: deps.usageRecorder.record.bind(deps.usageRecorder) }
+		: undefined;
+	const report = (outcome: { ok: true } | { ok: false; error: string }) =>
+		recordCall(recorder, {
+			...context,
+			actionName: "translate",
+			kind: "translate",
+			provider: "ctranslate2",
+			model: TRANSLATE_MODEL,
+			latencyMs: Math.round(performance.now() - startedAt),
+			at: deps.now(),
+			...outcome,
+		});
 	try {
-		return deps.translate(text) || undefined;
+		const translated = deps.translate(text) || undefined;
+		report({ ok: true });
+		return translated;
 	} catch (error) {
+		report({
+			ok: false,
+			error: error instanceof Error ? error.message : String(error),
+		});
 		deps.onError?.(error);
 		return undefined;
 	}

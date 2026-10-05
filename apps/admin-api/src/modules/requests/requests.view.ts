@@ -31,6 +31,16 @@ const emptyDetail = (): NodeDetail => ({
 	calls: [],
 });
 
+const toNodeCall = (call: Upstream["llmCalls"][number]): NodeCall => ({
+	provider: call.provider,
+	model: call.model,
+	latencyMs: call.latencyMs,
+	inputTokens: call.inputTokens,
+	outputTokens: call.outputTokens,
+	ok: call.ok,
+	error: call.error,
+});
+
 /** One action as the run went through it, possibly across several runs (a browser tool pauses the run). */
 interface Step {
 	node: RequestNode;
@@ -72,17 +82,45 @@ export function buildRequestView(upstream: Upstream): RequestView {
 		durationMs: null,
 		detail: { ...emptyDetail(), text: request.prompt },
 	});
+	// The message translator runs before anything else; its call is in the
+	// ledger under the request's first run (an English message has none).
+	const translation = llmCalls.find(
+		(call) => call.kind === "translate" && call.planRunId === runs[0]?.id,
+	);
+	if (translation) {
+		const english = record(firstPlanned?.payload.state).userMessageEn;
+		nodes.push({
+			id: "translate",
+			kind: "translate",
+			label: typeof english === "string" ? english : "",
+			round: 0,
+			status: translation.ok ? "done" : "failed",
+			startedAt: Math.max(
+				request.startedAt,
+				translation.at - translation.latencyMs,
+			),
+			durationMs: translation.latencyMs,
+			detail: {
+				...emptyDetail(),
+				text: typeof english === "string" ? english : null,
+				error: translation.error,
+				calls: [toNodeCall(translation)],
+			},
+		});
+	}
+	const translateMs = translation?.latencyMs ?? 0;
+
 	nodes.push({
 		id: "understand",
 		kind: "understand",
 		label: request.intent ?? "",
 		round: 0,
 		status: firstPlanned ? "done" : live ? "running" : "failed",
-		startedAt: request.startedAt,
+		startedAt: request.startedAt + translateMs,
 		durationMs: firstPlanned
-			? firstPlanned.at - request.startedAt
+			? Math.max(0, firstPlanned.at - request.startedAt - translateMs)
 			: live
-				? Math.max(0, now - request.startedAt)
+				? Math.max(0, now - request.startedAt - translateMs)
 				: null,
 		detail: { ...emptyDetail(), intent: request.intent, goal: request.goal },
 	});
@@ -272,17 +310,7 @@ export function buildRequestView(upstream: Upstream): RequestView {
 					call.planRunId !== null &&
 					step.runIds.has(call.planRunId),
 			)
-			.map(
-				(call): NodeCall => ({
-					provider: call.provider,
-					model: call.model,
-					latencyMs: call.latencyMs,
-					inputTokens: call.inputTokens,
-					outputTokens: call.outputTokens,
-					ok: call.ok,
-					error: call.error,
-				}),
-			);
+			.map(toNodeCall);
 	}
 
 	// Steps the latest plan still has ahead of it.
@@ -331,9 +359,12 @@ export function buildRequestView(upstream: Upstream): RequestView {
 	});
 
 	// --- edges: a chain inside each round, replan edges between rounds -------
-	const edges: RequestEdge[] = [
-		{ from: "prompt", to: "understand", kind: "next" },
-	];
+	const edges: RequestEdge[] = translation
+		? [
+				{ from: "prompt", to: "translate", kind: "next" },
+				{ from: "translate", to: "understand", kind: "next" },
+			]
+		: [{ from: "prompt", to: "understand", kind: "next" }];
 	const previous = "understand";
 	let previousRound: number | undefined;
 	let tail = "understand";

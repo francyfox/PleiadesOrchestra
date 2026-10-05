@@ -1,30 +1,52 @@
 <script lang="ts">
+	import PlusIcon from "@lucide/svelte/icons/plus";
 	import { useIntlayer } from "svelte-intlayer";
 	import { blockedIpActions } from "$lib/actions";
 	import type { Channel } from "$lib/api-types";
 	import FormField from "$lib/components/form-field.svelte";
 	import { Button } from "$lib/components/ui/button/index.js";
-	import * as Card from "$lib/components/ui/card/index.js";
+	import * as Dialog from "$lib/components/ui/dialog/index.js";
 	import { Label } from "$lib/components/ui/label/index.js";
 	import { useBlockedIpEnhance } from "./use-blocked-ip-enhance";
 
-	/** Only web channels have anonymous visitors to block by IP. */
+	/**
+	 * The "+ Add" button of the blocked-IPs page and the dialog with the form.
+	 * Only web channels have anonymous visitors to block by IP. A `defaultIp`
+	 * (the user page links here with `?ip=`) opens the dialog with it filled in.
+	 */
 	let {
 		channels,
 		defaultIp = "",
 	}: { channels: Channel[]; defaultIp?: string } = $props();
 
 	const content = useIntlayer("blocked-ips");
-	const submitted = useBlockedIpEnhance(blockedIpActions.create);
+	const common = useIntlayer("common");
+
+	let open = $state(false);
+	$effect(() => {
+		if (defaultIp) open = true;
+	});
+	const submitted = useBlockedIpEnhance(
+		blockedIpActions.create,
+		undefined,
+		() => {
+			open = false;
+		},
+	);
 	const webChannels = $derived(
 		channels.filter((channel) => channel.kind === "web"),
 	);
 </script>
 
-<Card.Root>
-	<Card.Header><Card.Title>{$content.form.title.value}</Card.Title></Card.Header>
-	<Card.Content>
-		<form use:submitted class="grid max-w-xl gap-3">
+<Button onclick={() => (open = true)}>
+	<PlusIcon class="size-4" />
+	{$common.add.value}
+</Button>
+
+<Dialog.Root bind:open>
+	<Dialog.Content>
+		<Dialog.Header><Dialog.Title>{$content.form.title.value}</Dialog.Title></Dialog.Header>
+		<form use:submitted class="grid gap-3">
 			<FormField id="ip" label={$content.form.ip.value} value={defaultIp} required />
 			<FormField id="reason" label={$content.columns.reason.value} required />
 			<FormField id="expires" name="expiresInHours" label={$content.form.hours.value} type="number" min={1} value={24} required />
@@ -41,7 +63,10 @@
 					{/each}
 				</select>
 			</div>
-			<Button type="submit" class="w-fit">{$content.form.submit.value}</Button>
+			<Dialog.Footer>
+				<Button variant="ghost" type="button" onclick={() => (open = false)}>{$common.cancel.value}</Button>
+				<Button type="submit">{$content.form.submit.value}</Button>
+			</Dialog.Footer>
 		</form>
-	</Card.Content>
-</Card.Root>
+	</Dialog.Content>
+</Dialog.Root>

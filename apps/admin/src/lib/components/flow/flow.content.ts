@@ -1,18 +1,62 @@
 import { type Dictionary, insert, t } from "intlayer";
 
-const goapContent = {
-	key: "goap",
+const flowContent = {
+	key: "flow",
 	content: {
 		title: t({
-			ru: "GOAP — запросы",
-			en: "GOAP — requests",
-			kk: "GOAP — сұраулар",
+			ru: "Flow — запросы",
+			en: "Flow — requests",
+			kk: "Flow — сұраулар",
 		}),
 		hint: t({
 			ru: "Один запрос — одно сообщение пользователя: от промпта через план до ответа. Откройте запрос, чтобы увидеть его граф решения.",
 			en: "One request is one user message: from the prompt through the plan to the answer. Open one to see its decision graph.",
 			kk: "Бір сұрау — пайдаланушының бір хабарламасы: промптан жоспар арқылы жауапқа дейін. Шешім графын көру үшін біреуін ашыңыз.",
 		}),
+		filters: {
+			status: t({ ru: "Статус", en: "Status", kk: "Күйі" }),
+			allStatuses: t({
+				ru: "Все статусы",
+				en: "All statuses",
+				kk: "Барлық күйлер",
+			}),
+			search: t({ ru: "Поиск…", en: "Search…", kk: "Іздеу…" }),
+			nothingFound: t({
+				ru: "Ничего не найдено",
+				en: "Nothing found",
+				kk: "Ештеңе табылмады",
+			}),
+			intent: t({ ru: "Намерение", en: "Intent", kk: "Ниет" }),
+			anyIntent: t({
+				ru: "Любое намерение",
+				en: "Any intent",
+				kk: "Кез келген ниет",
+			}),
+			noMatch: t({
+				ru: "Под фильтр ничего не подошло",
+				en: "Nothing matches the filter",
+				kk: "Сүзгіге ештеңе сәйкес келмеді",
+			}),
+		},
+		outcome: {
+			title: t({ ru: "Итог", en: "Outcome", kk: "Нәтиже" }),
+			failedAt: t({
+				ru: insert("Остановился на шаге «{{step}}»"),
+				en: insert("Stopped at step “{{step}}”"),
+				kk: insert("«{{step}}» қадамында тоқтады"),
+			}),
+			open: t({ ru: "Открыть шаг", en: "Open the step", kk: "Қадамды ашу" }),
+			abandoned: t({
+				ru: "Браузер не ответил на вызов тула — запрос брошен.",
+				en: "The browser never answered the tool call — the request was abandoned.",
+				kk: "Браузер тул шақыруына жауап бермеді — сұрау тасталды.",
+			}),
+			pending: t({
+				ru: "Ответа пока нет — запрос ещё выполняется.",
+				en: "No reply yet — the request is still in progress.",
+				kk: "Жауап әлі жоқ — сұрау әлі орындалуда.",
+			}),
+		},
 		requests: {
 			title: t({
 				ru: "Последние запросы",
@@ -75,6 +119,7 @@ const goapContent = {
 		},
 		nodeKind: {
 			prompt: t({ ru: "Промпт", en: "Prompt", kk: "Промпт" }),
+			translate: t({ ru: "Перевод", en: "Translation", kk: "Аударма" }),
 			understand: t({
 				ru: "Разбор запроса",
 				en: "Understanding",
@@ -167,4 +212,4 @@ const goapContent = {
 	},
 } satisfies Dictionary;
 
-export default goapContent;
+export default flowContent;

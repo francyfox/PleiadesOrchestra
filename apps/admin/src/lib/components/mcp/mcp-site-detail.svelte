@@ -1,6 +1,6 @@
 <script lang="ts">
-	import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
 	import { useIntlayer } from "svelte-intlayer";
+	import PageHeader from "$lib/components/page-header.svelte";
 	import { Badge } from "$lib/components/ui/badge/index.js";
 	import { useFormat } from "$lib/i18n/use-format";
 	import { useLiveQuery } from "$lib/live/use-live-query.svelte";
@@ -24,26 +24,23 @@
 	const site = $derived(found ?? last);
 </script>
 
-<div class="grid gap-3">
-	<a
-		href="/mcp"
-		class="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-	>
-		<ArrowLeftIcon class="size-4" />
-		{$content.back.value}
-	</a>
-	{#if site}
-		<div>
-			<h1 class="text-2xl font-semibold">{site.channelName}</h1>
-			<div class="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-				<Badge variant="outline">{site.channelSlug}</Badge>
-				<span>{$content.detail.tools({ count: site.toolCount })}</span>
-				<span>·</span>
-				<span>{$content.detail.versions({ count: site.versions })}</span>
-				<span>·</span>
-				<span>{$content.detail.lastSeen({ time: $format.date(site.lastSeenAt) })}</span>
-			</div>
-		</div>
-		<McpToolsTable tools={site.tools} />
-	{/if}
-</div>
+<PageHeader
+	backHref="/mcp"
+	backLabel={$content.back.value}
+	title={site?.channelName ?? ""}
+>
+	{#snippet meta()}
+		{#if site}
+			<Badge variant="outline">{site.channelSlug}</Badge>
+			<span>{$content.detail.tools({ count: site.toolCount })}</span>
+			<span>·</span>
+			<span>{$content.detail.versions({ count: site.versions })}</span>
+			<span>·</span>
+			<span>{$content.detail.lastSeen({ time: $format.date(site.lastSeenAt) })}</span>
+		{/if}
+	{/snippet}
+</PageHeader>
+
+{#if site}
+	<McpToolsTable tools={site.tools} />
+{/if}

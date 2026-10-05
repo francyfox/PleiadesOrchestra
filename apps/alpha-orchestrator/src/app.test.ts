@@ -7,6 +7,7 @@ import type {
 	DecisionQuestion,
 	GoapAction,
 	IncomingMessage,
+	LlmCallRecord,
 } from "@repo/core";
 import { InMemoryWorldStateStore } from "@repo/core";
 import { type AppDeps, createApp } from "./app.ts";
@@ -856,6 +857,64 @@ describe("createApp — the message is translated as it comes in", () => {
 		await readNdjson(await send("cli"));
 
 		expect(seen.map((state) => state.catalogLang)).toEqual(["ru", "en"]);
+	});
+
+	test("a translation is reported to the usage ledger, a failed one as not ok; English costs nothing", async () => {
+		const recorded: LlmCallRecord[] = [];
+		const usageRecorder = {
+			flush() {},
+			record: (call: LlmCallRecord) => recorded.push(call),
+		};
+		const { action } = stateRecorder();
+		const base = {
+			agent: fakeAgent(singleDeltaStream),
+			decisionAgent: fakeDecisionAgent(),
+			threadActionsFor: () => [action],
+			usageRecorder,
+		};
+
+		await readNdjson(
+			await post(
+				createTestApp({ ...base, translate: () => "buy one cheese" }),
+				"купи 1 сыр",
+			),
+		);
+		expect(recorded).toHaveLength(1);
+		expect(recorded[0]).toMatchObject({
+			kind: "translate",
+			provider: "ctranslate2",
+			actionName: "translate",
+			ok: true,
+		});
+		expect(recorded[0]?.planRunId).toBeString();
+		expect(recorded[0]?.latencyMs).toBeGreaterThanOrEqual(0);
+
+		recorded.length = 0;
+		await readNdjson(
+			await post(
+				createTestApp({
+					...base,
+					translate: () => {
+						throw new Error("model not loaded");
+					},
+				}),
+				"купи 1 сыр",
+			),
+		);
+		expect(recorded[0]).toMatchObject({
+			kind: "translate",
+			ok: false,
+			error: "model not loaded",
+		});
+
+		recorded.length = 0;
+		await readNdjson(
+			await post(
+				createTestApp({ ...base, translate: () => "x" }),
+				"buy 1 cheese",
+			),
+		);
+		expect(recorded).toEqual([]);
 	});
 
 	test("a message already in English is not translated", async () => {

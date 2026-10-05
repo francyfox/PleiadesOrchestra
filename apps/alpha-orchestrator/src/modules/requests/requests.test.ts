@@ -201,6 +201,41 @@ describe("listRequests", () => {
 		expect(byId(T0 + 10 * 60_000).waits).toBe("abandoned");
 	});
 
+	test("filters by status and intent, and counts and pages only what matches", () => {
+		const s = setup();
+		for (let i = 0; i < 4; i++) {
+			s.run(`ok${i}`, T0 + i * 1000, { prompt: `p${i}` });
+			s.finish(`ok${i}`, true, 10, [
+				planned(T0 + i * 1000, [], {
+					messageIntent: i % 2 === 0 ? "search" : "addToCart",
+				}),
+				ended(T0 + i * 1000 + 5, true),
+			]);
+		}
+		s.run("bad", T0 + 9_000, { prompt: "x" });
+		s.finish("bad", false, 10, [ended(T0 + 9_005, false)]);
+
+		const ids = (query: Parameters<typeof listRequests>[2]) =>
+			listRequests(s.db, s.active, query, T0 + 20_000);
+		expect(ids({ status: "failed" }).items.map((item) => item.id)).toEqual([
+			"bad",
+		]);
+		expect(ids({ status: "failed" }).total).toBe(1);
+		expect(ids({ intent: "search" }).items.map((item) => item.id)).toEqual([
+			"ok2",
+			"ok0",
+		]);
+		const second = ids({
+			status: "succeeded",
+			intent: "search",
+			page: 2,
+			pageSize: 1,
+		});
+		expect(second.total).toBe(2);
+		expect(second.items.map((item) => item.id)).toEqual(["ok0"]);
+		expect(ids({}).total).toBe(5);
+	});
+
 	test("a request in progress is as long as it has been going", () => {
 		const s = setup();
 		s.run("running", T0, { prompt: "a" });

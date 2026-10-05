@@ -23,7 +23,7 @@
 	const nav = [
 		{ href: "/", key: "dashboard", icon: ActivityIcon },
 		{ href: "/users", key: "users", icon: UsersIcon },
-		{ href: "/goap", key: "goap", icon: NetworkIcon },
+		{ href: "/flow", key: "flow", icon: NetworkIcon },
 		{ href: "/mcp", key: "mcp", icon: PlugIcon },
 		{ href: "/agents", key: "agents", icon: BotIcon },
 		{ href: "/performance", key: "performance", icon: GaugeIcon },

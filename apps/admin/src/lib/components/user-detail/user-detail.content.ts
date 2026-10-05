@@ -3,6 +3,11 @@ import { type Dictionary, insert, t } from "intlayer";
 const userDetailContent = {
 	key: "user-detail",
 	content: {
+		back: t({
+			ru: "Все пользователи",
+			en: "All users",
+			kk: "Барлық пайдаланушылар",
+		}),
 		anonymousUser: t({
 			ru: "Анонимный пользователь",
 			en: "Anonymous user",

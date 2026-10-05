@@ -1,6 +1,7 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { generateText, type ModelMessage, streamText } from "ai";
 import { InMemoryHistoryStore } from "./history";
+import { recordCall } from "./record-call";
 import {
 	type createTelemetry,
 	telemetry as defaultTelemetry,
@@ -75,21 +76,19 @@ export function createAgent(config: AgentConfig): Agent {
 			| { ok: false; error: string },
 	) {
 		const latencyMs = Date.now() - startedAt;
-		telemetry.logLlmState({
-			provider: "albedo",
-			model: config.model,
-			latencyMs,
-			...outcome,
-		});
-		usageRecorder?.record({
-			...callContext,
-			kind,
-			provider: "albedo",
-			model: config.model,
-			latencyMs,
-			at: Date.now(),
-			...outcome,
-		});
+		recordCall(
+			usageRecorder,
+			{
+				...callContext,
+				kind,
+				provider: "albedo",
+				model: config.model,
+				latencyMs,
+				at: Date.now(),
+				...outcome,
+			},
+			telemetry,
+		);
 	}
 
 	return {

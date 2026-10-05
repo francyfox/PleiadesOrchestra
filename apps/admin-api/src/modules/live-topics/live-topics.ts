@@ -9,6 +9,7 @@ import type { LiveTopic } from "../live/live.types.ts";
 import type { HubTopic } from "../live-hub/live-hub.ts";
 import { fetchMcpSites } from "../mcp/mcp.service.ts";
 import { fetchPerformance } from "../performance/performance.service.ts";
+import { RequestsQuery } from "../requests/requests.schema.ts";
 import {
 	fetchRequests,
 	fetchRequestView,
@@ -101,7 +102,7 @@ export function createLiveTopics(
 		},
 		requests: {
 			intervalMs: every("requests"),
-			validate: strictly(PageQuery),
+			validate: strictly(RequestsQuery),
 			fetch: (params) => fetchRequests(ctx, params as never),
 		},
 		mcp: {

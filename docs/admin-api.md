@@ -189,7 +189,7 @@ Query: `channel` (slug), `kind`, `status`, `q` (поиск по displayName/exte
 }
 ```
 
-- `rows` — по дням (UTC) × `kind` (`ingest` / `generate` / `decision`), `overall` — по `kind` за весь период.
+- `rows` — по дням (UTC) × `kind` (`ingest` / `generate` / `decision` / `translate`; `translate` — не LLM, а переводчик сообщения CTranslate2, `provider: ctranslate2`, `action_name: translate`, токенов нет), `overall` — по `kind` за весь период.
 - Перцентили — nearest-rank по `latencyMs` всех вызовов, включая упавшие (`failed` — их число).
 - `tokensPerSecond` — медиана `outputTokens / latency` по успешным вызовам с usage; `null`, если
   таких нет (у Laya токенов нет).
@@ -203,7 +203,7 @@ Query: `channel` (slug), `kind`, `status`, `q` (поиск по displayName/exte
 `plan_runs.root_run_id` (корень — сам первый прогон; у старых строк `NULL` читается как «сам себе
 корень»). Трассы цепочки живут, пока жив хотя бы один ответ в `messages` (см. `trimUserHistory`).
 
-`GET /v1/admin/requests?page=&pageSize=` (новые первыми; без `pageSize` — 25) →
+`GET /v1/admin/requests?page=&pageSize=&status=&intent=` (новые первыми; без `pageSize` — 25; `status` — одно из значений ниже, `intent` — точное совпадение с `intent` строки; с фильтром `total` — число подходящих запросов; статус не колонка БД, поэтому с фильтром оркестратор собирает сводки всех запросов и режет страницу после) →
 
 ```json
 { "items": [{ "id": "<id первого прогона>", "userId": "", "threadId": "", "prompt": "купи 1 сыр",
@@ -239,7 +239,7 @@ Query: `channel` (slug), `kind`, `status`, `q` (поиск по displayName/exte
 
 **admin-api (BFF) → панель.** Панель не склеивает прогоны и не угадывает статусы: `GET /api/requests`
 отдаёт ту же страницу, а `GET /api/requests/:id` — `RequestView`, уже готовый к отрисовке:
-`nodes` (`prompt` → `understand` → шаги плана → `result`; у каждого `round`, `status`
+`nodes` (`prompt` → `translate` (только если сообщение переводилось: его вызов есть в `llm_calls` первого прогона; `label`/`detail.text` — английский текст, `durationMs` — время перевода, вызов в `detail.calls`) → `understand` (его время без перевода) → шаги плана → `result`; у каждого `round`, `status`
 `done|running|browser|failed|skipped|diverged|pending|not_reached|reached|missed`, `startedAt`,
 `durationMs`, `detail` с аргументами тула, временем браузера, ответом тула, эффектами, ошибкой и
 вызовами моделей) и `edges` (`next`/`replan`). Браузерный тул — один шаг, хотя сервер останавливается

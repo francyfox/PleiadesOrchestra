@@ -4,6 +4,7 @@ import type {
 	FunctionCallAgent,
 	GoapAction,
 	RunLock,
+	UsageRecorder,
 	WorldStateStore,
 } from "@repo/core";
 import { createRunLock, InMemoryWorldStateStore } from "@repo/core";
@@ -62,7 +63,7 @@ export interface AppDeps {
 	/** Shared with the history store / usage recorder so their writes get linked to the running plan. */
 	runs: RunBinding;
 	/** Flushed once a message's stream is done — `SqliteUsageRecorder` in production. */
-	usageRecorder?: { flush(): void };
+	usageRecorder?: { flush(): void; record?: UsageRecorder["record"] };
 	/**
 	 * Persists a thread's `WorldState` across `runPlan` calls so a run that
 	 * stopped short of its goal resumes on the thread's next message.

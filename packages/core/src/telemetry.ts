@@ -11,6 +11,8 @@ export interface MessageEventFields {
 }
 
 export interface LlmStateFields {
+	/** What the call was for (`LlmCallKind`); left out by callers that predate it. */
+	kind?: string;
 	provider: string;
 	model: string;
 	inputTokens?: number;
@@ -67,6 +69,7 @@ export function createTelemetry(
 		logLlmState(fields: LlmStateFields) {
 			logger.info({
 				message: "llm_call",
+				"llm.kind": fields.kind,
 				"gen_ai.provider.name": fields.provider,
 				"gen_ai.request.model": fields.model,
 				"gen_ai.usage.input_tokens": fields.inputTokens,

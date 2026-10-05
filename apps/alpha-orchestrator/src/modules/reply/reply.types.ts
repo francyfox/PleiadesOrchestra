@@ -4,6 +4,7 @@ import type {
 	FunctionCallAgent,
 	GoapAction,
 	RunLock,
+	UsageRecorder,
 	WorldStateStore,
 } from "@repo/core";
 import type { ActiveRuns } from "../active-runs/active-runs.ts";
@@ -40,7 +41,7 @@ export interface ReplyDeps {
 	 * static catalog).
 	 */
 	threadActionsFor?: (threadId: string) => Promise<GoapAction[]> | GoapAction[];
-	usageRecorder?: { flush(): void };
+	usageRecorder?: { flush(): void; record?: UsageRecorder["record"] };
 	now: () => number;
 	onError?: (error: unknown) => void;
 }

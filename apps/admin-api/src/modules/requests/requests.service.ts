@@ -1,5 +1,9 @@
 import type { FetchContext } from "../common/common.types.ts";
-import type { RequestsPage, RequestView } from "./requests.schema.ts";
+import type {
+	RequestsPage,
+	RequestsQuery,
+	RequestView,
+} from "./requests.schema.ts";
 import { buildRequestView } from "./requests.view.ts";
 
 type Orchestrator = Pick<FetchContext, "orchestrator">;
@@ -7,7 +11,7 @@ type Orchestrator = Pick<FetchContext, "orchestrator">;
 /** `GET /api/requests`: the requests table, newest first. */
 export function fetchRequests(
 	{ orchestrator }: Orchestrator,
-	query: { page?: number; pageSize?: number },
+	query: RequestsQuery,
 ): Promise<RequestsPage> {
 	return orchestrator.listRequests(query);
 }

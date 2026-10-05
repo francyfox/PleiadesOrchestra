@@ -1,10 +1,9 @@
 import { Elysia } from "elysia";
 import type { RouteDeps } from "../../app.types.ts";
 import { requireAdmin } from "../auth/auth.service.ts";
-import { PageQuery } from "../common/common.schema.ts";
 import { IdParams, Upstream } from "../orchestrator/orchestrator.schema.ts";
 import { orchestratorErrors } from "../orchestrator/orchestrator.service.ts";
-import { RequestsPage, RequestView } from "./requests.schema.ts";
+import { RequestsPage, RequestsQuery, RequestView } from "./requests.schema.ts";
 import { fetchRequests, fetchRequestView } from "./requests.service.ts";
 
 export function requestsRoutes({ auth, orchestrator, now }: RouteDeps) {
@@ -15,7 +14,7 @@ export function requestsRoutes({ auth, orchestrator, now }: RouteDeps) {
 		.guard({ admin: true }, (app) =>
 			app
 				.get("/requests", ({ query }) => fetchRequests(ctx, query), {
-					query: PageQuery,
+					query: RequestsQuery,
 					response: { 200: RequestsPage, ...Upstream },
 					detail: {
 						summary: "GOAP requests, newest first (one per user message)",

@@ -7,7 +7,7 @@
 	/** Everything the BFF knows about one node: arguments, the tool's answer, effects, model calls. */
 	let { node }: { node: RequestNode } = $props();
 
-	const content = useIntlayer("goap");
+	const content = useIntlayer("flow");
 	const format = useFormat();
 
 	type Status = keyof typeof $content.nodeStatus;

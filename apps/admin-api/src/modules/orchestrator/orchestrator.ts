@@ -14,6 +14,7 @@ import type { UpstreamMcpSites } from "../mcp/mcp.schema.ts";
 import type { PerformanceReport } from "../performance/performance.schema.ts";
 import type {
 	RequestsPage,
+	RequestsQuery,
 	UpstreamRequestDetails,
 } from "../requests/requests.schema.ts";
 import type { Stats } from "../stats/stats.schema.ts";
@@ -134,7 +135,7 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 				"GET",
 				`/v1/admin/performance${toSearch(query)}`,
 			),
-		listRequests: (query: PageQuery = {}) =>
+		listRequests: (query: RequestsQuery = {}) =>
 			request<RequestsPage>(
 				"GET",
 				`/v1/admin/requests${toSearch({ ...query })}`,

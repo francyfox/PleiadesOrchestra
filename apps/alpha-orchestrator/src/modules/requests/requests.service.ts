@@ -105,32 +105,15 @@ function plannedInfo(db: Db, runIds: string[]): Map<string, PlannedInfo> {
 	return info;
 }
 
-export function listRequests(
+/** Summaries of the given roots, in the order given. */
+function summarize(
 	db: Db,
 	active: ActiveRuns,
-	paging: { page?: number; pageSize?: number },
+	roots: string[],
 	now: number,
-): { items: RequestSummary[]; total: number } {
+): RequestSummary[] {
 	const sqlite = db.$client;
-	const total =
-		sqlite
-			.query<{ n: number }, []>(
-				"SELECT COUNT(*) AS n FROM plan_runs WHERE COALESCE(root_run_id, id) = id",
-			)
-			.get()?.n ?? 0;
-
-	const pageSize = paging.pageSize ?? 25;
-	const offset = ((paging.page ?? 1) - 1) * pageSize;
-	const roots = sqlite
-		.query<{ id: string }, [number, number]>(
-			`SELECT id FROM plan_runs WHERE COALESCE(root_run_id, id) = id
-			ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`,
-		)
-		.all(pageSize, offset);
-	const chains = chainsOf(
-		db,
-		roots.map((root) => root.id),
-	);
+	const chains = chainsOf(db, roots);
 	const runIds = [...chains.values()].flat().map((run) => run.id);
 
 	const planned = plannedInfo(db, runIds);
@@ -143,7 +126,7 @@ export function listRequests(
 		.all(...runIds);
 	const byRun = Map.groupBy(progress, (event) => event.runId);
 
-	const items = roots.flatMap(({ id }): RequestSummary[] => {
+	return roots.flatMap((id): RequestSummary[] => {
 		const chain = chains.get(id);
 		if (!chain) return [];
 		const first = chain[0] as RunRow;
@@ -179,7 +162,73 @@ export function listRequests(
 			},
 		];
 	});
-	return { items, total };
+}
+
+/**
+ * The requests table, newest first. Status and intent are not columns (the
+ * status depends on the live registry and the clock, the intent lives in a
+ * trace event), so a filtered list summarizes every request and cuts the page
+ * afterwards — cheap, since each user keeps only a handful of chains.
+ */
+export function listRequests(
+	db: Db,
+	active: ActiveRuns,
+	query: {
+		page?: number;
+		pageSize?: number;
+		status?: RequestStatus;
+		intent?: string;
+	},
+	now: number,
+): { items: RequestSummary[]; total: number } {
+	const sqlite = db.$client;
+	const pageSize = query.pageSize ?? 25;
+	const offset = ((query.page ?? 1) - 1) * pageSize;
+
+	if (query.status === undefined && query.intent === undefined) {
+		const total =
+			sqlite
+				.query<{ n: number }, []>(
+					"SELECT COUNT(*) AS n FROM plan_runs WHERE COALESCE(root_run_id, id) = id",
+				)
+				.get()?.n ?? 0;
+		const roots = sqlite
+			.query<{ id: string }, [number, number]>(
+				`SELECT id FROM plan_runs WHERE COALESCE(root_run_id, id) = id
+				ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`,
+			)
+			.all(pageSize, offset);
+		return {
+			items: summarize(
+				db,
+				active,
+				roots.map((root) => root.id),
+				now,
+			),
+			total,
+		};
+	}
+
+	const roots = sqlite
+		.query<{ id: string }, []>(
+			`SELECT id FROM plan_runs WHERE COALESCE(root_run_id, id) = id
+			ORDER BY created_at DESC, id DESC`,
+		)
+		.all();
+	const matching = summarize(
+		db,
+		active,
+		roots.map((root) => root.id),
+		now,
+	).filter(
+		(item) =>
+			(query.status === undefined || item.status === query.status) &&
+			(query.intent === undefined || item.intent === query.intent),
+	);
+	return {
+		items: matching.slice(offset, offset + pageSize),
+		total: matching.length,
+	};
 }
 
 export function getRequest(

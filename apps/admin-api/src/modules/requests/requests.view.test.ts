@@ -125,6 +125,96 @@ describe("buildRequestView", () => {
 		]);
 	});
 
+	test("a translated message gets its own node between the prompt and the understanding, and the understanding no longer counts that time", () => {
+		const view = buildRequestView(
+			details(
+				[
+					run("r1", T0, [
+						planned(T0 + 400, ["generateReply"], {
+							userMessage: "купи 1 сыр",
+							userMessageEn: "buy one cheese",
+						}),
+						started(T0 + 410, "generateReply"),
+						finished(T0 + 1_410, "generateReply", { replied: true }),
+					]),
+				],
+				{
+					calls: [
+						{
+							planRunId: "r1",
+							actionName: "translate",
+							kind: "translate",
+							provider: "ctranslate2",
+							model: "opus-mt-ru-en",
+							inputTokens: null,
+							outputTokens: null,
+							latencyMs: 50,
+							ok: true,
+							error: null,
+							at: T0 + 60,
+						},
+					],
+				},
+			),
+		);
+
+		expect(view.nodes.map((n) => [n.kind, n.status])).toEqual([
+			["prompt", "done"],
+			["translate", "done"],
+			["understand", "done"],
+			["action", "done"],
+			["result", "reached"],
+		]);
+		const translate = view.nodes[1];
+		expect(translate).toMatchObject({
+			label: "buy one cheese",
+			durationMs: 50,
+			startedAt: T0 + 10,
+		});
+		expect(translate?.detail.text).toBe("buy one cheese");
+		expect(translate?.detail.calls).toEqual([
+			{
+				provider: "ctranslate2",
+				model: "opus-mt-ru-en",
+				latencyMs: 50,
+				inputTokens: null,
+				outputTokens: null,
+				ok: true,
+				error: null,
+			},
+		]);
+		expect(view.nodes[2]?.durationMs).toBe(350);
+		expect(view.edges.slice(0, 2).map((e) => [e.from, e.to])).toEqual([
+			["prompt", "translate"],
+			["translate", "understand"],
+		]);
+	});
+
+	test("a translation that failed shows as a failed node with its error", () => {
+		const view = buildRequestView(
+			details([run("r1", T0, [planned(T0 + 400, ["generateReply"])])], {
+				calls: [
+					{
+						planRunId: "r1",
+						actionName: "translate",
+						kind: "translate",
+						provider: "ctranslate2",
+						model: "opus-mt-ru-en",
+						inputTokens: null,
+						outputTokens: null,
+						latencyMs: 5,
+						ok: false,
+						error: "model not loaded",
+						at: T0 + 20,
+					},
+				],
+			}),
+		);
+		const translate = view.nodes.find((n) => n.kind === "translate");
+		expect(translate).toMatchObject({ status: "failed" });
+		expect(translate?.detail.error).toBe("model not loaded");
+	});
+
 	test("a browser tool is one step across two runs: arguments, the browser's own time, its answer", () => {
 		const view = buildRequestView(
 			details(

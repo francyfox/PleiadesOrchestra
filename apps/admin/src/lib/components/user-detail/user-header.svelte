@@ -4,6 +4,7 @@
 	import type { AdminUser } from "$lib/api-types";
 	import ConfirmDialog from "$lib/components/confirm-dialog.svelte";
 	import CopyValue from "$lib/components/copy-value.svelte";
+	import PageHeader from "$lib/components/page-header.svelte";
 	import StatusBadge from "$lib/components/status-badge.svelte";
 	import { Badge } from "$lib/components/ui/badge/index.js";
 	import { Button } from "$lib/components/ui/button/index.js";
@@ -32,12 +33,12 @@
 	});
 </script>
 
-<div class="flex flex-wrap items-start justify-between gap-4">
-	<div>
-		<h1 class="text-2xl font-semibold">
-			{user.displayName ?? user.externalUserId ?? $content.anonymousUser.value}
-		</h1>
-		<div class="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+<PageHeader
+	backHref="/users"
+	backLabel={$content.back.value}
+	title={user.displayName ?? user.externalUserId ?? $content.anonymousUser.value}
+>
+	{#snippet meta()}
 			<StatusBadge status={user.status} />
 			<Badge variant="outline">{user.channel.name}</Badge>
 			<Badge variant="outline">{$common.userKind[user.kind].value}</Badge>
@@ -53,9 +54,8 @@
 					<CopyValue value={user.ip} href={whoisUrl(user.ip)} label={$actions.copyIp.value} />
 				</span>
 			{/if}
-		</div>
-	</div>
-	<div class="flex flex-wrap gap-2">
+	{/snippet}
+	{#snippet controls()}
 		{#if user.whitelistedAt}
 			<form use:unwhitelist>
 				<Button variant="outline" type="submit">{$actions.unwhitelist.value}</Button>
@@ -75,8 +75,8 @@
 		{#if user.ip}
 			<Button variant="outline" href={`/blocked-ips?ip=${encodeURIComponent(user.ip)}`}>{$actions.blockIp.value}</Button>
 		{/if}
-	</div>
-</div>
+	{/snippet}
+</PageHeader>
 
 <ConfirmDialog
 	bind:open={blockOpen}

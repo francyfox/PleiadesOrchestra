@@ -208,7 +208,9 @@ export const llmCalls = sqliteTable(
 			onDelete: "set null",
 		}),
 		actionName: text("action_name"),
-		kind: text("kind", { enum: ["ingest", "generate", "decision"] }).notNull(),
+		kind: text("kind", {
+			enum: ["ingest", "generate", "decision", "translate"],
+		}).notNull(),
 		provider: text("provider").notNull(),
 		model: text("model").notNull(),
 		// NULL = provider didn't report usage. Never coerced to 0.

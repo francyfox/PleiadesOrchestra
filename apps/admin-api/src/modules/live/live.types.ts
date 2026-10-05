@@ -4,7 +4,11 @@ import type { BlockedIp } from "../blocked-ips/blocked-ips.schema.ts";
 import type { Channel } from "../channels/channels.schema.ts";
 import type { McpSites } from "../mcp/mcp.schema.ts";
 import type { PerformanceReport } from "../performance/performance.schema.ts";
-import type { RequestsPage, RequestView } from "../requests/requests.schema.ts";
+import type {
+	RequestsPage,
+	RequestsQuery,
+	RequestView,
+} from "../requests/requests.schema.ts";
 import type { Stats } from "../stats/stats.schema.ts";
 import type { UsageRow } from "../usage/usage.schema.ts";
 import type {
@@ -44,7 +48,7 @@ export interface LiveTopics {
 	admins: { params: PageParams; data: AdminsPage };
 	agents: { params: Record<string, never>; data: { items: Agent[] } };
 	performance: { params: { from?: number }; data: PerformanceReport };
-	requests: { params: PageParams; data: RequestsPage };
+	requests: { params: RequestsQuery; data: RequestsPage };
 	request: { params: { id: string }; data: RequestView };
 	mcp: { params: Record<string, never>; data: McpSites };
 }

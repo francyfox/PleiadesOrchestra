@@ -33,7 +33,12 @@ export const WorldState = t.Record(
 
 export type WorldState = Static<typeof WorldState>;
 
-export const CallKind = t.UnionEnum(["ingest", "generate", "decision"]);
+export const CallKind = t.UnionEnum([
+	"ingest",
+	"generate",
+	"decision",
+	"translate",
+]);
 
 /** Optional offset paging; without `pageSize` the whole list comes back. */
 export const PageQuery = t.Object({

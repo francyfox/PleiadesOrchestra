@@ -71,7 +71,12 @@ export interface HistoryStore {
 	reset(threadId: string): Promise<void>;
 }
 
-export type LlmCallKind = "ingest" | "generate" | "decision";
+/**
+ * What a recorded call was for. `translate` is not a language model at all
+ * (the message translator, CTranslate2) — it is in the same ledger so the
+ * admin's graph and latency charts see it next to the models.
+ */
+export type LlmCallKind = "ingest" | "generate" | "decision" | "translate";
 
 /** One model call. Token fields are `undefined` when the provider didn't report usage — never coerce to 0. */
 export interface LlmCallRecord extends CallContext {
