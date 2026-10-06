@@ -207,6 +207,90 @@ export function extractProductRequestRu(message: string): ProductRequest {
 		: { query: message.trim(), quantity: quantity ?? 1 };
 }
 
+/** Longer than this, the English text is condensed by the text model before the tools see it. */
+const LONG_REQUEST_CHARS = 300;
+/** Clause words: the product is not simply what follows the verb («if you can't find X, find Y»). */
+const CLAUSE_WORDS =
+	/\b(?:if|but|because|since|so|then|instead|otherwise|can't|cannot|couldn't|won't|didn't|don't|not)\b/i;
+
+/**
+ * Whether the rules can be trusted with this English text: a short command
+ * («buy two cheeses», «find me a phone») or a bare product. Anything with
+ * clauses or a lead-in («well, if you can't find X, find Y») is left to the
+ * function-call model, which reads the whole sentence — the rules would take
+ * its first words as the product.
+ */
+export function isSimpleRequest(english: string): boolean {
+	const text = english.trim().replace(/[.!?…]+$/g, "");
+	if (CLAUSE_WORDS.test(text)) return false;
+	const words = text.split(/\s+/).length;
+	return words <= 3 || (LEADING.test(text.toLowerCase()) && words <= 12);
+}
+
+/**
+ * Words that carry no product: the purchase verb, politeness, «now/then» and
+ * a bare pronoun. A message made only of them («now buy them», «купи», «а
+ * теперь купи 3») leaves the product to the conversation, not the message.
+ * Deliberately a short closed list — it is only used to decide that NOTHING is
+ * named; a message that names any other word is searched for as before.
+ */
+const FILLER_EN = new Set(
+	"now then and so ok okay well also just please thanks thank you can could would will want need like to buy get add order take purchase them it this that those these one ones some more me the a an".split(
+		" ",
+	),
+);
+const FILLER_RU = new Set(
+	"а и ну так теперь тогда давай ладно хорошо также ещё еще пожалуйста спасибо мне нам хочу хотим нужно надо можешь можете купи купить купите куплю возьми взять закажи заказать добавь добавить положи их его её ее это эти этот те тот то же".split(
+		" ",
+	),
+);
+
+/** Whether the message names no product at all (only verbs, politeness, a count, a pronoun). */
+export function namesNoProduct(state: {
+	userMessage?: unknown;
+	userMessageEn?: unknown;
+	catalogLang?: unknown;
+}): boolean {
+	const english =
+		typeof state.userMessageEn === "string" ? state.userMessageEn : "";
+	const catalogLang = String(state.catalogLang ?? "en").split("-")[0];
+	const useEnglish = english !== "" && catalogLang !== "ru";
+	const text = useEnglish ? english : String(state.userMessage ?? "");
+	const words = text
+		.toLowerCase()
+		.replace(/\d+/g, " ")
+		.split(/[^\p{L}']+/u)
+		.filter(Boolean);
+	if (words.length === 0) return false;
+	return words.every((word) => FILLER_EN.has(word) || FILLER_RU.has(word));
+}
+
+/**
+ * «Buy them» after a search: the message names no product, so the product the
+ * last search found (`lastProduct`, a session fact) is the one to buy and the
+ * search is not repeated (`catalogSearched`). Absent when the message names
+ * a product itself, or nothing was found before (`lastProduct` is empty after
+ * a failed search).
+ */
+export function reuseLastProduct(state: {
+	lastProduct?: unknown;
+	userMessage?: unknown;
+	userMessageEn?: unknown;
+	catalogLang?: unknown;
+}): Partial<WorldState> | undefined {
+	const product = state.lastProduct;
+	if (typeof product !== "string" || !product) return undefined;
+	if (!namesNoProduct(state)) return undefined;
+	const text = String(state.userMessageEn ?? state.userMessage ?? "");
+	return {
+		product,
+		query: product,
+		quantity: clampQuantity(firstNumber(text)),
+		requestParsed: true,
+		catalogSearched: true,
+	};
+}
+
 export interface ProductRequestActionConfig {
 	/**
 	 * An `Agent` whose system prompt asks for `{"query": …, "quantity": …}` and
@@ -267,11 +351,15 @@ export function createProductRequestAction(
 			}
 			// A translation exists: the verbs and politeness are peeled off the
 			// English text, no model call (~0 ms instead of ~400 ms).
-			if (typeof state.userMessageEn === "string" && state.userMessageEn) {
-				const { query, quantity } = extractProductRequest(
-					state.userMessageEn,
-					message,
-				);
+			const english =
+				typeof state.userMessageEn === "string" ? state.userMessageEn : "";
+			if (english && english.length <= LONG_REQUEST_CHARS) {
+				if (!isSimpleRequest(english)) {
+					// No `query` fact: facts beat the model's own arguments, and a
+					// guess from the first words would beat the model's reading.
+					return { requestParsed: true, quantity: 1 };
+				}
+				const { query, quantity } = extractProductRequest(english, message);
 				return { requestParsed: true, query, quantity };
 			}
 			let reply = "";
@@ -281,11 +369,14 @@ export function createProductRequestAction(
 				planRunId:
 					typeof state.planRunId === "string" ? state.planRunId : undefined,
 				actionName: "parseProductRequest",
-				chunks: [message],
+				chunks: [english || message],
 			})) {
 				if (event.type === "delta") reply += event.text;
 			}
-			const { query, quantity } = parseProductRequest(reply, message);
+			const { query, quantity } = parseProductRequest(
+				reply,
+				english || message,
+			);
 			return {
 				requestParsed: true,
 				query,

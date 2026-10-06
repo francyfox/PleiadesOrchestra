@@ -2,7 +2,9 @@ import { describe, expect, test } from "bun:test";
 import type { GoapAction } from "@repo/core";
 import { InMemoryWorldStateStore } from "@repo/core";
 import { REPLY_ACTION } from "../goap/goap.service.ts";
+import type { UserRow } from "../users/users.types.ts";
 import {
+	prepareNewMessage,
 	prepareResume,
 	replyAfterTask,
 	toolResultText,
@@ -107,5 +109,62 @@ describe("prepareResume", () => {
 		expect(
 			prepareResume(empty, "t1", "r", { tool: "x", isError: false }),
 		).rejects.toThrow("nothing to resume");
+	});
+});
+
+describe("prepareNewMessage: «now buy them» after a search", () => {
+	async function prepare(
+		session: Record<string, string | boolean>,
+		text: string,
+		english: string,
+	) {
+		const worldStateStore = new InMemoryWorldStateStore();
+		await worldStateStore.save("t1", { state: session, goal: {} });
+		const deps = {
+			worldStateStore,
+			webmcpCatalog: new Map([["t1", [action("add_to_cart")]]]),
+			actions: [],
+			translate: () => english,
+			intentMemory: {
+				classify: () => ({ intent: "addToCart", via: "exact", confidence: 1 }),
+			},
+			now: () => 0,
+		} as unknown as ReplyDeps;
+		const user = { id: "u", channelId: "c" } as UserRow;
+		return prepareNewMessage(deps, user, "t1", "run-1", text, {});
+	}
+
+	test("a message that names no product reuses the last found one and skips the search", async () => {
+		const prepared = await prepare(
+			{
+				storeOpen: true,
+				store: "Penny Pantry",
+				lastProduct: "Butter Croissants",
+			},
+			"а теперь купи их",
+			"Now buy them.",
+		);
+		expect(prepared.state).toMatchObject({
+			messageIntent: "addToCart",
+			product: "Butter Croissants",
+			catalogSearched: true,
+			requestParsed: true,
+			quantity: 1,
+		});
+	});
+
+	test("a message that names a product searches for it as before", async () => {
+		const prepared = await prepare(
+			{ storeOpen: true, lastProduct: "Whole Milk" },
+			"купи сыр",
+			"Buy cheese.",
+		);
+		expect(prepared.state.catalogSearched).toBeUndefined();
+		expect(prepared.state.product).toBeUndefined();
+	});
+
+	test("without a remembered product nothing is assumed", async () => {
+		const prepared = await prepare({ storeOpen: true }, "купи их", "Buy them.");
+		expect(prepared.state.catalogSearched).toBeUndefined();
 	});
 });

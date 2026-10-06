@@ -12,6 +12,7 @@ import {
 	PAGE_LANG_FACT,
 	parsePage,
 	recordCall,
+	reuseLastProduct,
 } from "@repo/core";
 import {
 	customerFacts,
@@ -249,8 +250,12 @@ export async function prepareNewMessage(
 		}
 	}
 	const goal = goalForIntent(intent, REPLY_GOAL, actions);
+	// «Now buy them» names nothing: the product the last search found is bought,
+	// and that search is not repeated.
+	const remembered =
+		intent === "addToCart" ? reuseLastProduct(state) : undefined;
 	return {
-		state: { ...state, messageIntent: intent },
+		state: { ...state, ...remembered, messageIntent: intent },
 		goal,
 		actions: replyAfterTask(actions, goal),
 	};

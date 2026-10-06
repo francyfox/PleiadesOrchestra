@@ -3,7 +3,9 @@ import {
 	createProductRequestAction,
 	extractProductRequest,
 	extractProductRequestRu,
+	namesNoProduct,
 	parseProductRequest,
+	reuseLastProduct,
 } from "./product-request.ts";
 
 describe("parseProductRequest", () => {
@@ -135,6 +137,54 @@ describe("createProductRequestAction with a translation", () => {
 		expect(called).toBe(false);
 	});
 
+	test("a noisy request is left to the function-call model: no rule-made query", async () => {
+		let called = false;
+		const action = createProductRequestAction({
+			agent: {
+				async *handleMessageStream() {
+					called = true;
+					yield { type: "delta", text: "" };
+				},
+				async resetThread() {},
+			},
+		});
+
+		const result = await action.execute({
+			state: {
+				userMessage: "хорошо, раз не можешь найти ананас, найди мне сыр",
+				userMessageEn:
+					"Well, if you can't find the pineapple, find me some cheese.",
+			},
+		});
+
+		expect(result).toEqual({ requestParsed: true, quantity: 1 });
+		expect(called).toBe(false);
+	});
+
+	test("a long request is condensed by the text model first", async () => {
+		const action = createProductRequestAction({
+			agent: {
+				async *handleMessageStream() {
+					yield { type: "delta", text: '{"query":"brake pads","quantity":2}' };
+				},
+				async resetThread() {},
+			},
+		});
+
+		const result = await action.execute({
+			state: {
+				userMessage: "длинный текст",
+				userMessageEn: `${"My car makes a strange noise when I brake. ".repeat(10)}I need two brake pads.`,
+			},
+		});
+
+		expect(result).toEqual({
+			requestParsed: true,
+			query: "brake pads",
+			quantity: 2,
+		});
+	});
+
 	test("without a translation the text model still reads it", async () => {
 		const action = createProductRequestAction({
 			agent: {
@@ -239,5 +289,84 @@ describe("createProductRequestAction by the language of the catalog", () => {
 				},
 			}),
 		).toEqual({ requestParsed: true, query: "сүт сатып ал", quantity: 1 });
+	});
+});
+
+describe("namesNoProduct", () => {
+	test.each([
+		["Now buy them.", undefined],
+		["Buy.", undefined],
+		["OK, buy it please", undefined],
+		["Buy 2", undefined],
+	])("%s: nothing but filler", (english) => {
+		expect(namesNoProduct({ userMessageEn: english, userMessage: "x" })).toBe(
+			true,
+		);
+	});
+
+	test.each(["Buy those pink shoes.", "Buy cheese.", "find me a phone"])(
+		"%s: a product is named",
+		(english) => {
+			expect(namesNoProduct({ userMessageEn: english, userMessage: "x" })).toBe(
+				false,
+			);
+		},
+	);
+
+	test("a Russian catalog is judged on the original message", () => {
+		expect(
+			namesNoProduct({ userMessage: "а теперь купи их", catalogLang: "ru" }),
+		).toBe(true);
+		expect(namesNoProduct({ userMessage: "купи", catalogLang: "ru" })).toBe(
+			true,
+		);
+		expect(
+			namesNoProduct({
+				userMessage: "купи те розовые туфли",
+				catalogLang: "ru",
+			}),
+		).toBe(false);
+	});
+
+	test("with no translation the original is used", () => {
+		expect(namesNoProduct({ userMessage: "buy them" })).toBe(true);
+	});
+});
+
+describe("reuseLastProduct", () => {
+	test("takes the product from the earlier search and skips the search step", () => {
+		expect(
+			reuseLastProduct({
+				lastProduct: "Butter Croissants",
+				userMessage: "а теперь купи 3",
+				userMessageEn: "Now buy 3.",
+			}),
+		).toEqual({
+			product: "Butter Croissants",
+			query: "Butter Croissants",
+			quantity: 3,
+			requestParsed: true,
+			catalogSearched: true,
+		});
+	});
+
+	test("nothing when the message names a product or nothing was found before", () => {
+		expect(
+			reuseLastProduct({
+				lastProduct: "Whole Milk",
+				userMessage: "купи сыр",
+				userMessageEn: "Buy cheese.",
+			}),
+		).toBeUndefined();
+		expect(
+			reuseLastProduct({ userMessage: "buy them", userMessageEn: "Buy them." }),
+		).toBeUndefined();
+		expect(
+			reuseLastProduct({
+				lastProduct: "",
+				userMessage: "buy them",
+				userMessageEn: "Buy them.",
+			}),
+		).toBeUndefined();
 	});
 });

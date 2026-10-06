@@ -72,11 +72,13 @@ const STEPS: Partial<Record<ToolIntent, (toolName: string) => IntentSteps>> = {
 				: say(s, { ru: "Страница открыта", en: "Page opened" }),
 	}),
 	search: (toolName) => ({
-		running: (s) =>
-			say(s, {
-				ru: `Ищу «${fact(s, "query")}»…`,
-				en: `Searching for “${fact(s, "query")}”…`,
-			}),
+		running: (s) => {
+			const query = fact(s, "query");
+			return say(s, {
+				ru: query ? `Ищу «${query}»…` : "Ищу товар…",
+				en: query ? `Searching for “${query}”…` : "Searching…",
+			});
+		},
 		done: (s) => {
 			const found = fact(s, "product");
 			return say(s, {
@@ -87,8 +89,12 @@ const STEPS: Partial<Record<ToolIntent, (toolName: string) => IntentSteps>> = {
 		failed: (s) =>
 			NO_RESULTS.test(fact(s, `webmcp:${toolName}:text`))
 				? say(s, {
-						ru: `Ничего не нашёл по запросу «${fact(s, "query")}»`,
-						en: `Nothing found for “${fact(s, "query")}”`,
+						ru: fact(s, "query")
+							? `Ничего не нашёл по запросу «${fact(s, "query")}»`
+							: "Ничего не нашёл",
+						en: fact(s, "query")
+							? `Nothing found for “${fact(s, "query")}”`
+							: "Nothing found",
 					})
 				: say(s, { ru: "Не удалось выполнить поиск", en: "The search failed" }),
 	}),

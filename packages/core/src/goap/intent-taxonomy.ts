@@ -102,9 +102,10 @@ export const PRECONDITIONS_BY_INTENT: Record<
 
 /**
  * Facts that stay true between turns of one conversation: the store the
- * shopper is in. Everything else a run produces (`catalogSearched`,
+ * shopper is in, and the product the last search found (`lastProduct`, empty
+ * after a failed one) — so «now buy them» needs no second search. Everything else a run produces (`catalogSearched`,
  * `inCart`, tool results, the reply text) belongs to that one request and is
  * dropped when it ends, so "buy milk" after "buy cheese" starts from a search
  * again instead of believing it already searched.
  */
-export const SESSION_FACTS = ["storeOpen", "store"] as const;
+export const SESSION_FACTS = ["storeOpen", "store", "lastProduct"] as const;

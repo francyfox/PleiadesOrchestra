@@ -320,6 +320,44 @@ describe("tool arguments written by the function-call model", () => {
 		});
 	});
 
+	test("a found product is remembered for the next message, a failed search forgets it", async () => {
+		const action = await searchAction(fakeFunctionCall({}));
+		const found = await action.execute({
+			state: {
+				query: "milk",
+				"webmcp:search_products:result": "ok",
+				"webmcp:search_products:text":
+					"Showing 2 results:\n- Whole Milk — $3.69 (1 gal) — in stock\n- Oat Milk — $4.29 — in stock",
+			},
+		});
+		expect(found).toMatchObject({
+			product: "Whole Milk",
+			lastProduct: "Whole Milk",
+		});
+
+		const missed = await action.execute({
+			state: {
+				query: "croissants",
+				lastProduct: "Whole Milk",
+				"webmcp:search_products:result": "ok",
+				"webmcp:search_products:text": 'No products found for "croissants".',
+			},
+		});
+		expect(missed).toEqual({
+			"toolResult:search_products": false,
+			lastProduct: "",
+		});
+	});
+
+	test("the remembered product is not shown to the function-call model as a fact", async () => {
+		const agent = fakeFunctionCall({ query: "cheese" });
+		const action = await searchAction(agent);
+		await action.execute({
+			state: { query: "cheese", lastProduct: "Whole Milk" },
+		});
+		expect(agent.requests[0]?.facts).toEqual({ query: "cheese" });
+	});
+
 	test("facts named like a parameter always make it into the call, even when the model leaves them out", async () => {
 		const agent = fakeFunctionCall({});
 		const action = await searchAction(agent);

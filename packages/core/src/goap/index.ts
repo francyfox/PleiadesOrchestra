@@ -35,7 +35,9 @@ export type {
 } from "./product-request";
 export {
 	createProductRequestAction,
+	namesNoProduct,
 	parseProductRequest,
+	reuseLastProduct,
 } from "./product-request";
 export type { RunLock } from "./run-lock";
 export { createRunLock } from "./run-lock";

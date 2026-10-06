@@ -131,11 +131,19 @@ function factsFromAnswer(
 	state: WorldState,
 ): { facts: Partial<WorldState>; failed: boolean } {
 	if (intent !== "search") return { facts: {}, failed: false };
+	// `lastProduct` outlives the request (see `SESSION_FACTS`): «buy them» in
+	// the next message buys it. A failed search empties it, so «buy them» never
+	// buys what an older search found.
 	const product = firstListedProductName(text);
-	if (product) return { facts: { product }, failed: false };
-	if (NO_RESULTS.test(text)) return { facts: {}, failed: true };
+	if (product)
+		return { facts: { product, lastProduct: product }, failed: false };
+	if (NO_RESULTS.test(text))
+		return { facts: { lastProduct: "" }, failed: true };
 	return {
-		facts: typeof state.query === "string" ? { product: state.query } : {},
+		facts:
+			typeof state.query === "string"
+				? { product: state.query, lastProduct: state.query }
+				: {},
 		failed: false,
 	};
 }
@@ -150,6 +158,7 @@ const INTERNAL_FACTS = new Set([
 	"planRunId",
 	"messageIntent",
 	"catalogLang",
+	"lastProduct",
 ]);
 const INTERNAL_PREFIXES = ["webmcp:", "toolResult:", "param:", "page:"];
 const MAX_FACT_CHARS = 200;
@@ -398,7 +407,7 @@ export async function createWebMcpActions(
 						const text = String(ctx.state[textKey] ?? "");
 						const { facts, failed } = factsFromAnswer(intent, text, ctx.state);
 						// A search that found nothing did not do its job.
-						if (failed) return { [toolResultKey]: false };
+						if (failed) return { [toolResultKey]: false, ...facts };
 						return {
 							...EFFECTS_BY_INTENT[intent],
 							[toolResultKey]: true,
