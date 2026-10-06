@@ -1,6 +1,8 @@
 {
 	"name": "gamma-decision",
 	"private": true,
+	"license": "AGPL-3.0-only",
+	"author": "Danil Golota",
 	"type": "module",
 	"scripts": {
 		"dev": "bun --watch src/index.ts",

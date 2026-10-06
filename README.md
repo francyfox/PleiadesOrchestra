@@ -105,3 +105,11 @@ All the main documentation lives in [`docs/`](docs/). Repository rules and lesso
 
 - [goap-js](https://github.com/wmdmark/goap-js/tree/master) — a reference GOAP implementation
 - [embabel](https://github.com/embabel/embabel-agent) - goap framework
+
+## License
+
+Copyright (C) 2026 Danil Golota
+
+Licensed under the [GNU Affero General Public License v3.0](LICENSE) (`AGPL-3.0-only`).
+
+A commercial license is available if you can't use the AGPL: see [COMMERCIAL.md](COMMERCIAL.md). Third-party notices: [NOTICE](NOTICE).

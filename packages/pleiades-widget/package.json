@@ -2,6 +2,8 @@
 	"name": "pleiades-widget",
 	"version": "0.1.0",
 	"private": true,
+	"license": "AGPL-3.0-only",
+	"author": "Danil Golota",
 	"type": "module",
 	"description": "Chat widget for PleiadesOrchestra: a framework-agnostic <pleiades-chat> web component on Alpine.js (CSP build), under 40 kB.",
 	"main": "dist/pleiades-widget.js",

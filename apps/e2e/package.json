@@ -1,6 +1,8 @@
 {
 	"name": "e2e",
 	"private": true,
+	"license": "AGPL-3.0-only",
+	"author": "Danil Golota",
 	"type": "module",
 	"description": "Browser E2E tests for packages/pleiades-widget against a real (headless) browser — bun:test has no DOM, so the widget's own suite can only exercise WebMcpProvider through fakes, never the real navigator.modelContext detection/wiring path. Deliberately not part of `bun run test` (needs `bunx playwright install chromium` once, a real browser download — same reasoning as test:beta-text).",
 	"scripts": {

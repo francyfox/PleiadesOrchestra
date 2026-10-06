@@ -1,6 +1,8 @@
 {
 	"name": "pleiades-orchestra",
 	"private": true,
+	"license": "AGPL-3.0-only",
+	"author": "Danil Golota",
 	"scripts": {
 		"build": "turbo run build",
 		"dev": "turbo run dev",

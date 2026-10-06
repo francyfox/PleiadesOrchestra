@@ -1,6 +1,8 @@
 {
 	"name": "pleiades-mcp",
 	"private": true,
+	"license": "AGPL-3.0-only",
+	"author": "Danil Golota",
 	"type": "module",
 	"scripts": {
 		"start": "bun src/index.ts",

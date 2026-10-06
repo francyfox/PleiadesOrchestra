@@ -1,6 +1,8 @@
 {
 	"name": "admin-api",
 	"private": true,
+	"license": "AGPL-3.0-only",
+	"author": "Danil Golota",
 	"type": "module",
 	"exports": {
 		".": "./src/app.ts",

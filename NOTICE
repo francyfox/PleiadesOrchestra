@@ -1,0 +1,88 @@
+PleiadesOrchestra
+Copyright (C) 2026 Danil Golota
+
+This project is licensed under the GNU Affero General Public License v3.0
+(AGPL-3.0-only). See the LICENSE file.
+
+This file lists third-party work that is included in, ported into, or
+downloaded by this project, and the terms it comes with. These terms apply to
+that work only; they do not change the license of this project's own code.
+
+--------------------------------------------------------------------------------
+Code included or ported in this repository
+--------------------------------------------------------------------------------
+
+apps/snake-benchmark
+  Ported from mizorewww/laya-mlx (laya_mlx/snake/game.py, policy.py).
+  Copyright the laya-mlx authors. Licensed under the Apache License 2.0,
+  https://www.apache.org/licenses/LICENSE-2.0
+  The files were rewritten in TypeScript and changed.
+
+apps/gemini-webapi-mcp
+  Vendored from AndyShaman/gemini-webapi-mcp (commit 69d2f52), with
+  security changes listed in that directory's README. Licensed under the
+  GNU Affero General Public License v3.0 or later; see
+  apps/gemini-webapi-mcp/LICENSE.
+
+--------------------------------------------------------------------------------
+Native components built into the Docker images
+--------------------------------------------------------------------------------
+
+llama.cpp (ggml-org) — MIT License
+  Used as the base image of apps/beta-text and apps/delta-function-call.
+
+CTranslate2 (OpenNMT) — MIT License
+SentencePiece (Google) — Apache License 2.0
+  Built from source by apps/alpha-orchestrator/native/build.sh and called
+  through apps/alpha-orchestrator/native/translator.cpp.
+
+ONNX Runtime (Microsoft) — MIT License
+  Used through @receptron/laya in apps/gamma-decision.
+
+--------------------------------------------------------------------------------
+Models (downloaded when a service first starts; not part of this repository)
+--------------------------------------------------------------------------------
+
+The models have their own licenses. They are not covered by this project's
+license or by any commercial license for this project. Check each one before
+you use it in production.
+
+Vikhr-Llama-3.2-1B-instruct (Vikhrmodels), used by apps/beta-text
+  Based on Meta Llama 3.2. Built with Llama.
+  Llama 3.2 is licensed under the Llama 3.2 Community License,
+  Copyright (c) Meta Platforms, Inc. All Rights Reserved.
+  https://www.llama.com/llama3_2/license/
+  Use is subject to the Llama 3.2 Acceptable Use Policy.
+
+Qwen3-1.7B (Qwen, Alibaba Cloud), used by apps/delta-function-call
+  Apache License 2.0.
+
+Laya (receptron/laya-onnx, based on convaiinnovations/laya), used by
+apps/gamma-decision
+  Apache License 2.0.
+
+Opus-MT ru-en (Helsinki-NLP), used for message translation through the
+CTranslate2 conversion gaudi/opus-mt-ru-en-ctranslate2
+  Creative Commons Attribution 4.0 International (CC BY 4.0),
+  https://creativecommons.org/licenses/by/4.0/
+  Source: https://huggingface.co/Helsinki-NLP/opus-mt-ru-en
+  The model is converted to CTranslate2 format and quantized to int8 at load.
+  OPUS-MT: Tiedemann, J. and Thottingal, S., "OPUS-MT — Building open
+  translation services for the World", EAMT 2020.
+
+--------------------------------------------------------------------------------
+Fonts (apps/admin)
+--------------------------------------------------------------------------------
+
+Oxanium, Exo 2, Inter, Fira Code, Merriweather, through the
+@fontsource-variable/* packages. SIL Open Font License 1.1,
+https://openfontlicense.org
+
+--------------------------------------------------------------------------------
+npm dependencies
+--------------------------------------------------------------------------------
+
+Dependencies installed from npm keep their own licenses (mostly MIT, ISC,
+Apache-2.0 and BSD; some build tools are MPL-2.0). See each package's own
+LICENSE file in node_modules, or the lockfile (bun.lock) for the exact
+versions.
