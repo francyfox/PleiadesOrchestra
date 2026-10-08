@@ -1,6 +1,6 @@
 # Commercial License Terms
 
-These terms are an agreement between **Danil Golota**, an individual ("Licensor"), and the person or organization that buys a commercial license through the Licensor's checkout page ("Licensee").
+These terms are an agreement between **Danil Golota**, an individual ("Licensor"), and the person or organization that buys a commercial license through the Licensor's checkout page, https://buy.polar.sh/polar_cl_cL84qAaekbAJYEAnR1CTymWEyFvSCwUPyO0hL2mYxnw ("Licensee").
 
 ## 1. Definitions
 
