@@ -1,7 +1,5 @@
 # Commercial License Terms
 
-**Status: DRAFT.** Version 0.1, 2026-10-06. These terms are not final and are not in force yet. They may change before the first commercial license is sold.
-
 These terms are an agreement between **Danil Golota**, an individual ("Licensor"), and the person or organization that buys a commercial license through the Licensor's checkout page ("Licensee").
 
 ## 1. Definitions
@@ -50,7 +48,7 @@ Support is **not included**. The Licensor may answer questions on a best-effort 
 
 ## 8. Warranty and liability
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. TO THE EXTENT THE LAW ALLOWS, THE LICENSOR IS NOT LIABLE FOR INDIRECT, INCIDENTAL OR CONSEQUENTIAL DAMAGES OR LOST PROFITS, AND THE LICENSOR'S TOTAL LIABILITY IS LIMITED TO THE FEES THE LICENSEE PAID IN THE 12 MONTHS BEFORE THE CLAIM.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. TO THE EXTENT THE LAW ALLOWS, THE LICENSOR IS NOT LIABLE FOR INDIRECT, INCIDENTAL OR CONSEQUENTIAL DAMAGES OR LOST PROFITS, AND THE LICENSOR'S TOTAL LIABILITY IS LIMITED TO THE FEES THE LICENSEE PAID FOR THE LICENSE.
 
 ## 9. Third-party models and components
 
@@ -58,7 +56,10 @@ The Software downloads or uses third-party models and libraries (see the NOTICE 
 
 ## 10. Termination
 
-The Licensor may end this agreement only if the Licensee materially breaches section 3 and does not fix the breach within 30 days of written notice. When it ends, the Licensee stops using the Software under this license (it may keep using it under the AGPL) and stops using the Commercial Modules. Sections 4, 8, 9 and 12 survive.
+1. The Licensor may end this agreement only if the Licensee materially breaches section 3 and does not fix the breach within 30 days of written notice.
+2. The Licensee may end this agreement at any time by stopping Production Use and telling the Licensor. Ending it does not entitle the Licensee to a refund; refunds follow the payment provider's policy (section 5).
+3. If the payment for the license is refunded, reversed or disputed (chargeback), the license ends on the date of that refund, reversal or dispute.
+4. When the agreement ends, the Licensee stops using the Software under this license (it may keep using it under the AGPL) and stops using the Commercial Modules. Sections 4, 8, 9 and 12 survive.
 
 ## 11. Changes
 
@@ -70,4 +71,6 @@ The Licensor may publish a new version of these terms. A new version applies onl
 2. If a provision is invalid, the rest stays in force.
 3. The Licensee may not assign this agreement without the Licensor's written consent, except to a successor of its whole business who agrees to these terms.
 4. Governing law and courts: the law of the country where the Licensor resides at the time of the dispute, and the courts at the Licensor's place of residence. Mandatory consumer-protection law of the Licensee's country, if it applies, is not affected.
-5. Contact: francyfox@protonmail.com, or open an issue in the project repository.
+5. The Licensee is the buyer identified by the order at the payment provider (order ID and the email entered at checkout). The license covers the buyer and its Affiliates. If the buyer is an organization, the person who paid confirms they are authorized to bind it.
+6. Notices to the Licensee are sent to the email entered at checkout, or to a newer address the Licensee gave the Licensor in writing, and count as received when sent. The Licensee keeps that address working. Notices to the Licensor go to the contact below.
+7. Contact: francyfox@protonmail.com, or open an issue in the project repository.

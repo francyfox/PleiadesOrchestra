@@ -1,6 +1,6 @@
 # Commercial license
 
-PleiadesOrchestra is free software under the [GNU Affero General Public License v3.0](LICENSE). Most people never need anything else.
+PleiadesOrchestra is free software under the [GNU Affero General Public License v3.0](LICENSE).
 
 ## You do not need a commercial license if
 
@@ -25,8 +25,6 @@ It does not cover the third-party models the software downloads (see [NOTICE](NO
 
 ## Buy
 
-Not available yet.
-
-Free commercial licenses are available at the Licensor's discretion — write to francyfox@protonmail.com.
+Commercial licenses are available at the Licensor's discretion — write to francyfox@protonmail.com.
 
 It is a one-time payment, not a subscription. The price is shown at checkout. Questions before you buy: francyfox@protonmail.com, or open an issue in this repository.
