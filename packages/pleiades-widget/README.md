@@ -1,14 +1,58 @@
 # pleiades-widget
 
+<p>
+  <a href="https://www.npmjs.com/package/@shalotts/pleiades-widget"><img alt="npm version" src="https://img.shields.io/npm/v/%40shalotts%2Fpleiades-widget?style=for-the-badge&logo=npm&label=npm"></a>
+  <a href="https://jsr.io/@shalotts/pleiades-widget"><img alt="JSR version" src="https://img.shields.io/jsr/v/%40shalotts/pleiades-widget?style=for-the-badge&logo=jsr&label=jsr"></a>
+  <a href="https://www.npmjs.com/package/@shalotts/pleiades-widget"><img alt="npm downloads per month" src="https://img.shields.io/npm/dm/%40shalotts%2Fpleiades-widget?style=for-the-badge&label=downloads"></a>
+  <a href="LICENSE"><img alt="License: BSD-3-Clause" src="https://img.shields.io/npm/l/%40shalotts%2Fpleiades-widget?style=for-the-badge&label=license"></a>
+  <img alt="Bundle size limit: 40 kB brotli" src="https://img.shields.io/badge/size%20limit-40%20kB%20brotli-blue?style=for-the-badge">
+  <img alt="TypeScript typings included" src="https://img.shields.io/badge/types-included-3178C6?style=for-the-badge&logo=typescript&logoColor=white">
+</p>
+
 A chat widget for sites connected to PleiadesOrchestra: one framework-agnostic web component, `<pleiades-chat>`. A round launcher button sits in a corner of the page (bottom-left by default) and opens a side panel with the chat. Built on [Alpine.js](https://alpinejs.dev) (the CSP build — works on sites that forbid `unsafe-eval`) bundled in, with motion on the browser's own Web Animations API; **under 40 kB brotli** (enforced by [size-limit](https://evilmartians.com/opensource/size-limit) in `bun run build`).
 
 ## Install
 
+### npm registry
+
 ```sh
-npm install @shalotts/pleiades-widget      # or: bun add @shalotts/pleiades-widget
+# npm
+npm install @shalotts/pleiades-widget
+
+# pnpm
+pnpm add @shalotts/pleiades-widget
+
+# yarn
+yarn add @shalotts/pleiades-widget
+
+# bun
+bun add @shalotts/pleiades-widget
 ```
 
-or from [JSR](https://jsr.io): `npx jsr add @francyfox/pleiades-widget` (`deno add jsr:@francyfox/pleiades-widget`). The JSR build has the same bundle; its typings leave out the `HTMLElementTagNameMap` entry (JSR refuses global augmentations), so type `document.createElement("pleiades-chat")` yourself if you need it. Without a package manager the script can be loaded from a CDN, e.g. `https://cdn.jsdelivr.net/npm/@shalotts/pleiades-widget/dist/pleiades-widget.js`.
+### JSR
+
+```sh
+# npm
+npx jsr add @shalotts/pleiades-widget
+
+# pnpm
+pnpm dlx jsr add @shalotts/pleiades-widget
+
+# yarn
+yarn dlx jsr add @shalotts/pleiades-widget
+
+# bun
+bunx --bun jsr add @shalotts/pleiades-widget
+
+# deno
+deno add jsr:@shalotts/pleiades-widget
+```
+
+The JSR build is the same bundle; its typings leave out the `HTMLElementTagNameMap` entry (JSR refuses global augmentations), so type `document.createElement("pleiades-chat")` yourself if you need it.
+
+### No package manager
+
+Load the script from a CDN, e.g. `https://cdn.jsdelivr.net/npm/@shalotts/pleiades-widget/dist/pleiades-widget.js` (or `https://unpkg.com/@shalotts/pleiades-widget`).
 
 Licensed under the [BSD 3-Clause License](LICENSE) — unlike the rest of the PleiadesOrchestra repository, which is AGPL-3.0, so a site may embed the widget without opening its own code. The bundle contains Alpine.js (MIT, see `THIRD-PARTY-NOTICES.md`).
 
