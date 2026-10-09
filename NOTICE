@@ -4,6 +4,9 @@ Copyright (C) 2026 Danil Golota
 This project is licensed under the GNU Affero General Public License v3.0
 (AGPL-3.0-only). See the LICENSE file.
 
+Exception: packages/pleiades-widget is licensed under the BSD 3-Clause License;
+see packages/pleiades-widget/LICENSE.
+
 This file lists third-party work that is included in, ported into, or
 downloaded by this project, and the terms it comes with. These terms apply to
 that work only; they do not change the license of this project's own code.

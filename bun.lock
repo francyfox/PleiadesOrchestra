@@ -232,10 +232,8 @@
     "packages/pleiades-widget": {
       "name": "pleiades-widget",
       "version": "0.1.0",
-      "dependencies": {
-        "@alpinejs/csp": "^3.17.4",
-      },
       "devDependencies": {
+        "@alpinejs/csp": "^3.17.4",
         "@size-limit/file": "^14.1.0",
         "@types/alpinejs": "^3.17.0",
         "@types/bun": "catalog:",

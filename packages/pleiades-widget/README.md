@@ -2,6 +2,16 @@
 
 A chat widget for sites connected to PleiadesOrchestra: one framework-agnostic web component, `<pleiades-chat>`. A round launcher button sits in a corner of the page (bottom-left by default) and opens a side panel with the chat. Built on [Alpine.js](https://alpinejs.dev) (the CSP build — works on sites that forbid `unsafe-eval`) bundled in, with motion on the browser's own Web Animations API; **under 40 kB brotli** (enforced by [size-limit](https://evilmartians.com/opensource/size-limit) in `bun run build`).
 
+## Install
+
+```sh
+npm install @shalotts/pleiades-widget      # or: bun add @shalotts/pleiades-widget
+```
+
+or from [JSR](https://jsr.io): `npx jsr add @francyfox/pleiades-widget` (`deno add jsr:@francyfox/pleiades-widget`). The JSR build has the same bundle; its typings leave out the `HTMLElementTagNameMap` entry (JSR refuses global augmentations), so type `document.createElement("pleiades-chat")` yourself if you need it. Without a package manager the script can be loaded from a CDN, e.g. `https://cdn.jsdelivr.net/npm/@shalotts/pleiades-widget/dist/pleiades-widget.js`.
+
+Licensed under the [BSD 3-Clause License](LICENSE) — unlike the rest of the PleiadesOrchestra repository, which is AGPL-3.0, so a site may embed the widget without opening its own code. The bundle contains Alpine.js (MIT, see `THIRD-PARTY-NOTICES.md`).
+
 ## Use it
 
 ```html
@@ -13,7 +23,7 @@ A chat widget for sites connected to PleiadesOrchestra: one framework-agnostic w
 ></pleiades-chat>
 ```
 
-Or from a bundler: `import "pleiades-widget"` (it registers the element; there are no exports). The element works the same inside React, Vue, Svelte or plain HTML.
+Or from a bundler: `import "@shalotts/pleiades-widget"` (it registers the element; there are no exports). The element works the same inside React, Vue, Svelte or plain HTML.
 
 | Attribute | Default | |
 | --- | --- | --- |
@@ -47,7 +57,7 @@ pleiades-chat::part(send) {
 }
 ```
 
-Parts: `launcher`, `panel`, `header`, `close`, `messages`, `error`, `mode`, `hint`, `tooltip`, `composer`, `input`, `send`. `dist/pleiades-widget.css` (also importable as `pleiades-widget/style.css`) is the exact same, minified stylesheet the widget injects into its shadow root — a reference for which classes/parts exist and what they do by default. It isn't meant to be linked into a page as-is: shadow DOM won't apply it there anyway.
+Parts: `launcher`, `panel`, `header`, `close`, `messages`, `error`, `mode`, `hint`, `tooltip`, `composer`, `input`, `send`. `dist/pleiades-widget.css` (also importable as `@shalotts/pleiades-widget/style.css`) is the exact same, minified stylesheet the widget injects into its shadow root — a reference for which classes/parts exist and what they do by default. It isn't meant to be linked into a page as-is: shadow DOM won't apply it there anyway.
 
 `el.getVisitorToken()` returns the visitor token of this browser, for the site's server-side `POST /v1/channels/:slug/identify` call (links an anonymous visitor to a logged-in account).
 
@@ -58,7 +68,7 @@ Invalid configuration renders nothing and logs one `[pleiades-widget] <code>` li
 The package ships TypeScript declarations (`types/`): the element interface, its attributes, and `HTMLElementTagNameMap`, so `document.createElement("pleiades-chat")` and `querySelector("pleiades-chat")` are typed in any project. For React JSX, import the augmentation once anywhere in the project:
 
 ```ts
-import type {} from "pleiades-widget/react";
+import type {} from "@shalotts/pleiades-widget/react";
 
 <pleiades-chat agent-url="https://agent.example.com" publishable-key="pk_…" position="bottom-right" />
 ```

@@ -110,6 +110,6 @@ All the main documentation lives in [`docs/`](docs/). Repository rules and lesso
 
 Copyright (C) 2026 Danil Golota
 
-Licensed under the [GNU Affero General Public License v3.0](LICENSE) (`AGPL-3.0-only`).
+Licensed under the [GNU Affero General Public License v3.0](LICENSE) (`AGPL-3.0-only`), except [`packages/pleiades-widget`](packages/pleiades-widget), the chat widget that sites embed, which is under the [BSD 3-Clause License](packages/pleiades-widget/LICENSE).
 
 A commercial license is available if you can't use the AGPL: see [COMMERCIAL.md](COMMERCIAL.md). Third-party notices: [NOTICE](NOTICE).

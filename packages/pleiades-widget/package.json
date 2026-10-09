@@ -1,36 +1,65 @@
 {
-	"name": "pleiades-widget",
+	"name": "@shalotts/pleiades-widget",
 	"version": "0.1.0",
-	"private": true,
-	"license": "AGPL-3.0-only",
+	"license": "BSD-3-Clause",
 	"author": "Danil Golota",
+	"homepage": "https://github.com/francyfox/PleiadesOrchestra/tree/master/packages/pleiades-widget#readme",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/francyfox/PleiadesOrchestra.git",
+		"directory": "packages/pleiades-widget"
+	},
+	"bugs": {
+		"url": "https://github.com/francyfox/PleiadesOrchestra/issues"
+	},
+	"keywords": [
+		"web-component",
+		"custom-element",
+		"chat",
+		"chat-widget",
+		"assistant",
+		"llm",
+		"webmcp",
+		"alpine",
+		"pleiades"
+	],
 	"type": "module",
 	"description": "Chat widget for PleiadesOrchestra: a framework-agnostic <pleiades-chat> web component on Alpine.js (CSP build), under 40 kB.",
 	"main": "dist/pleiades-widget.js",
 	"module": "dist/pleiades-widget.js",
 	"exports": {
 		".": {
-			"types": "./types/index.d.ts",
+			"types": "./dist/pleiades-widget.d.ts",
 			"default": "./dist/pleiades-widget.js"
 		},
 		"./react": {
 			"types": "./types/react.d.ts"
 		},
-		"./style.css": "./dist/pleiades-widget.css"
+		"./style.css": {
+			"types": "./types/style.d.ts",
+			"default": "./dist/pleiades-widget.css"
+		},
+		"./package.json": "./package.json"
 	},
 	"files": [
 		"dist",
-		"types"
+		"types",
+		"LICENSE",
+		"THIRD-PARTY-NOTICES.md"
 	],
 	"scripts": {
 		"dev": "vite --port 5199 --host 0.0.0.0",
-		"build": "vite build && size-limit",
+		"build": "vite build && node scripts/postbuild.mjs && size-limit",
 		"test": "bun test src",
 		"check-types": "tsc --noEmit && tsc --noEmit -p types-test",
 		"lint": "biome check .",
-		"size": "size-limit"
+		"size": "size-limit",
+		"prepack": "bun run build",
+		"prepublishOnly": "bun run check-types && bun run lint && bun run test",
+		"jsr:dry-run": "deno publish --dry-run --allow-dirty"
 	},
 	"devDependencies": {
+		"@alpinejs/csp": "^3.17.4",
 		"@size-limit/file": "^14.1.0",
 		"@types/alpinejs": "^3.17.0",
 		"@types/bun": "catalog:",
@@ -42,8 +71,14 @@
 		"typescript": "catalog:",
 		"vite": "^8.0.16"
 	},
-	"types": "types/index.d.ts",
-	"dependencies": {
-		"@alpinejs/csp": "^3.17.4"
+	"types": "dist/pleiades-widget.d.ts",
+	"sideEffects": [
+		"./dist/pleiades-widget.js",
+		"./dist/pleiades-widget.css"
+	],
+	"unpkg": "dist/pleiades-widget.js",
+	"jsdelivr": "dist/pleiades-widget.js",
+	"publishConfig": {
+		"access": "public"
 	}
 }
