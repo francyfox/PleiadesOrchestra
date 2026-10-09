@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ru">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Pleiades widget — dev</title>
+		<style>
+			body { font: 16px/1.5 system-ui, sans-serif; max-width: 40rem; margin: 3rem auto; padding: 0 1rem; }
+			code { background: #0001; padding: 0 .25em; border-radius: 4px; }
+		</style>
+	</head>
+	<body>
+		<h1>Pleiades widget — dev page</h1>
+		<p>
+			Edit anything in <code>src/</code> — the page reloads at once and the panel
+			stays open. Settings go in the URL:
+			<code>?agent-url=…&amp;publishable-key=pk_…&amp;lang=en&amp;position=bottom-right&amp;dark</code>,
+			or in <code>.env.local</code> as <code>VITE_PLEIADES_URL</code> and <code>VITE_PLEIADES_PUBLIC_KEY</code>. Without them the chat talks to a built-in mock API (<code>dev/mock-api.ts</code>). Try the words <code>steps</code>, <code>slow</code>, <code>error</code>, <code>fail</code>, <code>tool</code>.
+		</p>
+		<script type="module">
+			import "/src/index.ts";
+
+			const q = new URLSearchParams(location.search);
+			const env = import.meta.env;
+			const chat = document.createElement("pleiades-chat");
+			const attrs = {
+				"agent-url": q.get("agent-url") ?? env.VITE_PLEIADES_URL ?? location.origin,
+				"publishable-key": q.get("publishable-key") ?? env.VITE_PLEIADES_PUBLIC_KEY ?? "pk_dev_placeholder",
+				heading: q.get("heading") ?? "Assistant",
+				greeting: q.get("greeting") ?? "Hello! How can I help?",
+				lang: q.get("lang"),
+				position: q.get("position"),
+			};
+			for (const [k, v] of Object.entries(attrs)) if (v) chat.setAttribute(k, v);
+			// Keep the panel open across reloads so a change is visible immediately.
+			if (sessionStorage.getItem("pl-dev-open") !== "0") chat.setAttribute("open", "");
+			new MutationObserver(() =>
+				sessionStorage.setItem("pl-dev-open", chat.hasAttribute("open") ? "1" : "0"),
+			).observe(chat, { attributes: true, attributeFilter: ["open"] });
+			if (q.has("dark")) document.documentElement.style.colorScheme = "dark";
+			document.body.append(chat);
+		</script>
+	</body>
+</html>

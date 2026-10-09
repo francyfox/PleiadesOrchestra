@@ -29,7 +29,7 @@
 	--bg: var(--pleiades-bg, oklch(0.9885 0.0057 84.5659));
 	--fg: var(--pleiades-fg, oklch(0.366 0.0251 49.6085));
 	--muted: var(--pleiades-muted, oklch(0.92 0 0));
-	--muted-fg: var(--pleiades-muted-fg, oklch(0.5534 0.0116 58.0708));
+	--muted-fg: var(--pleiades-muted-fg, oklch(0.534 0.0116 58.0708));
 	--border: var(--pleiades-border, oklch(0.8866 0.0404 89.6994));
 	--destructive: var(--pleiades-destructive, oklch(0.4437 0.1613 26.8994));
 	--destructive-fg: var(--pleiades-destructive-fg, oklch(1 0 0));
@@ -279,6 +279,12 @@
 		border-top: 1px solid var(--border);
 		font-size: 12px;
 
+		.group {
+			display: flex;
+			align-items: center;
+			gap: 2px;
+		}
+
 		label {
 			display: inline-flex;
 			align-items: center;
@@ -292,11 +298,13 @@
 		}
 	}
 
+
+
 	.tooltip {
 		position: absolute;
 		bottom: calc(100% + 6px);
-		left: 50%;
-		z-index: 1;
+		left: 100%;
+		z-index: 10;
 		width: max-content;
 		max-width: 200px;
 		padding: 6px 8px;
@@ -309,14 +317,8 @@
 		visibility: hidden;
 		opacity: 0;
 		transition: opacity 0.15s;
-		transform: translateX(-50%);
+		transform: translateX(-25%);
 		pointer-events: none;
-
-		.hint:hover &,
-		.hint:focus-visible & {
-			visibility: visible;
-			opacity: 1;
-		}
 	}
 
 	/* The "?" hint next to WebMCP. */
@@ -335,6 +337,11 @@
 		font-size: 10px;
 		line-height: 1;
 		cursor: help;
+
+		&:hover .tooltip {
+			visibility: visible;
+			opacity: 1;
+		}
 	}
 
 	footer {
@@ -354,8 +361,8 @@
 		--accent-fg: var(--pleiades-accent-fg, oklch(0.2686 0 0));
 		--bg: var(--pleiades-bg, oklch(0.2161 0.0061 56.0434));
 		--fg: var(--pleiades-fg, oklch(0.9699 0.0013 106.4238));
-		--muted: var(--pleiades-muted, oklch(0.233 0.0073 67.4563));
-		--muted-fg: var(--pleiades-muted-fg, oklch(0.7161 0.0091 56.259));
+		--muted: var(--pleiades-muted, oklch(0.29 0.0073 67.4563));
+		--muted-fg: var(--pleiades-muted-fg, oklch(0.9161 0.0091 56.259));
 		--border: var(--pleiades-border, oklch(0.3741 0.0087 67.5582));
 		--destructive: var(--pleiades-destructive, oklch(0.5771 0.2152 27.325));
 		--destructive-fg: var(--pleiades-destructive-fg, oklch(1 0 0));
