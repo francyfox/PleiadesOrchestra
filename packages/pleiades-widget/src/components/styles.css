@@ -181,6 +181,32 @@
 		color: var(--accent-fg);
 	}
 
+	/* Things to try, shown in the empty conversation. */
+	.try {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		margin-top: 8px;
+	}
+
+	.try-label {
+		font-size: var(--font-size-sm);
+		color: var(--muted-fg);
+	}
+
+	.try-row {
+		padding: 8px 12px;
+		border: 1px solid var(--border);
+		border-radius: calc(var(--radius) * 1.67);
+		background: var(--bg);
+		text-align: left;
+		cursor: pointer;
+
+		&:hover {
+			background: var(--muted);
+		}
+	}
+
 	/* The flow above a reply: one line per thing the assistant did. */
 	.flow {
 		display: flex;
@@ -244,14 +270,16 @@
 		color: var(--destructive);
 	}
 
+	/* The field takes the full width; the buttons sit below it (mic, then send filling the rest). */
 	form {
 		display: flex;
+		flex-wrap: wrap;
 		gap: 8px;
 		padding: 8px 12px;
 		border-top: 1px solid var(--border);
 
 		button {
-			padding: 0 14px;
+			padding: 8px 14px;
 			border: 0;
 			border-radius: calc(var(--radius) * 1.67);
 			background: var(--accent);
@@ -263,6 +291,31 @@
 				cursor: default;
 			}
 
+			/* The dictation button: quiet until it is listening. */
+			&[type="submit"] {
+				flex: 1;
+			}
+
+			&.mic {
+				display: grid;
+				place-items: center;
+				padding: 8px 12px;
+				border: 1px solid var(--border);
+				background: var(--bg);
+				color: var(--muted-fg);
+
+				&[aria-disabled="true"] {
+					opacity: 0.5;
+					cursor: not-allowed;
+				}
+
+				&.on {
+					border-color: var(--accent);
+					background: var(--accent);
+					color: var(--accent-fg);
+				}
+			}
+
 			/* Stop mode (busy): stays clickable, colored like a destructive action. */
 			&.stop {
 				background: var(--destructive);
@@ -272,8 +325,7 @@
 	}
 
 	textarea {
-		flex: 1;
-		/* Lets the field shrink so the send button never leaves the panel, however large the text. */
+		flex: 1 1 100%;
 		min-width: 0;
 		max-height: 96px;
 		padding: 8px;

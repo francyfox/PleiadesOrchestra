@@ -2,6 +2,7 @@ import Alpine from "@alpinejs/csp";
 import type { ChatState, ToolMode } from "@/lib/chat/chat.ts";
 import type { Position } from "@/lib/config/config.ts";
 import type { Strings } from "@/lib/i18n/i18n.ts";
+import type { Dictation } from "@/lib/speech/speech.ts";
 import { createComposer } from "../composer/composer.ts";
 import { createErrorLine } from "../error-line/error-line.ts";
 import { footerTemplate } from "../footer/footer.template.ts";
@@ -24,8 +25,14 @@ export interface WidgetOptions {
 	onSend: (text: string) => void;
 	onStop: () => void;
 	onModeChange: (mode: ToolMode) => void;
+	/** Things to try, shown until the first message (up to three). */
+	examples: readonly string[];
+	/** Speech-to-text for the microphone button, if the browser has it. */
+	dictation?: Dictation;
 	/** Which tool modes exist (chat's `state.available`); the others are disabled in the switch. */
 	available: { webmcp: boolean; mcp: boolean };
+	/** The shortcuts as written for tooltips; empty = none. */
+	shortcuts: { toggle: string; keyshortcuts?: string; mic: string };
 }
 
 /**
@@ -40,13 +47,22 @@ export function createWidget(options: WidgetOptions) {
 	const el = document.createElement("div");
 	const part = (selector: string) => el.querySelector<HTMLElement>(selector);
 
-	const launcher = createLauncher({ s, onToggle: options.onToggle });
+	const launcher = createLauncher({
+		s,
+		onToggle: options.onToggle,
+		shortcut: options.shortcuts.toggle,
+		keyshortcuts: options.shortcuts.keyshortcuts,
+	});
 	const header = createHeader({
 		s,
 		heading: options.heading,
 		onClose: options.onClose,
 	});
-	const messages = createMessages(options.greeting);
+	const messages = createMessages(options.greeting, {
+		s,
+		examples: options.examples,
+		onAsk: options.onSend,
+	});
 	const errorLine = createErrorLine(s);
 	const modeSwitch = createModeSwitch({
 		s,
@@ -58,6 +74,8 @@ export function createWidget(options: WidgetOptions) {
 		s,
 		placeholder: options.placeholder,
 		maxChars: options.maxChars,
+		dictation: options.dictation,
+		micShortcut: options.shortcuts.mic,
 		onSend: options.onSend,
 		onStop: options.onStop,
 		afterSend: () => part("[part=input]")?.focus(),
@@ -98,6 +116,10 @@ export function createWidget(options: WidgetOptions) {
 			errorLine.model.render(state.error, state.errorHint, state.noTools);
 			modeSwitch.model.render(state.toolMode);
 			composer.model.render(state);
+		},
+		/** The microphone shortcut: starts or stops dictation. */
+		toggleMic() {
+			composer.model.toggleMic();
 		},
 		setOpen(open: boolean) {
 			const panelEl = part(".panel");

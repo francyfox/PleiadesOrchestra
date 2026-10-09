@@ -11,6 +11,18 @@ export const messagesTemplate = (scope: string) =>
 			x-data={scope}
 		>
 			<div class="message assistant" x-text="greeting" />
+			<div class="try" x-show="showExamples">
+				<span class="try-label" x-text="s.try" />
+				<template x-for="example in examples" x-bind:key="example">
+					<button
+						type="button"
+						class="try-row"
+						x-bind:data-example="example"
+						x-text="example"
+						x-on:click="ask"
+					/>
+				</template>
+			</div>
 			<template x-for="message in messages" x-bind:key="message.id">
 				<div x-bind:class="message.cls" x-bind:data-id="message.id">
 					<span class="flow">

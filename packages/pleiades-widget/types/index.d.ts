@@ -31,6 +31,24 @@ export interface PleiadesChatAttributes {
 	 * invalid JSON) is dropped with a console warning, not a fatal error.
 	 */
 	"customer-context"?: string;
+	/**
+	 * Keyboard shortcut that opens and closes the panel: modifiers and a key
+	 * joined by `+`, e.g. `"mod+j"` (the default; `mod` = Ctrl or ⌘),
+	 * `"ctrl+shift+k"`. An empty value turns the shortcut off. The Windows key
+	 * can't be used: the OS takes it before the page.
+	 */
+	hotkey?: string;
+	/**
+	 * Shortcut that starts and stops dictation while the panel is open; same
+	 * format as `hotkey`. Default `"mod+shift+space"`; an empty value turns it off.
+	 */
+	"mic-hotkey"?: string;
+	/**
+	 * Up to three things to try, shown until the first message: a JSON array of
+	 * texts, e.g. `'["Find a jacket","Where is my order?"]'`. `'[]'` hides them;
+	 * absent = built-in examples.
+	 */
+	examples?: string;
 	/** Boolean attribute: the panel starts open. */
 	open?: boolean;
 }
@@ -45,6 +63,9 @@ export interface PleiadesChatElement extends HTMLElement {
 	placeholder: string;
 	lang: string;
 	customerContext: string;
+	examples: string;
+	hotkey: string;
+	micHotkey: string;
 	/** Reflects the `open` attribute. */
 	open: boolean;
 	toggle(): void;

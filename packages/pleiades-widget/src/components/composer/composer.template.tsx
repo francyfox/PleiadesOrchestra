@@ -1,4 +1,5 @@
-import { h, render } from "@/jsx/jsx.ts";
+import { h, raw, render } from "@/jsx/jsx.ts";
+import { MIC_ICON } from "../icons.ts";
 
 export const composerTemplate = (scope: string) =>
 	render(
@@ -17,6 +18,18 @@ export const composerTemplate = (scope: string) =>
 				x-bind:disabled="inputDisabled"
 				x-on:keydown="onKey"
 			/>
+			<button
+				type="button"
+				part="mic"
+				x-bind:class="micClass"
+				x-bind:aria-pressed="listening"
+				x-bind:aria-label="micLabel"
+				x-bind:title="micLabel"
+				x-bind:aria-disabled="micDisabled"
+				x-on:click="toggleMic"
+			>
+				{raw(MIC_ICON)}
+			</button>
 			<button
 				type="submit"
 				part="send"

@@ -21,6 +21,16 @@ export const strings = {
 		webmcpHint:
 			"Experimental Chrome feature (available since version 149). To enable it, open",
 		copied: "Copied ✓",
+		mic: "Dictate",
+		micStop: "Stop dictation",
+		micBlocked: "Microphone access is blocked in the browser",
+		micUnsupported: "Speech recognition API is not supported by this browser",
+		try: "Try",
+		examples: [
+			"What can you help me with here?",
+			"Find something for me",
+			"Show me what is in my cart",
+		],
 	},
 	ru: {
 		title: "Ассистент",
@@ -44,6 +54,16 @@ export const strings = {
 		webmcpHint:
 			"Экспериментальная функция Chrome (доступна с версии 149). Для активации перейдите в",
 		copied: "Скопировано ✓",
+		mic: "Диктовать",
+		micStop: "Остановить диктовку",
+		micBlocked: "Доступ к микрофону запрещён в браузере",
+		micUnsupported: "API распознавания речи не поддерживается этим браузером",
+		try: "Попробуйте",
+		examples: [
+			"С чем ты можешь помочь здесь?",
+			"Найди мне что-нибудь",
+			"Покажи, что у меня в корзине",
+		],
 	},
 	kk: {
 		title: "Көмекші",
@@ -67,6 +87,16 @@ export const strings = {
 		webmcpHint:
 			"Chrome-дың эксперименттік функциясы (149 нұсқасынан бастап қолжетімді). Қосу үшін мына бетке өтіңіз:",
 		copied: "Көшірілді ✓",
+		mic: "Дыбыстап жазу",
+		micStop: "Жазуды тоқтату",
+		micBlocked: "Браузерде микрофонға рұқсат жабық",
+		micUnsupported: "Бұл браузер сөйлеуді тану API-ін қолдамайды",
+		try: "Байқап көріңіз",
+		examples: [
+			"Мұнда қандай көмек бере аласың?",
+			"Маған бірдеңе тауып бер",
+			"Себетімде не бар екенін көрсет",
+		],
 	},
 } as const;
 

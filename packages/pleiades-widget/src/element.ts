@@ -9,10 +9,17 @@ import {
 	describeConfigError,
 	normalizePosition,
 	parseCustomerContext,
+	parseExamples,
 	resolveConfig,
 } from "@/lib/config/config.ts";
+import {
+	formatHotkey,
+	keyShortcuts,
+	parseHotkey,
+} from "@/lib/hotkey/hotkey.ts";
 import { pickLang, strings } from "@/lib/i18n/i18n.ts";
 import { currentPage } from "@/lib/page/page.ts";
+import { createDictation, speechLang } from "@/lib/speech/speech.ts";
 import { createSessionStore } from "@/lib/storage/storage.ts";
 import { createNavigatorWebMcpProvider } from "@/lib/webmcp/webmcp.ts";
 import "@/components/styles.css";
@@ -20,6 +27,15 @@ import { createWidget, type Widget } from "@/components/widget/widget.ts";
 
 /** Mirrors the server's `WIDGET_MAX_TEXT_CHARS` default. */
 const MAX_CHARS = 2000;
+
+/** Ctrl+J, or ⌘J on a Mac: the same shortcut as the demo shop's own assistant. */
+const DEFAULT_HOTKEY = "mod+j";
+/**
+ * Ctrl/⌘+Shift+Space: starts and stops dictation while the panel is open. Not a
+ * letter with Alt: Alt+<letter> belongs to browser menus, extensions and, on
+ * Linux with Alt+Shift as the layout switch, to the keyboard.
+ */
+const DEFAULT_MIC_HOTKEY = "mod+shift+space";
 
 /** Property name → attribute name. Everything is configured through attributes. */
 const ATTRIBUTES = {
@@ -31,6 +47,9 @@ const ATTRIBUTES = {
 	placeholder: "placeholder",
 	lang: "lang",
 	customerContext: "customer-context",
+	examples: "examples",
+	hotkey: "hotkey",
+	micHotkey: "mic-hotkey",
 } as const;
 
 type Prop = keyof typeof ATTRIBUTES;
@@ -52,6 +71,9 @@ export class PleiadesChat extends HTMLElement {
 	declare placeholder: string;
 	declare lang: string;
 	declare customerContext: string;
+	declare examples: string;
+	declare hotkey: string;
+	declare micHotkey: string;
 
 	#root = this.attachShadow({ mode: "open" });
 	#chat?: Chat;
@@ -67,10 +89,37 @@ export class PleiadesChat extends HTMLElement {
 	}
 
 	connectedCallback() {
+		document.addEventListener("keydown", this.#onKeyDown);
 		this.#schedule();
 	}
 
+	/** An attribute's shortcut, or the default while the attribute is absent (an empty one turns it off). */
+	#hotkey(attribute: string, fallback: string) {
+		return this.hasAttribute(attribute)
+			? this.getAttribute(attribute)
+			: fallback;
+	}
+
+	/**
+	 * `hotkey` (default Ctrl/⌘+J) opens and closes the panel; `mic-hotkey`
+	 * (default Ctrl/⌘+Shift+Space) starts and stops dictation while it is open.
+	 */
+	#onKeyDown = (event: KeyboardEvent) => {
+		if (!this.#ui || event.repeat) return;
+		if (parseHotkey(this.#hotkey("hotkey", DEFAULT_HOTKEY))?.(event)) {
+			event.preventDefault();
+			this.toggle();
+		} else if (
+			this.open &&
+			parseHotkey(this.#hotkey("mic-hotkey", DEFAULT_MIC_HOTKEY))?.(event)
+		) {
+			event.preventDefault();
+			this.#ui.toggleMic();
+		}
+	};
+
 	disconnectedCallback() {
+		document.removeEventListener("keydown", this.#onKeyDown);
 		this.#chat?.dispose();
 		this.#off?.();
 		this.#ui?.destroy();
@@ -150,18 +199,24 @@ export class PleiadesChat extends HTMLElement {
 		}
 		const chat = this.#chat;
 		const customerContext = parseCustomerContext(attr("customerContext"));
-		const s =
-			strings[
-				pickLang(
-					attr("lang") || document.documentElement.lang || navigator.language,
-				)
-			];
+		const lang = pickLang(
+			attr("lang") || document.documentElement.lang || navigator.language,
+		);
+		const s = strings[lang];
+		const toggleSpec = this.#hotkey("hotkey", DEFAULT_HOTKEY);
 		const ui = createWidget({
 			s,
 			position: normalizePosition(attr("position")),
 			heading: attr("heading") || s.title,
 			greeting: attr("greeting") || s.hello,
 			placeholder: attr("placeholder") || s.ph,
+			examples: parseExamples(attr("examples")) ?? s.examples,
+			dictation: createDictation(speechLang(lang)),
+			shortcuts: {
+				toggle: formatHotkey(toggleSpec),
+				keyshortcuts: keyShortcuts(toggleSpec),
+				mic: formatHotkey(this.#hotkey("mic-hotkey", DEFAULT_MIC_HOTKEY)),
+			},
 			maxChars: MAX_CHARS,
 			onToggle: () => this.toggle(),
 			onClose: () => {

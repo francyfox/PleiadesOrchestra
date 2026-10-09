@@ -12,6 +12,8 @@ export const launcherTemplate = (scope: string) =>
 			x-data={scope}
 			x-bind:aria-expanded="expanded"
 			x-bind:aria-label="label"
+			x-bind:title="title"
+			x-bind:aria-keyshortcuts="keyshortcuts"
 			x-on:click="toggle"
 		>
 			{raw(CHAT_ICON)}

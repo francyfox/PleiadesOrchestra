@@ -108,6 +108,31 @@ export function describeConfigError(code: ConfigError): string {
 export type CustomerContext = Record<string, string | number | boolean>;
 
 /**
+ * The `examples` attribute: a JSON array of up to three short texts the visitor
+ * can click to ask. `undefined` when absent or unusable (the built-in examples
+ * stay); `[]` switches them off.
+ */
+export function parseExamples(
+	raw: string | null | undefined,
+): string[] | undefined {
+	const text = raw?.trim();
+	if (!text) return undefined;
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(text);
+	} catch {
+		return undefined;
+	}
+	if (!Array.isArray(parsed)) return undefined;
+	const texts = parsed
+		.filter((item): item is string => typeof item === "string")
+		.map((item) => item.trim())
+		.filter(Boolean)
+		.slice(0, 3);
+	return parsed.length === 0 || texts.length > 0 ? texts : undefined;
+}
+
+/**
  * Parses the `customer-context` attribute (raw JSON text). Unlike
  * `resolveConfig`'s required fields, a bad value here doesn't block the
  * widget from mounting — it's optional extra context, so this only warns

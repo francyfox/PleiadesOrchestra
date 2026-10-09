@@ -20,4 +20,16 @@ describe("launcher", () => {
 		model.toggle();
 		expect(toggled).toBe(1);
 	});
+
+	test("its tooltip names the shortcut, when there is one", () => {
+		const model = createLauncherModel({
+			s,
+			onToggle: () => {},
+			shortcut: "Ctrl+J",
+		});
+		expect(model.title).toBe(`${s.open} (Ctrl+J)`);
+		model.open = true;
+		expect(model.title).toBe(`${s.close} (Ctrl+J)`);
+		expect(createLauncherModel({ s, onToggle: () => {} }).title).toBe(s.open);
+	});
 });

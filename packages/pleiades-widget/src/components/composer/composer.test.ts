@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { ChatState } from "@/lib/chat/chat.ts";
 import { strings } from "@/lib/i18n/i18n.ts";
+import type { Dictation } from "@/lib/speech/speech.ts";
 import { type ComposerOptions, createComposerModel } from "./composer.model.ts";
 
 const s = strings.en;
@@ -146,5 +147,106 @@ describe("composer", () => {
 		expect(calls).toEqual([]);
 		expect(key({})).toBe(true);
 		expect(calls).toEqual(["send:hi"]);
+	});
+
+	describe("dictation", () => {
+		/** A dictation the test speaks into by hand. */
+		function fakeDictation() {
+			let handlers: Parameters<Dictation["start"]>[0] | undefined;
+			let stops = 0;
+			const dictation: Dictation = {
+				start: (h) => {
+					handlers = h;
+				},
+				stop: () => {
+					stops++;
+				},
+			};
+			return {
+				dictation,
+				say: (text: string) => handlers?.onText(text),
+				end: (error?: string) => handlers?.onEnd(error),
+				stops: () => stops,
+			};
+		}
+
+		test("without dictation the microphone stays, unusable, and says why", () => {
+			const { model } = setup();
+			expect(model.micAvailable).toBe(false);
+			expect(model.micDisabled).toBe(true);
+			expect(model.micLabel).toBe(s.micUnsupported);
+			model.toggleMic();
+			expect(model.listening).toBe(false);
+		});
+
+		test("the microphone starts listening; what is said fills the box after what was typed", () => {
+			const d = fakeDictation();
+			const { model } = setup({ dictation: d.dictation });
+			expect(model.micAvailable).toBe(true);
+			model.draft = "find";
+			model.toggleMic();
+			expect(model.listening).toBe(true);
+			d.say("a laptop");
+			expect(model.draft).toBe("find a laptop");
+			d.say("a red laptop");
+			expect(model.draft).toBe("find a red laptop");
+			d.end();
+			expect(model.listening).toBe(false);
+			expect(model.draft).toBe("find a red laptop");
+		});
+
+		test("a second press stops it", () => {
+			const d = fakeDictation();
+			const { model } = setup({ dictation: d.dictation });
+			model.toggleMic();
+			model.toggleMic();
+			expect(d.stops()).toBe(1);
+		});
+
+		test("sending stops the listening", () => {
+			const d = fakeDictation();
+			const { model, calls } = setup({ dictation: d.dictation });
+			model.toggleMic();
+			d.say("hello");
+			model.submit();
+			expect(calls).toEqual(["send:hello"]);
+			expect(d.stops()).toBe(1);
+		});
+
+		test("a refused microphone disables the button, any other error just ends the listening", () => {
+			const d = fakeDictation();
+			const { model } = setup({ dictation: d.dictation });
+			model.toggleMic();
+			d.end("no-speech");
+			expect(model.micDisabled).toBe(false);
+			model.toggleMic();
+			d.end("not-allowed");
+			expect(model.listening).toBe(false);
+			expect(model.micDisabled).toBe(true);
+			expect(model.micLabel).toBe(s.micBlocked);
+		});
+
+		test("the label names the shortcut, when there is one", () => {
+			const d = fakeDictation();
+			const { model } = setup({ dictation: d.dictation, micShortcut: "Alt+M" });
+			expect(model.micLabel).toBe(`${s.mic} (Alt+M)`);
+			model.toggleMic();
+			expect(model.micLabel).toBe(`${s.micStop} (Alt+M)`);
+		});
+
+		test("the label says what a press will do", () => {
+			const d = fakeDictation();
+			const { model } = setup({ dictation: d.dictation });
+			expect(model.micLabel).toBe(s.mic);
+			model.toggleMic();
+			expect(model.micLabel).toBe(s.micStop);
+		});
+
+		test("it cannot be used while the box is disabled", () => {
+			const d = fakeDictation();
+			const { model } = setup({ dictation: d.dictation });
+			model.render(state({ error: "forbidden" }));
+			expect(model.micDisabled).toBe(true);
+		});
 	});
 });

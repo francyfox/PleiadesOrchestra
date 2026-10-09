@@ -1,4 +1,5 @@
 import type { ChatMessage } from "@/lib/chat/chat.ts";
+import type { Strings } from "@/lib/i18n/i18n.ts";
 
 /** One conversation bubble as the template draws it. */
 export interface BubbleView {
@@ -40,12 +41,35 @@ export function bubbleViews(
 	});
 }
 
-export function createMessagesModel(greeting: string) {
+export interface MessagesOptions {
+	s?: Strings;
+	/** Things to try, shown until the visitor has written something. */
+	examples?: readonly string[];
+	/** An example was clicked: ask it. */
+	onAsk?: (text: string) => void;
+}
+
+export function createMessagesModel(
+	greeting: string,
+	{ s, examples = [], onAsk }: MessagesOptions = {},
+) {
 	return {
+		s,
 		greeting,
+		examples: [...examples],
+		hasUserMessage: false,
 		messages: [] as BubbleView[],
+		get showExamples() {
+			return this.examples.length > 0 && !this.hasUserMessage;
+		},
 		render(messages: readonly ChatMessage[], busy: boolean) {
+			this.hasUserMessage = messages.some((m) => m.role === "user");
 			this.messages = bubbleViews(messages, busy);
+		},
+		/** A click on an example: its text rides on the button (`data-example`). */
+		ask(event: Event) {
+			const text = (event.currentTarget as HTMLElement).dataset.example;
+			if (text) onAsk?.(text);
 		},
 	};
 }

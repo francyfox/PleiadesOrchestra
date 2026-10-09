@@ -101,3 +101,39 @@ describe("messages model", () => {
 		expect(model.messages).toEqual([]);
 	});
 });
+
+describe("examples", () => {
+	const ex = ["a", "b"];
+
+	test("they show while nobody has written anything, then give way to the conversation", () => {
+		const model = createMessagesModel("Hi", { examples: ex });
+		expect(model.showExamples).toBe(true);
+		model.render([{ id: "u", role: "user", content: "hello" }], false);
+		expect(model.showExamples).toBe(false);
+	});
+
+	test("an assistant greeting from history alone does not hide them", () => {
+		const model = createMessagesModel("Hi", { examples: ex });
+		model.render([{ id: "a", role: "assistant", content: "hello" }], false);
+		expect(model.showExamples).toBe(true);
+	});
+
+	test("no examples, nothing to show", () => {
+		expect(createMessagesModel("Hi").showExamples).toBe(false);
+		expect(createMessagesModel("Hi", { examples: [] }).showExamples).toBe(
+			false,
+		);
+	});
+
+	test("a click asks the example's own text", () => {
+		const asked: string[] = [];
+		const model = createMessagesModel("Hi", {
+			examples: ex,
+			onAsk: (text) => asked.push(text),
+		});
+		model.ask({
+			currentTarget: { dataset: { example: "b" } },
+		} as unknown as Event);
+		expect(asked).toEqual(["b"]);
+	});
+});

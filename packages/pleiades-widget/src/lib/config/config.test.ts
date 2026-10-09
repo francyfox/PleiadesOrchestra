@@ -4,6 +4,7 @@ import {
 	describeConfigError,
 	normalizePosition,
 	parseCustomerContext,
+	parseExamples,
 	resolveConfig,
 } from "@/lib/config/config.ts";
 
@@ -219,5 +220,27 @@ describe("parseCustomerContext", () => {
 		const error = spyOn(console, "error").mockImplementation(() => {});
 		expect(parseCustomerContext('{"address":{"street":"x"}}')).toBeUndefined();
 		error.mockRestore();
+	});
+});
+
+describe("parseExamples", () => {
+	test("a JSON array of texts, trimmed, at most three", () => {
+		expect(parseExamples('[" one ","two","three","four"]')).toEqual([
+			"one",
+			"two",
+			"three",
+		]);
+	});
+
+	test("nothing usable means undefined, so the built-in examples stay", () => {
+		expect(parseExamples(undefined)).toBeUndefined();
+		expect(parseExamples("")).toBeUndefined();
+		expect(parseExamples("not json")).toBeUndefined();
+		expect(parseExamples('{"a":1}')).toBeUndefined();
+		expect(parseExamples('[1,"",null]')).toBeUndefined();
+	});
+
+	test("an explicit empty list switches the examples off", () => {
+		expect(parseExamples("[]")).toEqual([]);
 	});
 });

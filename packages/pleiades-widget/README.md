@@ -23,6 +23,11 @@ Or from a bundler: `import "pleiades-widget"` (it registers the element; there a
 | `heading`, `greeting`, `placeholder` | localized | Panel title, first bubble, input hint. |
 | `lang` | page language | `en`, `ru` or `kk`; anything else is English. |
 | `customer-context` | none | Flat JSON object of data the site already knows (e.g. `'{"country":"Kazakhstan","city":"Qyzylorda"}'`) — see "Customer context" below. |
+| `hotkey` | `mod+j` | Keyboard shortcut that opens and closes the panel (`mod` = Ctrl or ⌘; also `ctrl+shift+k`, `alt+/`). An empty value turns it off. Works the same on macOS (`⌘`), Windows and Linux (`Ctrl`); the letter is matched as typed, and by the physical key where the layout types something else (Option+M on a Mac, a Russian layout). The Windows key can't be used: the OS takes `Win+…` before the page, and neither can the combinations a browser keeps for itself (Ctrl+T, Ctrl+W, Ctrl+N…). The launcher's tooltip shows the shortcut (`Ctrl+J`, `⌘J` on a Mac) and the button carries `aria-keyshortcuts`. |
+| `mic-hotkey` | `mod+shift+space` | Shortcut that starts and stops dictation while the panel is open; same format as `hotkey`. An empty value turns it off. |
+| `examples` | built-in three | Up to three things to try, shown until the first message: a JSON array, e.g. `'["Find a jacket","Where is my order?"]'`. `'[]'` hides them. |
+
+Dictation: where the browser has the Web Speech API (`SpeechRecognition`, Chrome/Edge/Safari; Firefox keeps it behind a flag), a microphone button sits below the message box, next to Send: one press listens for one phrase in the widget's language and puts the text in the box (it is not sent by itself). Chrome and Safari send the audio to Google's / Apple's servers to recognize it. Where the API is missing the button stays but is dimmed, and hovering it says the browser doesn't support speech recognition; a refused microphone permission dims it the same way.
 | `open` | absent | Boolean; also a property: `el.open = true`, `el.toggle()`. |
 
 ### Customer context
