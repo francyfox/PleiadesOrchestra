@@ -49,6 +49,25 @@ export interface ChatState {
 	errorHint?: string;
 	/** Which tool integration the site uses — a standing preference, not tied to any one conversation. Defaults to "webmcp". */
 	toolMode: ToolMode;
+	/** Which tool modes can be used at all: WebMCP needs the browser's provider, MCP a server-side one. */
+	available: { webmcp: boolean; mcp: boolean };
+	/** Neither mode can be used — nothing to do for the visitor; the widget says so and sends nothing. */
+	noTools: boolean;
+}
+
+/**
+ * The mode to start in: the saved one while it still exists, else whichever
+ * exists (WebMCP first). With neither, the saved one (or WebMCP) stays — the
+ * UI shows `noTools` instead.
+ */
+export function pickToolMode(
+	preferred: ToolMode | undefined,
+	available: { webmcp: boolean; mcp: boolean },
+): ToolMode {
+	if (preferred && available[preferred]) return preferred;
+	if (available.webmcp) return "webmcp";
+	if (available.mcp) return "mcp";
+	return preferred ?? "webmcp";
 }
 
 interface ChatOptions {
@@ -62,6 +81,8 @@ interface ChatOptions {
 	 * can change without recreating `Chat`).
 	 */
 	webmcp?: WebMcpProvider;
+	/** Whether the server side can reach the site's tools (MCP). Nothing supports it yet, hence false by default. */
+	mcpAvailable?: boolean;
 	/**
 	 * The visitor's current page (`currentPage`), read at the moment of every
 	 * request — never cached: a tool call may navigate, and the next request
@@ -135,6 +156,7 @@ export function createChat({
 	api,
 	store,
 	webmcp,
+	mcpAvailable = false,
 	page,
 	now = Date.now,
 	maxChars = 2000,
@@ -143,12 +165,15 @@ export function createChat({
 	maxMessages = 10,
 	toolChangeDebounceMs = 300,
 }: ChatOptions) {
+	const available = { webmcp: Boolean(webmcp), mcp: mcpAvailable };
 	const state: ChatState = {
 		messages: [],
 		ready: false,
 		busy: false,
 		connection: "online",
-		toolMode: store.loadToolMode() ?? "webmcp",
+		toolMode: pickToolMode(store.loadToolMode(), available),
+		available,
+		noTools: !available.webmcp && !available.mcp,
 	};
 	const listeners = new Set<(state: ChatState) => void>();
 	let session: Session | undefined;

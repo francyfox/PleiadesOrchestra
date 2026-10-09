@@ -12,17 +12,20 @@ export const strings = {
 		too_long: "That message is too long.",
 		network: "No connection. Reconnecting…",
 		failed: "Something went wrong. Please try again.",
+		no_tools:
+			"No tools available: this browser has no WebMCP and MCP is not connected.",
 		request: "That didn't work out.",
 		mode: "Tool integration",
 		webmcp: "WebMCP",
 		mcp: "MCP",
 		webmcpHint:
-			"Requires a browser extension that provides WebMCP tools. Experimental — for future use.",
+			"Experimental Chrome feature (available since version 149). To enable it, open",
+		copied: "Copied ✓",
 	},
 	ru: {
 		title: "Ассистент",
 		hello: "Здравствуйте! Чем помочь?",
-		ph: "Введите сообщение…",
+		ph: "Ввод…",
 		send: "Отправить",
 		stop: "Остановить",
 		open: "Открыть чат",
@@ -32,12 +35,15 @@ export const strings = {
 		too_long: "Сообщение слишком длинное.",
 		network: "Нет соединения. Переподключаемся…",
 		failed: "Что-то пошло не так. Попробуйте ещё раз.",
+		no_tools:
+			"Нет доступных инструментов: в этом браузере нет WebMCP, а MCP не подключён.",
 		request: "Не получилось это сделать.",
 		mode: "Режим интеграции",
 		webmcp: "WebMCP",
 		mcp: "MCP",
 		webmcpHint:
-			"Требуется браузерное расширение, предоставляющее WebMCP-тулы. Экспериментально — задел на будущее.",
+			"Экспериментальная функция Chrome (доступна с версии 149). Для активации перейдите в",
+		copied: "Скопировано ✓",
 	},
 	kk: {
 		title: "Көмекші",
@@ -52,12 +58,15 @@ export const strings = {
 		too_long: "Хабарлама тым ұзын.",
 		network: "Байланыс жоқ. Қайта қосылуда…",
 		failed: "Бірдеңе дұрыс болмады. Қайталап көріңіз.",
+		no_tools:
+			"Қолжетімді құралдар жоқ: бұл браузерде WebMCP жоқ, ал MCP қосылмаған.",
 		request: "Бұл орындалмады.",
 		mode: "Құрал интеграциясы",
 		webmcp: "WebMCP",
 		mcp: "MCP",
 		webmcpHint:
-			"WebMCP-тулдарын беретін браузер кеңейтуі қажет. Эксперименттік — болашаққа арналған.",
+			"Chrome-дың эксперименттік функциясы (149 нұсқасынан бастап қолжетімді). Қосу үшін мына бетке өтіңіз:",
+		copied: "Көшірілді ✓",
 	},
 } as const;
 

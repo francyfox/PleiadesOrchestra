@@ -26,6 +26,16 @@ describe("error line", () => {
 		expect(s.request).not.toBe(s.failed);
 	});
 
+	test("no usable tool mode shows its own line, ahead of any other error", () => {
+		const model = createErrorLineModel(s);
+		model.render(undefined, undefined, true);
+		expect(model.text).toBe(s.no_tools);
+		model.render("network", undefined, true);
+		expect(model.text).toBe(s.no_tools);
+		model.render("network", undefined, false);
+		expect(model.text).toBe(s.network);
+	});
+
 	test("every kind of error has a text", () => {
 		const model = createErrorLineModel(s);
 		for (const error of [

@@ -13,6 +13,9 @@
 		"noFallthroughCasesInSwitch": true,
 		"noUncheckedIndexedAccess": true,
 		"noImplicitOverride": true,
+		"jsx": "react",
+		"jsxFactory": "h",
+		"jsxFragmentFactory": "Fragment",
 		"paths": { "@/*": ["./src/*"] }
 	},
 	"include": ["src", "types-test/dom.ts", "vite.config.ts"]

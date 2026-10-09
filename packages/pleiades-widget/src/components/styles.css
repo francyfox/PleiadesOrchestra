@@ -36,11 +36,22 @@
 	/* Same base + multiplicative scale as admin's --radius (0.3rem). */
 	--radius: 0.3rem;
 
-	font:
-		14px / 1.45 "Oxanium Variable",
+	/* Fonts: one family and one scale; every size below is its base in px times the scale. */
+	--font-family: var(
+		--pleiades-font-family,
+		"Oxanium Variable",
 		"Exo 2 Variable",
 		system-ui,
-		sans-serif;
+		sans-serif
+	);
+	--font-scale: var(--pleiades-font-scale, 1.5);
+	--font-size: calc(14px * var(--font-scale));
+	--font-size-sm: calc(12px * var(--font-scale));
+	--font-size-xs: calc(11px * var(--font-scale));
+	--font-size-2xs: calc(10px * var(--font-scale));
+	--font-size-icon: calc(24px * var(--font-scale));
+
+	font: var(--font-size) / 1.45 var(--font-family);
 	color: var(--fg);
 	color-scheme: light dark;
 
@@ -133,7 +144,7 @@
 	.close {
 		border: 0;
 		background: none;
-		font-size: 24px;
+		font-size: var(--font-size-icon);
 		line-height: 1;
 		cursor: pointer;
 	}
@@ -262,6 +273,8 @@
 
 	textarea {
 		flex: 1;
+		/* Lets the field shrink so the send button never leaves the panel, however large the text. */
+		min-width: 0;
 		max-height: 96px;
 		padding: 8px;
 		border: 1px solid var(--border);
@@ -272,12 +285,14 @@
 
 	/* Tool integration switch: WebMCP (default) vs MCP. */
 	.mode {
+		/* The tooltip is anchored to this row, not to the "?" — so it always fits inside the panel. */
+		position: relative;
 		display: flex;
 		align-items: center;
 		gap: 14px;
 		padding: 6px 12px;
 		border-top: 1px solid var(--border);
-		font-size: 12px;
+		font-size: var(--font-size-sm);
 
 		.group {
 			display: flex;
@@ -296,52 +311,61 @@
 			margin: 0;
 			accent-color: var(--accent);
 		}
+
+		label:has(input:disabled) {
+			opacity: 0.45;
+			cursor: not-allowed;
+
+			input {
+				cursor: not-allowed;
+			}
+		}
 	}
-
-
 
 	.tooltip {
 		position: absolute;
 		bottom: calc(100% + 6px);
-		left: 100%;
+		right: 12px;
+		left: 12px;
 		z-index: 10;
-		width: max-content;
-		max-width: 200px;
 		padding: 6px 8px;
 		border-radius: calc(var(--radius) * 1.67);
 		background: var(--fg);
 		color: var(--bg);
-		font-size: 11px;
+		font-size: var(--font-size-xs);
 		line-height: 1.35;
 		text-align: left;
 		visibility: hidden;
 		opacity: 0;
 		transition: opacity 0.15s;
-		transform: translateX(-25%);
-		pointer-events: none;
+	}
+
+	.tooltip a {
+		color: inherit;
+		text-decoration: underline;
+		overflow-wrap: anywhere;
+	}
+
+	.tooltip[data-open="true"] {
+		visibility: visible;
+		opacity: 1;
 	}
 
 	/* The "?" hint next to WebMCP. */
 	.hint {
-		position: relative;
 		display: inline-grid;
 		flex: none;
 		place-items: center;
-		width: 14px;
-		height: 14px;
+		width: 1.4em;
+		height: 1.4em;
 		padding: 0;
 		border: 1px solid var(--border);
 		border-radius: 50%;
 		background: none;
 		color: var(--muted-fg);
-		font-size: 10px;
+		font-size: var(--font-size-2xs);
 		line-height: 1;
-		cursor: help;
-
-		&:hover .tooltip {
-			visibility: visible;
-			opacity: 1;
-		}
+		cursor: pointer;
 	}
 
 	footer {
@@ -350,6 +374,7 @@
 		justify-content: center;
 		gap: 6px;
 		padding: 6px 12px;
+		/* The one text that is not scaled: the credit line keeps its small fixed size. */
 		font-size: 11px;
 		opacity: 0.65;
 	}

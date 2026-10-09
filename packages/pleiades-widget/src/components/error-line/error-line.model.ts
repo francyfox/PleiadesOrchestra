@@ -9,8 +9,9 @@ export function createErrorLineModel(s: Strings) {
 		 * explained carries its advice after our sentence; the other kinds — above
 		 * all a lost connection — never do.
 		 */
-		render(error: ChatError | undefined, hint?: string) {
-			if (!error) this.text = "";
+		render(error: ChatError | undefined, hint?: string, noTools = false) {
+			if (noTools) this.text = s.no_tools;
+			else if (!error) this.text = "";
 			else if (error === "request" && hint) this.text = `${s.request} ${hint}`;
 			else this.text = s[error];
 		},

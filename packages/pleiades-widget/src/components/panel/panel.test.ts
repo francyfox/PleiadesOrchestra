@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { createPanelModel } from "./panel.model.ts";
-import { panelTemplate } from "./panel.template.ts";
+import { fillPanel } from "./panel.slot.ts";
+import { panelTemplate } from "./panel.template.tsx";
 
 describe("panel", () => {
 	test("Escape reports a close", () => {
@@ -15,7 +16,10 @@ describe("panel", () => {
 	});
 
 	test("its children are rendered inside the frame, in order", () => {
-		const html = panelTemplate(["<i>one</i>", "<i>two</i>"])("pl_panel_1");
+		const html = fillPanel(panelTemplate("pl_panel_1"), [
+			"<i>one</i>",
+			"<i>two</i>",
+		]);
 		expect(html.indexOf("<i>one</i>")).toBeGreaterThan(
 			html.indexOf('x-data="pl_panel_1"'),
 		);
@@ -25,6 +29,6 @@ describe("panel", () => {
 	});
 
 	test("a closed panel starts inert, so it can never take focus", () => {
-		expect(panelTemplate([])("s")).toContain(" inert ");
+		expect(panelTemplate("s")).toContain(" inert ");
 	});
 });

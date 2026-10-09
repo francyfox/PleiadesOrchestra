@@ -24,6 +24,8 @@ export interface WidgetOptions {
 	onSend: (text: string) => void;
 	onStop: () => void;
 	onModeChange: (mode: ToolMode) => void;
+	/** Which tool modes exist (chat's `state.available`); the others are disabled in the switch. */
+	available: { webmcp: boolean; mcp: boolean };
 }
 
 /**
@@ -46,7 +48,12 @@ export function createWidget(options: WidgetOptions) {
 	});
 	const messages = createMessages(options.greeting);
 	const errorLine = createErrorLine(s);
-	const modeSwitch = createModeSwitch({ s, onChange: options.onModeChange });
+	const modeSwitch = createModeSwitch({
+		s,
+		onChange: options.onModeChange,
+		webmcpAvailable: options.available.webmcp,
+		mcpAvailable: options.available.mcp,
+	});
 	const composer = createComposer({
 		s,
 		placeholder: options.placeholder,
@@ -88,7 +95,7 @@ export function createWidget(options: WidgetOptions) {
 		},
 		render(state: ChatState) {
 			messages.render(state.messages, state.busy, el);
-			errorLine.model.render(state.error, state.errorHint);
+			errorLine.model.render(state.error, state.errorHint, state.noTools);
 			modeSwitch.model.render(state.toolMode);
 			composer.model.render(state);
 		},

@@ -24,6 +24,8 @@ const state = (patch: Partial<ChatState> = {}): ChatState => ({
 	busy: false,
 	connection: "online",
 	toolMode: "webmcp",
+	available: { webmcp: true, mcp: true },
+	noTools: false,
 	...patch,
 });
 
@@ -99,6 +101,14 @@ describe("composer", () => {
 		const { model } = setup();
 		expect(model.sendAria).toBeNull();
 		expect(model.sendLabel).toBe(s.send);
+	});
+
+	test("no usable tool mode blocks sending", () => {
+		const { model } = setup();
+		model.draft = "hi";
+		model.render(state({ noTools: true }));
+		expect(model.sendDisabled).toBe(true);
+		expect(model.inputDisabled).toBe(true);
 	});
 
 	test("forbidden or offline blocks sending, but never the stop button", () => {

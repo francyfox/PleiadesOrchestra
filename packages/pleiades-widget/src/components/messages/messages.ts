@@ -3,7 +3,7 @@ import type { ChatMessage } from "@/lib/chat/chat.ts";
 import { defineComponent } from "../component.ts";
 import { createMessagesModel } from "./messages.model.ts";
 import { animateConversation } from "./messages.motion.ts";
-import { messagesTemplate } from "./messages.template.ts";
+import { messagesTemplate } from "./messages.template.tsx";
 
 /** The conversation. `render` also moves what Alpine drew (entrances, dots) and keeps the newest message in view. */
 export function createMessages(greeting: string) {

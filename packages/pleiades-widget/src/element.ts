@@ -131,6 +131,7 @@ export class PleiadesChat extends HTMLElement {
 			return;
 		}
 
+		const webmcp = createNavigatorWebMcpProvider();
 		const scope = `${config.config.agentUrl} ${config.config.publishableKey}`;
 		if (!this.#chat || scope !== this.#scope) {
 			this.#chat = createChat({
@@ -140,7 +141,7 @@ export class PleiadesChat extends HTMLElement {
 				// itself only actually uses this while `toolMode === "webmcp"`,
 				// checked per `send()`, not just here, so the mode toggle needs no
 				// `#mount()` beyond what already runs for any attribute change.
-				webmcp: createNavigatorWebMcpProvider(),
+				webmcp,
 				// Read at every request: the page changes under a single-page app.
 				page: () => currentPage(),
 				maxChars: MAX_CHARS,
@@ -169,6 +170,7 @@ export class PleiadesChat extends HTMLElement {
 			onSend: (text) => void chat.send(text, customerContext),
 			onStop: () => chat.stop(),
 			onModeChange: (mode) => chat.setToolMode(mode),
+			available: chat.state.available,
 		});
 		this.#ui = ui;
 		this.#off = chat.subscribe(ui.render);

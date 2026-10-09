@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { ApiError, type StreamEvent, type WidgetApi } from "@/lib/api/api.ts";
-import { type ChatState, createChat } from "@/lib/chat/chat.ts";
+import { type ChatState, createChat, pickToolMode } from "@/lib/chat/chat.ts";
 import type { CustomerContext } from "@/lib/config/config.ts";
 import { createSessionStore } from "@/lib/storage/storage.ts";
 import type {
@@ -64,6 +64,7 @@ function harness(
 		idleTimeoutMs?: number;
 		pingIntervalMs?: number;
 		webmcp?: WebMcpProvider;
+		mcpAvailable?: boolean;
 		page?: () => string | undefined;
 		toolChangeDebounceMs?: number;
 	} = {},
@@ -593,6 +594,60 @@ describe("createChat tool mode", () => {
 
 		const again = createChat({ api, store, now: () => 1000, maxChars: 20 });
 		expect(again.state.toolMode).toBe("mcp");
+	});
+});
+
+describe("createChat available tool modes", () => {
+	const provider: WebMcpProvider = {
+		listTools: async () => [],
+		callTool: async () => ({ result: "", isError: false }),
+	};
+
+	test("reports which modes can be used", () => {
+		expect(harness().chat.state.available).toEqual({
+			webmcp: false,
+			mcp: false,
+		});
+		expect(
+			harness({}, 1000, { webmcp: provider, mcpAvailable: true }).chat.state
+				.available,
+		).toEqual({ webmcp: true, mcp: true });
+	});
+
+	test("starts in the mode that exists: MCP when only MCP does", () => {
+		const { chat } = harness({}, 1000, { mcpAvailable: true });
+		expect(chat.state.toolMode).toBe("mcp");
+		expect(chat.state.noTools).toBe(false);
+	});
+
+	test("a saved preference for a mode that is gone is not kept", () => {
+		const { chat, store, api } = harness();
+		chat.setToolMode("mcp");
+		const again = createChat({
+			api,
+			store,
+			webmcp: provider,
+			now: () => 1000,
+			maxChars: 20,
+		});
+		expect(again.state.toolMode).toBe("webmcp");
+	});
+
+	test("with neither mode the chat says there is nothing to use", () => {
+		const { chat } = harness();
+		expect(chat.state.noTools).toBe(true);
+	});
+
+	test("pickToolMode prefers the saved mode, then WebMCP, then MCP", () => {
+		const both = { webmcp: true, mcp: true };
+		expect(pickToolMode("mcp", both)).toBe("mcp");
+		expect(pickToolMode(undefined, both)).toBe("webmcp");
+		expect(pickToolMode("webmcp", { webmcp: false, mcp: true })).toBe("mcp");
+		expect(pickToolMode("mcp", { webmcp: true, mcp: false })).toBe("webmcp");
+		expect(pickToolMode("mcp", { webmcp: false, mcp: false })).toBe("mcp");
+		expect(pickToolMode(undefined, { webmcp: false, mcp: false })).toBe(
+			"webmcp",
+		);
 	});
 });
 

@@ -44,8 +44,10 @@ export function createComposerModel(options: ComposerOptions) {
 		render(state: ChatState) {
 			this.busy = state.busy;
 			this.locked =
-				state.error === "forbidden" || state.connection === "offline";
-			this.inputDisabled = state.error === "forbidden";
+				state.noTools ||
+				state.error === "forbidden" ||
+				state.connection === "offline";
+			this.inputDisabled = state.noTools || state.error === "forbidden";
 		},
 		submit() {
 			if (this.busy) {

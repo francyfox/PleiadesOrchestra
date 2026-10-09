@@ -15,12 +15,22 @@
 			Edit anything in <code>src/</code> — the page reloads at once and the panel
 			stays open. Settings go in the URL:
 			<code>?agent-url=…&amp;publishable-key=pk_…&amp;lang=en&amp;position=bottom-right&amp;dark</code>,
-			or in <code>.env.local</code> as <code>VITE_PLEIADES_URL</code> and <code>VITE_PLEIADES_PUBLIC_KEY</code>. Without them the chat talks to a built-in mock API (<code>dev/mock-api.ts</code>). Try the words <code>steps</code>, <code>slow</code>, <code>error</code>, <code>fail</code>, <code>tool</code>.
+			or in <code>.env.local</code> as <code>VITE_PLEIADES_URL</code> and <code>VITE_PLEIADES_PUBLIC_KEY</code>. Without them the chat talks to a built-in mock API (<code>dev/mock-api.ts</code>). <code>?webmcp=0</code> shows the "no tools" state. Try the words <code>steps</code>, <code>slow</code>, <code>error</code>, <code>fail</code>, <code>tool</code>.
 		</p>
 		<script type="module">
 			import "/src/index.ts";
 
 			const q = new URLSearchParams(location.search);
+			// No browser ships WebMCP yet, and without it (or MCP) the widget refuses to chat:
+			// stub the provider so the mock API is usable. `?webmcp=0` removes it to see the "no tools" state.
+			if (q.get("webmcp") !== "0")
+				Object.defineProperty(navigator, "modelContext", {
+					configurable: true,
+					value: {
+						getTools: async () => [],
+						executeTool: async () => "{}",
+					},
+				});
 			const env = import.meta.env;
 			const chat = document.createElement("pleiades-chat");
 			const attrs = {
