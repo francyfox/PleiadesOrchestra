@@ -7,6 +7,9 @@
   <a href="LICENSE"><img alt="License: BSD-3-Clause" src="https://img.shields.io/npm/l/%40shalotts%2Fpleiades-widget?style=for-the-badge&label=license"></a>
   <img alt="Bundle size limit: 40 kB brotli" src="https://img.shields.io/badge/size%20limit-40%20kB%20brotli-blue?style=for-the-badge">
   <img alt="TypeScript typings included" src="https://img.shields.io/badge/types-included-3178C6?style=for-the-badge&logo=typescript&logoColor=white">
+  <a href="https://www.jsdelivr.com/package/npm/@shalotts/pleiades-widget"><img alt="jsDelivr hits" src="https://img.shields.io/jsdelivr/npm/hm/%40shalotts%2Fpleiades-widget?style=for-the-badge&logo=jsdelivr&label=jsDelivr&color=orange"></a>
+  <a href="https://unpkg.com/@shalotts/pleiades-widget/dist/pleiades-widget.js"><img alt="unpkg" src="https://img.shields.io/badge/unpkg-available-blue?style=for-the-badge&logo=javascript"></a>
+  <a href="https://jsr.io/@shalotts/pleiades-widget"><img alt="JSR Score" src="https://jsr.io/badges/@shalotts/pleiades-widget/score" style="height:28px"></a>
 </p>
 
 A chat widget for sites connected to PleiadesOrchestra: one framework-agnostic web component, `<pleiades-chat>`. A round launcher button sits in a corner of the page (bottom-left by default) and opens a side panel with the chat. Built on [Alpine.js](https://alpinejs.dev) (the CSP build — works on sites that forbid `unsafe-eval`) bundled in, with motion on the browser's own Web Animations API; **under 40 kB brotli** (enforced by [size-limit](https://evilmartians.com/opensource/size-limit) in `bun run build`).

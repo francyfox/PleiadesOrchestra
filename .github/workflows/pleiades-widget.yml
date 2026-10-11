@@ -1,0 +1,73 @@
+name: pleiades-widget
+
+on:
+  push:
+    branches: [master]
+    tags: ["widget-v*"]
+  pull_request:
+    branches: [master]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - name: Check types
+        run: bun --cwd packages/pleiades-widget run check-types
+      - name: Lint
+        run: bun --cwd packages/pleiades-widget run lint
+      - name: Test
+        run: bun --cwd packages/pleiades-widget run test
+      - name: Build
+        run: bun --cwd packages/pleiades-widget run build
+
+  publish-npm:
+    name: Publish to npm
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/widget-v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - name: Build
+        run: bun --cwd packages/pleiades-widget run build
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+      - name: Publish to npm
+        run: npm publish --provenance --access public
+        working-directory: packages/pleiades-widget
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-jsr:
+    name: Publish to JSR
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/widget-v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - name: Build JSR
+        run: bun --cwd packages/pleiades-widget run build
+      - name: Publish to JSR
+        run: bunx --bun jsr publish
+        working-directory: packages/pleiades-widget

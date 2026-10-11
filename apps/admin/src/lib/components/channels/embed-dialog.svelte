@@ -6,9 +6,12 @@
 	import { Input } from "$lib/components/ui/input/index.js";
 	import { Label } from "$lib/components/ui/label/index.js";
 	import {
-		buildEmbedSnippet,
+		buildEmbedSnippetForMethod,
+		buildInstallSnippet,
 		PLACEHOLDER_AGENT_URL,
-		PLACEHOLDER_SCRIPT_URL,
+		UNPKG_URL,
+		JSDELIVR_URL,
+		type EmbedMethod,
 	} from "$lib/embed-snippet";
 	import { loadEmbedSettings, saveEmbedSettings } from "./embed-storage";
 
@@ -23,18 +26,35 @@
 	const saved = loadEmbedSettings();
 	let scriptUrl = $state(saved.scriptUrl);
 	let agentUrl = $state(saved.agentUrl);
+	let method = $state<EmbedMethod>("cdn-unpkg");
 
 	$effect(() => saveEmbedSettings({ scriptUrl, agentUrl }));
 
+	const isCdn = $derived(method === "cdn-unpkg" || method === "cdn-jsdelivr");
+	const isPkg = $derived(!isCdn);
+	const installSnippet = $derived(buildInstallSnippet(method));
+
+	const scriptPlaceholder = $derived(
+		method === "cdn-unpkg" ? UNPKG_URL : method === "cdn-jsdelivr" ? JSDELIVR_URL : "",
+	);
+
 	const snippet = $derived(
 		channel.publishableKey
-			? buildEmbedSnippet({
+			? buildEmbedSnippetForMethod(method, {
 					scriptUrl,
 					agentUrl,
 					publishableKey: channel.publishableKey,
 				})
 			: "",
 	);
+
+	const methods: { id: EmbedMethod; label: string }[] = [
+		{ id: "cdn-unpkg", label: "unpkg" },
+		{ id: "cdn-jsdelivr", label: "jsDelivr" },
+		{ id: "npm", label: "npm" },
+		{ id: "pnpm", label: "pnpm" },
+		{ id: "bun", label: "bun" },
+	];
 </script>
 
 <Dialog.Root bind:open>
@@ -46,15 +66,53 @@
 
 		<div class="grid gap-3">
 			<div class="grid gap-1.5">
+				<span class="text-sm font-medium">{$content.embed.method.value}</span>
+				<div class="flex flex-wrap gap-1">
+					{#each methods as m (m.id)}
+						<button
+							type="button"
+							class="rounded-md border px-3 py-1 text-sm font-medium transition-colors
+								{method === m.id
+								? 'bg-primary text-primary-foreground border-primary'
+								: 'border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground'}"
+							onclick={() => (method = m.id)}
+						>
+							{m.label}
+						</button>
+					{/each}
+				</div>
+			</div>
+
+			{#if isPkg}
+				<div class="grid gap-1.5">
+					<span class="text-sm font-medium">{$content.embed.install.value}</span>
+					<CodeBlock code={installSnippet} label={$content.embed.copy.value} />
+				</div>
+			{/if}
+
+			<div class="grid gap-1.5">
 				<Label for="embed-agent">{$content.embed.agentUrl.value}</Label>
-				<Input id="embed-agent" bind:value={agentUrl} placeholder={PLACEHOLDER_AGENT_URL} autocomplete="off" />
+				<Input
+					id="embed-agent"
+					bind:value={agentUrl}
+					placeholder={PLACEHOLDER_AGENT_URL}
+					autocomplete="off"
+				/>
 				<p class="text-xs text-muted-foreground">{$content.embed.agentUrlHint.value}</p>
 			</div>
-			<div class="grid gap-1.5">
-				<Label for="embed-script">{$content.embed.scriptUrl.value}</Label>
-				<Input id="embed-script" bind:value={scriptUrl} placeholder={PLACEHOLDER_SCRIPT_URL} autocomplete="off" />
-				<p class="text-xs text-muted-foreground">{$content.embed.scriptUrlHint.value}</p>
-			</div>
+
+			{#if isCdn}
+				<div class="grid gap-1.5">
+					<Label for="embed-script">{$content.embed.scriptUrl.value}</Label>
+					<Input
+						id="embed-script"
+						bind:value={scriptUrl}
+						placeholder={scriptPlaceholder}
+						autocomplete="off"
+					/>
+					<p class="text-xs text-muted-foreground">{$content.embed.scriptUrlHint.value}</p>
+				</div>
+			{/if}
 
 			<div class="grid gap-1.5">
 				<span class="text-sm font-medium">{$content.embed.snippet.value}</span>

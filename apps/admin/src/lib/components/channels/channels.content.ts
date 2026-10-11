@@ -129,6 +129,16 @@ const channelsContent = {
 				en: "Where the site will serve pleiades-widget.js from (your hosting or a CDN).",
 				kk: "Сайт pleiades-widget.js файлын қайдан беретіні (өз хостингіңіз немесе CDN).",
 			}),
+			method: t({
+				ru: "Способ подключения",
+				en: "Installation method",
+				kk: "Қосу тәсілі",
+			}),
+			install: t({
+				ru: "Команда установки",
+				en: "Install command",
+				kk: "Орнату командасы",
+			}),
 			snippet: t({ ru: "Код", en: "Code", kk: "Код" }),
 			copy: t({
 				ru: "Скопировать код",
