@@ -6,6 +6,7 @@ on:
     tags: ["widget-v*"]
   pull_request:
     branches: [master]
+  workflow_dispatch:
 
 jobs:
   test:
