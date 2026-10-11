@@ -19,13 +19,13 @@ jobs:
           bun-version: latest
       - run: bun install
       - name: Check types
-        run: bun --cwd packages/pleiades-widget run check-types
+        run: cd packages/pleiades-widget && bun run check-types
       - name: Lint
-        run: bun --cwd packages/pleiades-widget run lint
+        run: cd packages/pleiades-widget && bun run lint
       - name: Test
-        run: bun --cwd packages/pleiades-widget run test
+        run: cd packages/pleiades-widget && bun run test
       - name: Build
-        run: bun --cwd packages/pleiades-widget run build
+        run: cd packages/pleiades-widget && bun run build
 
   publish-npm:
     name: Publish to npm
@@ -42,13 +42,15 @@ jobs:
           bun-version: latest
       - run: bun install
       - name: Build
-        run: bun --cwd packages/pleiades-widget run build
+        run: cd packages/pleiades-widget && bun run build
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
           registry-url: "https://registry.npmjs.org"
+      - name: Remove devEngines (npm 10 blocks bun packageManager)
+        run: node -e "const fs=require('fs'),p=JSON.parse(fs.readFileSync('package.json','utf8'));delete p.devEngines;fs.writeFileSync('package.json',JSON.stringify(p,null,'\t')+'\n');"
       - name: Publish to npm
-        run: npm publish --provenance --access public
+        run: npm publish --provenance --access public --ignore-scripts
         working-directory: packages/pleiades-widget
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -67,8 +69,8 @@ jobs:
         with:
           bun-version: latest
       - run: bun install
-      - name: Build JSR
-        run: bun --cwd packages/pleiades-widget run build
+      - name: Build
+        run: cd packages/pleiades-widget && bun run build
       - name: Publish to JSR
         run: bunx --bun jsr publish
         working-directory: packages/pleiades-widget
