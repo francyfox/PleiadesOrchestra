@@ -40,11 +40,20 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
       - run: bun install
-      - name: Configure npm auth
-        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" >> ~/.npmrc
+      - name: Build
+        run: cd packages/pleiades-widget && bun run build
+      - name: Copy outside monorepo (bun/npm fail on devEngines from root package.json)
+        run: cp -r packages/pleiades-widget /tmp/widget-publish
       - name: Publish to npm
-        run: cd packages/pleiades-widget && bun publish
+        run: npm publish --ignore-scripts --access public
+        working-directory: /tmp/widget-publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   publish-jsr:
     name: Publish to JSR
