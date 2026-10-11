@@ -67,6 +67,7 @@ export type {
 export {
 	classifyMessageIntent,
 	classifyMessageIntentDetailed,
+	connectHttpMcpClient,
 	connectStdioMcpClient,
 	createDecisionAction,
 	createIntentModel,

@@ -1,4 +1,9 @@
 import { createObservability, serve } from "@repo/elysia-kit";
+import {
+	connectHttpMcpClient,
+	createMcpToolSource,
+	type GoapAction,
+} from "@repo/core";
 import { createApp } from "./app.ts";
 import {
 	AGENT_MAX_HISTORY_MESSAGES,
@@ -26,6 +31,28 @@ assertRetentionCoversHistory(
 
 const observability = createObservability("alpha-orchestrator", config);
 const { logger, monitoring } = observability;
+
+// kali-mcp — подключается один раз при старте, actions переиспользуются на каждый thread
+let kaliActions: GoapAction[] | undefined;
+
+if (config.KALI_MCP_URL) {
+	void connectHttpMcpClient(config.KALI_MCP_URL)
+		.then((client) => createMcpToolSource({ client }).listActions())
+		.then((actions: GoapAction[]) => {
+			kaliActions = actions;
+			logger.info({
+				message: "kali-mcp connected",
+				toolCount: actions.length,
+				tools: actions.map((a: GoapAction) => a.name),
+			});
+		})
+		.catch((err: unknown) => {
+			logger.warn({
+				message: "kali-mcp connection failed — Kali tools unavailable",
+				"error.message": err instanceof Error ? err.message : String(err),
+			});
+		});
+}
 
 /** Persistence and background failures: logged and reported, never fatal to a request. */
 function reportError(message: string) {
@@ -104,6 +131,9 @@ const app = createApp({
 	},
 	onError: reportError("persistence_error"),
 	observability,
+	threadActionsFor: kaliActions
+		? () => kaliActions as GoapAction[]
+		: undefined,
 });
 
 const stopRetentionJobs = startRetentionJobs(db, {

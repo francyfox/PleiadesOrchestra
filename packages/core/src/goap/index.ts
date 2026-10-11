@@ -13,6 +13,7 @@ export {
 	SESSION_FACTS,
 	TOOL_INTENTS,
 } from "./intent-taxonomy";
+export { connectHttpMcpClient } from "./http-mcp-client";
 export type { StdioMcpClientConfig } from "./mcp-client";
 export { connectStdioMcpClient } from "./mcp-client";
 export type {

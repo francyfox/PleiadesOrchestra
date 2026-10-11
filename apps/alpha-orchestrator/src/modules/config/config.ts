@@ -26,6 +26,11 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			LAYA_API_BASE_URL: z.url(),
 			LAYA_API_KEY: z.string().min(1),
 
+			// kali-mcp — MCP server that executes commands in the Kali Linux container
+			// (see /home/fox/WebstormProjects/kali/kali-mcp). When set, its tools are
+			// available as GOAP actions on every thread via threadActionsFor.
+			KALI_MCP_URL: z.url().optional(),
+
 			// delta-function-call — writes the JSON arguments of WebMCP tool calls
 			// (see apps/delta-function-call). Optional: without a base URL the
 			// arguments are built mechanically from the facts of the run.
