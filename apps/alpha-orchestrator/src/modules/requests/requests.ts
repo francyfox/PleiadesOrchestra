@@ -19,6 +19,8 @@ export interface RequestsDeps {
 	db: Db;
 	activeRuns: ActiveRuns;
 	now: () => number;
+	/** Origins allowed to call these routes from a browser (CORS). */
+	corsOrigins: Set<string>;
 }
 
 /**
@@ -26,8 +28,25 @@ export interface RequestsDeps {
  * and the whole chain of one request — prompt, plan steps, timings, answer.
  * Auth is enforced by the app's `onRequest` guard.
  */
-export function requestsRoutes({ db, activeRuns, now }: RequestsDeps) {
+const CORS_ALLOW_HEADERS = "authorization, content-type";
+const CORS_ALLOW_METHODS = "GET, OPTIONS";
+const CORS_MAX_AGE = "600";
+
+export function requestsRoutes({ db, activeRuns, now, corsOrigins }: RequestsDeps) {
 	return new Elysia({ prefix: "/v1/admin/requests" })
+		.onRequest(({ request, set }) => {
+			const origin = request.headers.get("origin");
+			if (!origin || !corsOrigins.has(origin)) return;
+			set.headers["access-control-allow-origin"] = origin;
+			set.headers["vary"] = "Origin";
+			if (request.method === "OPTIONS") {
+				set.headers["access-control-allow-methods"] = CORS_ALLOW_METHODS;
+				set.headers["access-control-allow-headers"] = CORS_ALLOW_HEADERS;
+				set.headers["access-control-max-age"] = CORS_MAX_AGE;
+				set.status = 204;
+				return new Response(null, { status: 204, headers: set.headers as Record<string, string> });
+			}
+		})
 		.get("/", ({ query }) => listRequests(db, activeRuns, query, now()), {
 			query: RequestsQuery,
 		})

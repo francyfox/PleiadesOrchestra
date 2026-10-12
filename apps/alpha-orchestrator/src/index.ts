@@ -82,6 +82,7 @@ const app = createApp({
 	functionCallAgent,
 	apiKey: config.HARNESS_API_KEY,
 	adminApiKey: config.ADMIN_API_KEY,
+	adminCorsOrigins: config.ADMIN_CORS_ORIGINS,
 	maxChunkChars: config.HARNESS_MAX_CHUNK_CHARS,
 	db,
 	channels: channelDirectory,

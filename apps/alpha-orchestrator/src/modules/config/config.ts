@@ -69,6 +69,12 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			// a leaked transport key must not be able to read every chat.
 			ADMIN_API_KEY: z.string().min(1),
 
+			// Comma-separated origins allowed to call /v1/admin/requests/* from a
+			// browser (CORS). The token is still required on every actual request —
+			// CORS only lets the browser send the cross-origin fetch at all.
+			// Example: https://shalotts.site,http://localhost:5173
+			ADMIN_CORS_ORIGINS: z.string().default("https://shalotts.site"),
+
 			// Messages kept per user, across all their threads. Must be ≥ the
 			// agent's history window (checked at startup).
 			MESSAGE_RETENTION_PER_USER: z.coerce

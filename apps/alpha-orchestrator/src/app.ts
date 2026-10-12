@@ -48,6 +48,8 @@ import {
 export type { WidgetOptions } from "./modules/widget/widget.ts";
 
 export interface AppDeps {
+	/** Comma-separated origins allowed to reach /v1/admin/requests/* from a browser. */
+	adminCorsOrigins?: string;
 	agent: Agent;
 	decisionAgent: DecisionAgent;
 	/** Extracts `{query, quantity}` from a shopping message; optional (tests leave it out). */
@@ -188,7 +190,17 @@ export function createApp(deps: AppDeps) {
 			.use(usageRoutes({ db, now }))
 			.use(statsRoutes({ db, now }))
 			.use(performanceRoutes({ db, now }))
-			.use(requestsRoutes({ db, activeRuns, now }))
+			.use(requestsRoutes({
+				db,
+				activeRuns,
+				now,
+				corsOrigins: new Set(
+					(deps.adminCorsOrigins ?? "https://shalotts.site")
+						.split(",")
+						.map((s) => s.trim())
+						.filter(Boolean),
+				),
+			}))
 			.use(mcpRoutes(db))
 			.use(agentsRoutes({ agents: deps.agents, now }))
 	);

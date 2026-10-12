@@ -22,6 +22,7 @@ import { currentPage } from "@/lib/page/page.ts";
 import { createDictation, speechLang } from "@/lib/speech/speech.ts";
 import { createSessionStore } from "@/lib/storage/storage.ts";
 import { createNavigatorWebMcpProvider } from "@/lib/webmcp/webmcp.ts";
+import { installWebMcpPolyfill } from "@/lib/webmcp/webmcp-polyfill.ts";
 import "@/components/styles.css";
 import { createWidget, type Widget } from "@/components/widget/widget.ts";
 
@@ -180,6 +181,7 @@ export class PleiadesChat extends HTMLElement {
 			return;
 		}
 
+		installWebMcpPolyfill();
 		const webmcp = createNavigatorWebMcpProvider();
 		const scope = `${config.config.agentUrl} ${config.config.publishableKey}`;
 		if (!this.#chat || scope !== this.#scope) {

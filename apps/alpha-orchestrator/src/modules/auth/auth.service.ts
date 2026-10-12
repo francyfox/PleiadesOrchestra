@@ -39,6 +39,9 @@ export function authorizeRequest(
 	if (isOpenPath(pathname) || isPublicWidgetPath(pathname)) return;
 
 	if (isAdminPath(pathname)) {
+		// CORS preflights carry no credentials — let the route handler reply with
+		// the appropriate CORS headers (or 403 for unknown origins) without auth.
+		if (request.method === "OPTIONS") return;
 		if (!hasBearer(request, keys.adminApiKey)) {
 			return { status: 401, body: "Unauthorized" };
 		}
