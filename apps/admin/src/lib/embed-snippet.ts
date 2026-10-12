@@ -6,7 +6,15 @@ export const UNPKG_URL =
 export const JSDELIVR_URL =
 	"https://cdn.jsdelivr.net/npm/@shalotts/pleiades-widget/dist/pleiades-widget.js";
 
-export type EmbedMethod = "cdn-unpkg" | "cdn-jsdelivr" | "npm" | "pnpm" | "bun";
+export type EmbedMethod =
+	| "cdn-unpkg"
+	| "cdn-jsdelivr"
+	| "npm"
+	| "pnpm"
+	| "bun"
+	| "npm-jsr"
+	| "pnpm-jsr"
+	| "bun-jsr";
 
 export interface EmbedInput {
 	/** Where the site serves `pleiades-widget.js` from. */
@@ -53,6 +61,12 @@ export function buildInstallSnippet(method: EmbedMethod): string {
 			return "pnpm add @shalotts/pleiades-widget";
 		case "bun":
 			return "bun add @shalotts/pleiades-widget";
+		case "npm-jsr":
+			return "npx jsr add @shalotts/pleiades-widget";
+		case "pnpm-jsr":
+			return "pnpm dlx jsr add @shalotts/pleiades-widget";
+		case "bun-jsr":
+			return "bunx jsr add @shalotts/pleiades-widget";
 		default:
 			return "";
 	}
@@ -70,7 +84,7 @@ export function buildEmbedSnippetForMethod(
 			scriptUrl: input.scriptUrl || url,
 		});
 	}
-	// package manager: import + element
+	// package manager (npm / pnpm / bun / jsr variants): import + element
 	if (input.publishableKey.startsWith("sk_"))
 		throw new Error("refusing to embed a secret key");
 	const agent = (input.agentUrl.trim() || PLACEHOLDER_AGENT_URL).replaceAll(
@@ -81,6 +95,7 @@ export function buildEmbedSnippetForMethod(
 	return [
 		`import "@shalotts/pleiades-widget";`,
 		``,
+		`// Or simply add <pleiades-chat> to your HTML directly — no JS needed`,
 		`document.body.insertAdjacentHTML("beforeend", \``,
 		`  <pleiades-chat`,
 		`    agent-url="${agent}"`,

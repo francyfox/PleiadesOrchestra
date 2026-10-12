@@ -13,7 +13,7 @@
 	const html = $derived(highlight(code, lang));
 </script>
 
-<div class="code relative">
+<div class="grid code relative">
 	<pre class="overflow-x-auto rounded-md bg-muted p-3 pr-10 font-mono text-xs"><code>{@html html}</code></pre>
 	<div class="absolute top-1.5 right-1.5">
 		<CopyButton value={code} {label} />

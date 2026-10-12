@@ -1,7 +1,8 @@
 import Prism from "prismjs";
 import "prismjs/components/prism-bash";
+import "prismjs/components/prism-javascript";
 
-export type CodeLanguage = "markup" | "bash";
+export type CodeLanguage = "markup" | "bash" | "javascript";
 
 const escapeHtml = (text: string) =>
 	text
