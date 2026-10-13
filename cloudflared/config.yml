@@ -1,0 +1,14 @@
+# Ingress for the `tunnel` compose service (albedo.shalotts.site).
+# Only the public agent-facing routes reach alpha-orchestrator; admin
+# (/v1/admin/*), transport (/v1/messages, /v1/access, ...) and /swagger
+# answer 404 at the edge and never leave this machine.
+ingress:
+  # Embedded widget: visitors, threads, messages, WebMCP tools/results.
+  - path: ^/v1/widget/
+    service: http://alpha-orchestrator:3000
+  # Site backends linking a visitor to a known user (channel secret auth).
+  - path: ^/v1/channels/[^/]+/identify$
+    service: http://alpha-orchestrator:3000
+  - path: ^/health$
+    service: http://alpha-orchestrator:3000
+  - service: http_status:404

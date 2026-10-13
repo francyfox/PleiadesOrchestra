@@ -28,25 +28,36 @@ export interface RequestsDeps {
  * and the whole chain of one request — prompt, plan steps, timings, answer.
  * Auth is enforced by the app's `onRequest` guard.
  */
-const CORS_ALLOW_HEADERS = "authorization, content-type";
-const CORS_ALLOW_METHODS = "GET, OPTIONS";
-const CORS_MAX_AGE = "600";
+function adminCors(origins: Set<string>) {
+	const allow = (origin: string) => ({
+		"access-control-allow-origin": origin,
+		"vary": "Origin",
+	});
+	return new Elysia()
+		.options("/*", ({ request }) => {
+			const origin = request.headers.get("origin") ?? "";
+			if (!origins.has(origin)) return new Response(null, { status: 403 });
+			return new Response(null, {
+				status: 204,
+				headers: {
+					...allow(origin),
+					"access-control-allow-methods": "GET, OPTIONS",
+					"access-control-allow-headers": "authorization, content-type",
+					"access-control-max-age": "600",
+				},
+			});
+		})
+		.onAfterHandle(({ request, set }: { request: Request; set: { headers: Record<string, string | number | undefined> } }) => {
+			const origin = request.headers.get("origin") ?? "";
+			if (!origins.has(origin)) return;
+			set.headers["access-control-allow-origin"] = origin;
+			set.headers["vary"] = "Origin";
+		});
+}
 
 export function requestsRoutes({ db, activeRuns, now, corsOrigins }: RequestsDeps) {
 	return new Elysia({ prefix: "/v1/admin/requests" })
-		.onRequest(({ request, set }) => {
-			const origin = request.headers.get("origin");
-			if (!origin || !corsOrigins.has(origin)) return;
-			set.headers["access-control-allow-origin"] = origin;
-			set.headers["vary"] = "Origin";
-			if (request.method === "OPTIONS") {
-				set.headers["access-control-allow-methods"] = CORS_ALLOW_METHODS;
-				set.headers["access-control-allow-headers"] = CORS_ALLOW_HEADERS;
-				set.headers["access-control-max-age"] = CORS_MAX_AGE;
-				set.status = 204;
-				return new Response(null, { status: 204, headers: set.headers as Record<string, string> });
-			}
-		})
+		.use(adminCors(corsOrigins))
 		.get("/", ({ query }) => listRequests(db, activeRuns, query, now()), {
 			query: RequestsQuery,
 		})

@@ -244,8 +244,22 @@ class ModelContext extends EventTarget {
 		const seen = new Set<string>();
 		const unique = allTools.filter((t) => !seen.has(t.name) && seen.add(t.name));
 
+		// Trust tools from iframes the page explicitly permits with allow="tools".
+		const iframeTrustedOrigins = new Set<string>();
+		for (const iframe of document.querySelectorAll<HTMLIFrameElement>('iframe[allow~="tools"]')) {
+			try {
+				const src = iframe.getAttribute("src");
+				if (src) iframeTrustedOrigins.add(new URL(src, location.href).origin);
+			} catch { /* ignore invalid URLs */ }
+		}
+
 		const origins = Array.isArray(options?.fromOrigins) ? new Set(options.fromOrigins) : null;
-		return unique.filter((t) => t.origin === win.origin || (origins && origins.size > 0 && origins.has(t.origin)));
+		return unique.filter(
+			(t) =>
+				t.origin === win.origin ||
+				iframeTrustedOrigins.has(t.origin) ||
+				(origins && origins.size > 0 && origins.has(t.origin)),
+		);
 	}
 
 	async executeTool(tool: NormalizedTool, inputObject: unknown, options: { signal?: AbortSignal } = {}): Promise<unknown> {
