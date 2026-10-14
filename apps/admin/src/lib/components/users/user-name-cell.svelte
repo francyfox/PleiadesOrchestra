@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import type { AdminUser } from "$lib/api-types";
-	import { Badge } from "$lib/components/ui/badge/index.js";
+	import type { AdminUser } from "#lib/api-types.js";
+	import { Badge } from "#lib/components/ui/badge/index.js";
 
 	let { user }: { user: AdminUser } = $props();
 

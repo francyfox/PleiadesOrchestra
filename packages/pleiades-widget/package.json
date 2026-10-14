@@ -51,7 +51,7 @@
 		"dev": "vite --port 5199 --host 0.0.0.0",
 		"build": "vite build && node scripts/postbuild.mjs && size-limit",
 		"test": "bun test src",
-		"check-types": "tsc --noEmit && tsc --noEmit -p types-test",
+		"check-types": "bun check && bun check -p types-test",
 		"lint": "biome check .",
 		"size": "size-limit",
 		"prepack": "bun run build",

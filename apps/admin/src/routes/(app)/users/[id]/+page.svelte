@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import UsageChart from "$lib/components/charts/usage-chart.svelte";
-	import * as Card from "$lib/components/ui/card/index.js";
-	import MessageList from "$lib/components/user-detail/message-list.svelte";
-	import UsageByModelTable from "$lib/components/user-detail/usage-by-model-table.svelte";
-	import UserHeader from "$lib/components/user-detail/user-header.svelte";
-	import UserStats from "$lib/components/user-detail/user-stats.svelte";
-	import { useLiveQuery } from "$lib/live/use-live-query.svelte";
+	import UsageChart from "#lib/components/charts/usage-chart.svelte";
+	import * as Card from "#lib/components/ui/card/index.js";
+	import MessageList from "#lib/components/user-detail/message-list.svelte";
+	import UsageByModelTable from "#lib/components/user-detail/usage-by-model-table.svelte";
+	import UserHeader from "#lib/components/user-detail/user-header.svelte";
+	import UserStats from "#lib/components/user-detail/user-stats.svelte";
+	import { useLiveQuery } from "#lib/live/use-live-query.svelte.js";
 
 	let { data } = $props();
 

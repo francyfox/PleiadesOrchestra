@@ -12,8 +12,8 @@
 		"@humanspeak/svelte-virtual-chat": "^0.1.23",
 		"@internationalized/date": "^3.12.0",
 		"@lucide/svelte": "^1.48.0",
-		"@sveltejs/adapter-static": "^3.0.10",
-		"@sveltejs/kit": "^2.63.0",
+		"@sveltejs/adapter-static": "^4.0.0",
+		"@sveltejs/kit": "^3.0.0",
 		"@sveltejs/vite-plugin-svelte": "^7.1.2",
 		"@tailwindcss/vite": "^4.3.0",
 		"@tanstack/query-core": "^5.104.0",
@@ -35,8 +35,8 @@
 		"prismjs": "^1.30.0",
 		"runed": "^0.37.1",
 		"shadcn-svelte": "^1.7.0",
-		"svelte": "^5.56.1",
-		"svelte-check": "^4.6.0",
+		"svelte": "^5.57.1",
+		"svelte-check": "^4.7.5",
 		"svelte-intlayer": "^9.5.9",
 		"svelte-sonner": "^1.1.0",
 		"tailwind-variants": "^3.3.1",
@@ -56,5 +56,9 @@
 		"check-types": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --threshold error",
 		"lint": "biome check ."
 	},
-	"type": "module"
+	"type": "module",
+	"imports": {
+		"#lib": "./src/lib/index.js",
+		"#lib/*": "./src/lib/*"
+	}
 }

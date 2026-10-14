@@ -2,16 +2,16 @@
 	import ChevronLeftIcon from "@lucide/svelte/icons/chevron-left";
 	import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
 	import { useIntlayer } from "svelte-intlayer";
-	import type { UsersPage } from "$lib/api-types";
-	import { Button } from "$lib/components/ui/button/index.js";
-	import { useFormat } from "$lib/i18n/use-format";
-	import { pageCount } from "$lib/pagination";
+	import type { UsersPage } from "#lib/api-types.js";
+	import { Button } from "#lib/components/ui/button/index.js";
+	import { useFormat } from "#lib/i18n/use-format.js";
+	import { pageCount } from "#lib/pagination.js";
 	import {
 		nextPage,
 		prevPage,
 		type UsersTableState,
 		usersStateToSearch,
-	} from "$lib/users-table-state";
+	} from "#lib/users-table-state.js";
 
 	/** Cursor paging: only forward from the server, "back" replays the trail kept in the URL. */
 	let { state, page }: { state: UsersTableState; page: UsersPage } = $props();

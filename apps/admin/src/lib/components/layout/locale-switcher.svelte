@@ -2,8 +2,8 @@
 	import LanguagesIcon from "@lucide/svelte/icons/languages";
 	import type { Locale } from "intlayer";
 	import { useIntlayer, useLocale } from "svelte-intlayer";
-	import { invalidateAll } from "$app/navigation";
-	import * as Select from "$lib/components/ui/select/index.js";
+	import * as Select from "#lib/components/ui/select/index.js";
+	import { refreshAll } from "$app/navigation";
 
 	const content = useIntlayer("locale-switcher");
 	const { locale, setLocale, availableLocales } = useLocale();
@@ -21,7 +21,7 @@
 		// request (hooks.server.ts → root layout data) keeps the same language.
 		setLocale(next as Locale);
 		document.documentElement.lang = next;
-		void invalidateAll();
+		void refreshAll();
 	}
 </script>
 

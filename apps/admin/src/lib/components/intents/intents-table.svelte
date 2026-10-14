@@ -6,11 +6,11 @@
 		tableFeatures,
 	} from "@tanstack/svelte-table";
 	import { useIntlayer } from "svelte-intlayer";
-	import type { IntentExample } from "$lib/api-types";
-	import DataTable from "$lib/components/data-table.svelte";
-	import { Badge } from "$lib/components/ui/badge/index.js";
-	import { useFormat } from "$lib/i18n/use-format";
-	import type { ServerPagination } from "$lib/pagination";
+	import type { IntentExample } from "#lib/api-types.js";
+	import DataTable from "#lib/components/data-table.svelte";
+	import { Badge } from "#lib/components/ui/badge/index.js";
+	import { useFormat } from "#lib/i18n/use-format.js";
+	import type { ServerPagination } from "#lib/pagination.js";
 	import IntentActions from "./intent-actions.svelte";
 
 	/** One server-cut page of learned examples, with the verdict actions on each row. */

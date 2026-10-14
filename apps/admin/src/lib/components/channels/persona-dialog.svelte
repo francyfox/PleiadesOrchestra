@@ -2,14 +2,14 @@
 	import LockIcon from "@lucide/svelte/icons/lock";
 	import { createQuery } from "@tanstack/svelte-query";
 	import { useIntlayer } from "svelte-intlayer";
-	import { channelActions } from "$lib/actions";
-	import type { Channel, Persona } from "$lib/api-types";
-	import { Button } from "$lib/components/ui/button/index.js";
-	import * as Dialog from "$lib/components/ui/dialog/index.js";
-	import { Input } from "$lib/components/ui/input/index.js";
-	import { Label } from "$lib/components/ui/label/index.js";
-	import { Textarea } from "$lib/components/ui/textarea/index.js";
-	import { queries } from "$lib/query/queries";
+	import { channelActions } from "#lib/actions.js";
+	import type { Channel, Persona } from "#lib/api-types.js";
+	import { Button } from "#lib/components/ui/button/index.js";
+	import * as Dialog from "#lib/components/ui/dialog/index.js";
+	import { Input } from "#lib/components/ui/input/index.js";
+	import { Label } from "#lib/components/ui/label/index.js";
+	import { Textarea } from "#lib/components/ui/textarea/index.js";
+	import { queries } from "#lib/query/queries.js";
 	import { type PersonaForm, toForm, toPersona } from "./persona-draft";
 	import { useChannelEnhance } from "./use-channel-enhance";
 

@@ -1,4 +1,4 @@
-import { ApiError } from "$lib/api/result";
+import { ApiError } from "#lib/api/result.js";
 
 const MAX_RETRIES = 1;
 

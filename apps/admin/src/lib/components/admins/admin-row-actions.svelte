@@ -4,9 +4,9 @@
 	import ShieldCheckIcon from "@lucide/svelte/icons/shield-check";
 	import Trash2Icon from "@lucide/svelte/icons/trash-2";
 	import { useIntlayer } from "svelte-intlayer";
-	import { adminActions } from "$lib/actions";
-	import ConfirmDialog from "$lib/components/confirm-dialog.svelte";
-	import IconButton from "$lib/components/icon-button.svelte";
+	import { adminActions } from "#lib/actions.js";
+	import ConfirmDialog from "#lib/components/confirm-dialog.svelte";
+	import IconButton from "#lib/components/icon-button.svelte";
 	import type { AdminRow } from "./admin-types";
 	import { useAdminEnhance } from "./use-admin-enhance";
 

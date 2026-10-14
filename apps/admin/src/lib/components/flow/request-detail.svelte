@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import PageHeader from "$lib/components/page-header.svelte";
-	import { Badge } from "$lib/components/ui/badge/index.js";
-	import { Button } from "$lib/components/ui/button/index.js";
-	import * as Card from "$lib/components/ui/card/index.js";
-	import { useFormat } from "$lib/i18n/use-format";
-	import { useLiveQuery } from "$lib/live/use-live-query.svelte";
+	import PageHeader from "#lib/components/page-header.svelte";
+	import { Badge } from "#lib/components/ui/badge/index.js";
+	import { Button } from "#lib/components/ui/button/index.js";
+	import * as Card from "#lib/components/ui/card/index.js";
+	import { useFormat } from "#lib/i18n/use-format.js";
+	import { useLiveQuery } from "#lib/live/use-live-query.svelte.js";
 	import NodeDetails from "./node-details.svelte";
 	import RequestGraph from "./request-graph.svelte";
 	import RequestStatusBadge from "./request-status-badge.svelte";

@@ -9,7 +9,7 @@
 		"start": "bun src/index.ts",
 		"build": "bun build ./src/index.ts ./src/modules/translate/translate.worker.ts --compile --target=bun-linux-x64-musl --outfile dist/harness",
 		"test": "bun test",
-		"check-types": "tsc --noEmit",
+		"check-types": "bun check",
 		"lint": "biome check .",
 		"db:generate": "drizzle-kit generate",
 		"db:snapshot": "bun scripts/db-snapshot.ts",

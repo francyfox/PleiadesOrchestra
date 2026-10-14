@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { Handle, type NodeProps, Position } from "@xyflow/svelte";
 	import { useIntlayer } from "svelte-intlayer";
-	import { useFormat } from "$lib/i18n/use-format";
-	import { elapsedMs } from "$lib/request-graph";
+	import { useFormat } from "#lib/i18n/use-format.js";
+	import { elapsedMs } from "#lib/request-graph.js";
 
 	/**
 	 * One node of a request's decision graph: what it is, how it stands and how

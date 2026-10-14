@@ -9,8 +9,8 @@
 		SvelteFlow,
 	} from "@xyflow/svelte";
 	import { mode } from "mode-watcher";
-	import type { RequestView } from "$lib/api-types";
-	import { viewToGraph } from "$lib/request-graph";
+	import type { RequestView } from "#lib/api-types.js";
+	import { viewToGraph } from "#lib/request-graph.js";
 	import RequestNode from "./request-node.svelte";
 
 	/** Read-only canvas of one request's decision graph. Clicking a node selects it. */

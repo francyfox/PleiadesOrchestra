@@ -1,10 +1,10 @@
 <script lang="ts">
 	import ShieldOffIcon from "@lucide/svelte/icons/shield-off";
 	import { useIntlayer } from "svelte-intlayer";
-	import { blockedIpActions } from "$lib/actions";
-	import type { BlockedIp } from "$lib/api-types";
-	import ConfirmDialog from "$lib/components/confirm-dialog.svelte";
-	import IconButton from "$lib/components/icon-button.svelte";
+	import { blockedIpActions } from "#lib/actions.js";
+	import type { BlockedIp } from "#lib/api-types.js";
+	import ConfirmDialog from "#lib/components/confirm-dialog.svelte";
+	import IconButton from "#lib/components/icon-button.svelte";
 	import { useBlockedIpEnhance } from "./use-blocked-ip-enhance";
 
 	/** Lifting a block deletes the row, so it asks first. */

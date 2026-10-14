@@ -8,10 +8,10 @@
 		tableFeatures,
 	} from "@tanstack/svelte-table";
 	import { useIntlayer } from "svelte-intlayer";
-	import DataTable from "$lib/components/data-table.svelte";
-	import { Badge } from "$lib/components/ui/badge/index.js";
-	import { useFormat } from "$lib/i18n/use-format";
-	import type { ServerPagination } from "$lib/pagination";
+	import DataTable from "#lib/components/data-table.svelte";
+	import { Badge } from "#lib/components/ui/badge/index.js";
+	import { useFormat } from "#lib/i18n/use-format.js";
+	import type { ServerPagination } from "#lib/pagination.js";
 	import AdminRowActions from "./admin-row-actions.svelte";
 	import type { AdminRow } from "./admin-types";
 

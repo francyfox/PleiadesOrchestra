@@ -1,6 +1,6 @@
 import { error } from "@sveltejs/kit";
-import { prefetch } from "$lib/query/prefetch";
-import { liveQueries } from "$lib/query/queries";
+import { prefetch } from "#lib/query/prefetch.js";
+import { liveQueries } from "#lib/query/queries.js";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async ({ params }) => {

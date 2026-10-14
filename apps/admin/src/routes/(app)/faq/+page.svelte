@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import FaqList from "$lib/components/faq/faq-list.svelte";
-	import GettingStarted from "$lib/components/faq/getting-started.svelte";
+	import FaqList from "#lib/components/faq/faq-list.svelte";
+	import GettingStarted from "#lib/components/faq/getting-started.svelte";
 
 	const content = useIntlayer("faq");
 </script>

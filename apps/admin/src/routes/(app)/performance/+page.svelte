@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import type { CallKind } from "$lib/api-types";
-	import LatencyChart from "$lib/components/charts/latency-chart.svelte";
-	import LatencyOverview from "$lib/components/performance/latency-overview.svelte";
-	import LatencyTable from "$lib/components/performance/latency-table.svelte";
-	import * as Card from "$lib/components/ui/card/index.js";
-	import * as Tabs from "$lib/components/ui/tabs/index.js";
-	import { useLiveQuery } from "$lib/live/use-live-query.svelte";
+	import type { CallKind } from "#lib/api-types.js";
+	import LatencyChart from "#lib/components/charts/latency-chart.svelte";
+	import LatencyOverview from "#lib/components/performance/latency-overview.svelte";
+	import LatencyTable from "#lib/components/performance/latency-table.svelte";
+	import * as Card from "#lib/components/ui/card/index.js";
+	import * as Tabs from "#lib/components/ui/tabs/index.js";
+	import { useLiveQuery } from "#lib/live/use-live-query.svelte.js";
 
 	const live = useLiveQuery("performance", () => ({}));
 	const report = $derived(live.current);

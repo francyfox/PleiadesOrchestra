@@ -1,6 +1,6 @@
 import type { QueryClient } from "@tanstack/query-core";
 import type { LiveErrorCode, LiveTopic, LiveTopics } from "admin-api/types";
-import type { Problem } from "$lib/live/connection-monitor";
+import type { Problem } from "#lib/live/connection-monitor.js";
 import { topicKey } from "./keys";
 
 /** The slice of the live client `bindLiveTopic` needs. */

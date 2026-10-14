@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import { adminActions } from "$lib/actions";
-	import { Button } from "$lib/components/ui/button/index.js";
-	import * as Dialog from "$lib/components/ui/dialog/index.js";
-	import { Input } from "$lib/components/ui/input/index.js";
+	import { adminActions } from "#lib/actions.js";
+	import { Button } from "#lib/components/ui/button/index.js";
+	import * as Dialog from "#lib/components/ui/dialog/index.js";
+	import { Input } from "#lib/components/ui/input/index.js";
 	import type { AdminRow } from "./admin-types";
 	import { useAdminEnhance } from "./use-admin-enhance";
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { type CodeLanguage, highlight } from "$lib/highlight";
+	import { type CodeLanguage, highlight } from "#lib/highlight.js";
 	import CopyButton from "./copy-button.svelte";
 
 	/** A highlighted (Prism) code sample with a copy button; `label` names it for the button. */

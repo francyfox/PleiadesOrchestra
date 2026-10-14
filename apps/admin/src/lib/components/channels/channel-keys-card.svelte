@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import CopyValue from "$lib/components/copy-value.svelte";
-	import { Badge } from "$lib/components/ui/badge/index.js";
-	import * as Card from "$lib/components/ui/card/index.js";
+	import CopyValue from "#lib/components/copy-value.svelte";
+	import { Badge } from "#lib/components/ui/badge/index.js";
+	import * as Card from "#lib/components/ui/card/index.js";
 
 	/** Keys right after create/rotate — the secret is never shown again. */
 	let {

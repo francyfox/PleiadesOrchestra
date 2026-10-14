@@ -2,8 +2,8 @@
 	import type { Snippet } from "svelte";
 	import type { Action } from "svelte/action";
 	import { useIntlayer } from "svelte-intlayer";
-	import { Button } from "$lib/components/ui/button/index.js";
-	import * as Dialog from "$lib/components/ui/dialog/index.js";
+	import { Button } from "#lib/components/ui/button/index.js";
+	import * as Dialog from "#lib/components/ui/dialog/index.js";
 
 	/** Confirmation dialog around a form submitted with `submitted` (`useActionEnhance`); `fields` adds inputs. */
 	let {

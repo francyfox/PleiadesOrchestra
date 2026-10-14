@@ -1,4 +1,4 @@
-import type { AccessMode, BulkAction } from "$lib/api-types";
+import type { AccessMode, BulkAction } from "#lib/api-types.js";
 import { api } from "./api/client";
 import { type ActionResult, submitted } from "./api/result";
 import { REQUEST_INTENTS } from "./flow-filters";

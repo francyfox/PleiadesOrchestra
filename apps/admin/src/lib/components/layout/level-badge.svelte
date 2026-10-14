@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from "svelte";
-	import { Badge } from "$lib/components/ui/badge/index.js";
-	import type { LoadLevel } from "$lib/system/load-level";
+	import { Badge } from "#lib/components/ui/badge/index.js";
+	import type { LoadLevel } from "#lib/system/load-level.js";
 	import { levelBadgeClass, levelDotClass } from "../level-styles";
 
 	/** Green / yellow / red badge; `label` names the level for screen readers and the tooltip, so colour isn't the only signal. */

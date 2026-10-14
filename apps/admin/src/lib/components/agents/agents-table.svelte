@@ -6,11 +6,11 @@
 		tableFeatures,
 	} from "@tanstack/svelte-table";
 	import { useIntlayer } from "svelte-intlayer";
-	import type { Agent } from "$lib/api-types";
-	import CopyValue from "$lib/components/copy-value.svelte";
-	import DataTable from "$lib/components/data-table.svelte";
-	import { Badge } from "$lib/components/ui/badge/index.js";
-	import { useFormat } from "$lib/i18n/use-format";
+	import type { Agent } from "#lib/api-types.js";
+	import CopyValue from "#lib/components/copy-value.svelte";
+	import DataTable from "#lib/components/data-table.svelte";
+	import { Badge } from "#lib/components/ui/badge/index.js";
+	import { useFormat } from "#lib/i18n/use-format.js";
 	import { levelBadgeClass, levelDotClass } from "../level-styles";
 
 	let { agents }: { agents: Agent[] } = $props();

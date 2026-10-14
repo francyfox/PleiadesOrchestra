@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import type { AdminRow } from "$lib/components/admins/admin-types";
-	import AdminsTable from "$lib/components/admins/admins-table.svelte";
-	import CreateAdminDialog from "$lib/components/admins/create-admin-dialog.svelte";
-	import SetPasswordDialog from "$lib/components/admins/set-password-dialog.svelte";
-	import { useLiveQuery } from "$lib/live/use-live-query.svelte";
-	import { DEFAULT_PAGE_SIZE } from "$lib/pagination";
+	import type { AdminRow } from "#lib/components/admins/admin-types.js";
+	import AdminsTable from "#lib/components/admins/admins-table.svelte";
+	import CreateAdminDialog from "#lib/components/admins/create-admin-dialog.svelte";
+	import SetPasswordDialog from "#lib/components/admins/set-password-dialog.svelte";
+	import { useLiveQuery } from "#lib/live/use-live-query.svelte.js";
+	import { DEFAULT_PAGE_SIZE } from "#lib/pagination.js";
 
 	let { data } = $props();
 

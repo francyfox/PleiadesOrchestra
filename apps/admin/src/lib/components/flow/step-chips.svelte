@@ -1,7 +1,7 @@
 <script lang="ts">
 	import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
-	import type { RequestStatus } from "$lib/api-types";
-	import { Badge } from "$lib/components/ui/badge/index.js";
+	import type { RequestStatus } from "#lib/api-types.js";
+	import { Badge } from "#lib/components/ui/badge/index.js";
 
 	/**
 	 * A request's steps as chips in the order they ran. The last one is

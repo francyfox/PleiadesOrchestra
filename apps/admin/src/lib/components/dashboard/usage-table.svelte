@@ -6,9 +6,9 @@
 		tableFeatures,
 	} from "@tanstack/svelte-table";
 	import { useIntlayer } from "svelte-intlayer";
-	import type { UsageRow } from "$lib/api-types";
-	import DataTable from "$lib/components/data-table.svelte";
-	import { useFormat } from "$lib/i18n/use-format";
+	import type { UsageRow } from "#lib/api-types.js";
+	import DataTable from "#lib/components/data-table.svelte";
+	import { useFormat } from "#lib/i18n/use-format.js";
 
 	/** Usage rows grouped by user or channel; user rows link to the user card. */
 	let { rows, groupBy }: { rows: UsageRow[]; groupBy: "user" | "channel" } =

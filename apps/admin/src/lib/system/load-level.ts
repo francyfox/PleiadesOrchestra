@@ -1,4 +1,4 @@
-import type { SystemSnapshot } from "$lib/system-types";
+import type { SystemSnapshot } from "#lib/system-types.js";
 
 export type LoadLevel = "ok" | "warn" | "critical" | "unknown";
 

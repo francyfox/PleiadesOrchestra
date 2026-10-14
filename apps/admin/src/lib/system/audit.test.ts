@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { GpuInfo, SystemSnapshot } from "$lib/system-types";
+import type { GpuInfo, SystemSnapshot } from "#lib/system-types.js";
 import { auditMachine, IDEAL_MACHINE, scoreClass } from "./audit";
 
 const GiB = 1024 ** 3;

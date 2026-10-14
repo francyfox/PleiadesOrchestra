@@ -1,15 +1,15 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import * as Accordion from "$lib/components/ui/accordion/index.js";
-	import * as Card from "$lib/components/ui/card/index.js";
-	import { useFormat } from "$lib/i18n/use-format";
+	import * as Accordion from "#lib/components/ui/accordion/index.js";
+	import * as Card from "#lib/components/ui/card/index.js";
+	import { useFormat } from "#lib/i18n/use-format.js";
 	import {
 		type Audit,
 		type MachineReport,
 		type ScoreClass,
 		scoreClass,
 		type Vendor,
-	} from "$lib/system/audit";
+	} from "#lib/system/audit.js";
 	import AuditMarker from "./audit-marker.svelte";
 
 	/** Every check in one card: marker, title, value; advice in the accordion body. */

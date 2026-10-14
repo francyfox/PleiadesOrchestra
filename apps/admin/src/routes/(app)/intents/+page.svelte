@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { createQuery } from "@tanstack/svelte-query";
 	import { useIntlayer } from "svelte-intlayer";
+	import IntentsFilters from "#lib/components/intents/intents-filters.svelte";
+	import IntentsTable from "#lib/components/intents/intents-table.svelte";
+	import { useLiveQuery } from "#lib/live/use-live-query.svelte.js";
+	import { DEFAULT_PAGE_SIZE } from "#lib/pagination.js";
+	import { prefetched } from "#lib/query/prefetch.js";
+	import { queries } from "#lib/query/queries.js";
 	import { goto } from "$app/navigation";
-	import IntentsFilters from "$lib/components/intents/intents-filters.svelte";
-	import IntentsTable from "$lib/components/intents/intents-table.svelte";
-	import { useLiveQuery } from "$lib/live/use-live-query.svelte";
-	import { DEFAULT_PAGE_SIZE } from "$lib/pagination";
-	import { prefetched } from "$lib/query/prefetch";
-	import { queries } from "$lib/query/queries";
 
 	let { data } = $props();
 
@@ -45,7 +45,7 @@
 	status={data.status}
 	channelId={data.channelId}
 	{channels}
-	onChange={(filters) => goto(hrefFor(filters), { keepFocus: true })}
+	onChange={(filters) => goto(hrefFor(filters), { reset: false })}
 />
 
 <IntentsTable

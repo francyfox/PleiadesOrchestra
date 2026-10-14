@@ -1,4 +1,4 @@
-import type { GpuInfo, SystemSnapshot } from "$lib/system-types";
+import type { GpuInfo, SystemSnapshot } from "#lib/system-types.js";
 
 /**
  * Lighthouse-style hardware audit for running a small local LLM (llama.cpp)

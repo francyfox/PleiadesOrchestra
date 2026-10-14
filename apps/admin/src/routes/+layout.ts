@@ -1,10 +1,10 @@
 import { redirect } from "@sveltejs/kit";
-import { createApi } from "$lib/api/client";
-import { throwAsPage, unwrap } from "$lib/api/result";
-import { resolveAuthRedirect } from "$lib/auth-redirect";
-import { resolveBrowserLocale } from "$lib/i18n/browser-locale";
-import { queryClient } from "$lib/query/client";
-import { queries } from "$lib/query/queries";
+import { createApi } from "#lib/api/client.js";
+import { throwAsPage, unwrap } from "#lib/api/result.js";
+import { resolveAuthRedirect } from "#lib/auth-redirect.js";
+import { resolveBrowserLocale } from "#lib/i18n/browser-locale.js";
+import { queryClient } from "#lib/query/client.js";
+import { queries } from "#lib/query/queries.js";
 import type { LayoutLoad } from "./$types";
 
 /**

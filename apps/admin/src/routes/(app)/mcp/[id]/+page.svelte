@@ -1,5 +1,5 @@
 <script lang="ts">
-	import McpSiteDetail from "$lib/components/mcp/mcp-site-detail.svelte";
+	import McpSiteDetail from "#lib/components/mcp/mcp-site-detail.svelte";
 
 	let { data } = $props();
 </script>

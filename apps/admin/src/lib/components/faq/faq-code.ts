@@ -1,4 +1,4 @@
-import type { CodeLanguage } from "$lib/highlight";
+import type { CodeLanguage } from "#lib/highlight.js";
 
 /** The site's server linking an anonymous visitor to an account: the one place the SECRET key is used. */
 export const IDENTIFY_EXAMPLE = `curl -X POST https://YOUR-AGENT-HOST/v1/channels/CHANNEL_SLUG/identify \\

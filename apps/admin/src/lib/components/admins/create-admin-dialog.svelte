@@ -1,10 +1,10 @@
 <script lang="ts">
 	import PlusIcon from "@lucide/svelte/icons/plus";
 	import { useIntlayer } from "svelte-intlayer";
-	import { adminActions } from "$lib/actions";
-	import FormField from "$lib/components/form-field.svelte";
-	import { Button } from "$lib/components/ui/button/index.js";
-	import * as Dialog from "$lib/components/ui/dialog/index.js";
+	import { adminActions } from "#lib/actions.js";
+	import FormField from "#lib/components/form-field.svelte";
+	import { Button } from "#lib/components/ui/button/index.js";
+	import * as Dialog from "#lib/components/ui/dialog/index.js";
 	import { useAdminEnhance } from "./use-admin-enhance";
 
 	/** The "+ Add" button of the admins page and the dialog with the new-account form. */

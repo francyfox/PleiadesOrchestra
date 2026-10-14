@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
+	import { authActions } from "#lib/actions.js";
+	import FormField from "#lib/components/form-field.svelte";
+	import { Button } from "#lib/components/ui/button/index.js";
+	import * as Card from "#lib/components/ui/card/index.js";
 	import { goto } from "$app/navigation";
-	import { authActions } from "$lib/actions";
-	import FormField from "$lib/components/form-field.svelte";
-	import { Button } from "$lib/components/ui/button/index.js";
-	import * as Card from "$lib/components/ui/card/index.js";
 
 	const content = useIntlayer("auth");
 
@@ -36,7 +36,7 @@
 			};
 			return;
 		}
-		await goto("/", { invalidateAll: true });
+		await goto("/", { refreshAll: true });
 	}
 
 	const errorText = $derived.by(() => {

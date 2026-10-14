@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import AgentsTable from "$lib/components/agents/agents-table.svelte";
-	import { useLiveQuery } from "$lib/live/use-live-query.svelte";
+	import AgentsTable from "#lib/components/agents/agents-table.svelte";
+	import { useLiveQuery } from "#lib/live/use-live-query.svelte.js";
 
 	const live = useLiveQuery("agents", () => ({}));
 

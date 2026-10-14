@@ -1,5 +1,5 @@
-import { lines } from "$lib/actions";
-import type { Persona } from "$lib/api-types";
+import { lines } from "#lib/actions.js";
+import type { Persona } from "#lib/api-types.js";
 
 /** The dialog keeps forbidden topics as one text (a topic per line); the API wants a list. */
 export type PersonaForm = Omit<Persona, "forbiddenTopics"> & {

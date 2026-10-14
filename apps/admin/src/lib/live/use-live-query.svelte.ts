@@ -2,11 +2,11 @@ import { hashKey } from "@tanstack/query-core";
 import { createQuery } from "@tanstack/svelte-query";
 import type { LiveTopic, LiveTopics } from "admin-api/types";
 import { untrack } from "svelte";
-import { queryClient } from "$lib/query/client";
-import { topicKey } from "$lib/query/keys";
-import { bindLiveTopic } from "$lib/query/live-cache";
-import { prefetched } from "$lib/query/prefetch";
-import { liveQueries } from "$lib/query/queries";
+import { queryClient } from "#lib/query/client.js";
+import { topicKey } from "#lib/query/keys.js";
+import { bindLiveTopic } from "#lib/query/live-cache.js";
+import { prefetched } from "#lib/query/prefetch.js";
+import { liveQueries } from "#lib/query/queries.js";
 import { getLiveClient } from "./browser-client";
 import { reportConnection } from "./connection";
 

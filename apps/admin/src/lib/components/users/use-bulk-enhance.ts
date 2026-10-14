@@ -1,7 +1,7 @@
 import { get } from "svelte/store";
 import { useIntlayer } from "svelte-intlayer";
-import { userActions } from "$lib/actions";
-import { useActionEnhance } from "$lib/components/use-action-enhance";
+import { userActions } from "#lib/actions.js";
+import { useActionEnhance } from "#lib/components/use-action-enhance.js";
 
 /**
  * The users bulk action (the per-row buttons use it too): toast the number of

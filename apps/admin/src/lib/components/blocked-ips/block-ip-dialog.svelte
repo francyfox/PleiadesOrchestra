@@ -1,12 +1,12 @@
 <script lang="ts">
 	import PlusIcon from "@lucide/svelte/icons/plus";
 	import { useIntlayer } from "svelte-intlayer";
-	import { blockedIpActions } from "$lib/actions";
-	import type { Channel } from "$lib/api-types";
-	import FormField from "$lib/components/form-field.svelte";
-	import { Button } from "$lib/components/ui/button/index.js";
-	import * as Dialog from "$lib/components/ui/dialog/index.js";
-	import { Label } from "$lib/components/ui/label/index.js";
+	import { blockedIpActions } from "#lib/actions.js";
+	import type { Channel } from "#lib/api-types.js";
+	import FormField from "#lib/components/form-field.svelte";
+	import { Button } from "#lib/components/ui/button/index.js";
+	import * as Dialog from "#lib/components/ui/dialog/index.js";
+	import { Label } from "#lib/components/ui/label/index.js";
 	import { useBlockedIpEnhance } from "./use-blocked-ip-enhance";
 
 	/**

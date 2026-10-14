@@ -9,7 +9,7 @@
 		".": "./src/index.ts"
 	},
 	"scripts": {
-		"check-types": "tsc --noEmit",
+		"check-types": "bun check",
 		"lint": "biome check .",
 		"test": "bun test"
 	},

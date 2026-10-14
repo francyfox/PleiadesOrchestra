@@ -4,9 +4,9 @@
 	import ShieldBanIcon from "@lucide/svelte/icons/shield-ban";
 	import UserRoundCheckIcon from "@lucide/svelte/icons/user-round-check";
 	import { useIntlayer } from "svelte-intlayer";
+	import type { AdminUser } from "#lib/api-types.js";
+	import IconButton from "#lib/components/icon-button.svelte";
 	import { goto } from "$app/navigation";
-	import type { AdminUser } from "$lib/api-types";
-	import IconButton from "$lib/components/icon-button.svelte";
 	import { useBulkEnhance } from "./use-bulk-enhance";
 
 	/** Quick actions for one row, sent through the same bulk endpoint. */

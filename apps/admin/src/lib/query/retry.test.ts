@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ApiError } from "$lib/api/result";
+import { ApiError } from "#lib/api/result.js";
 import { shouldRetry } from "./retry";
 
 describe("shouldRetry", () => {

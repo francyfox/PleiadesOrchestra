@@ -3,8 +3,8 @@
 	import CopyIcon from "@lucide/svelte/icons/copy";
 	import { useIntlayer } from "svelte-intlayer";
 	import { toast } from "svelte-sonner";
-	import { copyText } from "$lib/clipboard";
-	import { Button } from "$lib/components/ui/button/index.js";
+	import { copyText } from "#lib/clipboard.js";
+	import { Button } from "#lib/components/ui/button/index.js";
 
 	/** Icon-only "copy to clipboard"; flips to a check mark for a moment on success. */
 	let { value, label }: { value: string; label?: string } = $props();

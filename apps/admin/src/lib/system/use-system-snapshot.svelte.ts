@@ -1,10 +1,10 @@
 import { createQuery } from "@tanstack/svelte-query";
 import { IsDocumentVisible } from "runed";
-import { reportConnection } from "$lib/live/connection";
-import { queryClient } from "$lib/query/client";
-import { prefetched } from "$lib/query/prefetch";
-import { queries } from "$lib/query/queries";
-import type { SystemSnapshot } from "$lib/system-types";
+import { reportConnection } from "#lib/live/connection.js";
+import { queryClient } from "#lib/query/client.js";
+import { prefetched } from "#lib/query/prefetch.js";
+import { queries } from "#lib/query/queries.js";
+import type { SystemSnapshot } from "#lib/system-types.js";
 import { createSystemStream, streamUrl } from "./system-stream";
 
 /**

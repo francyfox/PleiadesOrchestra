@@ -2,7 +2,7 @@
 	import ArrowDownIcon from "@lucide/svelte/icons/arrow-down";
 	import ArrowUpIcon from "@lucide/svelte/icons/arrow-up";
 	import ArrowUpDownIcon from "@lucide/svelte/icons/arrow-up-down";
-	import { Button } from "$lib/components/ui/button/index.js";
+	import { Button } from "#lib/components/ui/button/index.js";
 
 	/** `sorted` is the column's `getIsSorted()`; `onToggle` its sorting handler. */
 	let {

@@ -4,7 +4,7 @@ See root `CLAUDE.md` for commands, architecture overview and lessons.
 
 ## Stack
 
-Svelte 5 SPA: shadcn-svelte, TanStack Table v9, TanStack Query v6 (`@tanstack/svelte-query`), `@xyflow/svelte` (Flow graphs), `@humanspeak/svelte-virtual-chat`, `adapter-static` (`fallback: index.html`), `ssr = false`, no server code at all. Talks to `apps/admin-api` through a typed Eden client (`$lib/api/client.ts`, types from `admin-api`'s `App`). Everything in **`devDependencies`** — static build, nothing installs at runtime.
+Svelte 5 SPA: shadcn-svelte, TanStack Table v9, TanStack Query v6 (`@tanstack/svelte-query`), `@xyflow/svelte` (Flow graphs), `@humanspeak/svelte-virtual-chat`, `adapter-static` (`fallback: index.html`), `ssr = false`, no server code at all. Talks to `apps/admin-api` through a typed Eden client (`#lib/api/client.ts`, types from `admin-api`'s `App`). Everything in **`devDependencies`** — static build, nothing installs at runtime.
 
 Has a nested `apps/admin/biome.json` (extends root) that turns off unused-import/variable rules for `.svelte` files (Biome can't see usages in markup).
 
@@ -20,7 +20,7 @@ One `queryClient` per tab (`src/lib/query/client.ts`). Defaults: `staleTime` 30 
 
 `load` functions in `+page.ts` only parse the URL and `prefetch()` queries into the cache; the root `+layout.ts` fetches `GET /api/session` with `staleTime: 0` on every navigation.
 
-`useActionEnhance({ run })` (`$lib/components/use-action-enhance.ts`) — a `use:` action that runs a handler from `$lib/actions.ts` as a `createMutation`, toasts the result and calls `queryClient.invalidateQueries()`. `startsSession` in `actions.ts` empties the cache on sign-in/register.
+`useActionEnhance({ run })` (`#lib/components/use-action-enhance.ts`) — a `use:` action that runs a handler from `#lib/actions.ts` as a `createMutation`, toasts the result and calls `queryClient.invalidateQueries()`. `startsSession` in `actions.ts` empties the cache on sign-in/register.
 
 TanStack Devtools (`@tanstack/svelte-query-devtools`, button bottom-left) mounted in root `+layout.svelte` behind `{#if import.meta.env.DEV}` with a dynamic import — gating with `dev` from `$app/environment` left the devtools chunk in prod builds.
 

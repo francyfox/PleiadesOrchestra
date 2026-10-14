@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import type { BulkAction } from "$lib/api-types";
-	import { Button } from "$lib/components/ui/button/index.js";
-	import { Input } from "$lib/components/ui/input/index.js";
+	import type { BulkAction } from "#lib/api-types.js";
+	import { Button } from "#lib/components/ui/button/index.js";
+	import { Input } from "#lib/components/ui/input/index.js";
 	import { useBulkEnhance } from "./use-bulk-enhance";
 
 	/** Shown while rows are selected: one action for all of them. */

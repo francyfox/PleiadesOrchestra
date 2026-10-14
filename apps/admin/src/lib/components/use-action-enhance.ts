@@ -3,11 +3,11 @@ import type { Action } from "svelte/action";
 import { get } from "svelte/store";
 import { useIntlayer } from "svelte-intlayer";
 import { toast } from "svelte-sonner";
-import type { ActionResult } from "$lib/api/result";
-import { queryClient } from "$lib/query/client";
+import type { ActionResult } from "#lib/api/result.js";
+import { queryClient } from "#lib/query/client.js";
 
 export interface ActionEnhanceOptions {
-	/** Sends the form to admin-api (see `$lib/actions`). */
+	/** Sends the form to admin-api (see `#lib/actions.js`). */
 	run: (form: FormData) => Promise<ActionResult>;
 	onSettled?: () => void;
 	/** Runs on success with the response data (e.g. to show one-time keys). */

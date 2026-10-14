@@ -8,16 +8,16 @@
 		type TableFeatures,
 	} from "@tanstack/svelte-table";
 	import { useIntlayer } from "svelte-intlayer";
-	import { Button } from "$lib/components/ui/button/index.js";
-	import * as UiTable from "$lib/components/ui/table/index.js";
-	import { useFormat } from "$lib/i18n/use-format";
+	import { Button } from "#lib/components/ui/button/index.js";
+	import * as UiTable from "#lib/components/ui/table/index.js";
+	import { useFormat } from "#lib/i18n/use-format.js";
 	import {
 		clampPage,
 		DEFAULT_PAGE_SIZE,
 		pageCount,
 		pageSlice,
 		type ServerPagination,
-	} from "$lib/pagination";
+	} from "#lib/pagination.js";
 
 	/**
 	 * The one table of the admin: headless TanStack model rendered with

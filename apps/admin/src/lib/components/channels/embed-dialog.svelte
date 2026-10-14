@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import type { Channel } from "$lib/api-types";
-	import * as Dialog from "$lib/components/ui/dialog/index.js";
-	import WidgetEmbed from "$lib/components/widget-embed.svelte";
+	import type { Channel } from "#lib/api-types.js";
+	import * as Dialog from "#lib/components/ui/dialog/index.js";
+	import WidgetEmbed from "#lib/components/widget-embed.svelte";
 
 	let {
 		channel,

@@ -1,12 +1,12 @@
 <script lang="ts">
 	import SvelteVirtualChat from "@humanspeak/svelte-virtual-chat";
 	import { useIntlayer } from "svelte-intlayer";
-	import { userActions } from "$lib/actions";
-	import type { AdminMessage } from "$lib/api-types";
-	import ConfirmDialog from "$lib/components/confirm-dialog.svelte";
-	import { Button } from "$lib/components/ui/button/index.js";
-	import { useActionEnhance } from "$lib/components/use-action-enhance";
-	import { useFormat } from "$lib/i18n/use-format";
+	import { userActions } from "#lib/actions.js";
+	import type { AdminMessage } from "#lib/api-types.js";
+	import ConfirmDialog from "#lib/components/confirm-dialog.svelte";
+	import { Button } from "#lib/components/ui/button/index.js";
+	import { useActionEnhance } from "#lib/components/use-action-enhance.js";
+	import { useFormat } from "#lib/i18n/use-format.js";
 
 	/** The user's last ≤10 messages with per-answer usage and plan links. */
 	let { userId, messages }: { userId: string; messages: AdminMessage[] } =

@@ -1,4 +1,4 @@
-import type { LoadLevel } from "$lib/system/load-level";
+import type { LoadLevel } from "#lib/system/load-level.js";
 
 /** Colours of the green / yellow / red load indicator (`unknown` is neutral, never green). */
 export const levelBadgeClass: Record<LoadLevel, string> = {

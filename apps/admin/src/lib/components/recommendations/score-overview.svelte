@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import ScoreGauge from "$lib/components/charts/score-gauge.svelte";
-	import * as Card from "$lib/components/ui/card/index.js";
-	import type { MachineReport } from "$lib/system/audit";
+	import ScoreGauge from "#lib/components/charts/score-gauge.svelte";
+	import * as Card from "#lib/components/ui/card/index.js";
+	import type { MachineReport } from "#lib/system/audit.js";
 	import AuditMarker from "./audit-marker.svelte";
 
 	/** Overall + per-category rings and the Lighthouse legend. */

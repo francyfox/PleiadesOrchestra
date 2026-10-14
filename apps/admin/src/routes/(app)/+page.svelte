@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import UsageChart from "$lib/components/charts/usage-chart.svelte";
-	import UsageSummary from "$lib/components/dashboard/usage-summary.svelte";
-	import UsageTable from "$lib/components/dashboard/usage-table.svelte";
-	import * as Card from "$lib/components/ui/card/index.js";
-	import { useLiveQuery } from "$lib/live/use-live-query.svelte";
+	import UsageChart from "#lib/components/charts/usage-chart.svelte";
+	import UsageSummary from "#lib/components/dashboard/usage-summary.svelte";
+	import UsageTable from "#lib/components/dashboard/usage-table.svelte";
+	import * as Card from "#lib/components/ui/card/index.js";
+	import { useLiveQuery } from "#lib/live/use-live-query.svelte.js";
 
 	const live = useLiveQuery("dashboard", () => ({}));
 	const dashboard = $derived(live.current);

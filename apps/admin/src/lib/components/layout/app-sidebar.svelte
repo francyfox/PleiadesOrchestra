@@ -13,9 +13,9 @@
 	import ShieldIcon from "@lucide/svelte/icons/shield";
 	import UsersIcon from "@lucide/svelte/icons/users";
 	import { useIntlayer } from "svelte-intlayer";
+	import { authActions } from "#lib/actions.js";
+	import * as Sidebar from "#lib/components/ui/sidebar/index.js";
 	import { page } from "$app/state";
-	import { authActions } from "$lib/actions";
-	import * as Sidebar from "$lib/components/ui/sidebar/index.js";
 
 	let { email }: { email: string | null } = $props();
 

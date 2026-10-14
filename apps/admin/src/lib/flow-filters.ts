@@ -1,4 +1,4 @@
-import type { RequestStatus } from "$lib/api-types";
+import type { RequestStatus } from "#lib/api-types.js";
 
 export const REQUEST_STATUSES = [
 	"running",

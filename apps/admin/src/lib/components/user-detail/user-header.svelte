@@ -1,16 +1,16 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import { userActions } from "$lib/actions";
-	import type { AdminUser } from "$lib/api-types";
-	import ConfirmDialog from "$lib/components/confirm-dialog.svelte";
-	import CopyValue from "$lib/components/copy-value.svelte";
-	import PageHeader from "$lib/components/page-header.svelte";
-	import StatusBadge from "$lib/components/status-badge.svelte";
-	import { Badge } from "$lib/components/ui/badge/index.js";
-	import { Button } from "$lib/components/ui/button/index.js";
-	import { Input } from "$lib/components/ui/input/index.js";
-	import { useActionEnhance } from "$lib/components/use-action-enhance";
-	import { whoisUrl } from "$lib/ip";
+	import { userActions } from "#lib/actions.js";
+	import type { AdminUser } from "#lib/api-types.js";
+	import ConfirmDialog from "#lib/components/confirm-dialog.svelte";
+	import CopyValue from "#lib/components/copy-value.svelte";
+	import PageHeader from "#lib/components/page-header.svelte";
+	import StatusBadge from "#lib/components/status-badge.svelte";
+	import { Badge } from "#lib/components/ui/badge/index.js";
+	import { Button } from "#lib/components/ui/button/index.js";
+	import { Input } from "#lib/components/ui/input/index.js";
+	import { useActionEnhance } from "#lib/components/use-action-enhance.js";
+	import { whoisUrl } from "#lib/ip.js";
 
 	/** Name, status badges and the whitelist/block actions of one user. */
 	let { user }: { user: AdminUser } = $props();

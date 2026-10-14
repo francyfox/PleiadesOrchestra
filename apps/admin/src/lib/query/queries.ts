@@ -1,8 +1,8 @@
 import { queryOptions } from "@tanstack/svelte-query";
 import type { LiveTopics } from "admin-api/types";
-import { api } from "$lib/api/client";
-import { unwrap } from "$lib/api/result";
-import type { Persona } from "$lib/api-types";
+import { api } from "#lib/api/client.js";
+import { unwrap } from "#lib/api/result.js";
+import type { Persona } from "#lib/api-types.js";
 import { SYSTEM_KEY, topicKey } from "./keys";
 
 /** Data the WebSocket keeps current: never stale by itself; a mutation still invalidates it. */

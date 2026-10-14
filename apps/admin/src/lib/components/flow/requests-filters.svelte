@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import SearchSelect from "$lib/components/search-select.svelte";
+	import SearchSelect from "#lib/components/search-select.svelte";
 	import {
 		REQUEST_INTENTS,
 		REQUEST_STATUSES,
 		type RequestFilters,
-	} from "$lib/flow-filters";
+	} from "#lib/flow-filters.js";
 
 	/** Status and intent pickers (with search); each change goes to the list with that filter, page one. */
 	let {

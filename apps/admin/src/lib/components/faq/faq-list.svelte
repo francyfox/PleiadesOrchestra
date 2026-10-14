@@ -1,8 +1,8 @@
 <script lang="ts">
 	import SearchIcon from "@lucide/svelte/icons/search";
 	import { useIntlayer } from "svelte-intlayer";
-	import { Input } from "$lib/components/ui/input/index.js";
-	import { createFaqSearch } from "$lib/faq-search";
+	import { Input } from "#lib/components/ui/input/index.js";
+	import { createFaqSearch } from "#lib/faq-search.js";
 	import FaqAnswer from "./faq-answer.svelte";
 	import { FAQ_IDS, type FaqId } from "./faq-items";
 	import FaqQuestionList from "./faq-question-list.svelte";

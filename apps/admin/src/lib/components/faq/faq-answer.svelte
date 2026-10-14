@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import CodeBlock from "$lib/components/code-block.svelte";
+	import CodeBlock from "#lib/components/code-block.svelte";
 	import { FAQ_CODE } from "./faq-code";
 	import type { FaqId } from "./faq-items";
 

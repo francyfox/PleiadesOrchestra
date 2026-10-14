@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import PageHeader from "$lib/components/page-header.svelte";
-	import { Badge } from "$lib/components/ui/badge/index.js";
-	import { useFormat } from "$lib/i18n/use-format";
-	import { useLiveQuery } from "$lib/live/use-live-query.svelte";
+	import PageHeader from "#lib/components/page-header.svelte";
+	import { Badge } from "#lib/components/ui/badge/index.js";
+	import { useFormat } from "#lib/i18n/use-format.js";
+	import { useLiveQuery } from "#lib/live/use-live-query.svelte.js";
 	import McpToolsTable from "./mcp-tools-table.svelte";
 
 	/** One site's own page: its newest WebMCP catalog and when it was announced, kept current over the live socket. */

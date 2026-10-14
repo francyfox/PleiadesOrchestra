@@ -3,7 +3,7 @@
 	import ChevronDownIcon from "@lucide/svelte/icons/chevron-down";
 	import SearchIcon from "@lucide/svelte/icons/search";
 	import { Popover } from "bits-ui";
-	import { cn } from "$lib/utils.js";
+	import { cn } from "#lib/utils.js";
 
 	export interface SearchSelectOption {
 		value: string;

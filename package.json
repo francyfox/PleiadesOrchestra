@@ -12,7 +12,8 @@
 		"check-types": "turbo run check-types",
 		"test": "turbo run test",
 		"test:beta-text": "bun test apps/beta-text/docker.test.ts",
-		"test:e2e": "cd packages/pleiades-widget && bun run build && cd ../../apps/e2e && bun run test:e2e"
+		"test:e2e": "cd packages/pleiades-widget && bun run build && cd ../../apps/e2e && bun run test:e2e",
+        "knip": "knip"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.7",
@@ -33,7 +34,7 @@
 			"!apps/pleiades-plugin"
 		],
 		"catalog": {
-			"elysia": "^1.4.29",
+			"elysia": "1.4.29",
 			"@elysiajs/openapi": "^1.4.16",
 			"@sinclair/typebox": "^0.34.52",
 			"drizzle-orm": "^0.45.3",

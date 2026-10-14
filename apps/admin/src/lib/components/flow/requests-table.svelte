@@ -6,10 +6,10 @@
 		tableFeatures,
 	} from "@tanstack/svelte-table";
 	import { useIntlayer } from "svelte-intlayer";
-	import type { RequestSummary } from "$lib/api-types";
-	import DataTable from "$lib/components/data-table.svelte";
-	import { useFormat } from "$lib/i18n/use-format";
-	import { DEFAULT_PAGE_SIZE } from "$lib/pagination";
+	import type { RequestSummary } from "#lib/api-types.js";
+	import DataTable from "#lib/components/data-table.svelte";
+	import { useFormat } from "#lib/i18n/use-format.js";
+	import { DEFAULT_PAGE_SIZE } from "#lib/pagination.js";
 	import RequestStatusBadge from "./request-status-badge.svelte";
 	import StepChips from "./step-chips.svelte";
 

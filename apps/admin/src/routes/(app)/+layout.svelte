@@ -1,9 +1,9 @@
 <script lang="ts">
-	import AppHeader from "$lib/components/layout/app-header.svelte";
-	import AppSidebar from "$lib/components/layout/app-sidebar.svelte";
-	import ConnectionToasts from "$lib/components/layout/connection-toasts.svelte";
-	import * as Sidebar from "$lib/components/ui/sidebar/index.js";
-	import * as Tooltip from "$lib/components/ui/tooltip/index.js";
+	import AppHeader from "#lib/components/layout/app-header.svelte";
+	import AppSidebar from "#lib/components/layout/app-sidebar.svelte";
+	import ConnectionToasts from "#lib/components/layout/connection-toasts.svelte";
+	import * as Sidebar from "#lib/components/ui/sidebar/index.js";
+	import * as Tooltip from "#lib/components/ui/tooltip/index.js";
 
 	let { data, children } = $props();
 </script>

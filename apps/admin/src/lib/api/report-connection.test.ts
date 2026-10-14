@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { Problem } from "$lib/live/connection-monitor";
+import type { Problem } from "#lib/live/connection-monitor.js";
 import { withConnectionReport } from "./report-connection";
 
 type Report = [Problem, string, boolean];

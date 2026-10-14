@@ -4,14 +4,14 @@
 	import PencilIcon from "@lucide/svelte/icons/pencil";
 	import XIcon from "@lucide/svelte/icons/x";
 	import { useIntlayer } from "svelte-intlayer";
-	import { intentActions } from "$lib/actions";
-	import type { IntentExample } from "$lib/api-types";
-	import IconButton from "$lib/components/icon-button.svelte";
-	import SearchSelect from "$lib/components/search-select.svelte";
-	import { Button } from "$lib/components/ui/button/index.js";
-	import * as Dialog from "$lib/components/ui/dialog/index.js";
-	import { useActionEnhance } from "$lib/components/use-action-enhance";
-	import { REQUEST_INTENTS } from "$lib/flow-filters";
+	import { intentActions } from "#lib/actions.js";
+	import type { IntentExample } from "#lib/api-types.js";
+	import IconButton from "#lib/components/icon-button.svelte";
+	import SearchSelect from "#lib/components/search-select.svelte";
+	import { Button } from "#lib/components/ui/button/index.js";
+	import * as Dialog from "#lib/components/ui/dialog/index.js";
+	import { useActionEnhance } from "#lib/components/use-action-enhance.js";
+	import { REQUEST_INTENTS } from "#lib/flow-filters.js";
 
 	/** Approve, reject, correct (a dialog with the intent picker) and open the request the label came from. */
 	let { item }: { item: IntentExample } = $props();

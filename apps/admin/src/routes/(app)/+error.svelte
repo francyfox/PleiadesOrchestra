@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
+	import * as Alert from "#lib/components/ui/alert/index.js";
 	import { page } from "$app/state";
-	import * as Alert from "$lib/components/ui/alert/index.js";
 
 	const content = useIntlayer("app-error");
 

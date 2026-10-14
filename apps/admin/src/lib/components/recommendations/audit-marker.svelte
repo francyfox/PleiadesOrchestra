@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ScoreClass } from "$lib/system/audit";
+	import type { ScoreClass } from "#lib/system/audit.js";
 
 	/** Lighthouse shapes: ▲ fail, ■ average, ● pass, ○ informational. */
 	let { kind }: { kind: ScoreClass } = $props();

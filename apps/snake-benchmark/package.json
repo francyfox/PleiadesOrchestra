@@ -9,7 +9,7 @@
 		"headless": "bun src/index.ts --headless",
 		"sweep": "bun src/index.ts --headless --steps 100 --threads 0,1,2,4,6,12",
 		"test": "bun test",
-		"check-types": "tsc --noEmit",
+		"check-types": "bun check",
 		"lint": "biome check ."
 	},
 	"dependencies": {

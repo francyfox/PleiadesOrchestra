@@ -1,7 +1,7 @@
 import { get } from "svelte/store";
 import { useIntlayer } from "svelte-intlayer";
-import type { ActionResult } from "$lib/api/result";
-import { useActionEnhance } from "$lib/components/use-action-enhance";
+import type { ActionResult } from "#lib/api/result.js";
+import { useActionEnhance } from "#lib/components/use-action-enhance.js";
 import { type IssuedSecret, issued } from "./issued-secret.svelte";
 
 /** Channel forms: localized validation errors; no toast when new keys are shown instead. */

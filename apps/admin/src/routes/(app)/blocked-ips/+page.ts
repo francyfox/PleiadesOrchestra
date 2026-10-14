@@ -1,6 +1,6 @@
-import { DEFAULT_PAGE_SIZE, parsePage } from "$lib/pagination";
-import { prefetch } from "$lib/query/prefetch";
-import { liveQueries, queries } from "$lib/query/queries";
+import { DEFAULT_PAGE_SIZE, parsePage } from "#lib/pagination.js";
+import { prefetch } from "#lib/query/prefetch.js";
+import { liveQueries, queries } from "#lib/query/queries.js";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async ({ url }) => {

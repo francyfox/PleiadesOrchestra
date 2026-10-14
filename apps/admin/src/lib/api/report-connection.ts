@@ -1,4 +1,4 @@
-import type { Problem } from "$lib/live/connection-monitor";
+import type { Problem } from "#lib/live/connection-monitor.js";
 
 type Report = (problem: Problem, source: string, down: boolean) => void;
 

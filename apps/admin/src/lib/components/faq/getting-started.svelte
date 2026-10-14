@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import WidgetEmbed from "$lib/components/widget-embed.svelte";
+	import WidgetEmbed from "#lib/components/widget-embed.svelte";
 	import AttributesTable from "./attributes-table.svelte";
 
 	const content = useIntlayer("faq");

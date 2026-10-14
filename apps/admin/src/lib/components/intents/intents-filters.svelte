@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import type { Channel } from "$lib/api-types";
-	import SearchSelect from "$lib/components/search-select.svelte";
+	import type { Channel } from "#lib/api-types.js";
+	import SearchSelect from "#lib/components/search-select.svelte";
 
 	type Status = "pending" | "approved" | "rejected";
 

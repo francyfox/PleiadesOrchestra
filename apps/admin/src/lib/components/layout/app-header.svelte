@@ -1,6 +1,6 @@
 <script lang="ts">
-	import SystemMeter from "$lib/components/layout/system-meter.svelte";
-	import * as Sidebar from "$lib/components/ui/sidebar/index.js";
+	import SystemMeter from "#lib/components/layout/system-meter.svelte";
+	import * as Sidebar from "#lib/components/ui/sidebar/index.js";
 	import LocaleSwitcher from "./locale-switcher.svelte";
 </script>
 

@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import type { Channel } from "$lib/api-types";
-	import ChannelKeysCard from "$lib/components/channels/channel-keys-card.svelte";
-	import ChannelsTable from "$lib/components/channels/channels-table.svelte";
-	import CreateChannelDialog from "$lib/components/channels/create-channel-dialog.svelte";
-	import EditChannelDialog from "$lib/components/channels/edit-channel-dialog.svelte";
-	import { issued } from "$lib/components/channels/issued-secret.svelte";
-	import { useLiveQuery } from "$lib/live/use-live-query.svelte";
-	import { DEFAULT_PAGE_SIZE } from "$lib/pagination";
+	import type { Channel } from "#lib/api-types.js";
+	import ChannelKeysCard from "#lib/components/channels/channel-keys-card.svelte";
+	import ChannelsTable from "#lib/components/channels/channels-table.svelte";
+	import CreateChannelDialog from "#lib/components/channels/create-channel-dialog.svelte";
+	import EditChannelDialog from "#lib/components/channels/edit-channel-dialog.svelte";
+	import { issued } from "#lib/components/channels/issued-secret.svelte.js";
+	import { useLiveQuery } from "#lib/live/use-live-query.svelte.js";
+	import { DEFAULT_PAGE_SIZE } from "#lib/pagination.js";
 
 	let { data } = $props();
 

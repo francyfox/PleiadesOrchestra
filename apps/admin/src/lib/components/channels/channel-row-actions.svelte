@@ -6,10 +6,10 @@
 	import PowerOffIcon from "@lucide/svelte/icons/power-off";
 	import RefreshCwIcon from "@lucide/svelte/icons/refresh-cw";
 	import { useIntlayer } from "svelte-intlayer";
-	import { channelActions } from "$lib/actions";
-	import type { Channel } from "$lib/api-types";
-	import ConfirmDialog from "$lib/components/confirm-dialog.svelte";
-	import IconButton from "$lib/components/icon-button.svelte";
+	import { channelActions } from "#lib/actions.js";
+	import type { Channel } from "#lib/api-types.js";
+	import ConfirmDialog from "#lib/components/confirm-dialog.svelte";
+	import IconButton from "#lib/components/icon-button.svelte";
 	import EmbedDialog from "./embed-dialog.svelte";
 	import PersonaDialog from "./persona-dialog.svelte";
 	import { useChannelEnhance } from "./use-channel-enhance";

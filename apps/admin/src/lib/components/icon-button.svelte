@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { LucideProps } from "@lucide/svelte";
 	import type { Component } from "svelte";
-	import { Button } from "$lib/components/ui/button/index.js";
-	import * as Tooltip from "$lib/components/ui/tooltip/index.js";
-	import { cn } from "$lib/utils.js";
+	import { Button } from "#lib/components/ui/button/index.js";
+	import * as Tooltip from "#lib/components/ui/tooltip/index.js";
+	import { cn } from "#lib/utils.js";
 
 	export type IconTone =
 		| "primary"

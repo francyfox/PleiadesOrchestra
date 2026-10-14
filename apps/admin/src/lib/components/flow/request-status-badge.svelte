@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import type { RequestStatus } from "$lib/api-types";
-	import { Badge } from "$lib/components/ui/badge/index.js";
+	import type { RequestStatus } from "#lib/api-types.js";
+	import { Badge } from "#lib/components/ui/badge/index.js";
 
 	let { status }: { status: RequestStatus } = $props();
 

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import type { AdminUser } from "$lib/api-types";
-	import * as Card from "$lib/components/ui/card/index.js";
-	import { useFormat } from "$lib/i18n/use-format";
+	import type { AdminUser } from "#lib/api-types.js";
+	import * as Card from "#lib/components/ui/card/index.js";
+	import { useFormat } from "#lib/i18n/use-format.js";
 
 	let { user }: { user: AdminUser } = $props();
 

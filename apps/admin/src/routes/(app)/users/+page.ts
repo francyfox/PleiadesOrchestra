@@ -1,6 +1,6 @@
-import { prefetch } from "$lib/query/prefetch";
-import { liveQueries, queries } from "$lib/query/queries";
-import { parseUsersState, toUsersQuery } from "$lib/users-table-state";
+import { prefetch } from "#lib/query/prefetch.js";
+import { liveQueries, queries } from "#lib/query/queries.js";
+import { parseUsersState, toUsersQuery } from "#lib/users-table-state.js";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async ({ url }) => {

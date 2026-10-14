@@ -5,9 +5,9 @@
 		tableFeatures,
 	} from "@tanstack/svelte-table";
 	import { useIntlayer } from "svelte-intlayer";
-	import type { UsageByModel } from "$lib/api-types";
-	import DataTable from "$lib/components/data-table.svelte";
-	import { useFormat } from "$lib/i18n/use-format";
+	import type { UsageByModel } from "#lib/api-types.js";
+	import DataTable from "#lib/components/data-table.svelte";
+	import { useFormat } from "#lib/i18n/use-format.js";
 
 	let { rows }: { rows: UsageByModel[] } = $props();
 

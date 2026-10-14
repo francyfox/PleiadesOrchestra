@@ -1,5 +1,5 @@
 import type { FetchQueryOptions, QueryKey } from "@tanstack/query-core";
-import { throwAsPage } from "$lib/api/result";
+import { throwAsPage } from "#lib/api/result.js";
 import { queryClient } from "./client";
 
 /**

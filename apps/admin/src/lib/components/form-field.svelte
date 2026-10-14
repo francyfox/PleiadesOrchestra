@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { FullAutoFill, HTMLInputTypeAttribute } from "svelte/elements";
-	import { Input } from "$lib/components/ui/input/index.js";
-	import { Label } from "$lib/components/ui/label/index.js";
+	import { Input } from "#lib/components/ui/input/index.js";
+	import { Label } from "#lib/components/ui/label/index.js";
 
 	/**
 	 * Label + input pair used by every form in the admin. An explicit prop

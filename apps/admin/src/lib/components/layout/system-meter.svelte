@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import { useFormat } from "$lib/i18n/use-format";
-	import { snapshotLevels } from "$lib/system/load-level";
-	import { useSystemSnapshot } from "$lib/system/use-system-snapshot.svelte";
+	import { useFormat } from "#lib/i18n/use-format.js";
+	import { snapshotLevels } from "#lib/system/load-level.js";
+	import { useSystemSnapshot } from "#lib/system/use-system-snapshot.svelte.js";
 	import LevelBadge from "./level-badge.svelte";
 
 	/** Host CPU / RAM / GPU / VRAM in the header. Live over a WebSocket while the tab is visible. */

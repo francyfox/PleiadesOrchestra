@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { createQuery } from "@tanstack/svelte-query";
 	import { useIntlayer } from "svelte-intlayer";
-	import AuditList from "$lib/components/recommendations/audit-list.svelte";
-	import ComparisonTable from "$lib/components/recommendations/comparison-table.svelte";
-	import ScoreOverview from "$lib/components/recommendations/score-overview.svelte";
-	import { prefetched } from "$lib/query/prefetch";
-	import { queries } from "$lib/query/queries";
-	import { auditMachine } from "$lib/system/audit";
+	import AuditList from "#lib/components/recommendations/audit-list.svelte";
+	import ComparisonTable from "#lib/components/recommendations/comparison-table.svelte";
+	import ScoreOverview from "#lib/components/recommendations/score-overview.svelte";
+	import { prefetched } from "#lib/query/prefetch.js";
+	import { queries } from "#lib/query/queries.js";
+	import { auditMachine } from "#lib/system/audit.js";
 
 	const system = createQuery(() => queries.system());
 	const report = $derived(auditMachine(prefetched(system)));

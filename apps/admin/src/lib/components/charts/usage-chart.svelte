@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { BarChart } from "layerchart";
 	import { useIntlayer } from "svelte-intlayer";
-	import * as Chart from "$lib/components/ui/chart/index.js";
-	import { useFormat } from "$lib/i18n/use-format";
+	import * as Chart from "#lib/components/ui/chart/index.js";
+	import { useFormat } from "#lib/i18n/use-format.js";
 
 	/** Stacked input/output tokens per day. Days without calls are simply absent. */
 	let {

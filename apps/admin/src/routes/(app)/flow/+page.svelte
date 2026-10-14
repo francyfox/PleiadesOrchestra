@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
+	import RequestsFilters from "#lib/components/flow/requests-filters.svelte";
+	import RequestsTable from "#lib/components/flow/requests-table.svelte";
+	import { type RequestFilters, requestsHref } from "#lib/flow-filters.js";
+	import { useLiveQuery } from "#lib/live/use-live-query.svelte.js";
+	import { DEFAULT_PAGE_SIZE } from "#lib/pagination.js";
 	import { goto } from "$app/navigation";
-	import RequestsFilters from "$lib/components/flow/requests-filters.svelte";
-	import RequestsTable from "$lib/components/flow/requests-table.svelte";
-	import { type RequestFilters, requestsHref } from "$lib/flow-filters";
-	import { useLiveQuery } from "$lib/live/use-live-query.svelte";
-	import { DEFAULT_PAGE_SIZE } from "$lib/pagination";
 
 	let { data } = $props();
 
@@ -30,7 +30,7 @@
 <RequestsFilters
 	{filters}
 	hrefFor={(change) => requestsHref(change)}
-	onNavigate={(href) => goto(href, { keepFocus: true })}
+	onNavigate={(href) => goto(href, { reset: false })}
 />
 
 <RequestsTable

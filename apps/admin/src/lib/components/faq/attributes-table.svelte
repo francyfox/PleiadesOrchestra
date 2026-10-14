@@ -6,7 +6,7 @@
 		tableFeatures,
 	} from "@tanstack/svelte-table";
 	import { useIntlayer } from "svelte-intlayer";
-	import DataTable from "$lib/components/data-table.svelte";
+	import DataTable from "#lib/components/data-table.svelte";
 
 	const content = useIntlayer("faq");
 

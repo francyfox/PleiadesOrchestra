@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { SystemSnapshot } from "$lib/system-types";
+import type { SystemSnapshot } from "#lib/system-types.js";
 import { loadLevel, snapshotLevels, worstLevel } from "./load-level";
 
 describe("loadLevel", () => {

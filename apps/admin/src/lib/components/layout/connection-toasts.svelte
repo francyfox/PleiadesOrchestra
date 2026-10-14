@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
 	import { toast } from "svelte-sonner";
-	import { onConnectionChange } from "$lib/live/connection";
+	import { onConnectionChange } from "#lib/live/connection.js";
 
 	/**
 	 * One persistent toast per problem while it lasts (the socket to the panel's

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { LineChart } from "layerchart";
 	import { useIntlayer } from "svelte-intlayer";
-	import * as Chart from "$lib/components/ui/chart/index.js";
-	import { useFormat } from "$lib/i18n/use-format";
+	import * as Chart from "#lib/components/ui/chart/index.js";
+	import { useFormat } from "#lib/i18n/use-format.js";
 
 	/** p50/p90/p99 latency per day for one call kind. Days without calls are absent. */
 	let {

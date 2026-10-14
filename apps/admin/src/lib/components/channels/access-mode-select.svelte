@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import type { AccessMode } from "$lib/api-types";
+	import type { AccessMode } from "#lib/api-types.js";
 
 	let { id, value = "open" }: { id: string; value?: AccessMode } = $props();
 

@@ -1,6 +1,6 @@
 import { type Dictionary, insert, t } from "intlayer";
 
-/** All text of the Lighthouse-style hardware audit (logic: $lib/system/audit.ts). */
+/** All text of the Lighthouse-style hardware audit (logic: #lib/system/audit.ts). */
 const recommendationsContent = {
 	key: "recommendations",
 	content: {

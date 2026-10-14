@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import type { CallKind, PerformanceReport } from "$lib/api-types";
-	import * as Card from "$lib/components/ui/card/index.js";
-	import { useFormat } from "$lib/i18n/use-format";
+	import type { CallKind, PerformanceReport } from "#lib/api-types.js";
+	import * as Card from "#lib/components/ui/card/index.js";
+	import { useFormat } from "#lib/i18n/use-format.js";
 
 	/** One card per call kind: period-wide p50 plus p90/p99, volume and tok/s. */
 	let {

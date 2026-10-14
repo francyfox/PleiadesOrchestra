@@ -6,8 +6,8 @@
 		tableFeatures,
 	} from "@tanstack/svelte-table";
 	import { useIntlayer } from "svelte-intlayer";
-	import type { McpParam, McpTool } from "$lib/api-types";
-	import DataTable from "$lib/components/data-table.svelte";
+	import type { McpParam, McpTool } from "#lib/api-types.js";
+	import DataTable from "#lib/components/data-table.svelte";
 
 	/** The functions of one site: name, what it does, and each parameter with its type and allowed values. */
 	let { tools }: { tools: McpTool[] } = $props();

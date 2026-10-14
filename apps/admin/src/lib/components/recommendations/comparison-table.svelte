@@ -5,14 +5,14 @@
 		tableFeatures,
 	} from "@tanstack/svelte-table";
 	import { useIntlayer } from "svelte-intlayer";
-	import DataTable from "$lib/components/data-table.svelte";
-	import * as Card from "$lib/components/ui/card/index.js";
-	import { useFormat } from "$lib/i18n/use-format";
+	import DataTable from "#lib/components/data-table.svelte";
+	import * as Card from "#lib/components/ui/card/index.js";
+	import { useFormat } from "#lib/i18n/use-format.js";
 	import {
 		type ComparisonRow,
 		IDEAL_MACHINE,
 		type Vendor,
-	} from "$lib/system/audit";
+	} from "#lib/system/audit.js";
 
 	/** This machine vs the reference, metric by metric. */
 	let { rows }: { rows: ComparisonRow[] } = $props();

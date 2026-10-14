@@ -8,7 +8,7 @@
 		"dev": "bun --watch src/index.ts",
 		"start": "bun src/index.ts",
 		"test": "bun test",
-		"check-types": "tsc --noEmit",
+		"check-types": "bun check",
 		"lint": "biome check ."
 	},
 	"dependencies": {

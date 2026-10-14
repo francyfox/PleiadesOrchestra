@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import type { RequestNode } from "$lib/api-types";
-	import { formatGoal } from "$lib/goap-facts";
-	import { useFormat } from "$lib/i18n/use-format";
+	import type { RequestNode } from "#lib/api-types.js";
+	import { formatGoal } from "#lib/goap-facts.js";
+	import { useFormat } from "#lib/i18n/use-format.js";
 
 	/** Everything the BFF knows about one node: arguments, the tool's answer, effects, model calls. */
 	let { node }: { node: RequestNode } = $props();

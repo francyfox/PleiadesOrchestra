@@ -1,12 +1,12 @@
 <script lang="ts">
 	import PlusIcon from "@lucide/svelte/icons/plus";
 	import { useIntlayer } from "svelte-intlayer";
-	import { channelActions } from "$lib/actions";
-	import FormField from "$lib/components/form-field.svelte";
-	import { Button } from "$lib/components/ui/button/index.js";
-	import * as Dialog from "$lib/components/ui/dialog/index.js";
-	import { Label } from "$lib/components/ui/label/index.js";
-	import { Textarea } from "$lib/components/ui/textarea/index.js";
+	import { channelActions } from "#lib/actions.js";
+	import FormField from "#lib/components/form-field.svelte";
+	import { Button } from "#lib/components/ui/button/index.js";
+	import * as Dialog from "#lib/components/ui/dialog/index.js";
+	import { Label } from "#lib/components/ui/label/index.js";
+	import { Textarea } from "#lib/components/ui/textarea/index.js";
 	import AccessModeSelect from "./access-mode-select.svelte";
 	import { useChannelEnhance } from "./use-channel-enhance";
 

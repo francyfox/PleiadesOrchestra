@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { createQuery } from "@tanstack/svelte-query";
 	import { useIntlayer } from "svelte-intlayer";
+	import BlockIpDialog from "#lib/components/blocked-ips/block-ip-dialog.svelte";
+	import BlockedIpsTable from "#lib/components/blocked-ips/blocked-ips-table.svelte";
+	import { useLiveQuery } from "#lib/live/use-live-query.svelte.js";
+	import { DEFAULT_PAGE_SIZE } from "#lib/pagination.js";
+	import { prefetched } from "#lib/query/prefetch.js";
+	import { queries } from "#lib/query/queries.js";
 	import { page } from "$app/state";
-	import BlockIpDialog from "$lib/components/blocked-ips/block-ip-dialog.svelte";
-	import BlockedIpsTable from "$lib/components/blocked-ips/blocked-ips-table.svelte";
-	import { useLiveQuery } from "$lib/live/use-live-query.svelte";
-	import { DEFAULT_PAGE_SIZE } from "$lib/pagination";
-	import { prefetched } from "$lib/query/prefetch";
-	import { queries } from "$lib/query/queries";
 
 	let { data } = $props();
 

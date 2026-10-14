@@ -13,29 +13,29 @@
 		tableFeatures,
 	} from "@tanstack/svelte-table";
 	import { useIntlayer } from "svelte-intlayer";
-	import { goto } from "$app/navigation";
-	import type { AdminUser } from "$lib/api-types";
-	import CopyValue from "$lib/components/copy-value.svelte";
-	import DataTable from "$lib/components/data-table.svelte";
-	import SortHeader from "$lib/components/sort-header.svelte";
-	import StatusBadge from "$lib/components/status-badge.svelte";
-	import { Checkbox } from "$lib/components/ui/checkbox/index.js";
-	import BulkActionsBar from "$lib/components/users/bulk-actions-bar.svelte";
-	import UserNameCell from "$lib/components/users/user-name-cell.svelte";
-	import UserRowActions from "$lib/components/users/user-row-actions.svelte";
-	import UsersFilters from "$lib/components/users/users-filters.svelte";
-	import UsersPagination from "$lib/components/users/users-pagination.svelte";
-	import { useFormat } from "$lib/i18n/use-format";
-	import { whoisUrl } from "$lib/ip";
-	import { useLiveQuery } from "$lib/live/use-live-query.svelte";
-	import { prefetched } from "$lib/query/prefetch";
-	import { queries } from "$lib/query/queries";
+	import type { AdminUser } from "#lib/api-types.js";
+	import CopyValue from "#lib/components/copy-value.svelte";
+	import DataTable from "#lib/components/data-table.svelte";
+	import SortHeader from "#lib/components/sort-header.svelte";
+	import StatusBadge from "#lib/components/status-badge.svelte";
+	import { Checkbox } from "#lib/components/ui/checkbox/index.js";
+	import BulkActionsBar from "#lib/components/users/bulk-actions-bar.svelte";
+	import UserNameCell from "#lib/components/users/user-name-cell.svelte";
+	import UserRowActions from "#lib/components/users/user-row-actions.svelte";
+	import UsersFilters from "#lib/components/users/users-filters.svelte";
+	import UsersPagination from "#lib/components/users/users-pagination.svelte";
+	import { useFormat } from "#lib/i18n/use-format.js";
+	import { whoisUrl } from "#lib/ip.js";
+	import { useLiveQuery } from "#lib/live/use-live-query.svelte.js";
+	import { prefetched } from "#lib/query/prefetch.js";
+	import { queries } from "#lib/query/queries.js";
 	import {
 		sortingFromState,
 		toUsersQuery,
 		usersStateToSearch,
 		withSorting,
-	} from "$lib/users-table-state";
+	} from "#lib/users-table-state.js";
+	import { goto } from "$app/navigation";
 
 	let { data } = $props();
 
@@ -147,8 +147,7 @@
 				withSorting(data.state, next),
 			).toString();
 			goto(search ? `/users?${search}` : "/users", {
-				keepFocus: true,
-				noScroll: true,
+				reset: false,
 			});
 		},
 		onRowSelectionChange: setRowSelection,

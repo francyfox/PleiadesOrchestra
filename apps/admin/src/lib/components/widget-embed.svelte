@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import CodeBlock from "$lib/components/code-block.svelte";
-	import * as Tabs from "$lib/components/ui/tabs/index.js";
+	import CodeBlock from "#lib/components/code-block.svelte";
+	import * as Tabs from "#lib/components/ui/tabs/index.js";
 	import {
 		buildEmbedSnippetForMethod,
 		buildInstallSnippet,
 		type EmbedMethod,
-	} from "$lib/embed-snippet";
+	} from "#lib/embed-snippet.js";
 
 	let {
 		publishableKey = "pk_YOUR_PUBLIC_KEY",

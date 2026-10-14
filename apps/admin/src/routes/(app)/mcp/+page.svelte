@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
+	import McpSitesTable from "#lib/components/mcp/mcp-sites-table.svelte";
+	import { useLiveQuery } from "#lib/live/use-live-query.svelte.js";
 	import { goto } from "$app/navigation";
-	import McpSitesTable from "$lib/components/mcp/mcp-sites-table.svelte";
-	import { useLiveQuery } from "$lib/live/use-live-query.svelte";
 
 	const content = useIntlayer("mcp");
 	const live = useLiveQuery("mcp", () => ({}));

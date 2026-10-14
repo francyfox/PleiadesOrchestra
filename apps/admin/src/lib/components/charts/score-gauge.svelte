@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import { scoreClass } from "$lib/system/audit";
+	import { scoreClass } from "#lib/system/audit.js";
 
 	/** Lighthouse-style ring: 0..100, red < 50, orange < 90, green otherwise. */
 	let {

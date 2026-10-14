@@ -1,6 +1,6 @@
 import { treaty } from "@elysiajs/eden";
 import type { App } from "admin-api";
-import { reportConnection } from "$lib/live/connection";
+import { reportConnection } from "#lib/live/connection.js";
 import { withConnectionReport } from "./report-connection";
 
 /**

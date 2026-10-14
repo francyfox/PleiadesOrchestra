@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import type { Channel } from "$lib/api-types";
-	import { Button } from "$lib/components/ui/button/index.js";
-	import { Input } from "$lib/components/ui/input/index.js";
-	import type { UsersTableState } from "$lib/users-table-state";
+	import type { Channel } from "#lib/api-types.js";
+	import { Button } from "#lib/components/ui/button/index.js";
+	import { Input } from "#lib/components/ui/input/index.js";
+	import type { UsersTableState } from "#lib/users-table-state.js";
 
 	/** GET form: filters live in the URL, the server loads the matching page. */
 	let { state, channels }: { state: UsersTableState; channels: Channel[] } =
