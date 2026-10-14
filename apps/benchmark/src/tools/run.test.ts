@@ -61,29 +61,13 @@ describe("extractArguments", () => {
 });
 
 describe("rowsFor", () => {
-	test("splits results by language", () => {
+	test("one row per model and mode, over every result", () => {
 		const results = [
-			{
-				id: "a.en",
-				lang: "en" as const,
-				ok: true,
-				valid: true,
-				latencyMs: 10,
-				actual: {},
-			},
-			{
-				id: "a.ru",
-				lang: "ru" as const,
-				ok: false,
-				valid: true,
-				latencyMs: 30,
-				actual: {},
-			},
+			{ id: "a", ok: true, valid: true, latencyMs: 10, actual: {} },
+			{ id: "b", ok: false, valid: true, latencyMs: 30, actual: {} },
 		];
-		const rows = rowsFor("m", "schema", results, ["en", "ru"]);
-		expect(rows.map((row) => [row.lang, row.summary.accuracy])).toEqual([
-			["en", 1],
-			["ru", 0],
-		]);
+		const [row] = rowsFor("m", "schema", results);
+		expect(row?.summary.cases).toBe(2);
+		expect(row?.summary.accuracy).toBe(0.5);
 	});
 });

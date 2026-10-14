@@ -15,7 +15,7 @@ that work only; they do not change the license of this project's own code.
 Code included or ported in this repository
 --------------------------------------------------------------------------------
 
-apps/snake-benchmark
+apps/benchmark/src/snake
   Ported from mizorewww/laya-mlx (laya_mlx/snake/game.py, policy.py).
   Copyright the laya-mlx authors. Licensed under the Apache License 2.0,
   https://www.apache.org/licenses/LICENSE-2.0

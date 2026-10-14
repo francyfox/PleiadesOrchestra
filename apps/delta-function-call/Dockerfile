@@ -8,7 +8,8 @@ COPY packages/llama-runtime/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # The model downloads on first start into the /models volume (compose.yml).
-# Picked by apps/tools-benchmark; change MODEL_URL to switch (any GGUF with a chat template).
+# Change MODEL_URL to switch (any GGUF with a chat template); apps/benchmark
+# measures this model and a test fails until its DELTA_MODEL is changed too.
 ENV PORT=8080
 ENV MODEL_PATH=/models/model.gguf
 ENV MODEL_URL="https://huggingface.co/Qwen/Qwen3-1.7B-GGUF/resolve/main/Qwen3-1.7B-Q8_0.gguf"

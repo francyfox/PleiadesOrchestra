@@ -36,7 +36,7 @@ New feature = new directory, not a new file in a flat folder.
 
 Pipeline: llm output → `repair-arguments.ts` (fences/`<think>`/trailing commas/closing brackets/type coercion) → `validate-arguments.ts` (required/type/enum/items) → up to 2 correction attempts → `buildArguments` fallback → if still missing required field: step fails (`toolResult:<tool> = false`).
 
-Facts named like a parameter are merged OVER delta's answer (`argumentsFor`). Only string/number facts reach the model (no planner flags); only the last *search* answer is shown. Qwen3 thinking is off (`enable_thinking=false`). A non-English message is replaced by `userMessageEn`.
+Facts named like a parameter are merged OVER delta's answer (`argumentsFor`). Only string/number facts reach the model (no planner flags); only the last *search* answer is shown. Qwen3 thinking is off (`enable_thinking=false`). The model reads `userMessageEn`; a non-English message without a translation (no translator, or it failed) skips delta — `buildArguments` only.
 
 Delta is always called even if facts already look valid — `search_products` has real filters (`department`, `dietary`, `max_price`) that need NL understanding; filter accuracy is worth the ~1.6 s per call.
 

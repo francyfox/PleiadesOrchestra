@@ -44,7 +44,7 @@ function enumGrounded(
  * fills every field it is shown ("department": "Frozen" for an apple,
  * "max_price": 100), and a filter the shopper never asked for silently empties
  * the results — so each optional enum, number and enum-list must be backed by
- * words of the request (measured in `apps/tools-benchmark`: 0.50 → 0.71
+ * words of the request (measured in `apps/benchmark` (tools): 0.50 → 0.71
  * accuracy together with the v2 prompt). Required fields are never touched.
  * Only English requests can be grounded this way; `request` is what the model
  * was given.

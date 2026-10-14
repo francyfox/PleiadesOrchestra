@@ -14,6 +14,7 @@ export type {
 	DecisionQuestion,
 } from "./decision-types";
 export type {
+	ChatMessage,
 	FunctionCallAgent,
 	FunctionCallAgentConfig,
 	FunctionCallRequest,
@@ -22,6 +23,7 @@ export type {
 export {
 	createFunctionCallAgent,
 	FUNCTION_CALL_SYSTEM_PROMPT,
+	functionCallMessages,
 } from "./function-call-agent";
 export type {
 	ActionContext,

@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
 	createFunctionCallAgent,
 	FUNCTION_CALL_SYSTEM_PROMPT,
+	functionCallMessages,
 } from "./function-call-agent.ts";
 import type { LlmCallRecord } from "./types.ts";
 
@@ -220,30 +221,42 @@ describe("createFunctionCallAgent", () => {
 			enable_thinking: false,
 		});
 	});
+});
 
-	test("a request in another language is replaced by a pointer to the facts, but numbers in it still ground the arguments", async () => {
-		const tool = {
-			name: "search_products",
-			inputSchema: {
-				type: "object" as const,
-				properties: {
-					query: { type: "string" },
-					max_price: { type: "number" },
-				},
-				required: ["query"],
-			},
-		};
-		const { agent, calls } = setup(() =>
-			completion('{"query":"rice","max_price":3}'),
-		);
-		const args = await agent.fillArguments({
-			tool,
-			facts: { query: "rice" },
-			request: "найди рис дешевле 3 долларов",
+describe("functionCallMessages", () => {
+	// apps/benchmark measures exactly these messages, so they are one export.
+	test("the system rules, then one user message with tool, facts, last answer and request", () => {
+		const [system, user, ...rest] = functionCallMessages({
+			tool: SEARCH,
+			facts: { quantity: 2 },
+			lastAnswer: "- Wool Socks — in stock",
+			request: "two pairs of socks",
 		});
-		expect(userPrompt(calls[0]?.body)).toContain("(not in English");
-		expect(userPrompt(calls[0]?.body)).not.toContain("рис");
-		expect(args).toEqual({ query: "rice", max_price: 3 });
+		expect(rest).toHaveLength(0);
+		expect(system).toEqual({
+			role: "system",
+			content: FUNCTION_CALL_SYSTEM_PROMPT,
+		});
+		expect(user?.role).toBe("user");
+		expect(user?.content).toBe(
+			[
+				"Tool: search_products",
+				"What it does: Search the catalog",
+				'Known facts: {"quantity":2}',
+				"Last tool answer:",
+				"- Wool Socks — in stock",
+				"Request: two pairs of socks",
+			].join("\n"),
+		);
+	});
+
+	test("no last answer is marked absent", () => {
+		const user = functionCallMessages({
+			tool: SEARCH,
+			facts: {},
+			request: "find socks",
+		})[1];
+		expect(user?.content).toContain("Last tool answer:\n(none)");
 	});
 });
 

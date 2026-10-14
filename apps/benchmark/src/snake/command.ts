@@ -1,90 +1,118 @@
 import { cpus, totalmem } from "node:os";
-import { parseArgs } from "node:util";
+import { defineCommand, option } from "@bunli/core";
+import { z } from "zod";
 import { SnakeGame } from "./game.ts";
 import { loadLaya } from "./laya.ts";
 import { type Decision, decide, type PromptStyle } from "./policy.ts";
 import { summarize } from "./stats.ts";
 import { renderFrame } from "./ui.ts";
 
-const USAGE = `snake-benchmark — Laya (in-process ONNX) driving Snake, measuring decision latency.
+// Laya (in-process ONNX) driving Snake, measuring decision latency.
+//
+//   bun snake [--headless] [--steps N] [--threads 1,2,4] [--prompt compact|detailed] …
+//
+// Live mode draws the board in the terminal (q quits, space pauses);
+// --headless only measures and prints a summary.
 
-  bun src/index.ts [options]
+const count = (fallback: number) =>
+	z.coerce.number().int().min(0).default(fallback);
 
-  --headless            no terminal UI, just measure and print a summary
-  --steps N             measured decisions per thread setting (default 200)
-  --warmup N            unmeasured decisions after loading (default 5)
-  --threads LIST        onnxruntime intra-op threads to compare, e.g. 1,2,4,6,12
-                        (0 = onnxruntime default; default "0"). Live mode uses the first.
-  --prompt STYLE        compact | detailed (default compact)
-  --unassisted          execute the model's raw first choice, no safety shield
-  --fps N               live mode pacing cap (default: as fast as inference allows)
-  --output FILE         write the JSON report there (refuses to overwrite)
-  --width/--height N    board size (default 24x16; >= 4, one dimension even)
-  --seed N              first game's seed (default 7); each new game uses seed+1
-  --initial-length N    starting snake length (default 6)
-  --repo ID             Hugging Face repo of the ONNX bundle (default receptron/laya-onnx)
-  --model-dir DIR       local bundle instead of the cache/Hub
-`;
+type Config = {
+	width: number;
+	height: number;
+	seed: number;
+	initialLength: number;
+	steps: number;
+	warmup: number;
+	threads: number[];
+	prompt: PromptStyle;
+	guarded: boolean;
+	fps: number | undefined;
+	repo: string;
+	modelDir: string | undefined;
+};
 
-const { values: args } = parseArgs({
+export default defineCommand({
+	name: "snake",
+	description: "Laya: decision latency, playing Snake",
 	options: {
-		headless: { type: "boolean", default: false },
-		steps: { type: "string", default: "200" },
-		warmup: { type: "string", default: "5" },
-		threads: { type: "string", default: "0" },
-		prompt: { type: "string", default: "compact" },
-		unassisted: { type: "boolean", default: false },
-		fps: { type: "string" },
-		output: { type: "string" },
-		width: { type: "string", default: "24" },
-		height: { type: "string", default: "16" },
-		seed: { type: "string", default: "7" },
-		"initial-length": { type: "string", default: "6" },
-		repo: { type: "string", default: "receptron/laya-onnx" },
-		"model-dir": { type: "string" },
-		help: { type: "boolean", short: "h", default: false },
+		headless: option(z.boolean().default(false), {
+			description: "No terminal UI, just measure and print a summary",
+			argumentKind: "flag",
+		}),
+		steps: option(count(200), {
+			description: "Measured decisions per thread setting",
+		}),
+		warmup: option(count(5), {
+			description: "Unmeasured decisions after loading",
+		}),
+		threads: option(
+			z
+				.string()
+				.default("4")
+				.transform((value) => value.split(",").map(Number))
+				.pipe(z.array(z.number().int().min(0)).min(1)),
+			{
+				description:
+					"onnxruntime intra-op threads to compare, e.g. 1,2,4,6 (0 = onnxruntime's default; default 4). Live mode uses the first",
+			},
+		),
+		prompt: option(z.enum(["compact", "detailed"]).default("compact"), {
+			description: "compact | detailed",
+		}),
+		unassisted: option(z.boolean().default(false), {
+			description: "Execute the model's raw first choice, no safety shield",
+			argumentKind: "flag",
+		}),
+		fps: option(z.coerce.number().int().min(1).optional(), {
+			description:
+				"Live mode pacing cap (default: as fast as inference allows)",
+		}),
+		output: option(z.string().optional(), {
+			description: "Write the JSON report there (refuses to overwrite)",
+		}),
+		width: option(count(24), { description: "Board width (>= 4)" }),
+		height: option(count(16), {
+			description: "Board height (>= 4, one dimension even)",
+		}),
+		seed: option(count(7), {
+			description: "First game's seed; each new game uses seed+1",
+		}),
+		"initial-length": option(count(6), {
+			description: "Starting snake length",
+		}),
+		repo: option(z.string().default("receptron/laya-onnx"), {
+			description: "Hugging Face repo of the ONNX bundle",
+		}),
+		"model-dir": option(z.string().optional(), {
+			description: "Local bundle instead of the cache/Hub",
+		}),
+	},
+	handler: async ({ flags }) => {
+		if (flags.output && (await Bun.file(flags.output).exists())) {
+			throw new Error(`${flags.output} already exists — not overwriting`);
+		}
+		const config: Config = {
+			width: flags.width,
+			height: flags.height,
+			seed: flags.seed,
+			initialLength: flags["initial-length"],
+			steps: flags.steps,
+			warmup: flags.warmup,
+			threads: flags.threads,
+			prompt: flags.prompt,
+			guarded: !flags.unassisted,
+			fps: flags.fps,
+			repo: flags.repo,
+			modelDir: flags["model-dir"],
+		};
+		if (flags.headless) await runHeadless(config, flags.output);
+		else await runLive(config);
 	},
 });
 
-if (args.help) {
-	console.log(USAGE);
-	process.exit(0);
-}
-
-const int = (name: string, value: string | undefined) => {
-	const n = Number(value);
-	if (!Number.isInteger(n) || n < 0) {
-		console.error(`--${name} must be a non-negative integer`);
-		process.exit(2);
-	}
-	return n;
-};
-if (args.prompt !== "compact" && args.prompt !== "detailed") {
-	console.error("--prompt must be compact or detailed");
-	process.exit(2);
-}
-const config = {
-	width: int("width", args.width),
-	height: int("height", args.height),
-	seed: int("seed", args.seed),
-	initialLength: int("initial-length", args["initial-length"]),
-	steps: int("steps", args.steps),
-	warmup: int("warmup", args.warmup),
-	threads: (args.threads ?? "0").split(",").map((t) => int("threads", t)),
-	prompt: args.prompt as PromptStyle,
-	guarded: !args.unassisted,
-	fps: args.fps === undefined ? undefined : int("fps", args.fps),
-	repo: args.repo ?? "receptron/laya-onnx",
-	modelDir: args["model-dir"],
-};
-
-if (args.output && (await Bun.file(args.output).exists())) {
-	console.error(`${args.output} already exists — not overwriting`);
-	process.exit(2);
-}
-
 /** Plays games back to back (new seed after a death or a full board). */
-function games() {
+function games(config: Config) {
 	let seed = config.seed;
 	let game = newGame(seed);
 	function newGame(s: number) {
@@ -113,7 +141,7 @@ function games() {
 	};
 }
 
-async function runHeadless() {
+async function runHeadless(config: Config, output: string | undefined) {
 	const results = [];
 	for (const threads of config.threads) {
 		process.stderr.write(
@@ -126,7 +154,7 @@ async function runHeadless() {
 		});
 		process.stderr.write(`${(laya.loadMs / 1000).toFixed(1)}s, warming up… `);
 
-		const play = games();
+		const play = games(config);
 		const options = { guarded: config.guarded, prompt: config.prompt };
 		for (let i = 0; i < config.warmup; i++) {
 			play.advance(await decide(laya.decide, play.current, options));
@@ -201,13 +229,13 @@ async function runHeadless() {
 			deaths: r.deaths,
 		})),
 	);
-	if (args.output) {
-		await Bun.write(args.output, `${JSON.stringify(report, null, "\t")}\n`);
-		console.log(`report: ${args.output}`);
+	if (output) {
+		await Bun.write(output, `${JSON.stringify(report, null, "\t")}\n`);
+		console.log(`report: ${output}`);
 	}
 }
 
-async function runLive() {
+async function runLive(config: Config) {
 	const color = !process.env.NO_COLOR;
 	const threads = config.threads[0] ?? 0;
 	process.stdout.write("loading Laya (in-process)…\n");
@@ -232,7 +260,7 @@ async function runLive() {
 	});
 	process.stdout.write("\x1b[?1049h\x1b[?25l");
 
-	const play = games();
+	const play = games(config);
 	const recent: number[] = [];
 	let last: Decision | null = null;
 	const minFrameMs = config.fps ? 1000 / config.fps : 0;
@@ -268,6 +296,3 @@ async function runLive() {
 	}
 	process.exit(0);
 }
-
-if (args.headless) await runHeadless();
-else await runLive();

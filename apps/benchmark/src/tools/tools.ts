@@ -1,3 +1,5 @@
+import type { FunctionCallTool } from "@repo/core";
+
 /**
  * The Basketful demo's tools (apps/shopping-cart-webmcp/src/tools/definitions.js),
  * as `document.modelContext` lists them: name, description, JSON-schema input.
@@ -6,7 +8,7 @@
 export interface ToolSpec {
 	name: string;
 	description: string;
-	inputSchema: Record<string, unknown>;
+	inputSchema: FunctionCallTool["inputSchema"];
 }
 
 const STORES = ["Greenleaf Market", "Harbor Foods Co-op", "Penny Pantry"];

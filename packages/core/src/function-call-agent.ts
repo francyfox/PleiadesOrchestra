@@ -53,7 +53,7 @@ export interface FunctionCallAgentConfig {
 }
 
 /**
- * The rules of the job, picked with `apps/tools-benchmark` (prompt v2: worked
+ * The rules of the job, picked with `apps/benchmark` (tools) (prompt v2: worked
  * examples per kind of call; with the schema-constrained decoding and
  * `groundArguments` below it filled 71% of the benchmark cases exactly).
  */
@@ -83,29 +83,31 @@ interface Completion {
 	usage?: { prompt_tokens?: number; completion_tokens?: number };
 }
 
-/**
- * The 1.7B model copies words of a non-English request into the arguments
- * ("сыр" for a catalog that says "cheese") even when the known facts hold the
- * English ones (measured on delta, 2026-10-02), so it is not shown such a
- * request at all — the facts carry what the shopper wants.
- */
-const NOT_ENGLISH = /(?!\p{Script=Latin})\p{L}/u;
-const SEE_FACTS = "(not in English: use the known facts)";
+export interface ChatMessage {
+	role: "system" | "user" | "assistant";
+	content: string;
+}
 
-function userMessage(request: FunctionCallRequest): string {
-	return [
+/**
+ * The first two messages delta gets for a tool call: the rules, then tool,
+ * known facts, last answer and request. Exported so `apps/benchmark` (tools)
+ * measures exactly what production sends.
+ */
+export function functionCallMessages(
+	request: FunctionCallRequest,
+): ChatMessage[] {
+	const user = [
 		`Tool: ${request.tool.name}`,
 		`What it does: ${request.tool.description ?? ""}`,
 		`Known facts: ${JSON.stringify(request.facts)}`,
 		"Last tool answer:",
 		request.lastAnswer ?? "(none)",
-		`Request: ${NOT_ENGLISH.test(request.request) ? SEE_FACTS : request.request}`,
+		`Request: ${request.request}`,
 	].join("\n");
-}
-
-interface ChatMessage {
-	role: "system" | "user" | "assistant";
-	content: string;
+	return [
+		{ role: "system", content: FUNCTION_CALL_SYSTEM_PROMPT },
+		{ role: "user", content: user },
+	];
 }
 
 /** Corrections the model gets after its first answer: temperature 0 would repeat itself, so the problems go back with it. */
@@ -158,10 +160,7 @@ export function createFunctionCallAgent(
 	return {
 		async fillArguments(request) {
 			const schema = request.tool.inputSchema;
-			const messages: ChatMessage[] = [
-				{ role: "system", content: FUNCTION_CALL_SYSTEM_PROMPT },
-				{ role: "user", content: userMessage(request) },
-			];
+			const messages = functionCallMessages(request);
 			let lastProblem = "";
 			for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
 				const startedAt = Date.now();

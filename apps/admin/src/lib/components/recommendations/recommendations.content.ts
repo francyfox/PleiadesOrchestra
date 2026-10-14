@@ -138,13 +138,13 @@ const recommendationsContent = {
 				}),
 				description: t({
 					ru: insert(
-						"SMT удваивает число логических потоков, но они делят вычислительные блоки ядра. Для onnxruntime и llama.cpp ставьте число потоков по физическим ядрам ({{physical}}), а не по логическим ({{logical}}) — лишние потоки мешают друг другу. Пример замера (apps/snake-benchmark, 6 ядер/12 потоков): Laya p50 382 мс на 6 потоках против 564 мс на 12.",
+						"SMT удваивает число логических потоков, но они делят вычислительные блоки ядра. Для onnxruntime и llama.cpp ставьте число потоков по физическим ядрам ({{physical}}), а не по логическим ({{logical}}) — лишние потоки мешают друг другу. Пример замера (apps/benchmark, 6 ядер/12 потоков): Laya p50 382 мс на 6 потоках против 564 мс на 12.",
 					),
 					en: insert(
-						"SMT doubles the logical threads, but they share each core's execution units. Set onnxruntime and llama.cpp threads to the physical cores ({{physical}}), not the logical ones ({{logical}}) — extra threads get in each other's way. Example measurement (apps/snake-benchmark, 6 cores/12 threads): Laya p50 382 ms on 6 threads vs 564 ms on 12.",
+						"SMT doubles the logical threads, but they share each core's execution units. Set onnxruntime and llama.cpp threads to the physical cores ({{physical}}), not the logical ones ({{logical}}) — extra threads get in each other's way. Example measurement (apps/benchmark, 6 cores/12 threads): Laya p50 382 ms on 6 threads vs 564 ms on 12.",
 					),
 					kk: insert(
-						"SMT логикалық ағындар санын екі еселейді, бірақ олар ядроның есептеу блоктарын бөліседі. onnxruntime мен llama.cpp үшін ағындар санын логикалық ({{logical}}) емес, физикалық ядролар ({{physical}}) бойынша қойыңыз — артық ағындар бір-біріне кедергі келтіреді. Өлшеу мысалы (apps/snake-benchmark, 6 ядро/12 ағын): Laya p50 6 ағында 382 мс, 12 ағында 564 мс.",
+						"SMT логикалық ағындар санын екі еселейді, бірақ олар ядроның есептеу блоктарын бөліседі. onnxruntime мен llama.cpp үшін ағындар санын логикалық ({{logical}}) емес, физикалық ядролар ({{physical}}) бойынша қойыңыз — артық ағындар бір-біріне кедергі келтіреді. Өлшеу мысалы (apps/benchmark, 6 ядро/12 ағын): Laya p50 6 ағында 382 мс, 12 ағында 564 мс.",
 					),
 				}),
 			},

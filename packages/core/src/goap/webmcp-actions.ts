@@ -203,11 +203,18 @@ function lastSearchAnswer(
 	return last?.slice(0, MAX_ANSWER_CHARS);
 }
 
+/** Any letter that is not Latin: the message is not (only) English. */
+const NOT_ENGLISH = /(?!\p{Script=Latin})\p{L}/u;
+
 /**
  * Arguments for the browser call. The function-call model writes them when a
  * tool has parameters, merged under the facts that match parameter names
  * (`buildArguments`); no model, a failed call or an unusable answer falls back
  * to `buildArguments` alone — a missing model costs accuracy, not the run.
+ * The model only works in English: for a message left untranslated (no
+ * translator, or it failed) it is not called — shown the Russian request it
+ * copied Russian words into the arguments, and given only the facts instead it
+ * got 10% right (apps/benchmark, 2026-10-14), no better than the facts.
  */
 async function argumentsFor(
 	tool: WebMcpToolDescriptor,
@@ -218,7 +225,12 @@ async function argumentsFor(
 ): Promise<Record<string, unknown>> {
 	const schema = tool.inputSchema ?? { type: "object" as const };
 	const mechanical = () => buildArguments(state, schema);
-	if (!agent || Object.keys(schema.properties ?? {}).length === 0) {
+	const request = String(state.userMessageEn ?? state.userMessage ?? "");
+	if (
+		!agent ||
+		Object.keys(schema.properties ?? {}).length === 0 ||
+		NOT_ENGLISH.test(request)
+	) {
 		return mechanical();
 	}
 	try {
@@ -230,7 +242,7 @@ async function argumentsFor(
 			},
 			facts: factsForModel(state),
 			lastAnswer: lastSearchAnswer(state, searchTools),
-			request: String(state.userMessageEn ?? state.userMessage ?? ""),
+			request,
 			context: {
 				threadId: String(state.threadId ?? ""),
 				userId: String(state.userId ?? ""),

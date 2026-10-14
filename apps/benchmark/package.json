@@ -1,19 +1,24 @@
 {
-	"name": "snake-benchmark",
+	"name": "benchmark",
 	"private": true,
 	"license": "AGPL-3.0-only",
 	"author": "Danil Golota",
 	"type": "module",
 	"scripts": {
 		"start": "bun src/index.ts",
-		"headless": "bun src/index.ts --headless",
-		"sweep": "bun src/index.ts --headless --steps 100 --threads 0,1,2,4,6,12",
+		"tools": "bun src/index.ts tools",
+		"snake": "bun src/index.ts snake",
+		"sweep": "bun src/index.ts snake --headless --steps 100 --threads 0,1,2,4,6,12",
 		"test": "bun test",
 		"check-types": "bun check",
 		"lint": "biome check ."
 	},
 	"dependencies": {
-		"@receptron/laya": "^0.1.0"
+		"@bunli/core": "catalog:",
+		"@bunli/utils": "catalog:",
+		"@receptron/laya": "^0.1.0",
+		"@repo/core": "workspace:*",
+		"zod": "catalog:"
 	},
 	"devDependencies": {
 		"@types/bun": "catalog:",

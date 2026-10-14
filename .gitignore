@@ -33,3 +33,6 @@ sh.err.*
 /apps/e2e/test-results/
 /apps/e2e/playwright-report/
 /apps/e2e/blob-report/
+
+# Benchmark runs (machine-specific; regenerate with `bun --cwd apps/<name> start --output results/…`)
+/apps/benchmark/results/

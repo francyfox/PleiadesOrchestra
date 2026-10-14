@@ -35,7 +35,7 @@ Turborepo monorepo (Bun workspaces), hexagonal style. **Naming**: PleiadesOrches
 - **`apps/pleiades-mcp`** — stdio MCP server exposing the orchestrator as Claude Code tools (`pleiades_list_sites`, `pleiades_site_task`). Not a compose service.
 - **`apps/gemini-webapi-mcp`** — Python/uv MCP server for Gemini web app (profile `gemini`, port 8765).
 - **`packages/core/src/telemetry.ts`** — structured telemetry (`logMessageEvent`/`logLlmState`, OpenTelemetry GenAI field names, JSON to stdout).
-- **`apps/snake-benchmark`** — Laya latency benchmark (not a service, not in compose).
+- **`apps/benchmark`** — every benchmark of the repo, one bunli CLI (not a service, not in compose): `bun start` shows a menu; `bun tools` = delta argument accuracy (English cases, delta's model only; a test keeps it equal to delta's `MODEL_URL`), `bun snake` = Laya latency. Both default to CPU, 4 threads (`tools --gpu` for Vulkan — only meaningful where the whole model fits in VRAM; the dev iGPU has 0.5 GB). Results go to `results/` (gitignored).
 - **Deployment**: local-only via `compose.yml`. Every published port is bound to `127.0.0.1` (orchestrator `3000`, beta-text `8181`, delta `8282`, gamma `8090` — the last three for standalone host runs; admin-api `3003`, admin panel `3002` when enabled). Public traffic goes through the `tunnel` service, which is opt-in (`docker compose --profile tunnel up -d tunnel`). SQLite DBs bind-mounted from `./data/<service>/`. Telegram bot webhook needs that tunnel.
 - **Dependency versions** in root `package.json` `workspaces.catalog` (Bun catalogs). Workspaces reference as `"catalog:"`. TypeScript is 6 everywhere.
 - **`apps/pleiades-plugin`** (WXT browser extension) is excluded from the workspace (`"!apps/pleiades-plugin"` in root `workspaces.packages`) — remove the negation when it should build with the rest.
@@ -51,6 +51,7 @@ The project is not built for a single shop. Sites may sell groceries, electronic
 
 ## Workflow
 
+- **Tasks `PO-N`** = GitHub issue #N in `francyfox/PleiadesOrchestra` (title starts with `PO-N:`). Read with `gh issue view N`.
 - **Test-first**: write the test before the implementation, then make it pass.
 - **Don't test the library**: for zod/t3-env schemas, only test transforms/logic you wrote. Don't assert that required fields throw or `.url()` rejects bad input — that tests zod, not the app.
 - **Env validation**: `@t3-oss/env-core` + `zod`. Don't build `createEnv(...)` at module top-level in files imported by tests. Split: a pure `buildConfig(env)` factory + a thin `export const config = buildConfig(process.env)` singleton that only runtime code imports.

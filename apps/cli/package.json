@@ -15,7 +15,7 @@
 		"lint": "biome check ."
 	},
 	"dependencies": {
-		"@bunli/core": "^0.9.1",
+		"@bunli/core": "catalog:",
 		"@repo/core": "workspace:*",
 		"zod": "catalog:"
 	},

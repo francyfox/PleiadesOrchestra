@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import type { Candidate } from "./models.ts";
+import { type Model, modelUrl } from "./models.ts";
 
 /** Same build as production beta-text (llama.cpp b11176, Vulkan), so the numbers carry over. */
 const IMAGE = "pleiades-orchestra-beta-text:latest";
@@ -18,12 +18,12 @@ async function run(command: string[]): Promise<{ ok: boolean; out: string }> {
 }
 
 /** Downloads the model once (resumable); returns its path inside `MODELS_DIR`. */
-export async function ensureModel(candidate: Candidate): Promise<string> {
+export async function ensureModel(model: Model): Promise<string> {
 	mkdirSync(MODELS_DIR, { recursive: true });
-	const path = join(MODELS_DIR, candidate.file);
+	const path = join(MODELS_DIR, model.file);
 	if (existsSync(path)) return path;
-	const url = `https://huggingface.co/${candidate.repo}/resolve/main/${candidate.file}`;
-	console.error(`downloading ${candidate.file} …`);
+	const url = modelUrl(model);
+	console.error(`downloading ${model.file} …`);
 	const partial = `${path}.part`;
 	const result = await run([
 		"curl",
@@ -56,11 +56,11 @@ export interface ServerOptions {
 
 /** Starts llama-server for the model in a container and waits until it answers. */
 export async function startServer(
-	candidate: Candidate,
+	model: Model,
 	options: ServerOptions,
 ): Promise<Server> {
-	await ensureModel(candidate);
-	const name = `tools-bench-${candidate.id}`;
+	await ensureModel(model);
+	const name = `tools-bench-${model.id}`;
 	await run(["docker", "rm", "-f", name]);
 	const started = await run([
 		"docker",
@@ -83,7 +83,7 @@ export async function startServer(
 		"/app/llama-server",
 		IMAGE,
 		"--model",
-		`/models/${candidate.file}`,
+		`/models/${model.file}`,
 		"--host",
 		"0.0.0.0",
 		"--port",

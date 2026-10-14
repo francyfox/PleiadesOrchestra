@@ -283,7 +283,7 @@ describe("tool arguments written by the function-call model", () => {
 
 		const outcome = await action.execute({
 			state: {
-				userMessage: "купи 1 сыр",
+				userMessage: "buy 1 cheese",
 				threadId: "t",
 				userId: "u",
 				planRunId: "p",
@@ -305,7 +305,7 @@ describe("tool arguments written by the function-call model", () => {
 			},
 		});
 		const [request] = agent.requests;
-		expect(request?.request).toBe("купи 1 сыр");
+		expect(request?.request).toBe("buy 1 cheese");
 		expect(request?.facts).toEqual({
 			query: "cheese",
 			quantity: 1,
@@ -430,6 +430,20 @@ describe("tool arguments written by the function-call model", () => {
 		});
 
 		expect(agent.requests[0]?.request).toBe("buy one cheese");
+	});
+
+	test("a message in another language without a translation: the model is not asked, the arguments come from the facts", async () => {
+		const agent = fakeFunctionCall({ query: "сыр" });
+		const action = await searchAction(agent);
+
+		const outcome = await action.execute({
+			state: { userMessage: "купи 1 сыр", query: "cheese" },
+		});
+
+		expect(agent.requests).toHaveLength(0);
+		expect(outcome).toMatchObject({
+			waiting: { payload: { arguments: { query: "cheese" } } },
+		});
 	});
 
 	test("a failed or unusable model answer falls back to arguments built from the facts", async () => {
