@@ -30,6 +30,14 @@ export function parseOrigins(value: FormDataEntryValue | null): string[] {
 		.filter(Boolean);
 }
 
+/** One entry per line, blanks dropped. */
+export function lines(value: FormDataEntryValue | null): string[] {
+	return String(value ?? "")
+		.split(/\r?\n/)
+		.map((line) => line.trim())
+		.filter(Boolean);
+}
+
 const accessMode = (form: FormData) =>
 	ACCESS_MODES.find((mode) => mode === form.get("accessMode"));
 
@@ -194,6 +202,20 @@ export const channelActions = {
 						? parseOrigins(form.get("allowedOrigins"))
 						: undefined,
 					catalogLanguage: text(form, "catalogLanguage") || undefined,
+				}),
+		),
+	savePersona: (form: FormData) =>
+		submitted(
+			api()
+				.channels({ id: text(form, "id") })
+				.persona.put({
+					botName: text(form, "botName"),
+					tone: text(form, "tone"),
+					instructions: String(form.get("instructions") ?? ""),
+					defaultLang: text(form, "defaultLang"),
+					greeting: text(form, "greeting"),
+					forbiddenTopics: lines(form.get("forbiddenTopics")),
+					handoffContact: text(form, "handoffContact"),
 				}),
 		),
 	toggle: (form: FormData) =>

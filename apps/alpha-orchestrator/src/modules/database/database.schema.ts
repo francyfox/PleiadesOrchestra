@@ -326,8 +326,33 @@ export const intentExamples = sqliteTable(
 	],
 );
 
+/**
+ * What the visitor meets: the bot's name, tone and limits, one row per channel
+ * (no row = the agent's built-in prompt). Only fills its own slots of the reply
+ * prompt (`buildReplyPrompt`); the fixed rules are not stored here.
+ */
+export const channelPersona = sqliteTable("channel_persona", {
+	channelId: text("channel_id")
+		.primaryKey()
+		.references(() => channels.id, { onDelete: "cascade" }),
+	botName: text("bot_name").notNull().default(""),
+	tone: text("tone").notNull().default(""),
+	// Multi-line role text; every persona column is an override ("" = standard default).
+	instructions: text("instructions").notNull().default(""),
+	// ISO 639-1 code the bot answers in; "" = the visitor's own language.
+	defaultLang: text("default_lang").notNull().default(""),
+	greeting: text("greeting").notNull().default(""),
+	forbiddenTopics: text("forbidden_topics", { mode: "json" })
+		.$type<string[]>()
+		.notNull()
+		.default([]),
+	handoffContact: text("handoff_contact").notNull().default(""),
+	updatedAt: integer("updated_at").notNull(),
+});
+
 export const schema = {
 	channels,
+	channelPersona,
 	users,
 	threads,
 	planRuns,

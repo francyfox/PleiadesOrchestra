@@ -1,9 +1,14 @@
 import type { Observability } from "@repo/elysia-kit";
 import type { AdminDirectory } from "./modules/admins/admins.service.ts";
 import type { Auth } from "./modules/auth/auth.ts";
+import type { ClientIpSource } from "./modules/client-ip/client-ip.service.ts";
 import type { AdminDb } from "./modules/database/database.ts";
 import type { LiveTopic } from "./modules/live/live.types.ts";
 import type { LiveHub } from "./modules/live-hub/live-hub.ts";
+import type {
+	LoginLimits,
+	LoginThrottle,
+} from "./modules/login-throttle/login-throttle.service.ts";
 import type { OrchestratorClient } from "./modules/orchestrator/orchestrator.ts";
 import type { SystemSnapshot } from "./modules/system/system.schema.ts";
 import type { SystemFeed } from "./modules/system-feed/system-feed.ts";
@@ -20,6 +25,10 @@ export interface AdminApiDeps {
 	systemStreamIntervalMs?: number;
 	/** Overrides of how often `/api/live` re-reads a topic (defaults in live-topics.ts); for tests. */
 	liveIntervalsMs?: Partial<Record<LiveTopic, number>>;
+	/** Where the client IP for login throttling and session records comes from (default: the socket). */
+	clientIp?: { source: ClientIpSource; hops: number };
+	/** Overrides of the login / registration limits (defaults in login-throttle.service.ts). */
+	loginLimits?: Partial<LoginLimits>;
 	now?: () => number;
 }
 
@@ -29,4 +38,6 @@ export type RouteDeps = AdminApiDeps & {
 	admins: AdminDirectory;
 	systemFeed: SystemFeed;
 	liveHub: LiveHub;
+	clientIp: { source: ClientIpSource; hops: number };
+	loginThrottle: LoginThrottle;
 };

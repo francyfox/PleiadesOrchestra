@@ -67,6 +67,7 @@ export class WidgetGuard {
 	private readonly tokenLimiter: FixedWindowLimiter;
 	private readonly ipLimiter: FixedWindowLimiter;
 	private readonly newVisitorLimiter: FixedWindowLimiter;
+	private readonly threadLimiter: FixedWindowLimiter;
 
 	constructor(private readonly deps: GuardDeps) {
 		const { options, now } = deps;
@@ -83,6 +84,11 @@ export class WidgetGuard {
 		);
 		this.newVisitorLimiter = new FixedWindowLimiter(
 			options.visitorsPerHourPerIp,
+			HOUR_MS,
+			now,
+		);
+		this.threadLimiter = new FixedWindowLimiter(
+			options.threadsPerHour,
 			HOUR_MS,
 			now,
 		);
@@ -157,6 +163,27 @@ export class WidgetGuard {
 			!this.tokenLimiter.hit(visitor.tokenHash) ||
 			(ipHash !== null && !this.ipLimiter.hit(ipHash));
 		return overLimit ? emptyResponse(429, origin) : null;
+	}
+
+	/** `429` when the visitor already created too many threads this hour. */
+	rejectIfTooManyThreads({ visitor, origin }: WidgetAuth): Response | null {
+		return this.threadLimiter.hit(visitor.tokenHash)
+			? null
+			: emptyResponse(429, origin);
+	}
+
+	/**
+	 * `413` when the request announces a body bigger than `maxBodyBytes`.
+	 * Runs before the body is read; `null` for paths other than the widget's.
+	 */
+	rejectIfBodyTooLarge(request: Request): Response | null {
+		const length = Number(request.headers.get("content-length"));
+		if (!(length > this.deps.options.maxBodyBytes)) return null;
+		const origin = request.headers.get("origin") ?? "";
+		return emptyResponse(
+			413,
+			this.deps.directory.isWebOrigin(origin) ? origin : undefined,
+		);
 	}
 
 	/** `429` when this IP already created too many visitor tokens this hour. */

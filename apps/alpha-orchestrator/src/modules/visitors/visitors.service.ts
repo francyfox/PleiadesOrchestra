@@ -1,6 +1,7 @@
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq, gt, sql } from "drizzle-orm";
 import { users, visitorTokens } from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
+import { prepared } from "../database/prepared.ts";
 import { randomToken, sha256Hex } from "../security/security.service.ts";
 import type { UserRow } from "../users/users.types.ts";
 
@@ -63,24 +64,36 @@ export function findVisitor(
 	now: number,
 ): Visitor | null {
 	const tokenHash = hashVisitorToken(token);
-	const row = db
-		.select({ user: users, channelId: visitorTokens.channelId })
-		.from(visitorTokens)
-		.innerJoin(users, eq(users.id, visitorTokens.userId))
-		.where(
-			and(
-				eq(visitorTokens.tokenHash, tokenHash),
-				gt(visitorTokens.expiresAt, now),
-			),
-		)
-		.get();
+	const row = prepared(db, "findVisitor", () =>
+		db
+			.select({ user: users, channelId: visitorTokens.channelId })
+			.from(visitorTokens)
+			.innerJoin(users, eq(users.id, visitorTokens.userId))
+			.where(
+				and(
+					eq(visitorTokens.tokenHash, sql.placeholder("tokenHash")),
+					gt(visitorTokens.expiresAt, sql.placeholder("now")),
+				),
+			)
+			.prepare(),
+	).get({ tokenHash, now });
 	return row ? { ...row, tokenHash } : null;
 }
 
 /**
+ * Writes for the same visitor closer together than this are skipped: a widget
+ * polls several endpoints per page view, and every touch is a writer-lock
+ * grab. The token TTL is 24 h, so a 60 s lag in `lastSeenAt`/`expiresAt` is
+ * invisible to admin views (they show minutes) and to expiry.
+ */
+export const TOUCH_COALESCE_MS = 60_000;
+
+/**
  * Marks the visitor as active: slides the token's expiry, bumps the user's
  * `lastSeenAt` (what the anonymous cleanup looks at) and records the client
- * IP when known. Returns the visitor as it is after the update.
+ * IP when known. Coalesced: if the user was seen less than
+ * `TOUCH_COALESCE_MS` ago and the IP is unchanged, nothing is written.
+ * Returns the visitor as it is after the call.
  */
 export function touchVisitor(
 	db: Db,
@@ -89,15 +102,36 @@ export function touchVisitor(
 	ttlMs: number,
 	ip: string | null,
 ): Visitor {
+	const recent = now - visitor.user.lastSeenAt < TOUCH_COALESCE_MS;
+	const sameIp = !ip || ip === visitor.user.lastIp;
+	if (recent && sameIp) return visitor;
+	const touchToken = prepared(db, "touchVisitor.token", () =>
+		db
+			.update(visitorTokens)
+			.set({
+				lastUsedAt: sql`${sql.placeholder("now")}`,
+				expiresAt: sql`${sql.placeholder("expiresAt")}`,
+			})
+			.where(eq(visitorTokens.tokenHash, sql.placeholder("tokenHash")))
+			.prepare(),
+	);
+	const touchUser = prepared(db, "touchVisitor.user", () =>
+		db
+			.update(users)
+			.set({
+				lastSeenAt: sql`${sql.placeholder("now")}`,
+				lastIp: sql`coalesce(${sql.placeholder("ip")}, ${users.lastIp})`,
+			})
+			.where(eq(users.id, sql.placeholder("userId")))
+			.prepare(),
+	);
 	db.$client.transaction(() => {
-		db.update(visitorTokens)
-			.set({ lastUsedAt: now, expiresAt: now + ttlMs })
-			.where(eq(visitorTokens.tokenHash, visitor.tokenHash))
-			.run();
-		db.update(users)
-			.set(ip ? { lastSeenAt: now, lastIp: ip } : { lastSeenAt: now })
-			.where(eq(users.id, visitor.user.id))
-			.run();
+		touchToken.run({
+			now,
+			expiresAt: now + ttlMs,
+			tokenHash: visitor.tokenHash,
+		});
+		touchUser.run({ now, ip, userId: visitor.user.id });
 	})();
 	return {
 		...visitor,

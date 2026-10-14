@@ -21,6 +21,8 @@ export interface IncomingMessage {
 	 * model was given a normalized or rewritten prompt. Defaults to the chunks.
 	 */
 	historyText?: string;
+	/** Replaces the agent's own system prompt for this message (a channel's persona, built by the caller). */
+	systemPrompt?: string;
 }
 
 /**

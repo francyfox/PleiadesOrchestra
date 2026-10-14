@@ -17,7 +17,7 @@ describe("admins", () => {
 			cookie,
 			body: { email: "b@example.com", password: "short" },
 		});
-		expect(await weak.json()).toEqual({ error: "weak_credentials", min: 8 });
+		expect(await weak.json()).toEqual({ error: "weak_credentials", min: 12 });
 
 		const created = await call("/api/admins", {
 			method: "POST",
@@ -90,7 +90,7 @@ describe("admins", () => {
 			cookie,
 			body: { password: "x" },
 		});
-		expect(await short.json()).toEqual({ error: "weak_password", min: 8 });
+		expect(await short.json()).toEqual({ error: "weak_password", min: 12 });
 
 		const ok = await call(`/api/admins/${admins[0].id}/password`, {
 			method: "POST",

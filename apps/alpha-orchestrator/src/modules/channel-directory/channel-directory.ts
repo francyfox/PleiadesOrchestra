@@ -1,6 +1,10 @@
 import type { ChannelRow } from "../channels/channels.types.ts";
 import { channels } from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
+import {
+	allReplyPrompts,
+	DEFAULT_REPLY_PROMPT,
+} from "../persona/persona.service.ts";
 
 /** Everything a request needs to find a channel quickly, built from one read of the table. */
 interface ChannelIndex {
@@ -9,14 +13,20 @@ interface ChannelIndex {
 	byPublishableKey: Map<string, ChannelRow>;
 	/** Origins of enabled web channels, for CORS preflights. */
 	webOrigins: Set<string>;
+	/** Reply system prompt built from each channel's persona (only channels with stored overrides). */
+	replyPrompts: Map<string, string>;
 }
 
-function buildIndex(rows: ChannelRow[]): ChannelIndex {
+function buildIndex(
+	rows: ChannelRow[],
+	replyPrompts: Map<string, string>,
+): ChannelIndex {
 	const index: ChannelIndex = {
 		bySlug: new Map(),
 		byId: new Map(),
 		byPublishableKey: new Map(),
 		webOrigins: new Set(),
+		replyPrompts,
 	};
 	for (const row of rows) {
 		index.bySlug.set(row.slug, row);
@@ -40,7 +50,10 @@ export class ChannelDirectory {
 	constructor(private readonly db: Db) {}
 
 	private current(): ChannelIndex {
-		this.index ??= buildIndex(this.db.select().from(channels).all());
+		this.index ??= buildIndex(
+			this.db.select().from(channels).all(),
+			allReplyPrompts(this.db),
+		);
 		return this.index;
 	}
 
@@ -63,6 +76,11 @@ export class ChannelDirectory {
 	 */
 	isWebOrigin(origin: string): boolean {
 		return this.current().webOrigins.has(origin);
+	}
+
+	/** The channel's reply system prompt (persona + fixed rules); the standard one for a channel without overrides. */
+	replyPrompt(channelId: string): string {
+		return this.current().replyPrompts.get(channelId) ?? DEFAULT_REPLY_PROMPT;
 	}
 
 	invalidate(): void {

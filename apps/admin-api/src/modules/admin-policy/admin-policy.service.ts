@@ -31,7 +31,7 @@ export function banRefusal({
 }
 
 /** Shortest password the panel accepts for an admin account. */
-export const MIN_PASSWORD = 8;
+export const MIN_PASSWORD = 12;
 
 export interface AccountCheck {
 	actorId: string;

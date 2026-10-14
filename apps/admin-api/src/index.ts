@@ -29,6 +29,15 @@ const app = createApp({
 		apiKey: config.ADMIN_API_KEY,
 	}),
 	trustedOrigins: config.ADMIN_TRUSTED_ORIGINS,
+	clientIp: {
+		source: config.CLIENT_IP_SOURCE,
+		hops: config.TRUSTED_PROXY_HOPS,
+	},
+	loginLimits: {
+		maxFailuresPerAccount: config.LOGIN_MAX_FAILURES_PER_ACCOUNT,
+		maxFailuresPerIp: config.LOGIN_MAX_FAILURES_PER_IP,
+		windowMinutes: config.LOGIN_LOCKOUT_MINUTES,
+	},
 	systemSnapshot,
 	systemStreamIntervalMs: config.SYSTEM_STREAM_INTERVAL_MS,
 });

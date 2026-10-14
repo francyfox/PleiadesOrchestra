@@ -7,6 +7,8 @@ import type {
 import type {
 	AccessMode,
 	Channel,
+	Persona,
+	PersonaView,
 	UpdateChannelInput,
 } from "../channels/channels.schema.ts";
 import type { PageQuery } from "../common/common.schema.ts";
@@ -157,6 +159,11 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 				"GET",
 				`/v1/admin/channels${toSearch({ ...query })}`,
 			),
+		getPersona: (channelId: string) =>
+			request<PersonaView>(
+				"GET",
+				`/v1/admin/channels/${segment(channelId)}/persona`,
+			),
 		listIntents: (query: IntentsQuery = {}) =>
 			request<IntentsPage>("GET", `/v1/admin/intents${toSearch({ ...query })}`),
 		listBlockedIps: (query: PageQuery = {}) =>
@@ -203,6 +210,18 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 					"PATCH",
 					`/v1/admin/channels/${segment(id)}`,
 					input,
+				),
+			savePersona: (channelId: string, persona: Persona) =>
+				write<PersonaView>(
+					"PUT",
+					`/v1/admin/channels/${segment(channelId)}/persona`,
+					persona,
+				),
+			previewPersona: (channelId: string, persona: Persona) =>
+				write<PersonaView>(
+					"POST",
+					`/v1/admin/channels/${segment(channelId)}/persona/preview`,
+					persona,
 				),
 			rotateChannelKeys: (id: string) =>
 				write<{ channel: Channel; secretKey: string }>(

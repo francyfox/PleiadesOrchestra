@@ -98,6 +98,8 @@ export function buildActions(
 	agent: Agent,
 	maxChunkChars: number,
 	history?: HistoryStore,
+	/** The channel's reply system prompt (its persona); `undefined` = the agent's own default. */
+	replyPrompt?: (channelId: string) => string | undefined,
 ): GoapAction[] {
 	return [
 		createTemplateReplyAction(history),
@@ -112,6 +114,10 @@ export function buildActions(
 			// The model gets a normalized (and, after a task, rewritten) prompt; the
 			// history keeps what the user typed, so a reload shows it as it was.
 			toHistoryText: userTurn,
+			systemPrompt: (state) =>
+				typeof state.channelId === "string"
+					? replyPrompt?.(state.channelId)
+					: undefined,
 			threadId: (state) => String(state.threadId ?? ""),
 			userId: (state) => String(state.userId ?? ""),
 			toEffects: (replyText, meta) => ({
@@ -203,7 +209,7 @@ export function replyChunks(
 		const answer = lastToolAnswer(state);
 		if (answer) {
 			return [
-				`Пользователь написал: «${message}». Сайт уже ответил на запрос: «${answer}». Коротко перескажи пользователю результат на языке его сообщения (названия товаров оставь как есть), не говори, что не можешь этого сделать.`,
+				`Пользователь написал: «${message}». Сайт уже ответил на запрос: «${answer}». Коротко перескажи пользователю результат на языке его сообщения (названия, имена и числа из ответа сайта оставь как есть), не говори, что не можешь этого сделать.`,
 			];
 		}
 	}

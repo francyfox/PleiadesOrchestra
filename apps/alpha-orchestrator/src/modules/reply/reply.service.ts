@@ -21,6 +21,7 @@ import {
 } from "../goap/goap.service.ts";
 import { learnIntent } from "../intents/intents.service.ts";
 import { joinRequest } from "../plan-runs/plan-runs.service.ts";
+import { AWAITED_TOOL_FACT } from "../run-stream/run-stream.service.ts";
 import { sessionFacts } from "../run-stream/run-stream.ts";
 import type { PreparedRun } from "../run-stream/run-stream.types.ts";
 import { normalizeText } from "../text/text.service.ts";
@@ -91,6 +92,8 @@ async function initialState(
 		catalogLang: deps.catalogLanguage?.(user.channelId) ?? "en",
 		threadId,
 		userId: user.id,
+		// Which channel's persona the reply is written in (`buildActions`).
+		channelId: user.channelId,
 		planRunId,
 		...customerFacts(options.customerContext),
 		...pageFacts(options.page),
@@ -261,6 +264,12 @@ export async function prepareNewMessage(
 	};
 }
 
+/** The state without the awaited-tool marker: the answer it waited for has arrived. */
+function withoutAwaited(state: WorldState): WorldState {
+	const { [AWAITED_TOOL_FACT]: _awaited, ...rest } = state;
+	return rest;
+}
+
 /** The state without the page facts (they are replaced, never merged: a missing language must not survive). */
 function withoutPage(state: WorldState): WorldState {
 	const { [PAGE_FACT]: _path, [PAGE_LANG_FACT]: _lang, ...rest } = state;
@@ -297,11 +306,32 @@ export function toolResultText(result: unknown): string {
 			return content
 				.map((part) => (part as { text?: unknown })?.text)
 				.filter((part): part is string => typeof part === "string")
+				.map((part) => part.slice(0, MAX_TOOL_TEXT_CHARS))
 				.join("\n");
 		}
-		return result === undefined ? "" : JSON.stringify(result);
+		return result === undefined ? "" : boundedJson(result);
 	})();
 	return text.slice(0, MAX_TOOL_TEXT_CHARS);
+}
+
+/**
+ * `JSON.stringify` that stops building output once `MAX_TOOL_TEXT_CHARS` of
+ * strings have gone by: the rest is replaced by `undefined` (omitted), so a
+ * huge client-supplied value is not serialized in full just to be cut.
+ */
+function boundedJson(value: unknown): string {
+	let budget = MAX_TOOL_TEXT_CHARS;
+	return (
+		JSON.stringify(value, (key, item) => {
+			if (budget <= 0) return undefined;
+			budget -= key.length;
+			if (typeof item === "string") {
+				budget -= item.length;
+				return item.slice(0, Math.max(budget + item.length, 0));
+			}
+			return item;
+		}) ?? ""
+	);
 }
 
 /**
@@ -321,6 +351,16 @@ export async function prepareResume(
 		// Reported in-band like any other failed run — the stream has started.
 		throw new Error("nothing to resume for this thread");
 	}
+	// Only the answer to the call this checkpoint is waiting on: the callId is
+	// the id of the run that issued it, `awaitedTool` the tool it named. A
+	// result is consumed once — the checkpoint is replaced when the run ends.
+	if (
+		checkpoint.state[AWAITED_TOOL_FACT] === undefined ||
+		toolResult.callId !== checkpoint.state.planRunId ||
+		toolResult.tool !== checkpoint.state[AWAITED_TOOL_FACT]
+	) {
+		throw new Error("unexpected tool result for this thread");
+	}
 	// The checkpoint still names the run that stopped to wait: this one
 	// continues its request.
 	if (typeof checkpoint.state.planRunId === "string") {
@@ -329,7 +369,7 @@ export async function prepareResume(
 	const dynamicActions = await resolveDynamicActions(deps, threadId);
 	return {
 		state: {
-			...withoutPage(checkpoint.state),
+			...withoutAwaited(withoutPage(checkpoint.state)),
 			// Where the visitor is now — the tool may have navigated.
 			...pageFacts(toolResult.page),
 			// The resumed run is its own `plan_runs` row; usage made by what runs

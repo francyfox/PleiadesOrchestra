@@ -1,6 +1,7 @@
-import { and, count, desc, eq, gt, isNull, or } from "drizzle-orm";
+import { and, count, desc, eq, gt, isNull, or, sql } from "drizzle-orm";
 import { blockedIps, channels } from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
+import { prepared } from "../database/prepared.ts";
 import { HOUR_MS, limitOffset, type PageParams } from "../http/http.service.ts";
 import { hashIp } from "../security/security.service.ts";
 
@@ -84,16 +85,21 @@ export function isIpBlocked(
 	now: number,
 ): boolean {
 	return (
-		db
-			.select({ id: blockedIps.id })
-			.from(blockedIps)
-			.where(
-				and(
-					eq(blockedIps.ipHash, ipHash),
-					gt(blockedIps.expiresAt, now),
-					or(isNull(blockedIps.channelId), eq(blockedIps.channelId, channelId)),
-				),
-			)
-			.get() !== undefined
+		prepared(db, "isIpBlocked", () =>
+			db
+				.select({ id: blockedIps.id })
+				.from(blockedIps)
+				.where(
+					and(
+						eq(blockedIps.ipHash, sql.placeholder("ipHash")),
+						gt(blockedIps.expiresAt, sql.placeholder("now")),
+						or(
+							isNull(blockedIps.channelId),
+							eq(blockedIps.channelId, sql.placeholder("channelId")),
+						),
+					),
+				)
+				.prepare(),
+		).get({ ipHash, now, channelId }) !== undefined
 	);
 }

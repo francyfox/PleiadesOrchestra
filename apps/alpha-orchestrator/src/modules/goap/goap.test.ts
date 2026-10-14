@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { GoapAction, HistoryStore } from "@repo/core";
+import type { Agent, GoapAction, HistoryStore } from "@repo/core";
 import { plan } from "@repo/core";
 import {
 	buildActions,
@@ -258,5 +258,30 @@ describe("the templated reply after a finished purchase", () => {
 		expect(chat?.map((a) => a.name)).toEqual([REPLY_ACTION]);
 		const unclassified = plan({}, { replied: true }, catalog);
 		expect(unclassified?.map((a) => a.name)).toEqual([REPLY_ACTION]);
+	});
+});
+
+describe("reply action and the channel's persona", () => {
+	function captureAgent() {
+		const seen: (string | undefined)[] = [];
+		const agent: Agent = {
+			async *handleMessageStream(message) {
+				seen.push(message.systemPrompt);
+				yield { type: "done", elapsedMs: 1 };
+			},
+			async resetThread() {},
+		};
+		return { agent, seen };
+	}
+
+	test("the reply is generated with the prompt of the channel in the state", async () => {
+		const { agent, seen } = captureAgent();
+		const reply = buildActions(agent, 100, undefined, (channelId) =>
+			channelId === "ch_a" ? "persona A" : undefined,
+		).find((a) => a.name === REPLY_ACTION);
+		await reply?.execute({ state: { userMessage: "hi", channelId: "ch_a" } });
+		await reply?.execute({ state: { userMessage: "hi", channelId: "ch_b" } });
+		await reply?.execute({ state: { userMessage: "hi" } });
+		expect(seen).toEqual(["persona A", undefined, undefined]);
 	});
 });

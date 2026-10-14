@@ -22,6 +22,9 @@ export function openDatabase(path: string, migrationsDir: string): Db {
 	sqlite.run("PRAGMA journal_mode = WAL;");
 	sqlite.run("PRAGMA foreign_keys = ON;");
 	sqlite.run("PRAGMA busy_timeout = 5000;");
+	// Safe in WAL (no fsync per commit, only at checkpoints); temp B-trees in RAM.
+	sqlite.run("PRAGMA synchronous = NORMAL;");
+	sqlite.run("PRAGMA temp_store = MEMORY;");
 	const db = drizzle({ client: sqlite, schema });
 	migrate(db, { migrationsFolder: migrationsDir });
 	return db;

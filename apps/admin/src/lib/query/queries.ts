@@ -2,6 +2,7 @@ import { queryOptions } from "@tanstack/svelte-query";
 import type { LiveTopics } from "admin-api/types";
 import { api } from "$lib/api/client";
 import { unwrap } from "$lib/api/result";
+import type { Persona } from "$lib/api-types";
 import { SYSTEM_KEY, topicKey } from "./keys";
 
 /** Data the WebSocket keeps current: never stale by itself; a mutation still invalidates it. */
@@ -105,5 +106,21 @@ export const queries = {
 		queryOptions({
 			queryKey: ["channels", "all"],
 			queryFn: () => unwrap(api().channels.get({ query: {} })),
+		}),
+	/** A channel's persona; asked only while its dialog is open and always fresh (an edit elsewhere must not be overwritten by a stale form). */
+	persona: (channelId: string) =>
+		queryOptions({
+			queryKey: ["channels", channelId, "persona"],
+			queryFn: () => unwrap(api().channels({ id: channelId }).persona.get()),
+			staleTime: 0,
+		}),
+	/** The prompt the unsaved dialog values would produce (server-built, so the preview is never a copy of its rules). */
+	personaPreview: (channelId: string, draft: Persona) =>
+		queryOptions({
+			queryKey: ["channels", channelId, "persona", "preview", draft],
+			queryFn: () =>
+				unwrap(api().channels({ id: channelId }).persona.preview.post(draft)),
+			staleTime: 0,
+			placeholderData: (previous) => previous,
 		}),
 };

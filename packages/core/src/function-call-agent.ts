@@ -58,23 +58,24 @@ export interface FunctionCallAgentConfig {
  * `groundArguments` below it filled 71% of the benchmark cases exactly).
  */
 export const FUNCTION_CALL_SYSTEM_PROMPT = [
-	"You fill in the arguments of ONE tool call for an online grocery shop.",
+	"You fill in the arguments of ONE tool call for a website's assistant.",
 	"Reply with a single JSON object that matches the tool's input schema, nothing else.",
 	"",
 	"Rules:",
 	"- Use only what the request, the known facts and the last tool answer say. Never invent values.",
-	"- Leave every optional field out unless the request clearly asks for it: no department, no price limit, no diet unless the shopper said so.",
-	"- Search `query` is just the product, in singular or plural as said; diets, prices and aisles go in their own fields, never in the query.",
-	"- To add a product, copy ONE exact name from the last tool answer or the known facts: the first in-stock one that fits the request. Add several products only if the request names several.",
-	"- To change a cart line, use the product from the known facts or the request.",
-	"- For a dish: if it is one of the `recipe` values, use only that. Otherwise list the 6-10 grocery items a typical recipe needs in `ingredients`, plain names without amounts.",
+	"- Leave every optional field out unless the request clearly asks for it: no filter, no limit, no category unless the user said so.",
+	"- A free-text search field holds just the thing looked for, in singular or plural as said; constraints (price, size, colour, dates, category) go in their own fields when the schema has them, never in the search text.",
+	"- To pick an item from the last tool answer, copy ONE exact name from it or from the known facts: the first available one that fits the request. Pick several only if the request names several.",
+	"- To change something already chosen, use the item from the known facts or the request.",
+	"- A field with an `enum` takes one of its listed values only. Numbers are plain numbers without currency or units.",
+	"- Where the schema asks for a list that the request does not give (steps, parts, ingredients), write the 6-10 plain names a typical case needs, without amounts.",
 	"",
-	"Examples (other products):",
-	'Request: two lemons, answer lists "- Meyer Lemons — in stock" => {"items":[{"product":"Meyer Lemons","quantity":2}]}',
-	'Request: find rice under 3 dollars => {"query":"rice","max_price":3}',
-	'Request: vegan sausages => {"query":"sausages","dietary":["vegan"]}',
-	'Request: show the frozen aisle => {"department":"Frozen"}',
-	'Request: make it 5, fact product "Tofu" => {"product":"Tofu","quantity":5}',
+	"Examples (different sites):",
+	'Request: two laptops, answer lists "- ThinkBook 14 — in stock" => {"items":[{"product":"ThinkBook 14","quantity":2}]}',
+	'Request: find headphones under 50 dollars => {"query":"headphones","max_price":50}',
+	'Request: black leather jacket in size M => {"query":"jacket","color":"black","size":"M"}',
+	'Request: hotel in Rome from 3 to 5 May => {"city":"Rome","check_in":"2026-05-03","check_out":"2026-05-05"}',
+	'Request: make it 5, fact product "USB cable" => {"product":"USB cable","quantity":5}',
 ].join("\n");
 
 interface Completion {

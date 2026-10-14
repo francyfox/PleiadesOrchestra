@@ -21,6 +21,8 @@ export interface TextActionConfig {
 	toChunks: (state: WorldState) => string[];
 	/** What to keep in the history as the user's turn when it isn't the chunks (the message as typed, not the prompt built from it). */
 	toHistoryText?: (state: WorldState) => string | undefined;
+	/** System prompt for this reply, built from the live state (e.g. the channel's persona); unset = the agent's own. */
+	systemPrompt?: (state: WorldState) => string | undefined;
 	threadId: (state: WorldState) => string;
 	userId: (state: WorldState) => string;
 	/** Maps the generated reply text, plus the underlying agent call's own timing/usage, into observed world-state facts. */
@@ -65,6 +67,7 @@ export function createTextAction(config: TextActionConfig): GoapAction {
 				actionName: config.name,
 				chunks: config.toChunks(state),
 				historyText: config.toHistoryText?.(state),
+				systemPrompt: config.systemPrompt?.(state),
 			})) {
 				if (event.type === "delta") {
 					replyText += event.text;

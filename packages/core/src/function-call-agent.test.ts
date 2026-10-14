@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { createFunctionCallAgent } from "./function-call-agent.ts";
+import {
+	createFunctionCallAgent,
+	FUNCTION_CALL_SYSTEM_PROMPT,
+} from "./function-call-agent.ts";
 import type { LlmCallRecord } from "./types.ts";
 
 const SEARCH = {
@@ -241,5 +244,25 @@ describe("createFunctionCallAgent", () => {
 		expect(userPrompt(calls[0]?.body)).toContain("(not in English");
 		expect(userPrompt(calls[0]?.body)).not.toContain("рис");
 		expect(args).toEqual({ query: "rice", max_price: 3 });
+	});
+});
+
+describe("FUNCTION_CALL_SYSTEM_PROMPT", () => {
+	// The prompt is shared by every site; what a site sells comes from its own
+	// tools and schemas (CLAUDE.md, "not one shop").
+	test("names no kind of shop and no product", () => {
+		expect(FUNCTION_CALL_SYSTEM_PROMPT).not.toMatch(
+			/grocer|shop|store|cart|recipe|dairy|frozen|vegan|\brice\b|lemon|tofu|sausage/i,
+		);
+	});
+
+	test("its examples come from different domains", () => {
+		const examples = FUNCTION_CALL_SYSTEM_PROMPT.split("\n").filter((line) =>
+			line.startsWith("Request:"),
+		);
+		expect(examples.length).toBeGreaterThanOrEqual(4);
+		expect(FUNCTION_CALL_SYSTEM_PROMPT).toMatch(/laptop|headphones/i);
+		expect(FUNCTION_CALL_SYSTEM_PROMPT).toMatch(/hotel|flight|room/i);
+		expect(FUNCTION_CALL_SYSTEM_PROMPT).toMatch(/jacket|shirt|shoes/i);
 	});
 });

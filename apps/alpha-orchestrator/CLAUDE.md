@@ -12,7 +12,7 @@ See root `CLAUDE.md` for commands, architecture overview, workflow and lessons.
 - `<name>.instance.ts` — runtime singleton (only `index.ts` and other `*.instance.ts` import these)
 - `<name>.testing.ts` — test helpers (`database.testing.ts` → `testDb()`, `http.testing.ts` → `setupAdminApp()`/`admin()`/`json()`)
 
-Modules: `access`, `active-runs`, `agents`, `auth`, `blocked-ips`, `channel-directory`, `channels`, `config`, `database`, `decisions`, `goap`, `history`, `http`, `identify`, `messages`, `performance`, `plan-runs`, `rate-limit`, `reply`, `retention`, `run-binding`, `run-stream`, `security`, `stats`, `streaming`, `telegram-whitelist`, `text`, `threads`, `translate`, `usage`, `usage-recorder`, `users`, `visitors`, `widget`, `world-state`.
+Modules: `access`, `active-runs`, `agents`, `auth`, `blocked-ips`, `channel-directory`, `channels`, `config`, `database`, `decisions`, `goap`, `history`, `http`, `identify`, `messages`, `performance`, `persona`, `plan-runs`, `rate-limit`, `reply`, `retention`, `run-binding`, `run-stream`, `security`, `stats`, `streaming`, `telegram-whitelist`, `text`, `threads`, `translate`, `usage`, `usage-recorder`, `users`, `visitors`, `widget`, `world-state`.
 
 New feature = new directory, not a new file in a flat folder.
 
@@ -99,6 +99,14 @@ Channel lookup is `Map`/`Set` (`channel-directory`, `invalidate()` after admin w
 
 **History stores raw user text** — `userMessageRaw` (`typedText`: NFC, `\n` line ends, control chars except newline/tab dropped). `createTextAction({ toHistoryText })` → `IncomingMessage.historyText` → agent appends `historyText ?? chunks.join(" ")`. Before this fix multi-line messages were stored flattened.
 
+## Channel persona (reply prompt)
+
+`modules/persona`. The reply system prompt is **always built from parts** (`buildReplyPrompt`): the admin's `instructions` (role text, multi-line, <=2000 chars, every line quoted with `> ` so it stays visibly inside its own section) + persona slots (name, tone, greeting, forbidden topics, hand-off contact, language; one line each) + the fixed rules block (`FIXED_BLOCK`, always last, not editable). No `undefined` prompt: a channel without a row gets `DEFAULT_REPLY_PROMPT` (default persona: name "Альбедо", neutral role/tone, not shop-specific); the orchestrator's text agent uses the same as its built-in prompt, so cli/telegram get it too. `@repo/core`'s own default is a short neutral one.
+
+**Storage = overrides only.** `channel_persona` columns hold what the admin changed; `""` / empty list = standard (`DEFAULT_PERSONA`). `savePersona` also stores a value equal to the default as `""`, so improving a default reaches every channel that never customized that field. `getPersona` = overrides over defaults.
+
+Admin API: `GET/PUT /v1/admin/channels/:id/persona` -> `{ persona (in effect), defaults, prompt, fixed }`; `POST .../persona/preview` takes unsaved values, returns the same shape, writes nothing. The UI never copies the rules: it shows `prompt`, with the `fixed` tail marked read-only.
+
 ## MCP catalog (WebMCP)
 
 Sites announce tool catalogs on panel open via `POST /v1/widget/tools`. `mcp_catalogs`: one row per distinct catalog per channel, key = `hashTools` (canonical JSON of name/description/schema, order-independent). Same hash keys `ReplyService`'s in-memory LRU of classified catalogs (32). Widget re-announces on `toolchange` event (debounced 300 ms). Newest 5 versions kept per channel; no TTL (invalidation by content).
@@ -111,3 +119,7 @@ Elysia drops body fields not in schema — `inputSchema.required` was once lost 
 - `bun --cwd <dir> <script>` ignores `--cwd` for some subcommands — use `cd <dir> && bun ...`.
 - `app.handle(new Request("http://x/path"))` 404s — Elysia slices at a fixed host-length offset; use `http://localhost/...` in tests. `onAfterResponse` runs after the response is returned (tests need a tick). A request rejected in `onRequest` skips all other hooks.
 - `SqliteWorldStateStore` existed and was tested but wasn't wired in `index.ts` until 2026-09-29 — always verify `createApp(...)` in `index.ts`, not just that the dependency type accepts the field.
+
+## `drizzle/init.sql` (first-time setup)
+
+One generated SQL file with the full schema, seed data and the `__drizzle_migrations` rows (so the migrator sees all existing migrations as applied). After every `db:generate`, run `bun run db:snapshot` (`scripts/db-snapshot.ts` → `src/modules/database/database.snapshot.ts`, which runs the real migrator in a temp DB and dumps it). `database.snapshot.test.ts` fails if the committed file is stale. Services keep applying incremental migrations at startup; init.sql is only for provisioning a fresh DB (`sqlite3 db < drizzle/init.sql`).

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import BotIcon from "@lucide/svelte/icons/bot";
 	import CodeXmlIcon from "@lucide/svelte/icons/code-xml";
 	import PencilIcon from "@lucide/svelte/icons/pencil";
 	import PowerIcon from "@lucide/svelte/icons/power";
@@ -10,6 +11,7 @@
 	import ConfirmDialog from "$lib/components/confirm-dialog.svelte";
 	import IconButton from "$lib/components/icon-button.svelte";
 	import EmbedDialog from "./embed-dialog.svelte";
+	import PersonaDialog from "./persona-dialog.svelte";
 	import { useChannelEnhance } from "./use-channel-enhance";
 
 	/** Edit / enable-disable / rotate keys. There is deliberately no delete: a channel is only ever disabled. */
@@ -22,6 +24,7 @@
 	const toggle = useChannelEnhance(channelActions.toggle);
 
 	let embedOpen = $state(false);
+	let personaOpen = $state(false);
 	let rotateOpen = $state(false);
 	const rotate = useChannelEnhance(
 		channelActions.rotate,
@@ -34,6 +37,8 @@
 		<IconButton icon={CodeXmlIcon} tone="primary" label={$content.embed.action.value} onclick={() => (embedOpen = true)} />
 		<EmbedDialog {channel} bind:open={embedOpen} />
 	{/if}
+	<IconButton icon={BotIcon} tone="primary" label={$content.persona.action.value} onclick={() => (personaOpen = true)} />
+	<PersonaDialog {channel} bind:open={personaOpen} />
 	<IconButton icon={PencilIcon} tone="primary" label={$content.edit.value} onclick={() => onEdit(channel)} />
 	<form use:toggle>
 		<input type="hidden" name="id" value={channel.id} />

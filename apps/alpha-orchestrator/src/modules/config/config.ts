@@ -110,6 +110,29 @@ export function buildConfig(env: Record<string, string | undefined>) {
 				.int()
 				.positive()
 				.default(20_000),
+			// Request body caps (bytes). HTTP_MAX_BODY_BYTES is Bun's
+			// `maxRequestBodySize` for the whole server (default of Bun: 128 MB);
+			// WIDGET_MAX_BODY_BYTES is the stricter check on public /v1/widget/*
+			// by Content-Length, before the body is read.
+			HTTP_MAX_BODY_BYTES: z.coerce
+				.number()
+				.int()
+				.positive()
+				.default(1_048_576),
+			WIDGET_MAX_BODY_BYTES: z.coerce
+				.number()
+				.int()
+				.positive()
+				.default(131_072),
+			// Threads one visitor token may create per hour (POST /v1/widget/threads).
+			WIDGET_THREADS_PER_HOUR: z.coerce.number().int().positive().default(30),
+			// Threads whose classified WebMCP catalog stays in memory (LRU; entries
+			// also expire after ANON_RETENTION_HOURS).
+			WIDGET_MAX_CATALOG_THREADS: z.coerce
+				.number()
+				.int()
+				.positive()
+				.default(1000),
 			WIDGET_MESSAGES_PER_MINUTE: z.coerce
 				.number()
 				.int()

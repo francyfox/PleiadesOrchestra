@@ -8,6 +8,8 @@ import {
 	Channel,
 	ChannelWithSecret,
 	CreateChannelInput,
+	Persona,
+	PersonaView,
 	UpdateChannelInput,
 } from "./channels.schema.ts";
 import { isValidLanguage, isValidSlug } from "./channels.service.ts";
@@ -88,6 +90,51 @@ export function channelsRoutes({ auth, orchestrator }: RouteDeps) {
 							...Upstream,
 						},
 						detail: { summary: "Update / enable / disable a channel" },
+					},
+				)
+				.get(
+					"/channels/:id/persona",
+					({ params }) => orchestrator.getPersona(params.id),
+					{
+						params: IdParams,
+						response: { 200: PersonaView, ...Upstream },
+						detail: { summary: "A channel's persona (name, tone, limits)" },
+					},
+				)
+				.put(
+					"/channels/:id/persona",
+					({ params, body, admin, status }) => {
+						if (body.defaultLang && !isValidLanguage(body.defaultLang)) {
+							return status(400, { error: "invalid_language" });
+						}
+						return orchestrator.as(admin.id).savePersona(params.id, body);
+					},
+					{
+						params: IdParams,
+						body: Persona,
+						response: {
+							200: PersonaView,
+							400: ApiError,
+							...Upstream,
+						},
+						detail: { summary: "Replace a channel's persona" },
+					},
+				)
+				.post(
+					"/channels/:id/persona/preview",
+					({ params, body, admin, status }) => {
+						if (body.defaultLang && !isValidLanguage(body.defaultLang)) {
+							return status(400, { error: "invalid_language" });
+						}
+						return orchestrator.as(admin.id).previewPersona(params.id, body);
+					},
+					{
+						params: IdParams,
+						body: Persona,
+						response: { 200: PersonaView, 400: ApiError, ...Upstream },
+						detail: {
+							summary: "The prompt unsaved persona values would produce",
+						},
 					},
 				)
 				.post(

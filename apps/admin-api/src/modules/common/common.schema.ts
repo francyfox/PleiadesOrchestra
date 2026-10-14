@@ -60,6 +60,8 @@ export const ApiError = t.Object({
 	min: t.Optional(t.Number()),
 	/** Upstream detail kept for humans, not for branching. */
 	detail: t.Optional(t.String()),
+	/** Seconds until a rate-limited caller may retry (`too_many_attempts`). */
+	retryAfter: t.Optional(t.Number()),
 });
 
 export type CallKind = Static<typeof CallKind>;

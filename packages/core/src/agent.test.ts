@@ -281,3 +281,24 @@ describe("createAgent", () => {
 		expect(await historyStore.get("t1", 10)).toEqual([]);
 	});
 });
+
+describe("per-message system prompt", () => {
+	const message: IncomingMessage = {
+		threadId: "t",
+		userId: "u",
+		chunks: ["hello"],
+	};
+
+	test("replaces the agent's own system prompt for that message only", async () => {
+		const { agent, llm } = setup({}, { maxHistoryMessages: 0 });
+		await collect(
+			agent.handleMessageStream({ ...message, systemPrompt: "channel prompt" }),
+		);
+		await collect(agent.handleMessageStream(message));
+		const systems = llm.requests.map(
+			(r) => (r.messages[0] as { role: string; content: string }).content,
+		);
+		expect(systems[0]).toBe("channel prompt");
+		expect(systems[1]).not.toBe("channel prompt");
+	});
+});

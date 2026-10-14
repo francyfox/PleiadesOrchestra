@@ -1,0 +1,1 @@
+ALTER TABLE `channel_persona` ADD `instructions` text DEFAULT '' NOT NULL;

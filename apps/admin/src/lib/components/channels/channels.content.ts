@@ -187,6 +187,78 @@ const channelsContent = {
 			en: "Language code of the product names on the site (en, ru, kk…). The search query reaches the site's tool in exactly that language, whatever the shopper typed.",
 			kk: "Сайттағы тауар атаулары жазылған тілдің коды (en, ru, kk…). Іздеу сұрауы сатып алушы не жазса да, сайт тулына дәл осы тілде жіберіледі.",
 		}),
+		persona: {
+			action: t({ ru: "Персона бота", en: "Bot persona", kk: "Бот персонасы" }),
+			title: t({
+				ru: insert("Персона канала «{{name}}»"),
+				en: insert("Persona of channel “{{name}}”"),
+				kk: insert("«{{name}}» арнасының персонасы"),
+			}),
+			hint: t({
+				ru: "Поля уже заполнены стандартными значениями — меняйте только то, что нужно. Остальное подхватит будущие улучшения стандарта. Правила в конце промпта (не выдумывать, формат ответа) фиксированы и не редактируются.",
+				en: "The fields are prefilled with the standard values: change only what you need, the rest follows future improvements of the standard. The rules at the end of the prompt (never invent, reply format) are fixed and cannot be edited.",
+				kk: "Өрістер стандартты мәндермен толтырылған: тек керегін өзгертіңіз, қалғаны стандарттың болашақ жақсартуларын алады. Промпт соңындағы ережелер (ойдан шығармау, жауап форматы) бекітілген және өзгертілмейді.",
+			}),
+			instructions: t({
+				ru: "Роль и поведение",
+				en: "Role and behaviour",
+				kk: "Рөл және мінез-құлық",
+			}),
+			instructionsHint: t({
+				ru: "Свободный текст, можно в несколько строк (до 2000 символов). Идёт перед фиксированными правилами и не может их изменить.",
+				en: "Free text, may span several lines (up to 2000 characters). It comes before the fixed rules and cannot change them.",
+				kk: "Еркін мәтін, бірнеше жол болуы мүмкін (2000 таңбаға дейін). Бекітілген ережелердің алдында тұрады және оларды өзгерте алмайды.",
+			}),
+			resetToStandard: t({
+				ru: "Сбросить к стандартному",
+				en: "Reset to standard",
+				kk: "Стандартқа қайтару",
+			}),
+			previewTitle: t({
+				ru: "Итоговый промпт (только чтение)",
+				en: "Resulting prompt (read-only)",
+				kk: "Қорытынды промпт (тек оқу)",
+			}),
+			fixedBadge: t({
+				ru: "Фиксировано, не редактируется",
+				en: "Fixed, not editable",
+				kk: "Бекітілген, өзгертілмейді",
+			}),
+			botName: t({ ru: "Имя бота", en: "Bot name", kk: "Бот аты" }),
+			tone: t({ ru: "Тон", en: "Tone", kk: "Тон" }),
+			toneHint: t({
+				ru: "Например: вежливый, коротко, на «вы».",
+				en: "For example: polite, brief, formal.",
+				kk: "Мысалы: сыпайы, қысқа, «сіз» деп.",
+			}),
+			defaultLang: t({
+				ru: "Язык ответов",
+				en: "Reply language",
+				kk: "Жауап тілі",
+			}),
+			defaultLangHint: t({
+				ru: "Код языка (ru, en, kk…). Пусто — отвечать на языке посетителя.",
+				en: "Language code (ru, en, kk…). Empty means the visitor's own language.",
+				kk: "Тіл коды (ru, en, kk…). Бос болса — келушінің тілінде жауап береді.",
+			}),
+			greeting: t({ ru: "Приветствие", en: "Greeting", kk: "Сәлемдесу" }),
+			forbiddenTopics: t({
+				ru: "Запрещённые темы (по одной в строке)",
+				en: "Forbidden topics (one per line)",
+				kk: "Тыйым салынған тақырыптар (әр жолға біреуден)",
+			}),
+			handoffContact: t({
+				ru: "Контакт для эскалации",
+				en: "Handoff contact",
+				kk: "Эскалация байланысы",
+			}),
+			handoffContactHint: t({
+				ru: "Куда бот отправляет посетителя, когда не может помочь: почта, телефон, ссылка.",
+				en: "Where the bot sends the visitor when it cannot help: an email, phone or link.",
+				kk: "Бот көмектесе алмаған кезде келушіні қайда бағыттайды: пошта, телефон немесе сілтеме.",
+			}),
+			loading: t({ ru: "Загрузка…", en: "Loading…", kk: "Жүктелуде…" }),
+		},
 		errors: {
 			invalid_language: t({
 				ru: "Язык — это код из двух букв (en, ru, kk) или с регионом (pt-BR), а не название",

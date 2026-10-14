@@ -43,7 +43,7 @@ describe("session and auth", () => {
 		expect(response.status).toBe(400);
 		expect(await response.json()).toEqual({
 			error: "weak_credentials",
-			min: 8,
+			min: 12,
 		});
 	});
 

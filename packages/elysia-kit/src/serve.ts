@@ -56,14 +56,27 @@ export function handleProcessLifecycle({
 
 /** `app.listen` + the lifecycle handlers, in one call for `index.ts`. */
 export function serve(
-	app: { listen(port: number): { stop(): unknown } },
+	app: {
+		listen(options: number | { port: number; maxRequestBodySize?: number }): {
+			stop(): unknown;
+		};
+	},
 	options: {
 		port: number;
+		/** Bun's request body cap (default 128 MB); larger bodies get 413. */
+		maxRequestBodySize?: number;
 		observability: Observability;
 		onShutdown?: () => unknown;
 	},
 ) {
-	const listening = app.listen(options.port);
+	const listening = app.listen(
+		options.maxRequestBodySize === undefined
+			? options.port
+			: {
+					port: options.port,
+					maxRequestBodySize: options.maxRequestBodySize,
+				},
+	);
 	handleProcessLifecycle({
 		observability: options.observability,
 		stop: () => listening.stop(),

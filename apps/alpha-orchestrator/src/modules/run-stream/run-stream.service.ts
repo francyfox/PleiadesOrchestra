@@ -19,7 +19,20 @@ function numberOrUndefined(value: WorldState[string]): number | undefined {
  * supply. Today that is always a WebMCP tool call — the only `WaitingOn.kind`
  * any action in this app produces.
  */
-export function toolCallEvent(waiting: WaitingOn): StreamEvent {
+/** Checkpoint fact: the tool the run is waiting on. Together with the run id (the `callId`) it is what `prepareResume` checks an answer against. */
+export const AWAITED_TOOL_FACT = "awaitedTool";
+
+/** The tool a WebMCP wait names; `undefined` for any other wait. */
+export function awaitedTool(waiting: WaitingOn): string | undefined {
+	return waiting.kind === "webmcp_tool_call"
+		? (waiting.payload as WebMcpToolCallPayload).tool
+		: undefined;
+}
+
+export function toolCallEvent(
+	waiting: WaitingOn,
+	callId: string = crypto.randomUUID(),
+): StreamEvent {
 	if (waiting.kind !== "webmcp_tool_call") {
 		return { type: "error", message: `unsupported wait: ${waiting.kind}` };
 	}
@@ -28,7 +41,7 @@ export function toolCallEvent(waiting: WaitingOn): StreamEvent {
 		type: "tool_call",
 		tool: payload.tool,
 		arguments: payload.arguments,
-		callId: crypto.randomUUID(),
+		callId,
 	};
 }
 
@@ -73,8 +86,10 @@ function lastSiteAnswer(state: WorldState): string | undefined {
 export function outcomeEvent(
 	result: RunPlanResult,
 	fallbackElapsedMs: number,
+	/** Id of the run issuing a tool call: the answer must quote it back. */
+	callId?: string,
 ): StreamEvent {
-	if (result.waiting) return toolCallEvent(result.waiting);
+	if (result.waiting) return toolCallEvent(result.waiting, callId);
 	if (!result.succeeded) {
 		if (result.killed) return { type: "error", message: "run cancelled" };
 		const hint = lastSiteAnswer(result.finalState);

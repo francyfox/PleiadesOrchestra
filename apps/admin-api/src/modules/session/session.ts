@@ -3,8 +3,16 @@ import { Elysia, t } from "elysia";
 import type { RouteDeps } from "../../app.types.ts";
 import { MIN_PASSWORD } from "../admin-policy/admin-policy.service.ts";
 import { Credentials } from "../admins/admins.schema.ts";
+import {
+	resolveClientIp,
+	withTrustedIp,
+} from "../client-ip/client-ip.service.ts";
 import { ApiError } from "../common/common.schema.ts";
 import { Registration, Session } from "./session.schema.ts";
+
+interface ServerLike {
+	requestIP(request: Request): { address: string } | null;
+}
 
 /** A JSON response that also carries better-auth's `Set-Cookie` headers (several: session token + data). */
 function withCookies(body: unknown, source: Headers, status = 200): Response {
@@ -17,12 +25,39 @@ function withCookies(body: unknown, source: Headers, status = 200): Response {
 	});
 }
 
+/** The 429 for a locked IP/account: stable code, `Retry-After` header and body field. */
+function tooManyAttempts(retryAfter: number): Response {
+	return new Response(
+		JSON.stringify({ error: "too_many_attempts", retryAfter }),
+		{
+			status: 429,
+			headers: {
+				"content-type": "application/json",
+				"retry-after": String(retryAfter),
+			},
+		},
+	);
+}
+
 /**
  * Who is signed in, and login / registration / logout. Wraps better-auth's
  * server API instead of exposing its raw HTTP handler, so every endpoint is
  * typed and documented and returns codes, not better-auth's message text.
  */
-export function sessionRoutes({ auth, admins }: RouteDeps) {
+export function sessionRoutes({
+	auth,
+	admins,
+	clientIp,
+	loginThrottle,
+}: RouteDeps) {
+	const ipOf = (request: Request, server: ServerLike | null) =>
+		resolveClientIp({
+			source: clientIp.source,
+			hops: clientIp.hops,
+			headers: request.headers,
+			socketIp: server?.requestIP(request)?.address,
+		});
+
 	return new Elysia({ name: "admin-api.session", tags: ["auth"] })
 		.get(
 			"/session",
@@ -51,20 +86,25 @@ export function sessionRoutes({ auth, admins }: RouteDeps) {
 		)
 		.post(
 			"/auth/login",
-			async ({ body, request, status }) => {
+			async ({ body, request, server, status }) => {
 				const email = body.email.trim();
 				if (!email || !body.password) {
 					return status(400, { error: "missing_credentials" });
 				}
+				const ip = ipOf(request, server);
+				const wait = loginThrottle.loginRetryAfter(ip, email);
+				if (wait > 0) return tooManyAttempts(wait);
 				try {
 					const { headers } = await auth.api.signInEmail({
 						body: { email, password: body.password },
-						headers: request.headers,
+						headers: withTrustedIp(request.headers, ip),
 						returnHeaders: true,
 					});
+					loginThrottle.loginSucceeded(email);
 					return withCookies({ ok: true }, headers);
 				} catch (error) {
 					if (error instanceof APIError) {
+						loginThrottle.loginFailed(ip, email);
 						return status(400, { error: "invalid_credentials" });
 					}
 					throw error;
@@ -72,13 +112,24 @@ export function sessionRoutes({ auth, admins }: RouteDeps) {
 			},
 			{
 				body: Credentials,
-				response: { 200: t.Object({ ok: t.Boolean() }), 400: ApiError },
-				detail: { summary: "Sign in", description: "Sets the session cookie." },
+				response: {
+					200: t.Object({ ok: t.Boolean() }),
+					400: ApiError,
+					429: ApiError,
+				},
+				detail: {
+					summary: "Sign in",
+					description:
+						"Sets the session cookie. After repeated failures the account (by email) or the client IP is locked: 429 `too_many_attempts` with `Retry-After`.",
+				},
 			},
 		)
 		.post(
 			"/auth/register",
-			async ({ body, request, status }) => {
+			async ({ body, request, server, status }) => {
+				const ip = ipOf(request, server);
+				const wait = loginThrottle.registerAttempt(ip);
+				if (wait > 0) return tooManyAttempts(wait);
 				const email = body.email.trim();
 				if (!email || body.password.length < MIN_PASSWORD) {
 					return status(400, { error: "weak_credentials", min: MIN_PASSWORD });
@@ -90,7 +141,7 @@ export function sessionRoutes({ auth, admins }: RouteDeps) {
 							email,
 							password: body.password,
 						},
-						headers: request.headers,
+						headers: withTrustedIp(request.headers, ip),
 						returnHeaders: true,
 					});
 					return withCookies({ ok: true }, headers);
@@ -113,6 +164,7 @@ export function sessionRoutes({ auth, admins }: RouteDeps) {
 					200: t.Object({ ok: t.Boolean() }),
 					400: ApiError,
 					403: ApiError,
+					429: ApiError,
 				},
 				detail: {
 					summary: "Register the first admin",

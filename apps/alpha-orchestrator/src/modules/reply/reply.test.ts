@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { GoapAction } from "@repo/core";
 import { InMemoryWorldStateStore } from "@repo/core";
+import { testDb } from "../database/database.testing.ts";
 import { REPLY_ACTION } from "../goap/goap.service.ts";
 import type { UserRow } from "../users/users.types.ts";
 import {
@@ -38,6 +39,22 @@ describe("toolResultText", () => {
 		expect(toolResultText(undefined)).toBe("");
 	});
 
+	test("a huge object answer is cut while serializing, not after", () => {
+		const huge = {
+			rows: Array.from({ length: 200_000 }, (_, i) => `row ${i}`),
+		};
+		const text = toolResultText(huge);
+		expect(text.length).toBeLessThanOrEqual(4000);
+		expect(text.startsWith('{"rows":["row 0"')).toBe(true);
+	});
+
+	test("an oversized text part is cut before parts are joined", () => {
+		const text = toolResultText({
+			content: [{ text: "a".repeat(10_000_000) }, { text: "b" }],
+		});
+		expect(text.length).toBeLessThanOrEqual(4000);
+	});
+
 	test("is capped, so a huge page can't fill the world state", () => {
 		expect(toolResultText("x".repeat(100_000)).length).toBeLessThanOrEqual(
 			4000,
@@ -66,6 +83,7 @@ describe("prepareResume", () => {
 		const worldStateStore = new InMemoryWorldStateStore();
 		await worldStateStore.save("t1", { state, goal: { inCart: true } });
 		return {
+			db: testDb(),
 			worldStateStore,
 			webmcpCatalog: new Map(),
 			actions: [],
@@ -74,10 +92,15 @@ describe("prepareResume", () => {
 
 	test("puts the tool's outcome and its answer text into the state, keeps the goal", async () => {
 		const prepared = await prepareResume(
-			await deps({ query: "cheese" }),
+			await deps({
+				query: "cheese",
+				planRunId: "run-1",
+				awaitedTool: "search_products",
+			}),
 			"t1",
 			"run-2",
 			{
+				callId: "run-1",
 				tool: "search_products",
 				isError: false,
 				result: { content: [{ type: "text", text: "- Swiss Cheese — $4" }] },
@@ -93,11 +116,47 @@ describe("prepareResume", () => {
 	});
 
 	test("an error result is recorded as such", async () => {
-		const prepared = await prepareResume(await deps({}), "t1", "r", {
-			tool: "add_to_cart",
-			isError: true,
-		});
+		const prepared = await prepareResume(
+			await deps({ planRunId: "run-1", awaitedTool: "add_to_cart" }),
+			"t1",
+			"r",
+			{ callId: "run-1", tool: "add_to_cart", isError: true },
+		);
 		expect(prepared.state["webmcp:add_to_cart:result"]).toBe("error");
+		// consumed: the same answer cannot be replayed against this state
+		expect(prepared.state.awaitedTool).toBeUndefined();
+	});
+
+	test("a callId other than the run that waited is refused", async () => {
+		expect(
+			prepareResume(
+				await deps({ planRunId: "run-1", awaitedTool: "add_to_cart" }),
+				"t1",
+				"r",
+				{ callId: "other", tool: "add_to_cart", isError: false },
+			),
+		).rejects.toThrow("unexpected tool result");
+	});
+
+	test("a tool other than the awaited one is refused", async () => {
+		expect(
+			prepareResume(
+				await deps({ planRunId: "run-1", awaitedTool: "add_to_cart" }),
+				"t1",
+				"r",
+				{ callId: "run-1", tool: "checkout", isError: false },
+			),
+		).rejects.toThrow("unexpected tool result");
+	});
+
+	test("a checkpoint that waits on nothing refuses any result", async () => {
+		expect(
+			prepareResume(await deps({ planRunId: "run-1" }), "t1", "r", {
+				callId: "run-1",
+				tool: "add_to_cart",
+				isError: false,
+			}),
+		).rejects.toThrow("unexpected tool result");
 	});
 
 	test("nothing to resume is an error", async () => {
@@ -107,7 +166,11 @@ describe("prepareResume", () => {
 			actions: [],
 		} as unknown as ReplyDeps;
 		expect(
-			prepareResume(empty, "t1", "r", { tool: "x", isError: false }),
+			prepareResume(empty, "t1", "r", {
+				callId: "c",
+				tool: "x",
+				isError: false,
+			}),
 		).rejects.toThrow("nothing to resume");
 	});
 });

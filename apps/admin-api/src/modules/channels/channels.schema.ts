@@ -50,11 +50,35 @@ export const UpdateChannelInput = t.Object({
 	disabled: t.Optional(t.Boolean()),
 });
 
+/** What the visitor meets: the bot's name, tone and limits. Empty string / list = not set. */
+export const Persona = t.Object({
+	botName: t.String(),
+	tone: t.String(),
+	/** Multi-line role / behaviour text; the fixed rules always come after it. */
+	instructions: t.String(),
+	/** `ru`, `pt-BR`, or "" = the visitor's own language. */
+	defaultLang: t.String(),
+	greeting: t.String(),
+	forbiddenTopics: t.Array(t.String()),
+	handoffContact: t.String(),
+});
+
+/** The persona in effect, the standard values, and the prompt built from them (read-only). */
+export const PersonaView = t.Object({
+	persona: Persona,
+	defaults: Persona,
+	prompt: t.String(),
+	/** The tail of `prompt` no one can edit, so the UI can mark it. */
+	fixed: t.String(),
+});
+
 export const ChannelWithSecret = t.Object({
 	channel: Channel,
 	secretKey: t.String(),
 });
 
+export type Persona = Static<typeof Persona>;
+export type PersonaView = Static<typeof PersonaView>;
 export type ChannelKind = Static<typeof ChannelKind>;
 export type AccessMode = Static<typeof AccessMode>;
 export type ChannelRef = Static<typeof ChannelRef>;

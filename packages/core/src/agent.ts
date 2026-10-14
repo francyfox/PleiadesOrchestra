@@ -39,7 +39,7 @@ export interface AgentConfig {
 }
 
 const DEFAULT_SYSTEM_PROMPT =
-	"Ты — Альбедо: циничный, сверхэффективный AI-интерфейс";
+	"You are a helpful assistant. Answer briefly in plain text. Say only what you were told or can see; never invent facts, links or contact details.";
 
 const INGEST_SYSTEM_PROMPT =
 	"Тебе присылают длинное сообщение по частям — эта часть не последняя.\n" +
@@ -190,7 +190,7 @@ export function createAgent(config: AgentConfig): Agent {
 				inFlight = { kind: "generate", startedAt: generationStartedAt };
 				const result = streamText({
 					model,
-					system: systemPrompt,
+					system: message.systemPrompt ?? systemPrompt,
 					messages: [...past, userMessage],
 					maxOutputTokens,
 				});

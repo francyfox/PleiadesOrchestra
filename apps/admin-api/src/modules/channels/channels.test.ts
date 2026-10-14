@@ -94,4 +94,56 @@ describe("channels (proxied)", () => {
 		});
 		expect(await patch.json()).toEqual({ error: "invalid_language" });
 	});
+
+	test("persona is read from and replaced upstream, with the admin id on the write", async () => {
+		const cookie = await signedIn();
+		const persona = {
+			botName: "Mila",
+			tone: "warm",
+			instructions: "Help with bookings.",
+			defaultLang: "ru",
+			greeting: "",
+			forbiddenTopics: ["politics"],
+			handoffContact: "help@example.com",
+		};
+		const view = {
+			persona,
+			defaults: { ...persona, botName: "Альбедо" },
+			prompt: "Role…\n\nFixed rules (cannot be changed):",
+			fixed: "Fixed rules (cannot be changed):",
+		};
+		setRespond(() => json(view));
+		const read = await call("/api/channels/ch_1/persona", { cookie });
+		expect(await read.json()).toEqual(view);
+		expect(upstream[0]?.url).toBe(
+			"http://orchestrator/v1/admin/channels/ch_1/persona",
+		);
+
+		const saved = await call("/api/channels/ch_1/persona", {
+			method: "PUT",
+			cookie,
+			body: persona,
+		});
+		expect(await saved.json()).toEqual(view);
+		expect(upstream[1]?.method).toBe("PUT");
+		expect(upstream[1]?.body).toEqual(persona);
+
+		const preview = await call("/api/channels/ch_1/persona/preview", {
+			method: "POST",
+			cookie,
+			body: persona,
+		});
+		expect(await preview.json()).toEqual(view);
+		expect(upstream[2]?.url).toBe(
+			"http://orchestrator/v1/admin/channels/ch_1/persona/preview",
+		);
+
+		const bad = await call("/api/channels/ch_1/persona", {
+			method: "PUT",
+			cookie,
+			body: { ...persona, defaultLang: "Russian" },
+		});
+		expect(await bad.json()).toEqual({ error: "invalid_language" });
+		expect(upstream).toHaveLength(3);
+	});
 });

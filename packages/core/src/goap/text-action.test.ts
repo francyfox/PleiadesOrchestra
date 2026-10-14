@@ -218,4 +218,24 @@ describe("createTextAction", () => {
 		expect(action.preconditions).toBe(preconditions);
 		expect(action.effects).toBe(effects);
 	});
+
+	test("hands the agent a system prompt built from the state, when the config has one", async () => {
+		const agent = fakeAgent([{ type: "done", elapsedMs: 1 }]);
+		const action = createTextAction({
+			name: "generateReply",
+			cost: 5,
+			preconditions: {},
+			effects: { replied: true },
+			agent,
+			toChunks: () => ["hi"],
+			systemPrompt: (state) => `prompt for ${String(state.channelId)}`,
+			threadId: () => "t1",
+			userId: () => "u1",
+			toEffects: () => ({ replied: true }),
+		});
+
+		await action.execute({ state: { channelId: "c1" } });
+
+		expect(agent.capturedMessage?.systemPrompt).toBe("prompt for c1");
+	});
 });

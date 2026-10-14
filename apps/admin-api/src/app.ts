@@ -11,6 +11,7 @@ import { intentsRoutes } from "./modules/intents/intents.ts";
 import { liveRoutes } from "./modules/live/live.ts";
 import { createLiveHub } from "./modules/live-hub/live-hub.ts";
 import { createLiveTopics } from "./modules/live-topics/live-topics.ts";
+import { createLoginThrottle } from "./modules/login-throttle/login-throttle.service.ts";
 import { mcpRoutes } from "./modules/mcp/mcp.ts";
 import { foreignOriginRejection } from "./modules/origin-guard/origin-guard.service.ts";
 import { performanceRoutes } from "./modules/performance/performance.ts";
@@ -29,6 +30,8 @@ function resolveDeps(input: AdminApiDeps): RouteDeps {
 	return {
 		now,
 		admins,
+		clientIp: { source: "socket", hops: 1 },
+		loginThrottle: createLoginThrottle(input.loginLimits, now),
 		systemFeed: createSystemFeed({
 			snapshot: input.systemSnapshot,
 			intervalMs: input.systemStreamIntervalMs ?? 5000,

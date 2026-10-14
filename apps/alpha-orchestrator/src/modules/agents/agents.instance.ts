@@ -5,6 +5,7 @@ import {
 } from "@repo/core";
 import { config } from "../config/config.service.ts";
 import { historyStore } from "../history/history.instance.ts";
+import { DEFAULT_REPLY_PROMPT } from "../persona/persona.service.ts";
 import { usageRecorder } from "../usage-recorder/usage-recorder.instance.ts";
 import { productRequestPrompt } from "./agents.service.ts";
 
@@ -24,6 +25,8 @@ const baseAgent = createAgent({
 	baseURL: config.LLM_BASE_URL,
 	apiKey: config.LLM_API_KEY,
 	model: config.LLM_MODEL,
+	// Replies are written in the channel's persona; this is the standard one.
+	systemPrompt: DEFAULT_REPLY_PROMPT,
 	maxHistoryMessages: AGENT_MAX_HISTORY_MESSAGES,
 	historyStore,
 	usageRecorder,

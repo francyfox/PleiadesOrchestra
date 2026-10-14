@@ -13,7 +13,12 @@ import { REPLY_ACTION, REPLY_GOAL } from "../goap/goap.service.ts";
 import { finishPlanRun } from "../plan-runs/plan-runs.service.ts";
 import type { RunBinding } from "../run-binding/run-binding.ts";
 import { encodeNdjsonLine } from "../streaming/streaming.service.ts";
-import { errorMessage, outcomeEvent } from "./run-stream.service.ts";
+import {
+	AWAITED_TOOL_FACT,
+	awaitedTool,
+	errorMessage,
+	outcomeEvent,
+} from "./run-stream.service.ts";
 import type {
 	PreparedRun,
 	RunContext,
@@ -53,6 +58,8 @@ interface RunOutcome {
 	succeeded: boolean;
 	/** The run stopped to ask the browser to run a tool; it will be resumed. */
 	waiting: boolean;
+	/** The tool the run waits on (set with `waiting`). */
+	awaitedTool?: string;
 	finalState: WorldState;
 	prepared: PreparedRun | undefined;
 	/** The flow lines sent to the visitor, one per step id in its last phase (kept so a reload shows them). */
@@ -182,12 +189,15 @@ async function executeRun(
 	);
 	outcome.succeeded = result.succeeded;
 	outcome.waiting = result.waiting !== undefined;
+	outcome.awaitedTool = result.waiting
+		? awaitedTool(result.waiting)
+		: undefined;
 	outcome.finalState = explained?.finalState ?? result.finalState;
 	// The run still counts as failed (the task wasn't done); the visitor got an answer.
 	send(
 		explained
 			? outcomeEvent(explained, deps.now() - startedAt)
-			: outcomeEvent(result, deps.now() - startedAt),
+			: outcomeEvent(result, deps.now() - startedAt, input.run.planRunId),
 	);
 }
 
@@ -236,10 +246,13 @@ async function persistRun(
 async function saveCheckpoint(
 	store: WorldStateStore,
 	threadId: string,
-	{ waiting, finalState, prepared }: RunOutcome,
+	{ waiting, finalState, prepared, awaitedTool: tool }: RunOutcome,
 ): Promise<void> {
 	if (waiting && prepared) {
-		await store.save(threadId, { state: finalState, goal: prepared.goal });
+		await store.save(threadId, {
+			state: tool ? { ...finalState, [AWAITED_TOOL_FACT]: tool } : finalState,
+			goal: prepared.goal,
+		});
 		return;
 	}
 	const session = sessionFacts(finalState);

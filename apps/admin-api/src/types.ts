@@ -24,6 +24,8 @@ export type {
 	ChannelKind,
 	ChannelRef,
 	CreateChannelInput,
+	Persona,
+	PersonaView,
 	UpdateChannelInput,
 } from "./modules/channels/channels.schema.ts";
 export type {

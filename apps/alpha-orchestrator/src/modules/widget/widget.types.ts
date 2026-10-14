@@ -13,6 +13,16 @@ export interface WidgetOptions {
 	 * it can be much bigger than `maxTextChars`.
 	 */
 	maxWebmcpToolsChars: number;
+	/**
+	 * Longest accepted request body (bytes) on `/v1/widget/*`, judged by its
+	 * `Content-Length`. Bun's server-wide `maxRequestBodySize` is the backstop
+	 * for bodies that don't announce a length.
+	 */
+	maxBodyBytes: number;
+	/** Threads one visitor token may create per hour. */
+	threadsPerHour: number;
+	/** Threads whose classified WebMCP catalog is kept in memory at once (LRU). */
+	maxCatalogThreads: number;
 	/** Messages per visitor token per minute. */
 	messagesPerMinute: number;
 	/** Messages per client IP per minute, across all visitors. */
@@ -32,6 +42,9 @@ export interface WidgetOptions {
 export const DEFAULT_WIDGET_OPTIONS: WidgetOptions = {
 	maxTextChars: 2000,
 	maxWebmcpToolsChars: 20_000,
+	maxBodyBytes: 131_072,
+	threadsPerHour: 30,
+	maxCatalogThreads: 1000,
 	messagesPerMinute: 10,
 	ipMessagesPerMinute: 30,
 	visitorsPerHourPerIp: 20,
@@ -55,6 +68,8 @@ export interface ReplyOptions {
 
 /** What a browser-side tool reported back. */
 export interface ToolOutcome {
+	/** The `callId` of the `tool_call` line this answers (the id of the run that issued it). */
+	callId: string;
 	tool: string;
 	isError: boolean;
 	result?: unknown;

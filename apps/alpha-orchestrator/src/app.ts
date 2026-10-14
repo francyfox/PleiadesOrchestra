@@ -26,12 +26,15 @@ import { channelsRoutes } from "./modules/channels/channels.ts";
 import type { Db } from "./modules/database/database.ts";
 import { decisionsRoutes } from "./modules/decisions/decisions.ts";
 import { buildActions } from "./modules/goap/goap.service.ts";
+import { HOUR_MS } from "./modules/http/http.service.ts";
 import { identifyRoutes } from "./modules/identify/identify.ts";
 import { IntentMemory } from "./modules/intents/intents.service.ts";
 import { intentsRoutes } from "./modules/intents/intents.ts";
+import { LruMap } from "./modules/lru-map/lru-map.ts";
 import { mcpRoutes } from "./modules/mcp/mcp.ts";
 import { messagesRoutes } from "./modules/messages/messages.ts";
 import { performanceRoutes } from "./modules/performance/performance.ts";
+import { personaRoutes } from "./modules/persona/persona.ts";
 import { ReplyService } from "./modules/reply/reply.ts";
 import { requestsRoutes } from "./modules/requests/requests.ts";
 import type { RunBinding } from "./modules/run-binding/run-binding.ts";
@@ -107,9 +110,11 @@ export function createApp(deps: AppDeps) {
 		deps.agent,
 		deps.maxChunkChars,
 		deps.historyStore,
+		(channelId) => deps.channels.replyPrompt(channelId),
 	);
 	const activeRuns = deps.activeRuns ?? new ActiveRuns();
 	const intentMemory = new IntentMemory(deps.db);
+	const widgetOptions = { ...DEFAULT_WIDGET_OPTIONS, ...deps.widget };
 	const reply = new ReplyService({
 		db: deps.db,
 		agent: deps.agent,
@@ -125,13 +130,18 @@ export function createApp(deps: AppDeps) {
 		worldStateStore: deps.worldStateStore ?? new InMemoryWorldStateStore(),
 		runLock: deps.runLock ?? createRunLock(),
 		activeRuns,
-		webmcpCatalog: deps.webmcpCatalog ?? new Map(),
+		webmcpCatalog:
+			deps.webmcpCatalog ??
+			new LruMap({
+				maxEntries: widgetOptions.maxCatalogThreads,
+				ttlMs: widgetOptions.tokenTtlHours * HOUR_MS,
+				now,
+			}),
 		threadActionsFor: deps.threadActionsFor,
 		usageRecorder: deps.usageRecorder,
 		now,
 		onError: deps.onError,
 	});
-	const widgetOptions = { ...DEFAULT_WIDGET_OPTIONS, ...deps.widget };
 
 	const observability =
 		deps.observability ??
@@ -185,6 +195,7 @@ export function createApp(deps: AppDeps) {
 			// Admin routes
 			.use(usersRoutes({ db, now }))
 			.use(channelsRoutes({ db, directory, now }))
+			.use(personaRoutes({ db, directory, now }))
 			.use(blockedIpsRoutes({ db, ipHashSalt: deps.ipHashSalt, now }))
 			.use(intentsRoutes({ db, memory: intentMemory, now }))
 			.use(usageRoutes({ db, now }))

@@ -29,6 +29,7 @@ export type {
 	NodeDetail,
 	NodeStatus,
 	PerformanceReport,
+	Persona,
 	RequestEdge,
 	RequestNode,
 	RequestStatus,

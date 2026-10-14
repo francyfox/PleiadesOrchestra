@@ -1,10 +1,11 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import {
 	messages,
 	type StoredStep,
 	threads,
 } from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
+import { prepared } from "../database/prepared.ts";
 
 /**
  * Internal thread id for (channel, user, external thread id). Threads are
@@ -73,11 +74,18 @@ export function createWidgetThread(
 /** Ownership is checked by `threads.userId`, never by trusting the id from the request. */
 export function isOwnThread(db: Db, threadId: string, userId: string): boolean {
 	return (
-		db
-			.select({ id: threads.id })
-			.from(threads)
-			.where(and(eq(threads.id, threadId), eq(threads.userId, userId)))
-			.get() !== undefined
+		prepared(db, "isOwnThread", () =>
+			db
+				.select({ id: threads.id })
+				.from(threads)
+				.where(
+					and(
+						eq(threads.id, sql.placeholder("threadId")),
+						eq(threads.userId, sql.placeholder("userId")),
+					),
+				)
+				.prepare(),
+		).get({ threadId, userId }) !== undefined
 	);
 }
 

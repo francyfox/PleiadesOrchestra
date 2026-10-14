@@ -146,6 +146,64 @@ async function newThread(ctx: Ctx, token: string): Promise<string> {
 	return ((await response.json()) as { threadId: string }).threadId;
 }
 
+function choiceAnswer(choice: string): DecisionAnswer {
+	return {
+		type: "choice",
+		choice,
+		probabilities: { [choice]: 1 },
+		confidence: 1,
+		rl_agent: { act_probability: 1 },
+	};
+}
+
+/** Classifies both the per-tool question (`createWebMcpActions`) and the per-message question (`classifyMessageIntent`) as the same intent — this test only needs one tool/one intent throughout. */
+function classifyingDecisionAgent(intent: string): DecisionAgent {
+	return {
+		async decide(_state, questions) {
+			const result: Record<string, DecisionAnswer> = {};
+			if (questions.intent) result.intent = choiceAnswer(intent);
+			return result;
+		},
+	};
+}
+
+/** Sends a message that makes the planner wait on a browser tool; returns that `tool_call` line. */
+async function askedToolCall(
+	ctx: Ctx,
+	token: string,
+	threadId: string,
+	text = "the cheapest laptop please",
+): Promise<{ type: string; tool: string; callId: string }> {
+	const response = await ctx.app.handle(
+		widgetRequest("/v1/widget/messages", { token, body: { threadId, text } }),
+	);
+	const lines = (await response.text())
+		.trim()
+		.split("\n")
+		.map((line) => JSON.parse(line));
+	const last = lines.at(-1);
+	expect(last?.type).toBe("tool_call");
+	return last;
+}
+
+/** `POST /v1/widget/tool-results` and the NDJSON lines it streams. */
+async function sendToolResult(
+	ctx: Ctx,
+	token: string,
+	body: { threadId: string; callId: string; tool: string },
+) {
+	const response = await ctx.app.handle(
+		widgetRequest("/v1/widget/tool-results", {
+			token,
+			body: { ...body, result: { ok: true }, isError: false },
+		}),
+	);
+	return (await response.text())
+		.trim()
+		.split("\n")
+		.map((line) => JSON.parse(line));
+}
+
 /** `POST /v1/widget/tools` — what the widget calls once when its panel opens, not on every message (see docs/laya-autonomous-webmcp.md). */
 async function registerTools(
 	ctx: Ctx,
@@ -669,27 +727,6 @@ describe("widget threads and messages", () => {
 });
 
 describe("widget WebMCP round trip", () => {
-	function choiceAnswer(choice: string): DecisionAnswer {
-		return {
-			type: "choice",
-			choice,
-			probabilities: { [choice]: 1 },
-			confidence: 1,
-			rl_agent: { act_probability: 1 },
-		};
-	}
-
-	/** Classifies both the per-tool question (`createWebMcpActions`) and the per-message question (`classifyMessageIntent`) as the same intent — this test only needs one tool/one intent throughout. */
-	function classifyingDecisionAgent(intent: string): DecisionAgent {
-		return {
-			async decide(_state, questions) {
-				const result: Record<string, DecisionAnswer> = {};
-				if (questions.intent) result.intent = choiceAnswer(intent);
-				return result;
-			},
-		};
-	}
-
 	// "search" (not "addToCart") on purpose: PRECONDITIONS_BY_INTENT.addToCart
 	// requires `itemSelected`, which nothing in this single-tool catalog can
 	// produce — a real "no plan reached the goal" outcome (working as
@@ -758,24 +795,14 @@ describe("widget WebMCP round trip", () => {
 		const token = await newVisitor(ctx);
 		const threadId = await newThread(ctx, token);
 		await registerTools(ctx, token, threadId, [searchTool]);
-		await ctx.app
-			.handle(
-				widgetRequest("/v1/widget/messages", {
-					token,
-					body: {
-						threadId,
-						text: "the cheapest laptop please",
-					},
-				}),
-			)
-			.then((response) => response.text());
+		const asked = await askedToolCall(ctx, token, threadId);
 
 		const response = await ctx.app.handle(
 			widgetRequest("/v1/widget/tool-results", {
 				token,
 				body: {
 					threadId,
-					callId: "call-1",
+					callId: asked.callId,
 					tool: "search_products",
 					result: { ok: true },
 					isError: false,
@@ -799,21 +826,14 @@ describe("widget WebMCP round trip", () => {
 		const token = await newVisitor(ctx);
 		const threadId = await newThread(ctx, token);
 		await registerTools(ctx, token, threadId, [searchTool]);
-		await ctx.app
-			.handle(
-				widgetRequest("/v1/widget/messages", {
-					token,
-					body: { threadId, text: "the cheapest laptop please" },
-				}),
-			)
-			.then((response) => response.text());
+		const asked = await askedToolCall(ctx, token, threadId);
 		await ctx.app
 			.handle(
 				widgetRequest("/v1/widget/tool-results", {
 					token,
 					body: {
 						threadId,
-						callId: "call-1",
+						callId: asked.callId,
 						tool: "search_products",
 						result: { ok: true },
 						isError: false,
@@ -1438,12 +1458,18 @@ describe("the page the visitor is on", () => {
 		const store = new InMemoryWorldStateStore();
 		const threadId = "thread-x";
 		await store.save(threadId, {
-			state: { "page:path": "/old", "page:lang": "ru" },
+			state: {
+				"page:path": "/old",
+				"page:lang": "ru",
+				planRunId: "run-0",
+				awaitedTool: "search_products",
+			},
 			goal: { replied: true },
 		});
 		const { prepareResume } = await import("../reply/reply.service.ts");
 		const prepared = await prepareResume(
 			{
+				db: ctx.db,
 				worldStateStore: store,
 				webmcpCatalog: new Map(),
 				actions: [],
@@ -1451,6 +1477,7 @@ describe("the page the visitor is on", () => {
 			threadId,
 			"run",
 			{
+				callId: "run-0",
 				tool: "search_products",
 				isError: false,
 				page: "/store/greenleaf?q=cheese",
@@ -1459,5 +1486,142 @@ describe("the page the visitor is on", () => {
 		expect(prepared.state["page:path"]).toBe("/store/greenleaf?q=cheese");
 		expect(prepared.state["page:lang"]).toBeUndefined();
 		void ctx;
+	});
+});
+
+describe("widget abuse limits", () => {
+	const searchTool: WebMcpToolDescriptor = {
+		name: "search_products",
+		description: "Search the catalog",
+		inputSchema: { type: "object", properties: { query: {} } },
+	};
+
+	test("POST /v1/widget/threads is limited per visitor → 429", async () => {
+		const ctx = setup({ threadsPerHour: 2 });
+		const token = await newVisitor(ctx);
+		await newThread(ctx, token);
+		await newThread(ctx, token);
+
+		const third = await ctx.app.handle(
+			widgetRequest("/v1/widget/threads", { token }),
+		);
+		expect(third.status).toBe(429);
+
+		ctx.clock.now += HOUR_MS;
+		expect((await newThread(ctx, token)).length).toBeGreaterThan(0);
+	});
+
+	test("the thread limit is per visitor, not shared", async () => {
+		const ctx = setup({ threadsPerHour: 1 });
+		const first = await newVisitor(ctx);
+		const second = await newVisitor(ctx);
+		await newThread(ctx, first);
+		await newThread(ctx, second);
+	});
+
+	test("a body announced bigger than maxBodyBytes → 413 before anything is read", async () => {
+		const ctx = setup({ maxBodyBytes: 200 });
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+		const request = widgetRequest("/v1/widget/tool-results", {
+			token,
+			body: {
+				threadId,
+				callId: "x",
+				tool: "search_products",
+				result: "y".repeat(500),
+			},
+		});
+		request.headers.set("content-length", "5000");
+
+		const response = await ctx.app.handle(request);
+
+		expect(response.status).toBe(413);
+		expect(response.headers.get("access-control-allow-origin")).toBe(ORIGIN);
+	});
+
+	test("a body within maxBodyBytes goes through", async () => {
+		const ctx = setup({ maxBodyBytes: 5000 });
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+		const request = widgetRequest("/v1/widget/messages", {
+			token,
+			body: { threadId, text: "hello" },
+		});
+		request.headers.set("content-length", "40");
+		expect((await ctx.app.handle(request)).status).toBe(200);
+	});
+
+	test("the per-thread WebMCP catalog cache is bounded: the least recently used thread is forgotten", async () => {
+		const ctx = setup(
+			{ maxCatalogThreads: 1 },
+			{ decisionAgent: classifyingDecisionAgent("search") },
+		);
+		const token = await newVisitor(ctx);
+		const older = await newThread(ctx, token);
+		const newer = await newThread(ctx, token);
+		await registerTools(ctx, token, older, [searchTool]);
+		await registerTools(ctx, token, newer, [searchTool]);
+
+		const forgotten = await sendMessage(ctx, token, older, "cheapest laptop");
+		expect(await forgotten.text()).not.toContain('"tool_call"');
+		const kept = await askedToolCall(ctx, token, newer);
+		expect(kept.tool).toBe("search_products");
+	});
+});
+
+describe("widget tool-results: callId and tool must be the ones issued", () => {
+	const searchTool: WebMcpToolDescriptor = {
+		name: "search_products",
+		description: "Search the catalog",
+		inputSchema: { type: "object", properties: { query: {} } },
+	};
+
+	async function waitingThread() {
+		const ctx = setup(
+			{},
+			{ decisionAgent: classifyingDecisionAgent("search") },
+		);
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+		await registerTools(ctx, token, threadId, [searchTool]);
+		const asked = await askedToolCall(ctx, token, threadId);
+		return { ctx, token, threadId, asked };
+	}
+
+	test("a callId the server never issued → error line, the run is not resumed", async () => {
+		const { ctx, token, threadId, asked } = await waitingThread();
+
+		const lines = await sendToolResult(ctx, token, {
+			threadId,
+			callId: "forged",
+			tool: asked.tool,
+		});
+
+		expect(lines.at(-1)).toMatchObject({ type: "error" });
+		expect(lines.some((line) => line.type === "done")).toBe(false);
+	});
+
+	test("a different tool than the one asked for → error line", async () => {
+		const { ctx, token, threadId, asked } = await waitingThread();
+
+		const lines = await sendToolResult(ctx, token, {
+			threadId,
+			callId: asked.callId,
+			tool: "add_to_cart",
+		});
+
+		expect(lines.at(-1)).toMatchObject({ type: "error" });
+	});
+
+	test("the issued callId and tool resume; replaying the same result does not", async () => {
+		const { ctx, token, threadId, asked } = await waitingThread();
+		const body = { threadId, callId: asked.callId, tool: asked.tool };
+
+		const first = await sendToolResult(ctx, token, body);
+		expect(first.at(-1)).toMatchObject({ type: "done" });
+
+		const replay = await sendToolResult(ctx, token, body);
+		expect(replay.at(-1)).toMatchObject({ type: "error" });
 	});
 });
