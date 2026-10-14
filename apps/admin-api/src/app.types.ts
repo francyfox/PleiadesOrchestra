@@ -1,7 +1,6 @@
-import type { Observability } from "@repo/elysia-kit";
+import type { ClientIpSource, Observability } from "@repo/elysia-kit";
 import type { AdminDirectory } from "./modules/admins/admins.service.ts";
 import type { Auth } from "./modules/auth/auth.ts";
-import type { ClientIpSource } from "./modules/client-ip/client-ip.service.ts";
 import type { AdminDb } from "./modules/database/database.ts";
 import type { LiveTopic } from "./modules/live/live.types.ts";
 import type { LiveHub } from "./modules/live-hub/live-hub.ts";

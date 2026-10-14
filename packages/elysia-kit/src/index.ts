@@ -1,5 +1,7 @@
 export type { KitAppOptions, Observability } from "./app.ts";
 export { createKitApp, createObservability } from "./app.ts";
+export type { ClientIpSource, ResolveClientIpInput } from "./client-ip.ts";
+export { CLIENT_IP_SOURCES, resolveClientIp } from "./client-ip.ts";
 export type { DocsOptions } from "./docs.ts";
 export { docs } from "./docs.ts";
 export type { ObservabilityEnv } from "./env.ts";

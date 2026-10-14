@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { resolveClientIp } from "./client-ip.service.ts";
+import { resolveClientIp } from "./client-ip.ts";
 
 const SOCKET = "172.18.0.5";
 

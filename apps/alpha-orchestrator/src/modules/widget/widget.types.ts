@@ -1,5 +1,5 @@
 import type { WebMcpToolDescriptor } from "@repo/core";
-import type { ClientIpSource } from "../client-ip/client-ip.service.ts";
+import type { ClientIpSource } from "@repo/elysia-kit";
 import type { UserRow } from "../users/users.types.ts";
 
 export type CustomerContext = Record<string, string | number | boolean>;

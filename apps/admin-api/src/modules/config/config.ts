@@ -1,7 +1,6 @@
-import { observabilityEnv } from "@repo/elysia-kit";
+import { CLIENT_IP_SOURCES, observabilityEnv } from "@repo/elysia-kit";
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
-import { CLIENT_IP_SOURCES } from "../client-ip/client-ip.service.ts";
 
 /** Comma-separated list → trimmed, non-empty entries. */
 const list = z.string().transform((value) =>

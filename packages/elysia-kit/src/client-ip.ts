@@ -1,6 +1,7 @@
 /**
- * Where the client IP comes from. It feeds the per-IP widget limits and IP
- * blocks, so it must be something the client can't choose:
+ * Where the client IP comes from (`CLIENT_IP_SOURCE`). It feeds per-IP rate
+ * limits, IP blocks and login throttling, so it must be something the client
+ * can't choose:
  *
  * - `socket` — the TCP peer address. Right when nothing sits in front of the
  *   service; behind a proxy every request shares the proxy's address.

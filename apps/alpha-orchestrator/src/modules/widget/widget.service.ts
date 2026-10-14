@@ -1,8 +1,8 @@
+import { resolveClientIp } from "@repo/elysia-kit";
 import { isAllowed } from "../access/access.service.ts";
 import { isIpBlocked } from "../blocked-ips/blocked-ips.service.ts";
 import type { ChannelDirectory } from "../channel-directory/channel-directory.ts";
 import type { ChannelRow } from "../channels/channels.types.ts";
-import { resolveClientIp } from "../client-ip/client-ip.service.ts";
 import type { Db } from "../database/database.ts";
 import { HOUR_MS, MINUTE_MS } from "../http/http.service.ts";
 import { FixedWindowLimiter } from "../rate-limit/rate-limit.ts";

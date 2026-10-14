@@ -1,12 +1,10 @@
+import { resolveClientIp } from "@repo/elysia-kit";
 import { APIError } from "better-auth/api";
 import { Elysia, t } from "elysia";
 import type { RouteDeps } from "../../app.types.ts";
 import { MIN_PASSWORD } from "../admin-policy/admin-policy.service.ts";
 import { Credentials } from "../admins/admins.schema.ts";
-import {
-	resolveClientIp,
-	withTrustedIp,
-} from "../client-ip/client-ip.service.ts";
+import { withTrustedIp } from "../client-ip/client-ip.service.ts";
 import { ApiError } from "../common/common.schema.ts";
 import { Registration, Session } from "./session.schema.ts";
 
