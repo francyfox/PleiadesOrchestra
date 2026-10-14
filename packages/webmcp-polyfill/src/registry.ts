@@ -6,13 +6,17 @@ function invalid(message: string): DOMException {
 	return new DOMException(message, "InvalidStateError");
 }
 
-/** Throws the spec-shaped error for a malformed tool definition. */
-export function assertValidTool(tool: RawTool): void {
+/**
+ * Throws the spec-shaped error for a malformed tool definition. Any script on
+ * the page can call `document.modelContext.registerTool`, so the input is
+ * untrusted until this passes.
+ */
+export function assertValidTool(tool: unknown): asserts tool is RawTool {
 	if (!tool || typeof tool !== "object")
 		throw new DOMException("Invalid tool object", "TypeError");
-	const { name, description } = tool;
-	if (!name || typeof name !== "string") throw invalid("Invalid tool name");
-	if (!description || typeof description !== "string")
+	const { name, description } = tool as Record<string, unknown>;
+	if (typeof name !== "string" || !name) throw invalid("Invalid tool name");
+	if (typeof description !== "string" || !description)
 		throw invalid("Invalid tool description");
 	if (!NAME_FORMAT.test(name)) throw invalid("Invalid tool name format");
 }
@@ -33,12 +37,12 @@ export function createToolRegistry(win: AnyWindow, onChange: () => void) {
 	};
 
 	const register = async (
-		tool: RawTool,
+		tool: unknown,
 		options: { signal?: AbortSignal } = {},
 	): Promise<void> => {
 		assertValidTool(tool);
 		const { name, description } = tool;
-		if (store().has(name as string))
+		if (store().has(name))
 			throw invalid(`Tool "${name}" is already registered`);
 		if (tool.inputSchema) JSON.stringify(tool.inputSchema); // throws if not serializable
 

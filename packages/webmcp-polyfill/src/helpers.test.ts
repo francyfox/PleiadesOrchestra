@@ -3,6 +3,7 @@ import { rewritePseudoClasses } from "./css-pseudo.ts";
 import { dedupeByName } from "./discovery.ts";
 import { parseArgs, retryAsJsonString } from "./execute-tool.ts";
 import { declarativeSignature } from "./observer.ts";
+import { assertValidTool } from "./registry.ts";
 import { isExpectedReply } from "./remote-bridge.ts";
 import type { NormalizedTool } from "./types.ts";
 
@@ -91,5 +92,23 @@ describe("isExpectedReply", () => {
 			isExpectedReply(ev({ data: { type: "T", requestId: "2" } }), match),
 		).toBe(false);
 		expect(isExpectedReply(ev({ data: null }), match)).toBe(false);
+	});
+});
+
+describe("assertValidTool", () => {
+	test("rejects non-string names and descriptions from page scripts", () => {
+		expect(() => assertValidTool({ name: 42, description: "d" })).toThrow(
+			"Invalid tool name",
+		);
+		expect(() => assertValidTool({ name: "a", description: {} })).toThrow(
+			"Invalid tool description",
+		);
+		expect(() => assertValidTool("search")).toThrow("Invalid tool object");
+	});
+
+	test("narrows a valid definition to RawTool", () => {
+		const input: unknown = { name: "search", description: "Find items" };
+		assertValidTool(input);
+		expect(input.name).toBe("search");
 	});
 });

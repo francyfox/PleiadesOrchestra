@@ -48,7 +48,7 @@ interface RawWebMcpTool {
  * There is no `callTool(name, args)` — an earlier version of this file
  * guessed that shape and, as a result, never actually detected a real
  * `document.modelContext` (its feature-detection checked for a `callTool`
- * method that plain never exists, so `createNavigatorWebMcpProvider` always
+ * method that plain never exists, so the provider factory always
  * returned `undefined`, silently disabling the whole feature even with a
  * fully working extension present). No `registerTool` here — that's the
  * *site's own* half (`useWebMCP`/`document.modelContext.registerTool`,
@@ -97,21 +97,18 @@ function parseToolResult(raw: unknown): WebMcpCallResult {
 }
 
 /**
- * Best-effort binding to the in-page WebMCP tool registry, probed the same
- * way `apps/shopping-cart-webmcp`'s demo does (`navigator.modelContext` /
- * `document.modelContext`). Returns `undefined` when neither is present with
- * a real `getTools`/`executeTool` pair — every real browser today, since
- * `document.modelContext` is (per `use-webmcp-tool`'s own README) "typically
- * injected by a browser extension", not a native API yet — so the whole
- * feature degrades to a no-op exactly like the rest of this package does for
- * a missing optional capability.
+ * Best-effort binding to the in-page WebMCP tool registry on
+ * `document.modelContext` (the spec moved it off `navigator`; the legacy
+ * `navigator.modelContext` is ignored). Native, extension-injected or our
+ * polyfill (`@repo/webmcp-polyfill`). Returns `undefined` without a real
+ * `getTools`/`executeTool` pair, so the whole feature degrades to a no-op
+ * like any missing optional capability.
  */
-export function createNavigatorWebMcpProvider(): WebMcpProvider | undefined {
+export function createDocumentWebMcpProvider(): WebMcpProvider | undefined {
 	const host = globalThis as {
-		navigator?: { modelContext?: RawModelContext };
 		document?: { modelContext?: RawModelContext };
 	};
-	const raw = host.navigator?.modelContext ?? host.document?.modelContext;
+	const raw = host.document?.modelContext;
 	if (
 		!raw ||
 		typeof raw.getTools !== "function" ||

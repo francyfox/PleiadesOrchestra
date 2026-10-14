@@ -4,7 +4,7 @@ export interface StoredSession {
 	threadId?: string;
 }
 
-/** WebMCP: the browser exposes the host page's own tools directly (`navigator.modelContext`) — needs a recent Chrome. MCP: the site's tools are reached through a server-side MCP connection instead, no browser support required. */
+/** WebMCP: the browser exposes the host page's own tools directly (`document.modelContext`) — needs a recent Chrome. MCP: the site's tools are reached through a server-side MCP connection instead, no browser support required. */
 export type ToolMode = "webmcp" | "mcp";
 
 interface StoreOptions {

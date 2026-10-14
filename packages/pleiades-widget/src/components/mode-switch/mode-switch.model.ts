@@ -26,7 +26,7 @@ const pageClicks: NonNullable<ModeSwitchOptions["clicks"]> = (handler) => {
  * Which tool integration the site uses — a standing preference (persisted by
  * `chat.setToolMode`), not part of any one message. WebMCP gets a
  * question-mark hint: it needs the browser itself to expose
- * `navigator.modelContext`, MCP doesn't (the site's tools are reached
+ * `document.modelContext`, MCP doesn't (the site's tools are reached
  * server-side instead).
  */
 export function createModeSwitchModel({

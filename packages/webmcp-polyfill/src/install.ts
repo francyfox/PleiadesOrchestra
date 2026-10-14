@@ -8,7 +8,7 @@
  * it as a page-level IIFE.
  *
  * Sets up `document.modelContext` on any browser that lacks native WebMCP
- * support. The widget's `createNavigatorWebMcpProvider()` then detects the API
+ * support. The widget's `createDocumentWebMcpProvider()` then detects the API
  * and WebMCP works cross-browser via Pleiades as the AI bridge.
  */
 import { schedulePseudoClassPolyfill } from "./css-pseudo.ts";

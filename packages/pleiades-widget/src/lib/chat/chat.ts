@@ -304,7 +304,7 @@ export function createChat({
 	 * on its own, and reclassifying it through Laya on every message was
 	 * both wasteful and, combined with the size, what caused a `413` on the
 	 * very first message. A listing/registration failure (offline, an
-	 * unstable/half-implemented `navigator.modelContext`) just means no
+	 * unstable/half-implemented `document.modelContext`) just means no
 	 * tools this session, not a broken open/mode switch.
 	 */
 	async function syncWebMcpTools(onlyIfChanged = false): Promise<void> {

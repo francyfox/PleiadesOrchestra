@@ -21,7 +21,7 @@ function defineEventHandler(target: EventTarget, type: string): void {
 }
 
 /**
- * Builds `navigator.modelContext`: a plain EventTarget extended with the
+ * Builds `document.modelContext`: a plain EventTarget extended with the
  * WebMCP API, composed from registry, discovery, remote bridge and executor.
  */
 export function createModelContext(deps: PolyfillDeps): ModelContextApi {

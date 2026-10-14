@@ -1,20 +1,33 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { createNavigatorWebMcpProvider } from "@/lib/webmcp/webmcp.ts";
+import { createDocumentWebMcpProvider } from "@/lib/webmcp/webmcp.ts";
 
 afterEach(() => {
 	(globalThis as { document?: unknown }).document = undefined;
 });
 
-describe("createNavigatorWebMcpProvider", () => {
-	test("returns undefined when neither navigator nor document expose a modelContext", () => {
-		expect(createNavigatorWebMcpProvider()).toBeUndefined();
+describe("createDocumentWebMcpProvider", () => {
+	test("returns undefined when document exposes no modelContext", () => {
+		expect(createDocumentWebMcpProvider()).toBeUndefined();
+	});
+
+	test("ignores the legacy navigator.modelContext", () => {
+		const nav = globalThis.navigator as { modelContext?: unknown };
+		nav.modelContext = {
+			getTools: async () => [],
+			executeTool: async () => "{}",
+		};
+		try {
+			expect(createDocumentWebMcpProvider()).toBeUndefined();
+		} finally {
+			delete nav.modelContext;
+		}
 	});
 
 	test("returns undefined when modelContext is present but lacks getTools/executeTool (e.g. only registerTool — the site's own provider side)", () => {
 		(globalThis as { document?: unknown }).document = {
 			modelContext: { registerTool: () => {} },
 		};
-		expect(createNavigatorWebMcpProvider()).toBeUndefined();
+		expect(createDocumentWebMcpProvider()).toBeUndefined();
 	});
 
 	test("listTools maps the real getTools() shape, parsing a stringified inputSchema", async () => {
@@ -39,7 +52,7 @@ describe("createNavigatorWebMcpProvider", () => {
 			},
 		};
 
-		const provider = createNavigatorWebMcpProvider();
+		const provider = createDocumentWebMcpProvider();
 		const tools = await provider?.listTools();
 
 		expect(tools).toEqual([
@@ -74,7 +87,7 @@ describe("createNavigatorWebMcpProvider", () => {
 			},
 		};
 
-		const provider = createNavigatorWebMcpProvider();
+		const provider = createDocumentWebMcpProvider();
 		const outcome = await provider?.callTool("add_to_cart", {
 			itemId: "sku-1",
 		});
@@ -102,7 +115,7 @@ describe("createNavigatorWebMcpProvider", () => {
 			},
 		};
 
-		const provider = createNavigatorWebMcpProvider();
+		const provider = createDocumentWebMcpProvider();
 		const outcome = await provider?.callTool("checkout", {});
 
 		expect(outcome?.isError).toBe(true);
@@ -120,14 +133,14 @@ describe("createNavigatorWebMcpProvider", () => {
 			},
 		};
 
-		const provider = createNavigatorWebMcpProvider();
+		const provider = createDocumentWebMcpProvider();
 		const outcome = await provider?.callTool("gone", {});
 
 		expect(outcome?.isError).toBe(true);
 	});
 });
 
-describe("createNavigatorWebMcpProvider: onToolsChange", () => {
+describe("createDocumentWebMcpProvider: onToolsChange", () => {
 	function modelContextWithEvents() {
 		const listeners = new Map<string, Set<() => void>>();
 		const modelContext = {
@@ -156,7 +169,7 @@ describe("createNavigatorWebMcpProvider: onToolsChange", () => {
 
 	test("calls the listener on every toolchange, and stops after the returned unsubscribe", () => {
 		const { listeners, emit } = modelContextWithEvents();
-		const provider = createNavigatorWebMcpProvider();
+		const provider = createDocumentWebMcpProvider();
 		let calls = 0;
 
 		const stop = provider?.onToolsChange?.(() => {
@@ -183,7 +196,7 @@ describe("createNavigatorWebMcpProvider: onToolsChange", () => {
 				},
 			},
 		};
-		const stop = createNavigatorWebMcpProvider()?.onToolsChange?.(() => {});
+		const stop = createDocumentWebMcpProvider()?.onToolsChange?.(() => {});
 		expect(typeof stop).toBe("function");
 		expect(() => stop?.()).not.toThrow();
 	});
