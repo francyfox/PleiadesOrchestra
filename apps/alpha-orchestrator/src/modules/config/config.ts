@@ -1,6 +1,7 @@
 import { observabilityEnv } from "@repo/elysia-kit";
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
+import { CLIENT_IP_SOURCES } from "../client-ip/client-ip.service.ts";
 
 export function buildConfig(env: Record<string, string | undefined>) {
 	return createEnv({
@@ -26,11 +27,6 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			LAYA_API_BASE_URL: z.url(),
 			LAYA_API_KEY: z.string().min(1),
 
-			// kali-mcp — MCP server that executes commands in the Kali Linux container
-			// (see /home/fox/WebstormProjects/kali/kali-mcp). When set, its tools are
-			// available as GOAP actions on every thread via threadActionsFor.
-			KALI_MCP_URL: z.url().optional(),
-
 			// delta-function-call — writes the JSON arguments of WebMCP tool calls
 			// (see apps/delta-function-call). Optional: without a base URL the
 			// arguments are built mechanically from the facts of the run.
@@ -49,6 +45,11 @@ export function buildConfig(env: Record<string, string | undefined>) {
 				.string()
 				.default("gaudi/opus-mt-ru-en-ctranslate2"),
 			TRANSLATE_THREADS: z.coerce.number().int().positive().default(4),
+			// Worker threads translating in parallel, each with its own copy of the
+			// model. The FFI call blocks its thread, so it never runs on the main one.
+			TRANSLATE_WORKERS: z.coerce.number().int().min(1).max(2).default(1),
+			// A call running longer than this is rejected and its worker replaced.
+			TRANSLATE_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
 			TRANSLATE_COMPUTE_TYPE: z.string().default("int8"),
 
 			// Conservative default for a small self-hosted context window (CTX_SIZE
@@ -124,9 +125,14 @@ export function buildConfig(env: Record<string, string | undefined>) {
 				.int()
 				.positive()
 				.default(20),
-			// Take the client IP from X-Forwarded-For. Only behind a proxy/tunnel
-			// you control — otherwise any client can spoof its IP past blocks and limits.
-			TRUST_PROXY: z.stringbool().default(false),
+			// Where the client IP (per-IP widget limits, IP blocks) comes from —
+			// see resolveClientIp. `socket` is the only source a client can't
+			// forge without a proxy in front; compose (Cloudflare tunnel) sets
+			// cf-connecting-ip.
+			CLIENT_IP_SOURCE: z.enum(CLIENT_IP_SOURCES).default("socket"),
+			// xff-rightmost only: trusted proxies appending to X-Forwarded-For;
+			// the client IP is this many entries from the right.
+			TRUSTED_PROXY_HOPS: z.coerce.number().int().positive().default(1),
 
 			// beta-text/gamma-decision are single CPU-bound sidecars with a
 			// calibrated thread count (see the beta-text/gamma-decision Lessons

@@ -22,22 +22,27 @@ services:
       # Shared with the admin service — same root-.env pattern as HARNESS_API_KEY.
       ADMIN_API_KEY: ${ADMIN_API_KEY:?set ADMIN_API_KEY in .env (same value as admin)}
       DATABASE_PATH: /data/orchestrator.db
-      # Public traffic arrives via the `tunnel` service, so the socket address is
-      # always cloudflared's; take the visitor IP from X-Forwarded-For instead
-      # (per-IP widget rate limits and IP blocks depend on it).
-      TRUST_PROXY: "true"
-      # Optional: without a reachable delta-function-call the tool arguments are
-      # built from facts (no depends_on — the model downloads on first start).
+      # Public traffic arrives via the `tunnel` service (compose profile `tunnel`),
+      # so the socket address is cloudflared's; take the visitor IP from the
+      # CF-Connecting-IP header Cloudflare sets (per-IP widget rate limits and IP
+      # blocks depend on it). Not X-Forwarded-For's head — clients write that.
+      # Without the header (local calls, no tunnel) it falls back to the socket.
+      # Safe only while port 3000 stays on 127.0.0.1 (else the header is forgeable).
+      CLIENT_IP_SOURCE: cf-connecting-ip
+      # Tool-call arguments are written by delta-function-call (no depends_on — the
+      # model downloads on first start). Same key as the delta service below.
       FUNCTION_CALL_BASE_URL: http://delta-function-call:8080/v1
-      FUNCTION_CALL_API_KEY: ${FUNCTION_CALL_API_KEY:-}
+      FUNCTION_CALL_API_KEY: ${FUNCTION_CALL_API_KEY:?set FUNCTION_CALL_API_KEY in .env (same value as delta-function-call)}
     # SQLite on the host, not in a Docker volume: visible, easy to back up,
     # survives `docker compose down -v`. ./data is gitignored.
     volumes:
       - ./data/alpha-orchestrator:/data
       # The Opus-MT translation model downloads here on first start.
       - alpha-orchestrator-models:/models
+    # Loopback only: the orchestrator also serves /v1/admin/*. Public traffic goes
+    # through the `tunnel` profile over the compose network, not this port.
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     depends_on:
       beta-text:
         condition: service_healthy
@@ -50,8 +55,11 @@ services:
       dockerfile: apps/beta-text/Dockerfile
     env_file:
       - .env
+    # Loopback only. Published for standalone alpha-orchestrator on the host
+    # (apps/alpha-orchestrator/.env.example points at localhost:8181); other services
+    # reach it over the compose network.
     ports:
-      - "8181:8080"
+      - "127.0.0.1:8181:8080"
     volumes:
       - beta-text-models:/models
     # Vulkan на встроенном Radeon: рендер-нода GPU внутрь контейнера.
@@ -68,9 +76,13 @@ services:
       context: .
       dockerfile: apps/delta-function-call/Dockerfile
     environment:
-      API_KEY: ${FUNCTION_CALL_API_KEY:-}
+      # Required, like LLM_API_KEY: an empty key makes llama-server accept
+      # unauthenticated requests.
+      API_KEY: ${FUNCTION_CALL_API_KEY:?set FUNCTION_CALL_API_KEY in .env (same value as alpha-orchestrator)}
+    # Loopback only: for standalone alpha-orchestrator on the host (FUNCTION_CALL_BASE_URL
+    # defaults to localhost:8282 in its .env.example).
     ports:
-      - "8282:8080"
+      - "127.0.0.1:8282:8080"
     volumes:
       - delta-function-call-models:/models
     devices:
@@ -85,8 +97,9 @@ services:
       dockerfile: apps/gamma-decision/Dockerfile
     env_file:
       - apps/gamma-decision/.env
+    # Loopback only: for standalone alpha-orchestrator on the host (LAYA_API_BASE_URL).
     ports:
-      - "8090:8080"
+      - "127.0.0.1:8090:8080"
     volumes:
       - gamma-decision-models:/root/.cache/receptron-laya
 
@@ -155,7 +168,7 @@ services:
 #      HARNESS_BASE_URL: http://alpha-orchestrator:3000
 #      HARNESS_API_KEY: ${HARNESS_API_KEY:?set HARNESS_API_KEY in .env (same value as alpha-orchestrator)}
 #    ports:
-#      - "3001:3000"
+#      - "127.0.0.1:3001:3000"
 #    depends_on:
 #      - alpha-orchestrator
 #    # Webhook mode: Telegram reaches it through the `tunnel` service below
@@ -167,11 +180,15 @@ services:
   # the credentials JSON: the image runs as uid 65532 and can't read a 0400
   # file owned by the host user. CLOUDFLARE_TUNNEL_TOKEN = base64 {a: AccountTag,
   # t: TunnelID, s: TunnelSecret} from ~/.cloudflared/<tunnel-id>.json (see .env.example).
+  # Opt-in: `docker compose --profile tunnel up -d tunnel`. Not `:?` — a required-var
+  # error would break `docker compose up` for every service while the profile is off.
   tunnel:
     image: cloudflare/cloudflared:2026.3.0
+    profiles:
+      - tunnel
     command: tunnel --config /etc/cloudflared/config.yml run
     environment:
-      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?set CLOUDFLARE_TUNNEL_TOKEN in .env}
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
     volumes:
       - ./cloudflared/config.yml:/etc/cloudflared/config.yml:ro
     restart: unless-stopped

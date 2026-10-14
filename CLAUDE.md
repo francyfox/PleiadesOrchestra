@@ -30,12 +30,13 @@ Turborepo monorepo (Bun workspaces), hexagonal style. **Naming**: PleiadesOrches
 - **`apps/admin-api`** — Elysia BFF: better-auth admin accounts (own SQLite), orchestrator proxy, host metrics (`/proc`, `/sys/class/drm`). See `apps/admin-api/CLAUDE.md`.
 - **`apps/admin`** — Svelte 5 SPA (shadcn-svelte, TanStack Query v6, `adapter-static`, no SSR). Talks to `admin-api` via typed Eden client. See `apps/admin/CLAUDE.md`.
 - **`packages/pleiades-widget`** — framework-agnostic `<pleiades-chat>` web component (Alpine.js CSP build, 40 kB brotli budget). See `packages/pleiades-widget/CLAUDE.md`.
+- **`packages/webmcp-polyfill`** (`@repo/webmcp-polyfill`, Apache-2.0, private) — WebMCP `document.modelContext` polyfill (ported from Google's webmcp-tools); `installWebMcpPolyfill`. A widget **devDependency**: Vite bundles it into the published widget, so it must never become a runtime dependency.
 - **`packages/elysia-kit`** (`@repo/elysia-kit`) — shared Elysia setup: `createKitApp` (request logging, Sentry, `/health`, optional Swagger), `onRequestGuard`, `serve` (graceful shutdown), `retryFetch` (outbound with backoff).
 - **`apps/pleiades-mcp`** — stdio MCP server exposing the orchestrator as Claude Code tools (`pleiades_list_sites`, `pleiades_site_task`). Not a compose service.
 - **`apps/gemini-webapi-mcp`** — Python/uv MCP server for Gemini web app (profile `gemini`, port 8765).
 - **`packages/core/src/telemetry.ts`** — structured telemetry (`logMessageEvent`/`logLlmState`, OpenTelemetry GenAI field names, JSON to stdout).
 - **`apps/snake-benchmark`** — Laya latency benchmark (not a service, not in compose).
-- **Deployment**: local-only via `compose.yml`. SQLite DBs bind-mounted from `./data/<service>/`. Admin panel at `127.0.0.1:3002` (Caddy + static), `admin-api` at `127.0.0.1:3003`. Telegram bot needs a public tunnel for webhooks.
+- **Deployment**: local-only via `compose.yml`. Every published port is bound to `127.0.0.1` (orchestrator `3000`, beta-text `8181`, delta `8282`, gamma `8090` — the last three for standalone host runs; admin-api `3003`, admin panel `3002` when enabled). Public traffic goes through the `tunnel` service, which is opt-in (`docker compose --profile tunnel up -d tunnel`). SQLite DBs bind-mounted from `./data/<service>/`. Telegram bot webhook needs that tunnel.
 - **Dependency versions** in root `package.json` `workspaces.catalog` (Bun catalogs). Workspaces reference as `"catalog:"`. TypeScript is 6 everywhere.
 - **`apps/pleiades-plugin`** (WXT browser extension) is excluded from the workspace (`"!apps/pleiades-plugin"` in root `workspaces.packages`) — remove the negation when it should build with the rest.
 

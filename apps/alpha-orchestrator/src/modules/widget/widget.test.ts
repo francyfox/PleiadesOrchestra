@@ -73,7 +73,7 @@ function setup(
 		historyStore: store,
 		ipHashSalt: SALT,
 		now: () => clock.now,
-		widget: { trustProxy: true, ...widget },
+		widget: { clientIpSource: "xff-rightmost", ...widget },
 		...overrides,
 	});
 	const shop = createWebChannel(
@@ -328,8 +328,26 @@ describe("POST /v1/widget/visitors", () => {
 		await newVisitor(ctx, "198.51.100.1");
 	});
 
-	test("without TRUST_PROXY, X-Forwarded-For is ignored for IP blocking", async () => {
-		const ctx = setup({ trustProxy: false });
+	test("a client-written X-Forwarded-For head can't dodge an IP block", async () => {
+		const ctx = setup({ clientIpSource: "xff-rightmost", trustedProxyHops: 1 });
+		createBlockedIp(
+			ctx.db,
+			{ ip: IP, reason: "spam", expiresInHours: 1 },
+			SALT,
+			ctx.clock.now,
+		);
+		// The proxy appends the real address; the spoofed head must be ignored.
+		const response = await ctx.app.handle(
+			widgetRequest("/v1/widget/visitors", {
+				publishableKey: ctx.publishableKey,
+				ip: `198.51.100.${Math.floor(Math.random() * 250)}, ${IP}`,
+			}),
+		);
+		expect(response.status).toBe(403);
+	});
+
+	test("with CLIENT_IP_SOURCE=socket, X-Forwarded-For is ignored for IP blocking", async () => {
+		const ctx = setup({ clientIpSource: "socket" });
 		createBlockedIp(
 			ctx.db,
 			{ ip: IP, reason: "spam", expiresInHours: 1 },

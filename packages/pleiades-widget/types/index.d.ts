@@ -44,6 +44,13 @@ export interface PleiadesChatAttributes {
 	 */
 	"mic-hotkey"?: string;
 	/**
+	 * Comma-separated origins (`"https://a.example,https://b.example"`) whose
+	 * windows may list and run this page's WebMCP tools through `postMessage`
+	 * (embedding page, opener, iframe). Off by default: without it no other
+	 * window can reach the page's tools. `*` is not accepted.
+	 */
+	"expose-tools-to"?: string;
+	/**
 	 * Up to three things to try, shown until the first message: a JSON array of
 	 * texts, e.g. `'["Find a jacket","Where is my order?"]'`. `'[]'` hides them;
 	 * absent = built-in examples.
@@ -66,6 +73,7 @@ export interface PleiadesChatElement extends HTMLElement {
 	examples: string;
 	hotkey: string;
 	micHotkey: string;
+	exposeToolsTo: string;
 	/** Reflects the `open` attribute. */
 	open: boolean;
 	toggle(): void;

@@ -1,4 +1,5 @@
 import type { WebMcpToolDescriptor } from "@repo/core";
+import type { ClientIpSource } from "../client-ip/client-ip.service.ts";
 import type { UserRow } from "../users/users.types.ts";
 
 export type CustomerContext = Record<string, string | number | boolean>;
@@ -18,8 +19,10 @@ export interface WidgetOptions {
 	ipMessagesPerMinute: number;
 	/** New visitor tokens per client IP per hour. */
 	visitorsPerHourPerIp: number;
-	/** Take the client IP from `X-Forwarded-For` (only behind a proxy you control). */
-	trustProxy: boolean;
+	/** Where the client IP comes from (see `resolveClientIp`). */
+	clientIpSource: ClientIpSource;
+	/** `xff-rightmost` only: trusted proxies appending to `X-Forwarded-For`. */
+	trustedProxyHops: number;
 	/** Sliding visitor-token lifetime — same as the anonymous-user retention. */
 	tokenTtlHours: number;
 	/** Messages kept per user; re-applied after an identify merge. */
@@ -32,7 +35,8 @@ export const DEFAULT_WIDGET_OPTIONS: WidgetOptions = {
 	messagesPerMinute: 10,
 	ipMessagesPerMinute: 30,
 	visitorsPerHourPerIp: 20,
-	trustProxy: false,
+	clientIpSource: "socket",
+	trustedProxyHops: 1,
 	tokenTtlHours: 24,
 	retentionPerUser: 10,
 };

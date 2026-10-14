@@ -18,6 +18,9 @@ jobs:
         with:
           bun-version: latest
       - run: bun install
+      # The polyfill is a private workspace bundled into the widget build; its tests live there.
+      - name: Polyfill (types, lint, test)
+        run: cd packages/webmcp-polyfill && bun run check-types && bun run lint && bun run test
       - name: Check types
         run: cd packages/pleiades-widget && bun run check-types
       - name: Lint

@@ -31,7 +31,7 @@ export interface RequestsDeps {
 function adminCors(origins: Set<string>) {
 	const allow = (origin: string) => ({
 		"access-control-allow-origin": origin,
-		"vary": "Origin",
+		vary: "Origin",
 	});
 	return new Elysia()
 		.options("/*", ({ request }) => {
@@ -47,15 +47,28 @@ function adminCors(origins: Set<string>) {
 				},
 			});
 		})
-		.onAfterHandle(({ request, set }: { request: Request; set: { headers: Record<string, string | number | undefined> } }) => {
-			const origin = request.headers.get("origin") ?? "";
-			if (!origins.has(origin)) return;
-			set.headers["access-control-allow-origin"] = origin;
-			set.headers["vary"] = "Origin";
-		});
+		.onAfterHandle(
+			({
+				request,
+				set,
+			}: {
+				request: Request;
+				set: { headers: Record<string, string | number | undefined> };
+			}) => {
+				const origin = request.headers.get("origin") ?? "";
+				if (!origins.has(origin)) return;
+				set.headers["access-control-allow-origin"] = origin;
+				set.headers["vary"] = "Origin";
+			},
+		);
 }
 
-export function requestsRoutes({ db, activeRuns, now, corsOrigins }: RequestsDeps) {
+export function requestsRoutes({
+	db,
+	activeRuns,
+	now,
+	corsOrigins,
+}: RequestsDeps) {
 	return new Elysia({ prefix: "/v1/admin/requests" })
 		.use(adminCors(corsOrigins))
 		.get("/", ({ query }) => listRequests(db, activeRuns, query, now()), {

@@ -55,7 +55,7 @@ export interface AppDeps {
 	/** Extracts `{query, quantity}` from a shopping message; optional (tests leave it out). */
 	productRequestAgent?: Agent;
 	/** Russian → English for a message as it comes in (Opus-MT, ~30 ms); unset = the text stays as typed. */
-	translate?: (text: string) => string;
+	translate?: (text: string) => string | Promise<string>;
 	/** Writes the JSON arguments of WebMCP tool calls; without it they are built from the run's facts. */
 	functionCallAgent?: FunctionCallAgent;
 	/** Transport secret (telegram-bot, cli, integration backends). */
@@ -190,17 +190,19 @@ export function createApp(deps: AppDeps) {
 			.use(usageRoutes({ db, now }))
 			.use(statsRoutes({ db, now }))
 			.use(performanceRoutes({ db, now }))
-			.use(requestsRoutes({
-				db,
-				activeRuns,
-				now,
-				corsOrigins: new Set(
-					(deps.adminCorsOrigins ?? "https://shalotts.site")
-						.split(",")
-						.map((s) => s.trim())
-						.filter(Boolean),
-				),
-			}))
+			.use(
+				requestsRoutes({
+					db,
+					activeRuns,
+					now,
+					corsOrigins: new Set(
+						(deps.adminCorsOrigins ?? "https://shalotts.site")
+							.split(",")
+							.map((s) => s.trim())
+							.filter(Boolean),
+					),
+				}),
+			)
 			.use(mcpRoutes(db))
 			.use(agentsRoutes({ agents: deps.agents, now }))
 	);

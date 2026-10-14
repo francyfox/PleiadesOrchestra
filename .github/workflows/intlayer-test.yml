@@ -3,7 +3,10 @@ name: Intlayer Test
 on:
   pull_request:
     branches:
-      - main
+      - master
+    paths:
+      - "apps/admin/**"
+      - ".github/workflows/intlayer-test.yml"
 
 concurrency:
   group: intlayer-test-${{ github.ref }}
@@ -14,12 +17,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: ⬇️ Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
       - name: 🥟 Setup Bun
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@v2.2.0
+        with:
+          bun-version: 1.4.2
       - name: 📦 Install dependencies
         run: bun install --frozen-lockfile
       - name: ⚙️ Build dictionaries
+        working-directory: apps/admin
         run: bunx intlayer build --ci
       - name: 🧪 Test for missing translations
+        working-directory: apps/admin
         run: bunx intlayer test --ci

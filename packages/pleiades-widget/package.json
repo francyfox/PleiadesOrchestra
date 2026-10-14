@@ -60,6 +60,7 @@
 	},
 	"devDependencies": {
 		"@alpinejs/csp": "^3.17.4",
+		"@repo/webmcp-polyfill": "workspace:*",
 		"@size-limit/file": "^14.1.0",
 		"@types/alpinejs": "^3.17.0",
 		"@types/bun": "catalog:",

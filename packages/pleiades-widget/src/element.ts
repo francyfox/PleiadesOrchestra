@@ -1,3 +1,4 @@
+import { installWebMcpPolyfill } from "@repo/webmcp-polyfill";
 // `?inline` gives the string this class injects into the shadow root at
 // runtime; the plain import (unused otherwise) makes Vite also emit the
 // same, identically-processed stylesheet as a standalone `dist/pleiades-widget.css`
@@ -22,7 +23,6 @@ import { currentPage } from "@/lib/page/page.ts";
 import { createDictation, speechLang } from "@/lib/speech/speech.ts";
 import { createSessionStore } from "@/lib/storage/storage.ts";
 import { createNavigatorWebMcpProvider } from "@/lib/webmcp/webmcp.ts";
-import { installWebMcpPolyfill } from "@/lib/webmcp/webmcp-polyfill.ts";
 import "@/components/styles.css";
 import { createWidget, type Widget } from "@/components/widget/widget.ts";
 
@@ -51,6 +51,7 @@ const ATTRIBUTES = {
 	examples: "examples",
 	hotkey: "hotkey",
 	micHotkey: "mic-hotkey",
+	exposeToolsTo: "expose-tools-to",
 } as const;
 
 type Prop = keyof typeof ATTRIBUTES;
@@ -75,6 +76,7 @@ export class PleiadesChat extends HTMLElement {
 	declare examples: string;
 	declare hotkey: string;
 	declare micHotkey: string;
+	declare exposeToolsTo: string;
 
 	#root = this.attachShadow({ mode: "open" });
 	#chat?: Chat;
@@ -181,7 +183,12 @@ export class PleiadesChat extends HTMLElement {
 			return;
 		}
 
-		installWebMcpPolyfill();
+		installWebMcpPolyfill({
+			exposeToolsTo: attr("exposeToolsTo")
+				.split(",")
+				.map((o) => o.trim())
+				.filter(Boolean),
+		});
 		const webmcp = createNavigatorWebMcpProvider();
 		const scope = `${config.config.agentUrl} ${config.config.publishableKey}`;
 		if (!this.#chat || scope !== this.#scope) {

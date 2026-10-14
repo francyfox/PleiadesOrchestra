@@ -525,8 +525,10 @@ Visitor-токен: 32 случайных байта (base64url), в БД — т
 | `413` | `text`/`customerContext` длиннее `WIDGET_MAX_TEXT_CHARS`, или (на `/v1/widget/tools`) `webmcpTools` длиннее `WIDGET_MAX_WEBMCP_TOOLS_CHARS` |
 | `429` | больше `WIDGET_MESSAGES_PER_MINUTE` сообщений на токен или `WIDGET_IP_MESSAGES_PER_MINUTE` на IP в минуту |
 
-Лимиты — в памяти процесса, сбрасываются при рестарте. IP клиента берётся из соединения; из
-`X-Forwarded-For` — только при `TRUST_PROXY=true` (за своим прокси/туннелем). Блокировки и лимиты
+Лимиты — в памяти процесса, сбрасываются при рестарте. IP клиента берётся по `CLIENT_IP_SOURCE`:
+`socket` (из соединения, по умолчанию), `cf-connecting-ip` (заголовок Cloudflare, так в compose)
+или `xff-rightmost` (`TRUSTED_PROXY_HOPS`-й элемент `X-Forwarded-For` справа; левые элементы
+пишет клиент). Нет нужного заголовка — берётся адрес соединения. Блокировки и лимиты
 сверяются по `sha256(IP_HASH_SALT:ip)`; открытый IP посетителя пишется в `users.last_ip` только
 для админки (см. «Блокировки по IP»).
 

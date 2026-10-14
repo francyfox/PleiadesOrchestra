@@ -74,7 +74,7 @@ async function initialState(
 	options: ReplyOptions,
 ): Promise<WorldState> {
 	const userMessage = normalizeText.apply(text);
-	const english = translateMessage(deps, userMessage, {
+	const english = await translateMessage(deps, userMessage, {
 		threadId,
 		userId: user.id,
 		planRunId,
@@ -120,11 +120,11 @@ const NOT_ENGLISH = /(?!\p{Script=Latin})\p{L}/u;
  * English, when there is no translator, or when the translator fails (reported,
  * never fatal — the message just goes on in its own language).
  */
-function translateMessage(
+async function translateMessage(
 	deps: ReplyDeps,
 	text: string,
 	context: CallContext,
-): string | undefined {
+): Promise<string | undefined> {
 	if (!deps.translate || !NOT_ENGLISH.test(text)) return undefined;
 	const startedAt = performance.now();
 	const recorder = deps.usageRecorder?.record
@@ -142,7 +142,7 @@ function translateMessage(
 			...outcome,
 		});
 	try {
-		const translated = deps.translate(text) || undefined;
+		const translated = (await deps.translate(text)) || undefined;
 		report({ ok: true });
 		return translated;
 	} catch (error) {

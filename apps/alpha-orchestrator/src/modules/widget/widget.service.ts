@@ -2,6 +2,7 @@ import { isAllowed } from "../access/access.service.ts";
 import { isIpBlocked } from "../blocked-ips/blocked-ips.service.ts";
 import type { ChannelDirectory } from "../channel-directory/channel-directory.ts";
 import type { ChannelRow } from "../channels/channels.types.ts";
+import { resolveClientIp } from "../client-ip/client-ip.service.ts";
 import type { Db } from "../database/database.ts";
 import { HOUR_MS, MINUTE_MS } from "../http/http.service.ts";
 import { FixedWindowLimiter } from "../rate-limit/rate-limit.ts";
@@ -92,10 +93,13 @@ export class WidgetGuard {
 	}
 
 	clientIp(request: Request, server: ServerLike | null): string | null {
-		const ip = this.deps.options.trustProxy
-			? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-			: server?.requestIP(request)?.address;
-		return ip || null;
+		const { clientIpSource, trustedProxyHops } = this.deps.options;
+		return resolveClientIp({
+			source: clientIpSource,
+			hops: trustedProxyHops,
+			headers: request.headers,
+			socketIp: server?.requestIP(request)?.address,
+		});
 	}
 
 	hashClientIp(ip: string | null): string | null {

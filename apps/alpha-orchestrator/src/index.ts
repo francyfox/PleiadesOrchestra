@@ -1,9 +1,4 @@
 import { createObservability, serve } from "@repo/elysia-kit";
-import {
-	connectHttpMcpClient,
-	createMcpToolSource,
-	type GoapAction,
-} from "@repo/core";
 import { createApp } from "./app.ts";
 import {
 	AGENT_MAX_HISTORY_MESSAGES,
@@ -32,28 +27,6 @@ assertRetentionCoversHistory(
 const observability = createObservability("alpha-orchestrator", config);
 const { logger, monitoring } = observability;
 
-// kali-mcp — подключается один раз при старте, actions переиспользуются на каждый thread
-let kaliActions: GoapAction[] | undefined;
-
-if (config.KALI_MCP_URL) {
-	void connectHttpMcpClient(config.KALI_MCP_URL)
-		.then((client) => createMcpToolSource({ client }).listActions())
-		.then((actions: GoapAction[]) => {
-			kaliActions = actions;
-			logger.info({
-				message: "kali-mcp connected",
-				toolCount: actions.length,
-				tools: actions.map((a: GoapAction) => a.name),
-			});
-		})
-		.catch((err: unknown) => {
-			logger.warn({
-				message: "kali-mcp connection failed — Kali tools unavailable",
-				"error.message": err instanceof Error ? err.message : String(err),
-			});
-		});
-}
-
 /** Persistence and background failures: logged and reported, never fatal to a request. */
 function reportError(message: string) {
 	return (error: unknown) => {
@@ -75,7 +48,7 @@ void loadTranslator(reportError("translator_unavailable")).then((loaded) => {
 });
 
 const app = createApp({
-	translate: (text) => translator?.translate(text) ?? "",
+	translate: async (text) => (await translator?.translate(text)) ?? "",
 	agent,
 	decisionAgent,
 	productRequestAgent,
@@ -126,15 +99,13 @@ const app = createApp({
 		messagesPerMinute: config.WIDGET_MESSAGES_PER_MINUTE,
 		ipMessagesPerMinute: config.WIDGET_IP_MESSAGES_PER_MINUTE,
 		visitorsPerHourPerIp: config.WIDGET_VISITORS_PER_HOUR_PER_IP,
-		trustProxy: config.TRUST_PROXY,
+		clientIpSource: config.CLIENT_IP_SOURCE,
+		trustedProxyHops: config.TRUSTED_PROXY_HOPS,
 		tokenTtlHours: config.ANON_RETENTION_HOURS,
 		retentionPerUser: config.MESSAGE_RETENTION_PER_USER,
 	},
 	onError: reportError("persistence_error"),
 	observability,
-	threadActionsFor: kaliActions
-		? () => kaliActions as GoapAction[]
-		: undefined,
 });
 
 const stopRetentionJobs = startRetentionJobs(db, {

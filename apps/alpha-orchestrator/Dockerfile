@@ -31,7 +31,7 @@ FROM install AS build
 COPY --from=prune /app/out/full/ .
 WORKDIR /app/apps/alpha-orchestrator
 RUN bun x tsc --noEmit && \
-    bun build ./src/index.ts --compile --target=bun-linux-x64-musl --outfile /tmp/alpha-orchestrator
+    bun build ./src/index.ts ./src/modules/translate/translate.worker.ts --compile --target=bun-linux-x64-musl --outfile /tmp/alpha-orchestrator
 
 FROM alpine:3.20
 RUN apk add --no-cache libstdc++ libgcc libgomp

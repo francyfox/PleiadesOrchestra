@@ -23,7 +23,7 @@ export interface ReplyDeps {
 	/** What each site's classifier has been taught; asked before Laya. */
 	intentMemory?: IntentMemory;
 	/** Translates a message that is not English; absent when no translator is loaded. */
-	translate?: (text: string) => string;
+	translate?: (text: string) => string | Promise<string>;
 	/** `delta-function-call`: fills in WebMCP tool arguments as JSON; unset = built from facts. */
 	functionCallAgent?: FunctionCallAgent;
 	/** The static GOAP catalog (`buildActions`). */

@@ -1,0 +1,10 @@
+@repo/webmcp-polyfill
+Copyright 2026 Danil Golota
+
+This package is adapted from the WebMCP polyfill in
+https://github.com/GoogleChromeLabs/webmcp-tools
+(demos/shared/webmcp-polyfill.js), Copyright 2026 Google LLC,
+licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Changes: restructured into small composed TypeScript modules, explicit
+installWebMcpPolyfill() entry point, origin-checked postMessage bridge.

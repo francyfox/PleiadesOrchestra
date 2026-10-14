@@ -1,0 +1,21 @@
+{
+	"name": "@repo/webmcp-polyfill",
+	"version": "0.0.0",
+	"license": "Apache-2.0",
+	"author": "Danil Golota",
+	"description": "WebMCP (document.modelContext) polyfill, ported from Google's Apache-2.0 webmcp-tools polyfill. Bundled into pleiades-widget.",
+	"type": "module",
+	"private": true,
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"check-types": "tsc --noEmit",
+		"lint": "biome check .",
+		"test": "bun test"
+	},
+	"devDependencies": {
+		"@types/bun": "catalog:",
+		"typescript": "catalog:"
+	}
+}

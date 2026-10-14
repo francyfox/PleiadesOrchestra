@@ -3,7 +3,10 @@ name: Intlayer Fill
 on:
   pull_request:
     branches:
-      - main
+      - master
+    paths:
+      - "apps/admin/**"
+      - ".github/workflows/intlayer-fill.yml"
 
 permissions:
   contents: write
@@ -36,27 +39,31 @@ jobs:
       # INTLAYER_PROJECT_CREDENTIALS: ${{ secrets.INTLAYER_PROJECT_CREDENTIALS }}
     steps:
       - name: ⬇️ Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: true # Keep credentials to push back to the PR
           fetch-depth: 0 # Full history so --git-diff can compare refs
       - name: 🥟 Setup Bun
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@v2.2.0
+        with:
+          bun-version: 1.4.2
       - name: 📦 Install dependencies
         run: bun install --frozen-lockfile
       - name: ⚙️ Build dictionaries
+        working-directory: apps/admin
         run: bunx intlayer build --ci
       - name: 🤖 Fill missing translations
         # Skip when no AI credentials are configured, so the workflow stays green
         # until an `AI_API_KEY` (or Intlayer CMS access keys) secret is added.
         if: ${{ env.AI_API_KEY != '' || env.INTLAYER_CLIENT_ID != '' }}
+        working-directory: apps/admin
         run: bunx intlayer fill --ci --git-diff --mode complete --provider $AI_PROVIDER --model $AI_MODEL --api-key $AI_API_KEY
       - name: 📤 Commit and push changes
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          if [ -n "$(git status --porcelain)" ]; then
-            git add .
+          if [ -n "$(git status --porcelain -- apps/admin)" ]; then
+            git add apps/admin
             git commit -m "chore(intlayer): fill missing translations [skip ci]"
             git push origin HEAD:${{ github.head_ref }}
           else
