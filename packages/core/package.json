@@ -14,7 +14,8 @@
 		"lint": "biome check .",
 		"test": "bun test",
 		"eval:intents": "bun eval/intents.ts",
-		"eval:tools": "bun eval/tools.ts"
+		"eval:tools": "bun eval/tools.ts",
+		"bench:plan": "bun eval/plan-bench.ts"
 	},
 	"dependencies": {
 		"@ai-sdk/openai-compatible": "^3.0.20",
