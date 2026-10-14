@@ -12,6 +12,7 @@
 		"check-types": "tsc --noEmit",
 		"lint": "biome check .",
 		"db:generate": "drizzle-kit generate",
+		"db:snapshot": "bun scripts/db-snapshot.ts",
 		"import:telegram-whitelist": "bun scripts/import-telegram-whitelist.ts"
 	},
 	"dependencies": {

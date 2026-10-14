@@ -66,3 +66,7 @@ Live topics: `requests` (3 s) / `request` (1 s).
 Relative DB path in `env_file` moves DB off the volume — see root CLAUDE.md. `apps/admin-api/.env` must NOT set `ADMIN_DATABASE_PATH` or `ADMIN_MIGRATIONS_DIR`; compose pins both to `/data/...`. `ADMIN_MIGRATIONS_DIR=./drizzle` inside container resolves to nowhere and crashes on start (`Can't find meta/_journal.json`).
 
 `ADMIN_TRUSTED_ORIGINS` must list both `http://localhost:3002` and `http://127.0.0.1:3002` — they're different origins.
+
+## `drizzle/init.sql` (first-time setup)
+
+One generated SQL file with the full schema, seed data and the `__drizzle_migrations` rows (so the migrator sees all existing migrations as applied). After every `db:generate`, run `bun run db:snapshot` (`scripts/db-snapshot.ts` → `src/modules/database/database.snapshot.ts`, which runs the real migrator in a temp DB and dumps it). `database.snapshot.test.ts` fails if the committed file is stale. Services keep applying incremental migrations at startup; init.sql is only for provisioning a fresh DB (`sqlite3 db < drizzle/init.sql`).

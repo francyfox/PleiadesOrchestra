@@ -13,7 +13,7 @@ Run from the repo root unless noted (Turborepo fans out per package; `test` depe
 - Whole stack: `docker compose up --build` (includes `telegram-bot`; a single service: `docker compose up -d --build <service>`).
 - `bun run test:beta-text` — builds and boots the real `llama-server` Docker image (~770MB model, up to 15 min). Not part of `bun run test`; don't run casually.
 - Only `alpha-orchestrator` and `telegram-bot` have a `build` script (`bun build --compile` binaries into `dist/`); `admin-api`'s Docker image compiles the same way; `cli`/`gamma-decision` run straight from source. The orchestrator's binary is named `dist/harness`. `apps/admin` builds with Vite (`bun --bun vite build` → `build/`, `adapter-static`).
-- DB migrations (drizzle-kit): `bun --cwd apps/alpha-orchestrator run db:generate --name <name>` after editing the schema; same in `apps/admin-api` (`auth:schema` regenerates the better-auth schema first). Both apply migrations at startup. Run `bunx biome format --write <app>/drizzle/meta` after generating.
+- DB migrations (drizzle-kit): `bun --cwd apps/alpha-orchestrator run db:generate --name <name>` after editing the schema; same in `apps/admin-api` (`auth:schema` regenerates the better-auth schema first). Both apply migrations at startup. Run `bunx biome format --write <app>/drizzle/meta` after generating, then `bun --cwd <app> run db:snapshot` to regenerate `<app>/drizzle/init.sql` (single first-time-setup SQL file; a test fails on drift).
 - One-off: `bun --cwd apps/alpha-orchestrator run import:telegram-whitelist <ids>` seeds the Telegram whitelist.
 
 ## Architecture

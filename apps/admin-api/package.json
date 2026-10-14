@@ -15,6 +15,7 @@
 		"check-types": "tsc --noEmit",
 		"lint": "biome check .",
 		"db:generate": "drizzle-kit generate",
+		"db:snapshot": "bun scripts/db-snapshot.ts",
 		"auth:schema": "bunx --bun @better-auth/cli generate --config src/modules/auth/auth-cli.ts --output src/modules/database/database.auth-schema.ts -y"
 	},
 	"dependencies": {
