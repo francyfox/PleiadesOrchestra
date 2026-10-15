@@ -56,6 +56,8 @@ List endpoints take `page`/`pageSize` (no `pageSize` = all rows, used by selects
 
 Live topics: `requests` (3 s) / `request` (1 s).
 
+`GET /api/requests/:id/trace` (`requests.trace.ts`, `buildWebMcpTrace`): the request as a Model Context Tool Inspector export (`userPrompt`/`response` array, tools `_0_<name>`, `config` on every userPrompt with `systemInstruction: []`). Browser answers come from the next run's first `state` (`webmcp:<tool>:text`, capped at 4000 chars); tools from `GET /v1/admin/mcp` for the `channelId` in the world state. Loose `t.Array(t.Unknown())` response schema on purpose.
+
 ## System probe
 
 `GET /api/system` — parses `/proc/cpuinfo`, `/proc/stat` (CPU), `/proc/meminfo` (RAM), `/sys/class/drm/card*/device/*` (GPU VRAM/GTT/load). All host values (Docker doesn't namespace `/proc`/`/sys`, so no extra mounts or privileged sidecar are needed). `GET /api/system/stream` keeps it live.

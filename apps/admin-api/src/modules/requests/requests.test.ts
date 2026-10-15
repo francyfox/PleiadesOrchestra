@@ -8,6 +8,9 @@ import {
 	useHarness,
 } from "../../app.harness.testing.ts";
 
+// parsed JSON, shape asserted by the tests
+type Turn = ReturnType<typeof JSON.parse>;
+
 useHarness();
 
 const DETAILS = {
@@ -131,6 +134,59 @@ describe("requests (proxied and shaped)", () => {
 			["result", "Здравствуйте", "reached"],
 		]);
 		expect(upstream[0]?.url).toContain("/v1/admin/requests/r1");
+	});
+
+	test("the trace carries the channel's tools and the browser's answer", async () => {
+		const cookie = await signedIn();
+		const withTool: typeof DETAILS = structuredClone(DETAILS);
+		const events: unknown[] = withTool.runs[0]?.events ?? [];
+		events.push({
+			seq: 3,
+			type: "waiting",
+			attempt: 0,
+			action: "find_laptops",
+			payload: {
+				waiting: {
+					kind: "webmcp_tool_call",
+					payload: { tool: "find_laptops", arguments: { maxPrice: 900 } },
+				},
+				state: { channelId: "c1" },
+			},
+			at: 1900,
+		});
+		setRespond((req) =>
+			req.url.includes("/v1/admin/mcp")
+				? json({
+						items: [
+							{
+								channelId: "c1",
+								channelSlug: "s",
+								channelName: "n",
+								toolCount: 1,
+								firstSeenAt: 0,
+								lastSeenAt: 0,
+								registrations: 1,
+								versions: 1,
+								tools: [{ name: "find_laptops", description: "Find laptops" }],
+							},
+						],
+					})
+				: json(withTool),
+		);
+
+		const response = await call("/api/requests/r1/trace", { cookie });
+
+		expect(response.status).toBe(200);
+		const trace = (await response.json()) as Turn[];
+		expect(
+			trace[0].userPrompt.config.tools[0].functionDeclarations[0].name,
+		).toBe("_0_find_laptops");
+		expect(
+			trace[1].response.candidates[0].content.parts[0].functionCall.args,
+		).toEqual({
+			maxPrice: 900,
+		});
+		expect((await call("/api/requests/r1/trace")).status).toBe(401);
 	});
 
 	test("an unknown request is 404 and needs a session", async () => {

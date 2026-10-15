@@ -4,6 +4,7 @@ import type {
 	RequestsQuery,
 	RequestView,
 } from "./requests.schema.ts";
+import { buildWebMcpTrace, channelOf } from "./requests.trace.ts";
 import { buildRequestView } from "./requests.view.ts";
 
 type Orchestrator = Pick<FetchContext, "orchestrator">;
@@ -22,4 +23,16 @@ export async function fetchRequestView(
 	id: string,
 ): Promise<RequestView> {
 	return buildRequestView(await orchestrator.getRequest(id));
+}
+
+/** `GET /api/requests/:id/trace`: the request as a Model Context Tool Inspector export. */
+export async function fetchRequestTrace(
+	{ orchestrator }: Orchestrator,
+	id: string,
+): Promise<unknown[]> {
+	const details = await orchestrator.getRequest(id);
+	const channel = channelOf(details);
+	const { items } = channel ? await orchestrator.listMcp() : { items: [] };
+	const tools = items.find((site) => site.channelId === channel)?.tools ?? [];
+	return buildWebMcpTrace(details, tools);
 }

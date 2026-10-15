@@ -1,10 +1,14 @@
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 import type { RouteDeps } from "../../app.types.ts";
 import { requireAdmin } from "../auth/auth.service.ts";
 import { IdParams, Upstream } from "../orchestrator/orchestrator.schema.ts";
 import { orchestratorErrors } from "../orchestrator/orchestrator.service.ts";
 import { RequestsPage, RequestsQuery, RequestView } from "./requests.schema.ts";
-import { fetchRequests, fetchRequestView } from "./requests.service.ts";
+import {
+	fetchRequests,
+	fetchRequestTrace,
+	fetchRequestView,
+} from "./requests.service.ts";
 
 export function requestsRoutes({ auth, orchestrator, now }: RouteDeps) {
 	const ctx = { orchestrator, now };
@@ -30,6 +34,20 @@ export function requestsRoutes({ auth, orchestrator, now }: RouteDeps) {
 							summary: "One request: prompt, plan steps with timings, result",
 							description:
 								"Any run id of the request opens it. Running steps carry elapsed time relative to `now`.",
+						},
+					},
+				)
+				.get(
+					"/requests/:id/trace",
+					({ params }) => fetchRequestTrace(ctx, params.id),
+					{
+						params: IdParams,
+						// loose on purpose: Elysia drops fields a schema does not list
+						response: { 200: t.Array(t.Unknown()), ...Upstream },
+						detail: {
+							summary: "The request as a Model Context Tool Inspector trace",
+							description:
+								"Prompt, browser tool calls and their answers, reply; the site's tools declared on every turn.",
 						},
 					},
 				),

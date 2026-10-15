@@ -9,6 +9,7 @@
 	import NodeDetails from "./node-details.svelte";
 	import RequestGraph from "./request-graph.svelte";
 	import RequestStatusBadge from "./request-status-badge.svelte";
+	import TraceDialog from "./trace-dialog.svelte";
 
 	/** One request's own page: what it was, how it ended, its graph (kept current over the live socket) and the node picked in it. */
 	let { id }: { id: string } = $props();
@@ -24,6 +25,7 @@
 		view.nodes.find((node) => node.status === "failed") ?? null,
 	);
 
+	let traceOpen = $state(false);
 	let picked = $state<string | null>(null);
 	// Until a node is picked: the one being worked on, else the result.
 	const defaultId = $derived(
@@ -50,7 +52,14 @@
 		<span>·</span>
 		<span>{$content.graph.total({ time: $format.ms(request.durationMs) })}</span>
 	{/snippet}
+	{#snippet controls()}
+		<Button size="sm" variant="outline" onclick={() => (traceOpen = true)}>
+			{$content.trace.button.value}
+		</Button>
+	{/snippet}
 </PageHeader>
+
+<TraceDialog {id} bind:open={traceOpen} />
 
 <Card.Root class={failed || request.status === "abandoned" ? "border-destructive/50" : ""}>
 	<Card.Header>

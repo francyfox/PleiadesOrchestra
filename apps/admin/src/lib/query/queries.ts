@@ -90,6 +90,12 @@ export const liveQueries = {
 
 /** Everything that is not pushed over `/api/live`. */
 export const queries = {
+	requestTrace: (id: string) =>
+		queryOptions({
+			queryKey: ["request-trace", id],
+			queryFn: () => unwrap(api().requests({ id }).trace.get()),
+			staleTime: 0,
+		}),
 	session: () =>
 		queryOptions({
 			queryKey: ["session"],

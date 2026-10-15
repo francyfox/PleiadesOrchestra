@@ -38,6 +38,30 @@ const flowContent = {
 				kk: "Сүзгіге ештеңе сәйкес келмеді",
 			}),
 		},
+		trace: {
+			button: t({ ru: "Трейс", en: "Trace", kk: "Трейс" }),
+			title: t({
+				ru: "Трейс запроса",
+				en: "Request trace",
+				kk: "Сұрау трейсі",
+			}),
+			description: t({
+				ru: "Формат Model Context Tool Inspector: промпт, вызовы тулов браузера и их ответы, ответ пользователю. Модель в трейсе условная — это GOAP-цепочка.",
+				en: "Model Context Tool Inspector format: the prompt, the browser tool calls and their answers, the reply. The model in the trace is nominal — it is the GOAP chain.",
+				kk: "Model Context Tool Inspector форматы: промпт, браузер тул шақырулары мен жауаптары, жауап. Трейстегі модель шартты — бұл GOAP тізбегі.",
+			}),
+			download: t({
+				ru: "Скачать .json",
+				en: "Download .json",
+				kk: ".json жүктеу",
+			}),
+			loading: t({ ru: "Загрузка…", en: "Loading…", kk: "Жүктелуде…" }),
+			failed: t({
+				ru: "Не удалось собрать трейс",
+				en: "Couldn't build the trace",
+				kk: "Трейсті құру мүмкін болмады",
+			}),
+		},
 		outcome: {
 			title: t({ ru: "Итог", en: "Outcome", kk: "Нәтиже" }),
 			failedAt: t({
