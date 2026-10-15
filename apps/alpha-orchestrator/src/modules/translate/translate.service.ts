@@ -55,3 +55,87 @@ export function createTranslator({
 		return decoder.decode(out.subarray(0, written)).trim();
 	};
 }
+
+const LATIN_LETTER = /\p{Script=Latin}/u;
+const OTHER_LETTER = /(?!\p{Script=Latin})\p{L}/u;
+
+type Kind = "latin" | "other" | "neutral";
+
+const kindOf = (word: string): Kind =>
+	OTHER_LETTER.test(word)
+		? "other"
+		: LATIN_LETTER.test(word)
+			? "latin"
+			: "neutral";
+
+/**
+ * What Opus-MT adds to a bare imperative («купи» → "Buy it."): the object
+ * pronoun. When Latin words follow, they are the object, so it goes.
+ */
+const STRAY_OBJECT = /\s+(?:it|them|this|that|one)$/i;
+
+/** A fragment as the model returns it, fitted back into the sentence. */
+function fitted(
+	translated: string,
+	source: string,
+	first: boolean,
+	beforeLatin: boolean,
+): string {
+	let text = translated.trim();
+	if (!/[.!?…]$/.test(source.trim())) text = text.replace(/[.!?…]+$/, "");
+	if (beforeLatin) text = text.replace(STRAY_OBJECT, "");
+	if (!first && /^\p{Lu}\p{Ll}/u.test(text))
+		text = text[0]?.toLowerCase() + text.slice(1);
+	return text;
+}
+
+/**
+ * Translates a message but leaves its Latin-script words as typed: a shopper
+ * writing «купи Medium Roast Coffee Beans» names the product the way the site
+ * shows it, and Opus-MT, given the whole line, turned it into "Media Road
+ * Coffee Beans". Each run of non-Latin words is translated on its own; digits
+ * and punctuation between two Latin words stay with them (iPhone 15 Pro). A
+ * message without Latin words goes to the model in one piece, as before.
+ */
+export async function translateAroundLatin(
+	text: string,
+	translate: (text: string) => string | Promise<string>,
+): Promise<string> {
+	const tokens = text.trim().split(/(\s+)/);
+	const words = tokens.filter((_, i) => i % 2 === 0);
+	const kinds = words.map(kindOf);
+	if (!kinds.includes("latin")) return translate(text);
+
+	// A neutral word (a number, a dash) between two Latin ones belongs to them.
+	const resolved = kinds.map((kind, i): Exclude<Kind, "neutral"> => {
+		if (kind !== "neutral") return kind;
+		const before = kinds.slice(0, i).findLast((k) => k !== "neutral");
+		const after = kinds.slice(i + 1).find((k) => k !== "neutral");
+		return before === "latin" && (after === "latin" || after === undefined)
+			? "latin"
+			: "other";
+	});
+
+	const groups: { kind: "latin" | "other"; text: string }[] = [];
+	words.forEach((word, i) => {
+		const kind = resolved[i] as "latin" | "other";
+		const space = i > 0 ? (tokens[i * 2 - 1] ?? " ") : "";
+		const last = groups.at(-1);
+		if (last && last.kind === kind) last.text += space + word;
+		else groups.push({ kind, text: word });
+	});
+
+	const parts = await Promise.all(
+		groups.map(async (group, i) =>
+			group.kind === "other" && OTHER_LETTER.test(group.text)
+				? fitted(
+						await translate(group.text),
+						group.text,
+						i === 0,
+						groups[i + 1]?.kind === "latin",
+					)
+				: group.text,
+		),
+	);
+	return parts.filter(Boolean).join(" ");
+}

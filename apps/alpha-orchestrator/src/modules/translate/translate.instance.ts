@@ -1,6 +1,6 @@
 import { config } from "../config/config.service.ts";
 import { ensureModel } from "./translate-engine.ts";
-import { createTranslatePool } from "./translate-pool.ts";
+import { createTranslatePool, workerEntryUrl } from "./translate-pool.ts";
 
 /**
  * The Russian → English translator, or `undefined` when none is configured
@@ -20,7 +20,7 @@ export async function loadTranslator(
 	try {
 		await ensureModel(config.TRANSLATE_MODEL_DIR, config.TRANSLATE_MODEL_REPO);
 		const pool = await createTranslatePool({
-			workerUrl: new URL("./translate.worker.ts", import.meta.url),
+			workerUrl: workerEntryUrl("modules/translate/translate.worker"),
 			init: {
 				libPath: config.TRANSLATE_LIB_PATH,
 				modelDir: config.TRANSLATE_MODEL_DIR,

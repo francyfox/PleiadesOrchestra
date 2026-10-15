@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { createTranslator, TextTooLongError } from "./translate.service.ts";
+import {
+	createTranslator,
+	TextTooLongError,
+	translateAroundLatin,
+} from "./translate.service.ts";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -66,5 +70,63 @@ describe("createTranslator", () => {
 		const translate = createTranslator({ ...native, maxChars: 10 });
 		expect(() => translate("x".repeat(11))).toThrow(TextTooLongError);
 		expect(native.calls).toHaveLength(0);
+	});
+});
+
+describe("translateAroundLatin", () => {
+	// A fake model: says which text it got, the way Opus-MT dresses a fragment up.
+	const calls: string[] = [];
+	const fake = async (text: string) => {
+		calls.push(text);
+		const words: Record<string, string> = {
+			купи: "Buy.",
+			"и хлеб": "And the bread.",
+			"купи сыр": "Buy cheese.",
+			"добавь в корзину": "Add to cart.",
+		};
+		return words[text] ?? `<${text}>`;
+	};
+
+	test("keeps Latin product names as typed and translates only the rest", async () => {
+		calls.length = 0;
+		expect(
+			await translateAroundLatin(
+				"купи Medium Roast Coffee Beans, Orange Juice,Paper Towels",
+				fake,
+			),
+		).toBe("Buy Medium Roast Coffee Beans, Orange Juice,Paper Towels");
+		expect(calls).toEqual(["купи"]);
+	});
+
+	test("a Latin name in the middle: both sides translated, the inner one lower-cased and without the model's full stop", async () => {
+		expect(await translateAroundLatin("купи Oat Milk и хлеб", fake)).toBe(
+			"Buy Oat Milk and the bread",
+		);
+	});
+
+	test("no Latin words: the whole message goes to the model in one piece", async () => {
+		calls.length = 0;
+		expect(await translateAroundLatin("купи сыр", fake)).toBe("Buy cheese.");
+		expect(calls).toEqual(["купи сыр"]);
+	});
+
+	test("Latin first, then Russian", async () => {
+		expect(
+			await translateAroundLatin("Paper Towels добавь в корзину", fake),
+		).toBe("Paper Towels add to cart");
+	});
+
+	test("the object pronoun the model adds to a bare verb goes when the Latin words are the object", async () => {
+		const verb = async (text: string) =>
+			text === "возьми" ? "Take it." : `<${text}>`;
+		expect(await translateAroundLatin("возьми Oat Milk", verb)).toBe(
+			"Take Oat Milk",
+		);
+	});
+
+	test("model names with digits stay whole (iPhone 15 Pro)", async () => {
+		expect(await translateAroundLatin("купи iPhone 15 Pro", fake)).toBe(
+			"Buy iPhone 15 Pro",
+		);
 	});
 });

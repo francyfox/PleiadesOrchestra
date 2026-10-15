@@ -25,6 +25,22 @@ export class TranslatePoolClosedError extends Error {
 	}
 }
 
+/**
+ * The URL of a worker entry point, `entry` being its path from the main
+ * entry's folder without extension. From source that is the `.ts` file. In a
+ * `bun build --compile` binary (`main` under `/$bunfs/`) every module's
+ * `import.meta.url` is the binary itself, and the extra entry point is
+ * embedded relative to the entry points' common root, as `.js` (Bun 1.3; 1.4
+ * also accepts `.ts`).
+ */
+export function workerEntryUrl(entry: string, main: string = Bun.main): URL {
+	const compiled = main.startsWith("/$bunfs/");
+	return new URL(
+		`./${entry}${compiled ? ".js" : ".ts"}`,
+		Bun.pathToFileURL(main),
+	);
+}
+
 export interface TranslatePoolOptions {
 	/** The worker's entry file; it calls `serveTranslations` (see `translate.worker.ts`). */
 	workerUrl: string | URL;

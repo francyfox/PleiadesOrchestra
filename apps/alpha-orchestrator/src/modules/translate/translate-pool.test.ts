@@ -6,6 +6,7 @@ import {
 	TranslatePoolClosedError,
 	TranslateTimeoutError,
 	TranslateWorkerExitedError,
+	workerEntryUrl,
 } from "./translate-pool.ts";
 
 /** A worker speaking the real protocol over a fake engine (see the file for its commands). */
@@ -167,5 +168,27 @@ describe("createTranslatePool", () => {
 		expect(await rejection(created.translate("later"))).toBeInstanceOf(
 			TranslatePoolClosedError,
 		);
+	});
+});
+
+describe("workerEntryUrl", () => {
+	test("from source: the .ts file next to the entry point", () => {
+		expect(
+			workerEntryUrl(
+				"modules/translate/translate.worker",
+				"/srv/app/src/index.ts",
+			).href,
+		).toBe("file:///srv/app/src/modules/translate/translate.worker.ts");
+	});
+
+	test("in a --compile binary: the embedded .js file under the bunfs root", () => {
+		// Every module's import.meta.url is the binary there, and the extra
+		// entry point is embedded as .js relative to the entry points' root.
+		expect(
+			workerEntryUrl(
+				"modules/translate/translate.worker",
+				"/$bunfs/root/alpha-orchestrator",
+			).href,
+		).toBe("file:///$bunfs/root/modules/translate/translate.worker.js");
 	});
 });
