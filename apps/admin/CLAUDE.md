@@ -1,6 +1,6 @@
 # apps/admin internals
 
-See root `CLAUDE.md` for commands, architecture overview and lessons.
+See root `CLAUDE.md` for monorepo commands, workflow, code style and repo-wide lessons.
 
 ## Stack
 
@@ -11,6 +11,8 @@ Has a nested `apps/admin/biome.json` (extends root) that turns off unused-import
 Same origin for `/api`: Caddy (`Caddyfile`, prod) or the dev-only `vite/dev-api-proxy.ts` (`ADMIN_API_URL`, default `http://localhost:3003`) forwards it; session cookie needs no CORS. Dev proxy also tunnels WebSocket upgrades on `/api/*`.
 
 `bun --cwd apps/admin run dev` — `vite dev`. After adding a dependency: `rm -rf apps/admin/node_modules/.vite` + restart ("new version of pre-bundle"). `pkill -f "<pattern>"` in a Bash call whose own command line contains that pattern kills the calling shell — stop and start in separate calls.
+
+**TypeScript 6 is required** — two TS versions make Bun link two copies of `elysia`, which breaks Eden's `Treaty` type check. Build: `bun --cwd apps/admin run build` (`bun --bun vite build` -> `build/`, `adapter-static`).
 
 ## Data layer (TanStack Query)
 

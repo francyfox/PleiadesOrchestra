@@ -1,0 +1,21 @@
+# Architecture
+
+Every app and package of the monorepo, one line each. Internals live in each one's own `CLAUDE.md`; this file is the map, linked (not imported) from the root `CLAUDE.md` so it isn't loaded into every session. A new app or package gets a line here and its own `CLAUDE.md`.
+
+- `packages/core` (`@repo/core`) — LLM client library, ports and the GOAP planner/executor; see `packages/core/CLAUDE.md`.
+- `packages/elysia-kit` (`@repo/elysia-kit`) — shared Elysia setup (logging, Sentry, `/health`, `serve`, `retryFetch`); see `packages/elysia-kit/CLAUDE.md`.
+- `packages/pleiades-widget` — framework-agnostic `<pleiades-chat>` web component; see `packages/pleiades-widget/CLAUDE.md`.
+- `packages/webmcp-polyfill` — WebMCP `document.modelContext` polyfill bundled into the widget; see `packages/webmcp-polyfill/CLAUDE.md`.
+- `packages/llama-runtime` — shared `llama-server` entrypoint used by `beta-text` and `delta-function-call`.
+- `apps/alpha-orchestrator` — Elysia HTTP service: GOAP stream, access control, SQLite, widget and admin APIs; see `apps/alpha-orchestrator/CLAUDE.md`.
+- `apps/beta-text` — `llama-server` (Vulkan) for the reply model, compose service only; see `apps/beta-text/CLAUDE.md`.
+- `apps/gamma-decision` — Laya typed-decision sidecar; see `apps/gamma-decision/CLAUDE.md`.
+- `apps/delta-function-call` — Qwen3-1.7B `llama-server` that fills JSON arguments for WebMCP tool calls (same image/entrypoint as `beta-text`, port 8282); see `apps/alpha-orchestrator/CLAUDE.md` (Delta section).
+- `apps/telegram-bot` — GramIO webhook adapter; see `apps/telegram-bot/CLAUDE.md`.
+- `apps/cli` (`albedo`) — thin orchestrator HTTP client; see `apps/cli/CLAUDE.md`.
+- `apps/admin-api` — Elysia BFF for the admin panel; see `apps/admin-api/CLAUDE.md`.
+- `apps/admin` — Svelte 5 admin SPA; see `apps/admin/CLAUDE.md`.
+- `apps/pleiades-mcp` — stdio MCP server exposing the orchestrator to Claude Code; see `apps/pleiades-mcp/CLAUDE.md`.
+- `apps/benchmark` — every benchmark of the repo (bunli CLI: `bun tools`, `bun laya`, `bun snake`); see `apps/benchmark/CLAUDE.md`.
+- `apps/gemini-webapi-mcp` — Python/uv MCP server for the Gemini web app (profile `gemini`, port 8765).
+- `apps/pleiades-plugin` (WXT browser extension) is excluded from the workspace (`"!apps/pleiades-plugin"` in root `workspaces.packages`) — remove the negation when it should build with the rest.

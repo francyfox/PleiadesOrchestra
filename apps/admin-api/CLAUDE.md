@@ -1,6 +1,6 @@
 # apps/admin-api internals
 
-See root `CLAUDE.md` for commands, architecture overview and lessons.
+See root `CLAUDE.md` for monorepo commands, workflow, code style and repo-wide lessons.
 
 ## Overview
 
@@ -10,12 +10,13 @@ Wire types are **TypeBox** (`modules/<name>/<name>.schema.ts`, shared bits in `m
 
 CSRF defence: `Origin` check on state-changing methods (`ADMIN_TRUSTED_ORIGINS`, both `localhost` and `127.0.0.1`). WS upgrade is a GET — CSRF guard doesn't see it; `/api/live` checks `Origin` itself.
 
-Local dev: `bun --cwd apps/admin-api run dev` (port 3003). Copy `.env.example` to `.env`.
+Local dev: `bun --cwd apps/admin-api run dev` (port 3003). Copy `.env.example` to `.env`. No `build` script: the Docker image runs the same `bun build --compile` (copy `drizzle/` into the image — compile doesn't embed migrations); `bun install` at the root after renaming `apps/*`.
+
+Migrations: after editing the schema, `bun --cwd apps/admin-api run auth:schema` (regenerates the better-auth schema), then `db:generate --name <name>`; applied at startup. Then `bunx biome format --write apps/admin-api/drizzle/meta` and `bun --cwd apps/admin-api run db:snapshot`.
 
 ## Code layout
 
-`src/index.ts` + `src/app.ts` (`createApp(deps: AdminApiDeps)`) + `src/app.types.ts` (`AdminApiDeps`/`RouteDeps`) + `src/modules/<name>/`:
-`<name>.ts` (controller/main class), `<name>.service.ts`, `<name>.schema.ts` (TypeBox DTOs), `<name>.test.ts`. Test helpers: `app.testing.ts` (`testApp()` with real in-memory DB + stub orchestrator) and `app.harness.testing.ts` (`useHarness()` + `setRespond()` to script the fake orchestrator).
+Follows the root "Code style" convention. Specific here: `src/app.types.ts` (`AdminApiDeps`/`RouteDeps`) next to `src/app.ts` (`createApp(deps: AdminApiDeps)`). Test helpers: `app.testing.ts` (`testApp()` with real in-memory DB + stub orchestrator) and `app.harness.testing.ts` (`useHarness()` + `setRespond()` to script the fake orchestrator).
 
 `apps/admin` imports only two paths: `admin-api` (the `App` type from `src/app.ts`) and `admin-api/types` (`src/types.ts`, re-exports from modules) — keep both paths stable.
 
@@ -57,7 +58,7 @@ Live topics: `requests` (3 s) / `request` (1 s).
 
 ## System probe
 
-`GET /api/system` — parses `/proc/cpuinfo`, `/proc/stat` (CPU), `/proc/meminfo` (RAM), `/sys/class/drm/card*/device/*` (GPU VRAM/GTT/load). All host values (Docker doesn't namespace `/proc`/`/sys`). `GET /api/system/stream` keeps it live.
+`GET /api/system` — parses `/proc/cpuinfo`, `/proc/stat` (CPU), `/proc/meminfo` (RAM), `/sys/class/drm/card*/device/*` (GPU VRAM/GTT/load). All host values (Docker doesn't namespace `/proc`/`/sys`, so no extra mounts or privileged sidecar are needed). `GET /api/system/stream` keeps it live.
 
 `GET /api/performance` — proxies the orchestrator's performance endpoint. `/recommendations` audit runs client-side on the cached snapshot.
 
@@ -65,7 +66,7 @@ Live topics: `requests` (3 s) / `request` (1 s).
 
 Relative DB path in `env_file` moves DB off the volume — see root CLAUDE.md. `apps/admin-api/.env` must NOT set `ADMIN_DATABASE_PATH` or `ADMIN_MIGRATIONS_DIR`; compose pins both to `/data/...`. `ADMIN_MIGRATIONS_DIR=./drizzle` inside container resolves to nowhere and crashes on start (`Can't find meta/_journal.json`).
 
-`ADMIN_TRUSTED_ORIGINS` must list both `http://localhost:3002` and `http://127.0.0.1:3002` — they're different origins.
+`ADMIN_TRUSTED_ORIGINS` must list both `http://localhost:3002` and `http://127.0.0.1:3002` — they're different origins (CSRF: `localhost` != `127.0.0.1`; same for `BETTER_AUTH_URL`).
 
 ## `drizzle/init.sql` (first-time setup)
 

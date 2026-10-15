@@ -1,6 +1,6 @@
 # pleiades-widget internals
 
-See root `CLAUDE.md` for commands, architecture overview and lessons.
+See root `CLAUDE.md` for monorepo commands, workflow, code style and repo-wide lessons.
 
 ## Overview
 

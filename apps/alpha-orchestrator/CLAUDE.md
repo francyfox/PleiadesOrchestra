@@ -1,20 +1,23 @@
 # alpha-orchestrator internals
 
-See root `CLAUDE.md` for commands, architecture overview, workflow and lessons.
+See root `CLAUDE.md` for monorepo commands, workflow, code style and repo-wide lessons.
 
-## Code layout (Angular-style modules)
+## Code layout
 
-`src/index.ts` (composition root: config, DB, retention jobs, `serve`) + `src/app.ts` (`createApp(deps)` — wires controllers only) + `src/modules/<name>/`:
+Follows the root "Code style" convention (`src/index.ts` composition root with config, DB, retention jobs, `serve`; `src/app.ts` `createApp(deps)`; `src/modules/<name>/`). What is specific here:
 
-- `<name>.ts` — HTTP controller (Elysia plugin) or main class
-- `<name>.service.ts` — logic as plain functions (testable without HTTP)
-- `<name>.test.ts` — tests
-- `<name>.instance.ts` — runtime singleton (only `index.ts` and other `*.instance.ts` import these)
-- `<name>.testing.ts` — test helpers (`database.testing.ts` → `testDb()`, `http.testing.ts` → `setupAdminApp()`/`admin()`/`json()`)
+- `*.instance.ts` singletons (e.g. `translate.instance.ts`) — only `index.ts` and other `*.instance.ts` import them.
+- Test helpers: `database.testing.ts` -> `testDb()`, `http.testing.ts` -> `setupAdminApp()`/`admin()`/`json()`.
 
 Modules: `access`, `active-runs`, `agents`, `auth`, `blocked-ips`, `channel-directory`, `channels`, `config`, `database`, `decisions`, `goap`, `history`, `http`, `identify`, `messages`, `performance`, `persona`, `plan-runs`, `rate-limit`, `reply`, `retention`, `run-binding`, `run-stream`, `security`, `stats`, `streaming`, `telegram-whitelist`, `text`, `threads`, `translate`, `usage`, `usage-recorder`, `users`, `visitors`, `widget`, `world-state`.
 
-New feature = new directory, not a new file in a flat folder.
+## Commands
+
+- Dev/run: `bun --cwd apps/alpha-orchestrator run dev` (watch) or `start`; copy `.env.example` to `.env`. Binary: `bun --cwd apps/alpha-orchestrator run build` -> `dist/harness` (`bun build --compile`).
+- Seed the Telegram whitelist (one-off): `bun --cwd apps/alpha-orchestrator run import:telegram-whitelist <ids>`.
+- DB migrations (drizzle-kit): after editing the schema run `bun --cwd apps/alpha-orchestrator run db:generate --name <name>`. Migrations are applied at startup. Then `bunx biome format --write apps/alpha-orchestrator/drizzle/meta` and `bun --cwd apps/alpha-orchestrator run db:snapshot` (see `drizzle/init.sql` below).
+- **`bun build --compile` doesn't embed drizzle migrations** — the Docker image copies `drizzle/` and sets `DATABASE_MIGRATIONS_DIR`.
+- Docker: `turbo prune` Dockerfile, Alpine final stage (musl binary + `libstdc++`/`libgcc`), `native` stage for the translator (see Translation).
 
 ## GOAP planner
 
@@ -115,9 +118,7 @@ Elysia drops body fields not in schema — `inputSchema.required` was once lost 
 
 ## Gotchas
 
-- `zsh`: loop variable named `path` wipes `$PATH` — name loop variables `route`, `p`, etc.
-- `bun --cwd <dir> <script>` ignores `--cwd` for some subcommands — use `cd <dir> && bun ...`.
-- `app.handle(new Request("http://x/path"))` 404s — Elysia slices at a fixed host-length offset; use `http://localhost/...` in tests. `onAfterResponse` runs after the response is returned (tests need a tick). A request rejected in `onRequest` skips all other hooks.
+- In `app.handle` tests (root lesson: use `http://localhost/...`), `onAfterResponse` runs after the response is returned (tests need a tick). A request rejected in `onRequest` skips all other hooks.
 - `SqliteWorldStateStore` existed and was tested but wasn't wired in `index.ts` until 2026-09-29 — always verify `createApp(...)` in `index.ts`, not just that the dependency type accepts the field.
 
 ## `drizzle/init.sql` (first-time setup)
