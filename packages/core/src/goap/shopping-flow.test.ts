@@ -72,8 +72,6 @@ const choice = (value: string): DecisionAnswer => ({
 	type: "choice",
 	choice: value,
 	probabilities: { [value]: 1 },
-	confidence: 1,
-	rl_agent: { act_probability: 1 },
 });
 
 /** Laya stand-in: classifies tools by name, the message as "addToCart", the store as Penny Pantry. */

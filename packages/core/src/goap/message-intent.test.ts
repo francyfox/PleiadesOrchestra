@@ -32,8 +32,6 @@ function choiceAnswer(choice: string): DecisionAnswer {
 		type: "choice",
 		choice,
 		probabilities: { [choice]: 1 },
-		confidence: 1,
-		rl_agent: { act_probability: 1 },
 	};
 }
 
@@ -235,9 +233,8 @@ describe("classifyMessageIntent", () => {
 
 	test("falls back to chat when decide() answers with a non-choice type", async () => {
 		const decisionAgent = fakeDecisionAgent({
-			type: "noul",
-			noul: 0.9,
-			rl_agent: { act_probability: 1 },
+			type: "boolean",
+			probability: 0.9,
 		});
 
 		const intent = await classifyMessageIntent({ decisionAgent }, "hmm");

@@ -1,7 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
 	createFunctionCallAgent,
+	createFunctionCallModel,
 	FUNCTION_CALL_SYSTEM_PROMPT,
+	fillOnce,
 	functionCallMessages,
 } from "./function-call-agent.ts";
 import type { LlmCallRecord } from "./types.ts";
@@ -277,5 +279,72 @@ describe("FUNCTION_CALL_SYSTEM_PROMPT", () => {
 		expect(FUNCTION_CALL_SYSTEM_PROMPT).toMatch(/laptop|headphones/i);
 		expect(FUNCTION_CALL_SYSTEM_PROMPT).toMatch(/hotel|flight|room/i);
 		expect(FUNCTION_CALL_SYSTEM_PROMPT).toMatch(/jacket|shirt|shoes/i);
+	});
+});
+
+describe("fillOnce (wire level)", () => {
+	function capture(content: string) {
+		const bodies: Record<string, unknown>[] = [];
+		const model = createFunctionCallModel({
+			baseURL: "http://delta/v1",
+			model: "qwen",
+			fetch: (async (_url: string | URL | Request, init?: RequestInit) => {
+				bodies.push(JSON.parse(String(init?.body)));
+				return completion(content);
+			}) as typeof fetch,
+		});
+		return { model, bodies };
+	}
+	const messages = [
+		{ role: "system" as const, content: "rules" },
+		{ role: "user" as const, content: "go" },
+	];
+
+	test("the request body carries the schema, thinking off, limits, model and messages", async () => {
+		const { model, bodies } = capture('{"query":"a"}');
+		const result = await fillOnce({
+			model,
+			messages,
+			schema: SEARCH.inputSchema,
+			maxOutputTokens: 77,
+		});
+		expect(result.text).toBe('{"query":"a"}');
+		expect(result.usage).toEqual({ inputTokens: 40, outputTokens: 8 });
+		const body = bodies[0] as Record<string, unknown>;
+		expect(body.model).toBe("qwen");
+		expect(body.temperature).toBe(0);
+		expect(body.max_tokens).toBe(77);
+		expect(body.chat_template_kwargs).toEqual({ enable_thinking: false });
+		expect(body.response_format).toMatchObject({
+			type: "json_schema",
+			json_schema: { strict: true, schema: SEARCH.inputSchema },
+		});
+		expect(body.messages).toEqual(messages);
+	});
+
+	test("caller extras reach the body next to the defaults", async () => {
+		const { model, bodies } = capture('{"query":"a"}');
+		await fillOnce({
+			model,
+			messages,
+			schema: SEARCH.inputSchema,
+			maxOutputTokens: 10,
+			providerOptions: { reasoningEffort: "none", top_k: 5 },
+		});
+		const body = bodies[0] as Record<string, unknown>;
+		expect(body.reasoning_effort).toBe("none");
+		expect(body.top_k).toBe(5);
+		expect(body.chat_template_kwargs).toEqual({ enable_thinking: false });
+	});
+
+	test("text that is not valid JSON is returned, not thrown", async () => {
+		const { model } = capture("sorry, no");
+		const result = await fillOnce({
+			model,
+			messages,
+			schema: SEARCH.inputSchema,
+			maxOutputTokens: 10,
+		});
+		expect(result.text).toBe("sorry, no");
 	});
 });

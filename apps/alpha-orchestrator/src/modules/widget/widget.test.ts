@@ -151,8 +151,6 @@ function choiceAnswer(choice: string): DecisionAnswer {
 		type: "choice",
 		choice,
 		probabilities: { [choice]: 1 },
-		confidence: 1,
-		rl_agent: { act_probability: 1 },
 	};
 }
 
@@ -1022,8 +1020,6 @@ describe("widget shopping flow: «купи 1 сыр»", () => {
 		type: "choice",
 		choice: value,
 		probabilities: { [value]: 1 },
-		confidence: 1,
-		rl_agent: { act_probability: 1 },
 	});
 
 	const INTENT_OF_TOOL: Record<string, string> = {

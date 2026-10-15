@@ -1,5 +1,14 @@
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import {
+	APICallError,
+	generateText,
+	type JSONValue,
+	jsonSchema,
+	type LanguageModel,
+	NoObjectGeneratedError,
+	Output,
+} from "ai";
 import { groundArguments } from "./ground-arguments";
-import { createBearerJsonClient } from "./http-client";
 import { recordCall } from "./record-call";
 import { repairArguments } from "./repair-arguments";
 import {
@@ -78,11 +87,6 @@ export const FUNCTION_CALL_SYSTEM_PROMPT = [
 	'Request: make it 5, fact product "USB cable" => {"product":"USB cable","quantity":5}',
 ].join("\n");
 
-interface Completion {
-	choices?: { message?: { content?: string | null } }[];
-	usage?: { prompt_tokens?: number; completion_tokens?: number };
-}
-
 export interface ChatMessage {
 	role: "system" | "user" | "assistant";
 	content: string;
@@ -110,6 +114,102 @@ export function functionCallMessages(
 	];
 }
 
+/** Provider name of the delta model; extra request-body fields live under this key of `providerOptions`. */
+const PROVIDER_NAME = "delta";
+
+/** The AI SDK model for `delta-function-call` (llama-server, OpenAI-compatible). `baseURL` ends in `/v1`. */
+export function createFunctionCallModel(config: {
+	baseURL: string;
+	apiKey?: string;
+	model: string;
+	fetch?: typeof fetch;
+}): LanguageModel {
+	return createOpenAICompatible({
+		name: PROVIDER_NAME,
+		baseURL: config.baseURL,
+		apiKey: config.apiKey,
+		supportsStructuredOutputs: true,
+		includeUsage: true,
+		fetch: config.fetch,
+	})(config.model);
+}
+
+export interface FillOnceInput {
+	model: LanguageModel;
+	messages: ChatMessage[];
+	/** JSON schema the decoding is constrained to. */
+	schema: Record<string, unknown>;
+	maxOutputTokens: number;
+	/** Extra request-body fields (e.g. `{ reasoningEffort: "none" }` for Ollama), merged over the defaults. */
+	providerOptions?: Record<string, JSONValue>;
+	abortSignal?: AbortSignal;
+}
+
+export interface FillOnceResult {
+	text: string;
+	usage: { inputTokens?: number; outputTokens?: number };
+	latencyMs: number;
+}
+
+/**
+ * One schema-constrained chat completion at temperature 0. Always returns the
+ * model's raw text, also when the SDK can't parse it as an object; only
+ * transport errors throw. No SDK retries: the caller owns the correction loop.
+ */
+export async function fillOnce(input: FillOnceInput): Promise<FillOnceResult> {
+	const startedAt = Date.now();
+	try {
+		const result = await generateText({
+			model: input.model,
+			messages: input.messages,
+			allowSystemInMessages: true,
+			output: Output.object({
+				schema: jsonSchema(input.schema),
+				name: "arguments",
+			}),
+			temperature: 0,
+			maxOutputTokens: input.maxOutputTokens,
+			maxRetries: 0,
+			abortSignal: input.abortSignal,
+			providerOptions: {
+				[PROVIDER_NAME]: {
+					// Qwen3 "thinks" first by default: ~200 tokens and 10 s for one
+					// argument object (measured), and the token budget can run out
+					// before the JSON starts. The schema does the constraining.
+					chat_template_kwargs: { enable_thinking: false },
+					...input.providerOptions,
+				},
+			},
+		});
+		return {
+			text: result.text,
+			usage: {
+				inputTokens: result.usage.inputTokens,
+				outputTokens: result.usage.outputTokens,
+			},
+			latencyMs: Date.now() - startedAt,
+		};
+	} catch (error) {
+		if (NoObjectGeneratedError.isInstance(error)) {
+			return {
+				text: error.text ?? "",
+				usage: {
+					inputTokens: error.usage?.inputTokens,
+					outputTokens: error.usage?.outputTokens,
+				},
+				latencyMs: Date.now() - startedAt,
+			};
+		}
+		if (APICallError.isInstance(error)) {
+			throw new Error(
+				`POST /chat/completions failed: ${error.statusCode ?? "no response"}`,
+				{ cause: error },
+			);
+		}
+		throw error;
+	}
+}
+
 /** Corrections the model gets after its first answer: temperature 0 would repeat itself, so the problems go back with it. */
 const MAX_ATTEMPTS = 3;
 
@@ -129,7 +229,7 @@ const MAX_ATTEMPTS = 3;
 export function createFunctionCallAgent(
 	config: FunctionCallAgentConfig,
 ): FunctionCallAgent {
-	const postJson = createBearerJsonClient(config);
+	const model = createFunctionCallModel({ ...config, fetch: config.fetchImpl });
 	const telemetry = config.telemetry ?? defaultTelemetry;
 
 	function report(
@@ -164,21 +264,13 @@ export function createFunctionCallAgent(
 			let lastProblem = "";
 			for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
 				const startedAt = Date.now();
-				let completion: Completion;
+				let filled: FillOnceResult;
 				try {
-					completion = await postJson<Completion>("/chat/completions", {
-						model: config.model,
-						temperature: 0,
-						// Qwen3 "thinks" first by default: ~200 tokens and 10 s for one
-						// argument object (measured), and the budget below can run out
-						// before the JSON starts. The schema does the constraining.
-						chat_template_kwargs: { enable_thinking: false },
-						max_tokens: config.maxOutputTokens ?? 256,
+					filled = await fillOnce({
+						model,
 						messages,
-						response_format: {
-							type: "json_schema",
-							json_schema: { name: "arguments", strict: true, schema },
-						},
+						schema,
+						maxOutputTokens: config.maxOutputTokens ?? 256,
 					});
 				} catch (error) {
 					report(request, startedAt, {
@@ -188,7 +280,7 @@ export function createFunctionCallAgent(
 					throw error;
 				}
 
-				const text = completion.choices?.[0]?.message?.content ?? "";
+				const { text } = filled;
 				// The formatter first (fences, trailing commas, "3" → 3, …); the model
 				// only hears about what it could not fix mechanically.
 				const repaired = repairArguments(text, schema);
@@ -201,8 +293,8 @@ export function createFunctionCallAgent(
 				if (args && !problems) {
 					report(request, startedAt, {
 						ok: true,
-						inputTokens: completion.usage?.prompt_tokens,
-						outputTokens: completion.usage?.completion_tokens,
+						inputTokens: filled.usage.inputTokens,
+						outputTokens: filled.usage.outputTokens,
 					});
 					return args;
 				}

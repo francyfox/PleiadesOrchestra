@@ -82,7 +82,7 @@ interface GoapAction {
 | --- | --- |
 | Написать `GoapAction` руками (пример выше) | Детерминированная бизнес-логика (HTTP-вызов, WebMCP tool, чистая функция) |
 | `createTextAction` (`text-action.ts`) | Шаг, который должен сгенерировать текст через `Agent`/albedo |
-| `createDecisionAction` (`decision-action.ts`) | Единичный типизированный вопрос к Laya (choice/score/noul) с калиброванной вероятностью |
+| `createDecisionAction` (`decision-action.ts`) | Единичный типизированный вопрос к Laya (choice/score/boolean) с калиброванной вероятностью |
 | `createMcpToolSource` (`tool-source.ts`) | Автоматически завести actions из `tools/list` реального MCP-сервера — без ручного конфига на каждый тул |
 
 ## Пример посложнее: цепочка из нескольких actions

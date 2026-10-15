@@ -26,8 +26,6 @@ function fakeDecisionAgent(choice: string): DecisionAgent & {
 				type: "choice",
 				choice,
 				probabilities: { [choice]: 1 },
-				confidence: 1,
-				rl_agent: { act_probability: 1 },
 			};
 			return { intent: answer };
 		},
@@ -394,8 +392,6 @@ describe("tool arguments written by the function-call model", () => {
 							type: "choice",
 							choice,
 							probabilities: { [choice]: 1 },
-							confidence: 1,
-							rl_agent: { act_probability: 1 },
 						},
 					};
 				},

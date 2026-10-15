@@ -12,11 +12,11 @@ test("health and swagger are open", () => {
 });
 
 test("other routes need the bearer key", () => {
-	expect(authorizeRequest(request("/v1/decide"), "k")?.status).toBe(401);
+	expect(authorizeRequest(request("/v1/systemone"), "k")?.status).toBe(401);
 	expect(
-		authorizeRequest(request("/v1/decide", "Bearer no"), "k")?.status,
+		authorizeRequest(request("/v1/systemone", "Bearer no"), "k")?.status,
 	).toBe(401);
 	expect(
-		authorizeRequest(request("/v1/decide", "Bearer k"), "k"),
+		authorizeRequest(request("/v1/systemone", "Bearer k"), "k"),
 	).toBeUndefined();
 });

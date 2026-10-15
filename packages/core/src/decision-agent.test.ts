@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { Experimental_DecisionMockModelV4 } from "ai/test";
 import type { ConsolaReporter, LogObject } from "consola";
 import { createDecisionAgent } from "./decision-agent.ts";
 import { createTelemetry } from "./telemetry.ts";
@@ -13,8 +14,12 @@ function fakeFetch(
 		handler(input, init)) as typeof fetch;
 }
 
+const urgentQuestion = {
+	urgent: { type: "boolean", instructions: "Is this urgent?" },
+} as const;
+
 describe("createDecisionAgent", () => {
-	test("decide posts to /v1/decide with a bearer token and returns parsed answers", async () => {
+	test("by default decide posts to /v1/systemone with a bearer token and returns SDK-shaped answers", async () => {
 		let capturedUrl: string | undefined;
 		let capturedInit: RequestInit | undefined;
 
@@ -26,13 +31,9 @@ describe("createDecisionAgent", () => {
 				capturedInit = init;
 				return new Response(
 					JSON.stringify({
-						answers: {
-							urgent: {
-								type: "noul",
-								noul: 0.87,
-								rl_agent: { act_probability: 0.99 },
-							},
-						},
+						model: "laya-1",
+						answers: { urgent: { type: "noul", noul: 0.87 } },
+						usage: { input_tokens: 4, output_tokens: 1 },
 					}),
 					{ headers: { "content-type": "application/json" } },
 				);
@@ -41,28 +42,37 @@ describe("createDecisionAgent", () => {
 
 		const answers = await agent.decide(
 			{ ticket: "refund request" },
-			{
-				urgent: { type: "noul", instructions: "Is this urgent?" },
-			},
+			urgentQuestion,
 		);
 
-		expect(answers).toEqual({
-			urgent: {
-				type: "noul",
-				noul: 0.87,
-				rl_agent: { act_probability: 0.99 },
-			},
-		});
-		expect(capturedUrl).toBe(`${BASE_URL}/v1/decide`);
+		expect(answers).toEqual({ urgent: { type: "boolean", probability: 0.87 } });
+		expect(capturedUrl).toBe(`${BASE_URL}/v1/systemone`);
 		expect(capturedInit?.method).toBe("POST");
 		expect(new Headers(capturedInit?.headers).get("authorization")).toBe(
 			`Bearer ${API_KEY}`,
 		);
-		expect(JSON.parse(String(capturedInit?.body))).toEqual({
-			state: { ticket: "refund request" },
+		expect(JSON.parse(String(capturedInit?.body))).toMatchObject({
+			model: "laya",
 			questions: {
 				urgent: { type: "noul", instructions: "Is this urgent?" },
 			},
+		});
+	});
+
+	test("an injected decision model replaces the HTTP one", async () => {
+		const agent = createDecisionAgent({
+			baseURL: BASE_URL,
+			apiKey: API_KEY,
+			model: new Experimental_DecisionMockModelV4({
+				doDecide: async () => ({
+					answers: { urgent: { type: "boolean", probability: 0.1 } },
+					warnings: [],
+				}),
+			}),
+		});
+
+		expect(await agent.decide({ a: 1 }, urgentQuestion)).toEqual({
+			urgent: { type: "boolean", probability: 0.1 },
 		});
 	});
 
@@ -75,7 +85,9 @@ describe("createDecisionAgent", () => {
 			),
 		});
 
-		await expect(agent.decide({}, {})).rejects.toThrow(/500/);
+		await expect(agent.decide({}, urgentQuestion)).rejects.toThrow(
+			/Server Error/,
+		);
 	});
 
 	// Same telemetry contract as `createAgent`'s `logLlmState` calls — both are
@@ -89,15 +101,15 @@ describe("createDecisionAgent", () => {
 			baseURL: BASE_URL,
 			apiKey: API_KEY,
 			telemetry: createTelemetry([reporter]),
-			fetchImpl: fakeFetch(
-				() =>
-					new Response(JSON.stringify({ answers: {} }), {
-						headers: { "content-type": "application/json" },
-					}),
-			),
+			model: new Experimental_DecisionMockModelV4({
+				doDecide: async () => ({
+					answers: { urgent: { type: "boolean", probability: 0.5 } },
+					warnings: [],
+				}),
+			}),
 		});
 
-		await agent.decide({}, {});
+		await agent.decide({}, urgentQuestion);
 
 		expect(logs.length).toBe(1);
 		expect(logs[0]?.["gen_ai.provider.name"]).toBe("laya");
@@ -117,7 +129,9 @@ describe("createDecisionAgent", () => {
 			),
 		});
 
-		await expect(agent.decide({}, {})).rejects.toThrow(/500/);
+		await expect(agent.decide({}, urgentQuestion)).rejects.toThrow(
+			/Server Error/,
+		);
 
 		expect(logs.length).toBe(1);
 		expect(logs[0]?.ok).toBe(false);

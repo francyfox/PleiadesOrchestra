@@ -2,6 +2,7 @@ import type {
 	DecisionAgent,
 	DecisionAnswer,
 	DecisionQuestion,
+	DecisionState,
 } from "../decision-types";
 import type { UsageRecorder } from "../types";
 import type { ActionContext, GoapAction, WorldState } from "./types";
@@ -16,7 +17,7 @@ export interface DecisionActionConfig {
 	/** The single typed question this action asks Laya. */
 	question: DecisionQuestion;
 	/** Builds the `state` payload `decide()` needs from the live world state at execution time. */
-	toDecisionState: (state: WorldState) => unknown;
+	toDecisionState: (state: WorldState) => DecisionState;
 	/** Maps Laya's real answer into observed world-state facts. */
 	toEffects: (answer: DecisionAnswer) => Partial<WorldState>;
 	/** Optional: records each `decide()` call as a `kind: "decision"` usage row (latency only — Laya has no tokens). */

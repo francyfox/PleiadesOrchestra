@@ -28,12 +28,11 @@ function fakeDecisionAgent(
 describe("createDecisionAction", () => {
 	test("calls decide() with the action's own name as the question key", async () => {
 		const decisionAgent = fakeDecisionAgent({
-			type: "noul",
-			noul: 0.9,
-			rl_agent: { act_probability: 1 },
+			type: "boolean",
+			probability: 0.9,
 		});
 		const question: DecisionQuestion = {
-			type: "noul",
+			type: "boolean",
 			instructions: "Is this urgent?",
 		};
 
@@ -46,7 +45,7 @@ describe("createDecisionAction", () => {
 			question,
 			toDecisionState: (state) => ({ text: state.userMessage }),
 			toEffects: (answer) =>
-				answer.type === "noul" ? { urgent: answer.noul >= 0.5 } : {},
+				answer.type === "boolean" ? { urgent: answer.probability >= 0.5 } : {},
 		});
 
 		await action.execute({ state: { userMessage: "help now" } });
@@ -59,9 +58,8 @@ describe("createDecisionAction", () => {
 
 	test("maps a noul answer through toEffects, thresholding into a boolean fact", async () => {
 		const decisionAgent = fakeDecisionAgent({
-			type: "noul",
-			noul: 0.87,
-			rl_agent: { act_probability: 0.99 },
+			type: "boolean",
+			probability: 0.87,
 		});
 
 		const action = createDecisionAction({
@@ -70,11 +68,11 @@ describe("createDecisionAction", () => {
 			preconditions: {},
 			effects: { needsClarification: true },
 			decisionAgent,
-			question: { type: "noul", instructions: "Is this ambiguous?" },
+			question: { type: "boolean", instructions: "Is this ambiguous?" },
 			toDecisionState: (state) => state,
 			toEffects: (answer) =>
-				answer.type === "noul"
-					? { needsClarification: answer.noul >= 0.5 }
+				answer.type === "boolean"
+					? { needsClarification: answer.probability >= 0.5 }
 					: {},
 		});
 
@@ -88,8 +86,6 @@ describe("createDecisionAction", () => {
 			type: "choice",
 			choice: "buy",
 			probabilities: { buy: 0.8, browse: 0.2 },
-			confidence: 0.8,
-			rl_agent: { act_probability: 0.95 },
 		});
 
 		const action = createDecisionAction({
@@ -101,7 +97,7 @@ describe("createDecisionAction", () => {
 			question: {
 				type: "choice",
 				instructions: "What does the user want?",
-				criteria: ["buy", "browse"],
+				criteria: { buy: null, browse: null },
 			},
 			toDecisionState: (state) => state,
 			toEffects: (answer) =>
@@ -126,11 +122,11 @@ describe("createDecisionAction", () => {
 			preconditions: {},
 			effects: { needsClarification: true },
 			decisionAgent,
-			question: { type: "noul", instructions: "Is this ambiguous?" },
+			question: { type: "boolean", instructions: "Is this ambiguous?" },
 			toDecisionState: (state) => state,
 			toEffects: (answer) =>
-				answer.type === "noul"
-					? { needsClarification: answer.noul >= 0.5 }
+				answer.type === "boolean"
+					? { needsClarification: answer.probability >= 0.5 }
 					: {},
 		});
 
@@ -141,9 +137,8 @@ describe("createDecisionAction", () => {
 
 	test("carries the static name/cost/preconditions/effects through unchanged", () => {
 		const decisionAgent = fakeDecisionAgent({
-			type: "noul",
-			noul: 0.1,
-			rl_agent: { act_probability: 1 },
+			type: "boolean",
+			probability: 0.1,
 		});
 		const preconditions: Partial<WorldState> = { authenticated: true };
 		const effects: Partial<WorldState> = { needsClarification: true };
@@ -154,7 +149,7 @@ describe("createDecisionAction", () => {
 			preconditions,
 			effects,
 			decisionAgent,
-			question: { type: "noul", instructions: "Is this ambiguous?" },
+			question: { type: "boolean", instructions: "Is this ambiguous?" },
 			toDecisionState: (state) => state,
 			toEffects: () => ({}),
 		});
@@ -166,7 +161,7 @@ describe("createDecisionAction", () => {
 	});
 	describe("usage recording", () => {
 		const question: DecisionQuestion = {
-			type: "noul",
+			type: "boolean",
 			instructions: "Is this urgent?",
 		};
 
@@ -191,9 +186,8 @@ describe("createDecisionAction", () => {
 		test("records a successful decide() as a decision call without tokens", async () => {
 			const { action, calls } = recordingAction(
 				fakeDecisionAgent({
-					type: "noul",
-					noul: 0.9,
-					rl_agent: { act_probability: 1 },
+					type: "boolean",
+					probability: 0.9,
 				}),
 			);
 

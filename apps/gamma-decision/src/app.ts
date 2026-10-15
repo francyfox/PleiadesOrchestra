@@ -4,7 +4,7 @@ import {
 	onRequestGuard,
 } from "@repo/elysia-kit";
 import { authorizeRequest } from "./modules/auth/auth.service.ts";
-import { type Decide, decideRoutes } from "./modules/decide/decide.ts";
+import { type Decide, systemoneRoutes } from "./modules/systemone/systemone.ts";
 
 export interface AppDeps {
 	decide: Decide;
@@ -30,5 +30,5 @@ export function createApp(deps: AppDeps) {
 				authorizeRequest(request, deps.apiKey),
 			),
 		)
-		.use(decideRoutes(deps.decide));
+		.use(systemoneRoutes(deps.decide));
 }

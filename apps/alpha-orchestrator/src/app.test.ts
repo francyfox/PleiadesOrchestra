@@ -392,7 +392,7 @@ describe("createApp", () => {
 		let receivedQuestions: Record<string, DecisionQuestion> | undefined;
 
 		const answers: Record<string, DecisionAnswer> = {
-			urgent: { type: "noul", noul: 0.42, rl_agent: { act_probability: 1 } },
+			urgent: { type: "boolean", probability: 0.42 },
 		};
 
 		const app = createTestApp({
@@ -411,7 +411,7 @@ describe("createApp", () => {
 				body: JSON.stringify({
 					state: { ticket: "refund request" },
 					questions: {
-						urgent: { type: "noul", instructions: "Is this urgent?" },
+						urgent: { type: "boolean", instructions: "Is this urgent?" },
 					},
 				}),
 			}),
@@ -421,7 +421,7 @@ describe("createApp", () => {
 		expect(await response.json()).toEqual({ answers });
 		expect(receivedState).toEqual({ ticket: "refund request" });
 		expect(receivedQuestions).toEqual({
-			urgent: { type: "noul", instructions: "Is this urgent?" },
+			urgent: { type: "boolean", instructions: "Is this urgent?" },
 		});
 	});
 
@@ -652,8 +652,6 @@ describe("createApp — message intent routing", () => {
 			type: "choice",
 			choice,
 			probabilities: { [choice]: 1 },
-			confidence: 1,
-			rl_agent: { act_probability: 1 },
 		};
 	}
 
@@ -1043,8 +1041,6 @@ describe("createApp — the intent is decided by memory first, then Laya, and wh
 				type: "choice",
 				choice,
 				probabilities: { [choice]: 1 },
-				confidence: 1,
-				rl_agent: { act_probability: 1 },
 			},
 		});
 

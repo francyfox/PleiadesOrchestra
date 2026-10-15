@@ -9,12 +9,18 @@ export {
 export type { DecisionAgentConfig } from "./decision-agent";
 export { createDecisionAgent } from "./decision-agent";
 export type {
+	BooleanAnswer,
+	ChoiceAnswer,
 	DecisionAgent,
 	DecisionAnswer,
 	DecisionQuestion,
+	DecisionState,
+	ScoreAnswer,
 } from "./decision-types";
 export type {
 	ChatMessage,
+	FillOnceInput,
+	FillOnceResult,
 	FunctionCallAgent,
 	FunctionCallAgentConfig,
 	FunctionCallRequest,
@@ -22,7 +28,9 @@ export type {
 } from "./function-call-agent";
 export {
 	createFunctionCallAgent,
+	createFunctionCallModel,
 	FUNCTION_CALL_SYSTEM_PROMPT,
+	fillOnce,
 	functionCallMessages,
 } from "./function-call-agent";
 export type {

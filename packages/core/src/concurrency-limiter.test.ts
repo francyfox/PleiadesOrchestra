@@ -163,12 +163,12 @@ describe("withDecisionConcurrencyLimit", () => {
 
 		const first = limited.decide(
 			{},
-			{ first: { type: "noul", instructions: "" } },
+			{ first: { type: "boolean", instructions: "" } },
 		);
 		await Promise.resolve();
 		const second = limited.decide(
 			{},
-			{ second: { type: "noul", instructions: "" } },
+			{ second: { type: "boolean", instructions: "" } },
 		);
 
 		await Promise.resolve();
