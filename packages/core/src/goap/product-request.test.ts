@@ -3,6 +3,7 @@ import {
 	createProductRequestAction,
 	extractProductRequest,
 	extractProductRequestRu,
+	isSimpleRequest,
 	namesNoProduct,
 	parseProductRequest,
 	reuseLastProduct,
@@ -370,3 +371,144 @@ describe("reuseLastProduct", () => {
 		).toBeUndefined();
 	});
 });
+
+describe("several products in one message", () => {
+	test("commas separate the things; query and quantity stay the first one's", () => {
+		const request = extractProductRequest(
+			"Buy mechanical keyboard, USB-C hub",
+			"купи …",
+		);
+		expect(request.items).toEqual([
+			{ query: "mechanical keyboard", quantity: 1 },
+			{ query: "usb-c hub", quantity: 1 },
+		]);
+		expect(request.query).toBe("mechanical keyboard");
+		expect(request.quantity).toBe(1);
+	});
+
+	test("every item keeps its own count", () => {
+		const request = extractProductRequest(
+			"add 2 hdmi cables, three phone cases and a dozen batteries to my cart",
+			"x",
+		);
+		expect(request.items).toEqual([
+			{ query: "hdmi cables", quantity: 2 },
+			{ query: "phone cases", quantity: 3 },
+			{ query: "batteries", quantity: 12 },
+		]);
+		expect(request.quantity).toBe(2);
+	});
+
+	test("«and» after a comma ends the list; each item is cut to four words", () => {
+		const request = extractProductRequest(
+			"I want wool socks, a black winter jacket with fur hood size large and leather gloves",
+			"x",
+		);
+		expect(request.items?.map((item) => item.query)).toEqual([
+			"wool socks",
+			"black winter jacket with",
+			"leather gloves",
+		]);
+	});
+
+	test("«and» between two short phrases splits, a counted second phrase too", () => {
+		expect(extractProductRequest("buy milk and bread", "x").items).toEqual([
+			{ query: "milk", quantity: 1 },
+			{ query: "bread", quantity: 1 },
+		]);
+		expect(
+			extractProductRequest("buy 2 packs of pens and 3 notebooks", "x").items,
+		).toEqual([
+			{ query: "pens", quantity: 2 },
+			{ query: "notebooks", quantity: 3 },
+		]);
+	});
+
+	test("names that contain «and» or «&» are one product", () => {
+		for (const text of [
+			"buy mac and cheese",
+			"buy salt and pepper",
+			"buy salt & pepper",
+			"buy black and decker drill",
+			"order a pair of nuts and bolts organizer box",
+		]) {
+			expect(extractProductRequest(text, "x").items).toBeUndefined();
+		}
+		expect(extractProductRequest("buy mac and cheese", "x").query).toBe(
+			"mac and cheese",
+		);
+	});
+
+	test("a decimal comma is not a separator", () => {
+		expect(
+			extractProductRequest("buy 1,5 liter water", "x").items,
+		).toBeUndefined();
+	});
+
+	test("a single product behaves as before", () => {
+		expect(extractProductRequest("buy two cheeses", "x")).toEqual({
+			query: "cheeses",
+			quantity: 2,
+		});
+	});
+
+	test("a list of several is a simple request even when long", () => {
+		expect(
+			isSimpleRequest(
+				"buy 2 hdmi cables, 3 phone cases, a dozen batteries and a usb hub please",
+			),
+		).toBe(true);
+	});
+
+	test("the Russian rules split the same way", () => {
+		expect(
+			extractProductRequestRu("купи Honeycrisp Apples, Oat Milk").items,
+		).toEqual([
+			{ query: "Honeycrisp Apples", quantity: 1 },
+			{ query: "Oat Milk", quantity: 1 },
+		]);
+		expect(
+			extractProductRequestRu("добавь 2 кабеля, три чехла и дрель в корзину")
+				.items,
+		).toEqual([
+			{ query: "кабеля", quantity: 2 },
+			{ query: "чехла", quantity: 3 },
+			{ query: "дрель", quantity: 1 },
+		]);
+		expect(extractProductRequestRu("купи молоко и хлеб").items).toEqual([
+			{ query: "молоко", quantity: 1 },
+			{ query: "хлеб", quantity: 1 },
+		]);
+		expect(
+			extractProductRequestRu("купи 1,5 литра воды").items,
+		).toBeUndefined();
+	});
+
+	test("the action puts the list into a fact, the first item into query/quantity", async () => {
+		const action = createProductRequestAction({ agent: fakeNoCall() });
+		const out = await action.execute({
+			state: {
+				userMessage: "купи кабель, мышь",
+				userMessageEn: "buy a cable, mouse",
+			},
+		});
+		expect(out).toMatchObject({
+			requestParsed: true,
+			query: "cable",
+			quantity: 1,
+			requestedItems: JSON.stringify([
+				{ name: "cable", quantity: 1 },
+				{ name: "mouse", quantity: 1 },
+			]),
+		});
+	});
+});
+
+function fakeNoCall() {
+	return {
+		handleMessageStream() {
+			throw new Error("the model must not be called");
+		},
+		async resetThread() {},
+	} as unknown as Parameters<typeof createProductRequestAction>[0]["agent"];
+}

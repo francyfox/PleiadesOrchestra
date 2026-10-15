@@ -10,6 +10,12 @@ export const DEMO_TOOLS: {
 	name: string;
 	description: string;
 	expected: ToolIntent;
+	/** The parameters that matter for classification (a removal is read from its schema). */
+	inputSchema?: {
+		type: "object";
+		properties: Record<string, unknown>;
+		required?: string[];
+	};
 }[] = [
 	{
 		name: "add_recipe_to_cart",
@@ -37,19 +43,19 @@ export const DEMO_TOOLS: {
 		name: "get_cart",
 		description:
 			"Read the open store's cart: each item with its quantity and price, the subtotal, estimated fees and total, and whether the store's order minimum is met.",
-		expected: "other",
+		expected: "readState",
 	},
 	{
 		name: "get_order_status",
 		description:
 			"Check on an order that was already placed: its stage (order placed, shopping, out for delivery, or delivered), delivery window, shopper, items, and total.",
-		expected: "other",
+		expected: "readState",
 	},
 	{
 		name: "get_staples",
 		description:
 			"Read the shopper's saved staples (the page calls them 'Your usuals'): the products they buy regularly, each with its usual quantity and what to do when it is out of stock.",
-		expected: "other",
+		expected: "readState",
 	},
 	{
 		name: "search_products",
@@ -66,7 +72,20 @@ export const DEMO_TOOLS: {
 		name: "update_cart_item",
 		description:
 			"Set the exact quantity of a product that is already in the open store's cart, or remove it by setting the quantity to 0.",
-		expected: "other",
+		expected: "removeFromCart",
+		inputSchema: {
+			type: "object",
+			properties: {
+				product: { type: "string" },
+				quantity: {
+					type: "integer",
+					minimum: 0,
+					description:
+						"The new total quantity for this product. 0 removes it from the cart.",
+				},
+			},
+			required: ["product", "quantity"],
+		},
 	},
 	{
 		name: "update_staples",

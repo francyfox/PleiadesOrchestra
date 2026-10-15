@@ -61,6 +61,20 @@ describe("createTelemetry", () => {
 		expect(entry.duration_ms).toBe(900);
 	});
 
+	test("logLlmState carries the decision's confidence when there is one", () => {
+		const { logs, reporter } = fakeReporter();
+		const telemetry = createTelemetry([reporter]);
+		telemetry.logLlmState({
+			kind: "classify",
+			provider: "laya",
+			model: "gamma-decision",
+			latencyMs: 30,
+			ok: true,
+			confidence: 0.91,
+		});
+		expect((logs[0] as LogObject)["llm.confidence"]).toBe(0.91);
+	});
+
 	test("logLlmState includes error.type when the call failed", () => {
 		const { logs, reporter } = fakeReporter();
 		const telemetry = createTelemetry([reporter]);

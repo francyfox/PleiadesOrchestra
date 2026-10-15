@@ -50,6 +50,72 @@ describe("learnIntent", () => {
 		expect(approvedExamples(db, shop)).toEqual([]);
 	});
 
+	test("a Laya label at or above the threshold is approved on its own, marked auto, and joins the model", () => {
+		const { db, shop } = setup();
+		const base = { channelId: shop, planRunId: null, now: 10 };
+		learnIntent(db, {
+			...base,
+			text: "add milk to my cart",
+			intent: "addToCart",
+			confidence: 0.85,
+			autoApproveAt: 0.85,
+		});
+		learnIntent(db, {
+			...base,
+			text: "show me something for tea",
+			intent: "search",
+			confidence: 0.84,
+			autoApproveAt: 0.85,
+		});
+
+		const { items } = listIntentExamples(db, {});
+		const byText = Object.fromEntries(items.map((row) => [row.sample, row]));
+		expect(byText["add milk to my cart"]).toMatchObject({
+			status: "approved",
+			source: "laya",
+			approvedBy: "auto",
+			confidence: 0.85,
+		});
+		expect(byText["show me something for tea"]).toMatchObject({
+			status: "pending",
+			approvedBy: null,
+			confidence: 0.84,
+		});
+		expect(approvedExamples(db, shop)).toEqual([
+			{ text: "add milk to my cart", intent: "addToCart" },
+		]);
+	});
+
+	test("no threshold or no confidence never auto-approves", () => {
+		const { db, shop } = setup();
+		const base = {
+			channelId: shop,
+			planRunId: null,
+			now: 1,
+			intent: "search" as const,
+		};
+		learnIntent(db, { ...base, text: "one", confidence: 0.99 });
+		learnIntent(db, { ...base, text: "two", autoApproveAt: 0.5 });
+		expect(listIntentExamples(db, { status: "approved" }).total).toBe(0);
+	});
+
+	test("the words-only intents are never approved by a model, however sure", () => {
+		const { db, shop } = setup();
+		for (const intent of ["checkout", "removeFromCart"] as const) {
+			learnIntent(db, {
+				channelId: shop,
+				text: `words for ${intent}`,
+				intent,
+				planRunId: null,
+				now: 1,
+				confidence: 1,
+				autoApproveAt: 0.85,
+			});
+		}
+		expect(listIntentExamples(db, { status: "pending" }).total).toBe(2);
+		expect(approvedExamples(db, shop)).toEqual([]);
+	});
+
 	test("the same text again only counts; it never changes what is already there", () => {
 		const { db, shop } = setup();
 		const first = { channelId: shop, planRunId: null, now: 10 };
@@ -104,11 +170,37 @@ describe("judgeIntentExample", () => {
 			intent: "other",
 			source: "admin",
 			status: "approved",
+			approvedBy: "admin",
 			updatedAt: 5,
 		});
 		expect(approvedExamples(db, shop)).toEqual([
 			{ text: "show my cart", intent: "other" },
 		]);
+	});
+
+	test("a person's verdict on an auto-approved row takes over the mark; a rejection clears it", () => {
+		const { db, shop } = setup();
+		learnIntent(db, {
+			channelId: shop,
+			text: "add milk",
+			intent: "addToCart",
+			planRunId: null,
+			now: 1,
+			confidence: 0.9,
+			autoApproveAt: 0.85,
+		});
+		const id = listIntentExamples(db, {}).items[0]?.id ?? "";
+		expect(judgeIntentExample(db, id, { status: "approved" }, 2)).toMatchObject(
+			{
+				approvedBy: "admin",
+			},
+		);
+		expect(judgeIntentExample(db, id, { status: "rejected" }, 3)).toMatchObject(
+			{
+				status: "rejected",
+				approvedBy: null,
+			},
+		);
 	});
 
 	test("rejecting keeps the row but takes it out of the model", () => {

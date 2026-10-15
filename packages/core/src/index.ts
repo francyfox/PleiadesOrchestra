@@ -1,5 +1,16 @@
 export type { AgentConfig } from "./agent";
 export { createAgent } from "./agent";
+export {
+	CHARS_PER_TOKEN,
+	type ChoiceRound,
+	type ChoiceRoundsOptions,
+	type ChoiceRoundsResult,
+	decideInRounds,
+	estimateTokens,
+	LAYA_CALIBRATED_OPTIONS,
+	LAYA_HEAD_TOKENS,
+	planChoiceRounds,
+} from "./choice-rounds";
 export type { ConcurrencyLimiter } from "./concurrency-limiter";
 export {
 	createConcurrencyLimiter,
@@ -47,6 +58,7 @@ export type {
 	IntentModel,
 	IntentSource,
 	IntentVerdict,
+	ListItem,
 	McpCallToolResult,
 	McpClient,
 	McpToolDescriptor,
@@ -75,6 +87,7 @@ export type {
 	WorldStateStore,
 } from "./goap";
 export {
+	bindListScope,
 	classifyMessageIntent,
 	classifyMessageIntentDetailed,
 	connectStdioMcpClient,
@@ -86,11 +99,19 @@ export {
 	createTextAction,
 	createWebMcpActions,
 	EFFECTS_BY_INTENT,
+	FOUND_ITEMS,
 	firstListedProductName,
 	goalForIntent,
 	INTENT_DESCRIPTIONS,
 	InMemoryWorldStateStore,
+	itemsText,
+	LIST_EMPTY,
+	LIST_READ,
+	LISTED_ITEMS,
 	MAX_TOOL_TEXT_CHARS,
+	MISSING_ITEMS,
+	matchSpecialist,
+	NEEDS_THE_WORDS,
 	namesNoProduct,
 	normalizeIntentText,
 	PAGE_FACT,
@@ -99,15 +120,42 @@ export {
 	parsePage,
 	parseProductRequest,
 	plan,
+	preferSpecialist,
 	pruneUnproducibleFacts,
+	REMOVED_ITEMS,
+	REQUESTED_ITEMS,
+	readItems,
 	reuseLastProduct,
 	runPlan,
+	SCOPE_ALL,
 	SESSION_FACTS,
 	samePage,
+	scopeFacts,
 	TOOL_INTENTS,
 } from "./goap";
 export { groundArguments } from "./ground-arguments";
 export { InMemoryHistoryStore } from "./history";
+export type { LayaBucket, LayaCalibrationTable } from "./laya-calibrate";
+export {
+	calibrate,
+	layaBucket,
+	rescaleProbabilities,
+	SHIPPED_TEMPERATURES,
+	withCalibration,
+} from "./laya-calibrate";
+export { LAYA_CALIBRATION } from "./laya-calibration";
+export type {
+	CalibrationReport,
+	LayaRecord,
+	LayaRecordFile,
+	LayaSample,
+} from "./laya-fit";
+export {
+	crossValidate,
+	expectedCalibrationError,
+	fitTemperature,
+	recordToSample,
+} from "./laya-fit";
 export { recordCall } from "./record-call";
 export { repairArguments } from "./repair-arguments";
 export type { LlmStateFields, MessageEventFields } from "./telemetry";
@@ -123,4 +171,5 @@ export type {
 	LlmCallRecord,
 	UsageRecorder,
 } from "./types";
+export { UntranslatableError } from "./untranslatable-error";
 export { validateArguments } from "./validate-arguments";

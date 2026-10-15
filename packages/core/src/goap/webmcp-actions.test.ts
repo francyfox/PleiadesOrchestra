@@ -4,9 +4,11 @@ import type {
 	FunctionCallAgent,
 	FunctionCallRequest,
 } from "../function-call-agent.ts";
+import { UntranslatableError } from "../untranslatable-error.ts";
 import {
 	createWebMcpActions,
 	firstListedProductName,
+	type WebMcpToolDescriptor,
 } from "./webmcp-actions.ts";
 
 function fakeDecisionAgent(choice: string): DecisionAgent & {
@@ -134,6 +136,53 @@ describe("createWebMcpActions", () => {
 			inCart: true,
 			"toolResult:add_to_cart": true,
 		});
+	});
+
+	test("an add tool that picked the items itself (a bundle): what it says it added becomes the found items", async () => {
+		const actions = await createWebMcpActions({
+			tools: [{ name: "add_bundle_to_cart" }],
+			decisionAgent: fakeDecisionAgent("addToCart"),
+		});
+		const action = actions.find((a) => a.name === "add_bundle_to_cart");
+		if (!action) throw new Error("expected the bundle action");
+
+		const outcome = await action.execute({
+			state: {
+				"webmcp:add_bundle_to_cart:result": "ok",
+				"webmcp:add_bundle_to_cart:text":
+					"Desk setup: Added: 1 × USB-C Hub (new); 2 × HDMI Cable (2 m)",
+			},
+		});
+
+		expect(outcome).toMatchObject({
+			inCart: true,
+			product: "USB-C Hub",
+			quantity: 1,
+			foundItems: JSON.stringify([
+				{ name: "USB-C Hub", quantity: 1 },
+				{ name: "HDMI Cable", quantity: 2 },
+			]),
+		});
+	});
+
+	test("a product already known from the search is not replaced by the answer's wording", async () => {
+		const actions = await createWebMcpActions({
+			tools: [{ name: "add_to_cart" }],
+			decisionAgent: fakeDecisionAgent("addToCart"),
+		});
+		const action = actions[0];
+		if (!action) throw new Error("expected one action");
+
+		const outcome = await action.execute({
+			state: {
+				product: "Oat Milk",
+				"webmcp:add_to_cart:result": "ok",
+				"webmcp:add_to_cart:text":
+					"Added to the cart:\n- 1 × Oat Milk (now 1 in cart)",
+			},
+		});
+
+		expect(outcome).toEqual({ inCart: true, "toolResult:add_to_cart": true });
 	});
 
 	test("execute() reports failure without re-waiting when the browser's result is an error", async () => {
@@ -512,9 +561,42 @@ describe("tool classification by name", () => {
 		).toMatchObject({
 			inCart: true,
 		});
-		// A read has no shop effect, whatever its description mentions.
+		// A read has no shop effect, whatever its description mentions: it only
+		// makes the list known.
 		expect(actions.find((a) => a.name === "get_cart")?.effects).toEqual({
+			listRead: true,
 			"toolResult:get_cart": true,
+		});
+	});
+
+	test("an edit tool whose schema says 0 removes is a removal; the same edit without it is not", async () => {
+		const withQuantity = (description: string) => ({
+			type: "object" as const,
+			properties: {
+				product: { type: "string" },
+				quantity: { type: "integer", minimum: 0, description },
+			},
+			required: ["product", "quantity"],
+		});
+		const actions = await createWebMcpActions({
+			tools: [
+				{
+					name: "update_cart_item",
+					inputSchema: withQuantity("The new quantity. 0 removes it."),
+				},
+				{
+					name: "update_stock",
+					inputSchema: withQuantity("The new quantity on the shelf."),
+				},
+			],
+			decisionAgent: fakeDecisionAgent("other"),
+		});
+
+		expect(
+			actions.find((a) => a.name === "update_cart_item")?.effects,
+		).toMatchObject({ inCart: false });
+		expect(actions.find((a) => a.name === "update_stock")?.effects).toEqual({
+			"toolResult:update_stock": true,
 		});
 	});
 
@@ -540,5 +622,67 @@ describe("tool classification by name", () => {
 		const cost = (name: string) => actions.find((a) => a.name === name)?.cost;
 		expect(cost("add_to_cart")).toBeLessThan(cost("add_recipe_to_cart") ?? 0);
 		expect(cost("add_to_cart")).toBeLessThan(cost("add_staples_to_cart") ?? 0);
+	});
+});
+
+describe("choosing an enum parameter: English for Laya, a safe value without it", () => {
+	const setStore: WebMcpToolDescriptor = {
+		name: "set_store",
+		description: "Choose a store",
+		inputSchema: {
+			type: "object",
+			required: ["store"],
+			properties: {
+				store: { type: "string", enum: ["Алматы", "Астана"] },
+			},
+		},
+	};
+
+	async function chooseAction(decisionAgent: DecisionAgent) {
+		const actions = await createWebMcpActions({
+			tools: [setStore],
+			decisionAgent,
+		});
+		const action = actions.find((a) => a.name === "choose:set_store.store");
+		if (!action) throw new Error("no choice step");
+		return action;
+	}
+
+	test("asks about the English message when there is one", async () => {
+		const seen: unknown[] = [];
+		const action = await chooseAction({
+			async decide(state, questions) {
+				if ("intent" in questions) {
+					return { intent: { type: "choice", choice: "other" } };
+				}
+				seen.push(state);
+				const none: Record<string, DecisionAnswer> = {};
+				return none;
+			},
+		});
+		await action.execute({
+			state: {
+				userMessage: "купи сыр в Астане",
+				userMessageEn: "buy cheese in Astana",
+			},
+		});
+		expect(seen).toEqual([{ message: "buy cheese in Astana" }]);
+	});
+
+	test("when Laya cannot be asked (nothing to translate with), the first option is taken", async () => {
+		const action = await chooseAction({
+			async decide(_state, questions) {
+				if ("intent" in questions) {
+					return { intent: { type: "choice", choice: "other" } };
+				}
+				throw new UntranslatableError("купи сыр");
+			},
+		});
+		expect(
+			await action.execute({ state: { userMessage: "купи сыр" } }),
+		).toEqual({
+			store: "Алматы",
+			"param:set_store:store": true,
+		});
 	});
 });

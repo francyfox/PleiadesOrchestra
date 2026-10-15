@@ -1,3 +1,4 @@
+import { listArgument } from "./shopping-list";
 import type { ActionContext, GoapAction, WorldState } from "./types";
 
 /**
@@ -55,12 +56,19 @@ export function buildArguments(
 ): Record<string, unknown> {
 	const properties = (inputSchema.properties ?? {}) as Record<string, unknown>;
 	const args: Record<string, unknown> = {};
+	// Several things found by earlier searches fill the tool's list parameter.
+	const found = listArgument(state, inputSchema);
+	if (found) args[found.parameter] = found.value;
 	for (const [name, schema] of Object.entries(properties)) {
+		if (name === found?.parameter) continue;
 		if (state[name] !== undefined) {
 			args[name] = state[name];
 			continue;
 		}
-		const list = listOfOneObject(state, schema);
+		const list =
+			listOfOneObject(state, schema) ??
+			listArgument(state, { properties: { [name]: schema } }, { single: true })
+				?.value;
 		if (list) args[name] = list;
 	}
 	return args;

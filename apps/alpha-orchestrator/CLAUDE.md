@@ -9,7 +9,7 @@ Follows the root "Code style" convention (`src/index.ts` composition root with c
 - `*.instance.ts` singletons (e.g. `translate.instance.ts`) — only `index.ts` and other `*.instance.ts` import them.
 - Test helpers: `database.testing.ts` -> `testDb()`, `http.testing.ts` -> `setupAdminApp()`/`admin()`/`json()`.
 
-Modules: `access`, `active-runs`, `agents`, `auth`, `blocked-ips`, `channel-directory`, `channels`, `config`, `database`, `decisions`, `goap`, `history`, `http`, `identify`, `messages`, `performance`, `persona`, `plan-runs`, `rate-limit`, `reply`, `retention`, `run-binding`, `run-stream`, `security`, `stats`, `streaming`, `telegram-whitelist`, `text`, `threads`, `translate`, `usage`, `usage-recorder`, `users`, `visitors`, `widget`, `world-state`.
+Modules: `access`, `active-runs`, `agents`, `auth`, `blocked-ips`, `channel-directory`, `channels`, `config`, `database`, `decisions`, `english-only`, `goap`, `history`, `http`, `identify`, `messages`, `performance`, `persona`, `plan-runs`, `rate-limit`, `reply`, `retention`, `run-binding`, `run-stream`, `security`, `stats`, `streaming`, `telegram-whitelist`, `text`, `threads`, `translate`, `usage`, `usage-recorder`, `users`, `visitors`, `widget`, `world-state`.
 
 ## Commands
 
@@ -33,6 +33,8 @@ Modules: `access`, `active-runs`, `agents`, `auth`, `blocked-ips`, `channel-dire
 
 **External model servers**: env picks base URL, model, temperature and concurrency per model — `LLM_*` (beta), `FUNCTION_CALL_*` (delta; `FUNCTION_CALL_REASONING_EFFORT=none` for Ollama + Qwen3), `LAYA_*` (gamma; `LAYA_MODEL`). `probeAgents` tries `/health`, and for text/function-call falls back to `{base}/models` (Ollama has no `/health`). Examples in `.env.example`.
 
+**Removal of every item** — `prepareNewMessage` writes `scopeAll` (`scopeFacts`) and binds the catalog (`bindListScope`, also in `prepareResume`): read tool → remover per item (`packages/core` CLAUDE.md). Reply: `replyFromTemplate:removal` (`createRemovalReplyAction`, ru/en/kk, «already empty» from the site's own answer). A `checkout`/`removeFromCart` where no step ran gets an honest «nothing was done» prompt in `replyChunks`, never the bare message.
+
 **`recordCall`** (`packages/core/src/record-call.ts`) is the single reporting path: telemetry line + `llm_calls` row. Four `LlmCallKind` values: `text`, `decision`, `classify`, `translate`. Translate rows use `provider: ctranslate2`, no tokens.
 
 ## Delta function-call agent
@@ -53,12 +55,14 @@ Real-stack check: `REAL_STACK=1 bunx playwright test buy-cheese` in `apps/e2e`.
 
 1. **Lexical rules** (`message-cues.ts`) for `checkout`/`removeFromCart` only — these are never taken from Laya alone.
 2. **Site memory** — `IntentMemory` (`modules/intents`): per-channel naive Bayes on `intent_examples` rows with `status = approved`. Built from `normalizeIntentText`. Silent below 0.85, never for `checkout`/`removeFromCart`.
-3. **Laya** on the English translation (not the original; no page/lang) for what rules and memory don't claim. Answers stored as `pending` in `intent_examples`; decide nothing until an admin approves/rejects/corrects in `/intents`.
+3. **Laya** on the English translation (not the original; no page/lang) for what rules and memory don't claim. Answers are stored in `intent_examples`: `pending` (decide nothing until an admin approves/rejects/corrects in `/intents`), or, when the CALIBRATED confidence (`withCalibration` in `index.ts`, table `LAYA_CALIBRATION` in core) is >= `LAYA_AUTO_APPROVE_CONFIDENCE` (default 0.85), `approved` with `approved_by = auto` and the memory rebuilt. `confidence` is kept on the row and on the `classify` ledger row (`llm_calls.confidence`). Never for `checkout`/`removeFromCart`. An admin verdict sets `approved_by = admin`.
 4. Fallback: `chat`.
 
-Not auto-approved: a reached goal only proves the plan was executable, not that the intent was right. `recordCall` logs each decision as `kind: classify`, `provider` = `laya`/`memory`/`rules`.
+Not a reason to approve: a reached goal only proves the plan was executable, not that the intent was right (the confidence threshold is the only automatic approval). `recordCall` logs each decision as `kind: classify`, `provider` = `laya`/`memory`/`rules`.
 
 **Tool cues** (`tool-cues.ts`) classify intent from the tool NAME (not description). A read/edit tool is `other`; `specialistPenalty` adds cost per qualifier word (`add_recipe_to_cart` loses the tie to `add_to_cart`).
+
+**Named options** (`packages/core/src/goap/specialist.ts`): a message that says one of a tool's string-enum values (`add_recipe_to_cart.recipe = "Weeknight Beef Tacos"`) picks that tool over the plain one. `prepareNewMessage` writes `specialistTool` + the value + `catalogSearched`/`requestParsed` into the state and `preferSpecialist` (also in `prepareResume`) drops that action's cost; no search, no delta for the value.
 
 Eval: `bun run eval:intents` / `bun run eval:tools` in `packages/core` (cases in `src/goap/intent-cases.ts`). The all-rules mode (`rules: "all"`) is the eval default; production uses `"guarded"`.
 
@@ -73,6 +77,10 @@ Engine: CTranslate2 + SentencePiece via `bun:ffi` (`apps/alpha-orchestrator/nati
 **Catalog language** (`channels.catalog_language`, default `en`, `catalogLang` fact): `createProductRequestAction` uses the English translation only for `en` catalogs; `extractProductRequestRu` (rules on the original) for `ru`; the shopper's words for any other language.
 
 Known weaknesses: «купить творог» → "buy some cottage", «оформи заказ» → "Order it".
+
+**Laya gets English only** (`modules/english-only`, `withEnglishOnly` wraps the `DecisionAgent` in `index.ts`): any non-Latin string in a decide call (tool descriptions, enum values, a message the upstream translation missed) is translated and cached; non-Latin option keys are sent translated and mapped back. No translation = `UntranslatableError`, the call is not made (intent: words/chat; tool catalog: not registered until the translator is ready; parameter choice: first option).
+
+**Latin words stay as typed** (`translateAroundLatin`, `translate.service.ts`): only the non-Latin runs of a mixed message are translated, each on its own — whole-line translation turned «купи Medium Roast Coffee Beans» into "Media Road Coffee Beans".
 
 ## Product request extraction
 
@@ -95,6 +103,8 @@ Channel lookup is `Map`/`Set` (`channel-directory`, `invalidate()` after admin w
 ## Reply service
 
 `ReplyService.startReply` / `resumeReply` in `modules/reply/reply.service.ts`. `streamPlanRun` (`modules/run-stream`) streams NDJSON + persists steps after the terminal line.
+
+**Several products** («buy A, B, C»): facts `foundItems`/`missingItems` (JSON) make `replyFromTemplate` and `replyChunks` list every added item and the ones not found; the fan-out mechanism is in `packages/core/CLAUDE.md`.
 
 **`replyFromTemplate`** (`modules/goap/goap.service.ts`) — templated reply for a completed purchase: no beta-text call, streamed as one `delta`, cost 1, preconditions `inCart + messageIntent: addToCart`. Language from `page:lang` (ru/en/kk, else message's script).
 

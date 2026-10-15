@@ -3,6 +3,7 @@ import {
 	index,
 	integer,
 	primaryKey,
+	real,
 	sqliteTable,
 	text,
 	uniqueIndex,
@@ -229,6 +230,8 @@ export const llmCalls = sqliteTable(
 		latencyMs: integer("latency_ms").notNull(),
 		ok: integer("ok", { mode: "boolean" }).notNull(),
 		error: text("error"),
+		// A decision's probability for its answer (classify: the intent's confidence); NULL for generation.
+		confidence: real("confidence"),
 	},
 	(table) => [
 		index("llm_calls_user_at_idx").on(table.userId, table.at),
@@ -312,6 +315,12 @@ export const intentExamples = sqliteTable(
 		status: text("status", {
 			enum: ["pending", "approved", "rejected"],
 		}).notNull(),
+		// Who put it into the model: Laya's own confidence cleared the threshold
+		// ("auto"), or a person approved/corrected it ("admin"); null while
+		// pending/rejected, and on rows approved before this column existed.
+		approvedBy: text("approved_by", { enum: ["auto", "admin"] }),
+		// The probability of the label when Laya gave it (refitted, `withCalibration`).
+		confidence: real("confidence"),
 		// The run the label first came from, to open its graph.
 		planRunId: text("plan_run_id").references(() => planRuns.id, {
 			onDelete: "set null",

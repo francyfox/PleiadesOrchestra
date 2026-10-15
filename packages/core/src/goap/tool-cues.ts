@@ -11,7 +11,7 @@ import type { ToolIntent } from "./intent-taxonomy";
  */
 
 /** Words of a name: `addToCart`, `add-to-cart` and `add_to_cart` are the same. */
-function tokens(name: string): string[] {
+export function tokens(name: string): string[] {
 	return name
 		.replace(/([a-z\d])([A-Z])/g, "$1 $2")
 		.toLowerCase()
@@ -53,7 +53,9 @@ export function intentFromToolCues(tool: {
 	const words = tokens(tool.name);
 	if (words.length === 0) return undefined;
 
-	if (has(words, "remove", "delete", "clear", "empty")) return "removeFromCart";
+	if (has(words, "remove", "delete", "clear", "empty", "cancel")) {
+		return "removeFromCart";
+	}
 	if (has(words, "checkout", "pay", "purchase")) return "checkout";
 	if (words.includes("place") && words.includes("order")) return "checkout";
 	if (has(words, "compare")) return "compare";
@@ -67,9 +69,12 @@ export function intentFromToolCues(tool: {
 	if (has(words, "search", "find", "lookup", "query")) return "search";
 	if (has(words, "filter", "sort")) return "filter";
 	if (has(words, "navigate", "goto", "go")) return "navigate";
-	// What only reads or only edits the shopper's own lists/settings leaves the
-	// cart, the catalog and the order as they were.
-	if (has(words, ...READS) || has(words, ...EDITS)) return "other";
+	// What only reads leaves the cart, the catalog and the order as they were;
+	// it is the tool that tells a request about «every item» what the items are
+	// (`list-removal.ts`). What only edits the shopper's own lists/settings is
+	// `other` (unless its schema says 0 removes: `removesAtZero`).
+	if (has(words, ...READS)) return "readState";
+	if (has(words, ...EDITS)) return "other";
 	if (has(words, "add", "put", "buy", "order") && has(words, ...CART)) {
 		return "addToCart";
 	}

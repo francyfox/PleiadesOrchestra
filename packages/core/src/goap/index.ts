@@ -13,6 +13,15 @@ export {
 	SESSION_FACTS,
 	TOOL_INTENTS,
 } from "./intent-taxonomy";
+export {
+	bindListScope,
+	LIST_EMPTY,
+	LIST_READ,
+	LISTED_ITEMS,
+	REMOVED_ITEMS,
+	SCOPE_ALL,
+	scopeFacts,
+} from "./list-removal";
 export type { StdioMcpClientConfig } from "./mcp-client";
 export { connectStdioMcpClient } from "./mcp-client";
 export type {
@@ -25,6 +34,7 @@ export {
 	classifyMessageIntent,
 	classifyMessageIntentDetailed,
 	goalForIntent,
+	NEEDS_THE_WORDS,
 } from "./message-intent";
 export type { ParsedPage } from "./page";
 export { PAGE_FACT, PAGE_LANG_FACT, parsePage, samePage } from "./page";
@@ -41,6 +51,15 @@ export {
 } from "./product-request";
 export type { RunLock } from "./run-lock";
 export { createRunLock } from "./run-lock";
+export type { ListItem } from "./shopping-list";
+export {
+	FOUND_ITEMS,
+	itemsText,
+	MISSING_ITEMS,
+	REQUESTED_ITEMS,
+	readItems,
+} from "./shopping-list";
+export { matchSpecialist, preferSpecialist } from "./specialist";
 export type { StepLanguage } from "./step-text";
 export { stepLanguage } from "./step-text";
 export type {

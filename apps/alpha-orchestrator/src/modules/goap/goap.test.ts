@@ -3,8 +3,10 @@ import type { Agent, GoapAction, HistoryStore } from "@repo/core";
 import { plan } from "@repo/core";
 import {
 	buildActions,
+	createRemovalReplyAction,
 	createTemplateReplyAction,
 	customerFacts,
+	REMOVAL_REPLY_ACTION,
 	REPLY_ACTION,
 	replyChunks,
 	TEMPLATE_REPLY_ACTION,
@@ -283,5 +285,168 @@ describe("reply action and the channel's persona", () => {
 		await reply?.execute({ state: { userMessage: "hi", channelId: "ch_b" } });
 		await reply?.execute({ state: { userMessage: "hi" } });
 		expect(seen).toEqual(["persona A", undefined, undefined]);
+	});
+});
+
+describe("a purchase of several things", () => {
+	const found = JSON.stringify([
+		{ name: "Keychron K2 Keyboard", quantity: 1 },
+		{ name: "Braided HDMI Cable 2m", quantity: 3 },
+	]);
+	const missing = JSON.stringify([{ name: "quantum toaster", quantity: 1 }]);
+	const state = {
+		inCart: true,
+		messageIntent: "addToCart",
+		userMessage: "x",
+		foundItems: found,
+		product: "Keychron K2 Keyboard",
+		quantity: 1,
+	};
+
+	test("the template lists everything added, in the page's language", async () => {
+		const action = createTemplateReplyAction(undefined);
+		const en = await action.execute({
+			state: { ...state, "page:lang": "en" },
+		} as never);
+		expect((en as Record<string, unknown>).replyText).toBe(
+			"Added to your cart: 1 × Keychron K2 Keyboard, 3 × Braided HDMI Cable 2m.",
+		);
+		const ru = await action.execute({
+			state: { ...state, "page:lang": "ru" },
+		} as never);
+		expect((ru as Record<string, unknown>).replyText).toBe(
+			"Добавил в корзину: 1 × Keychron K2 Keyboard, 3 × Braided HDMI Cable 2m.",
+		);
+	});
+
+	test("and says what could not be found", async () => {
+		const action = createTemplateReplyAction(undefined);
+		const en = await action.execute({
+			state: { ...state, "page:lang": "en", missingItems: missing },
+		} as never);
+		expect((en as Record<string, unknown>).replyText).toBe(
+			"Added to your cart: 1 × Keychron K2 Keyboard, 3 × Braided HDMI Cable 2m. Not found: quantum toaster.",
+		);
+		const ru = await action.execute({
+			state: { ...state, "page:lang": "ru", missingItems: missing },
+		} as never);
+		expect(String((ru as Record<string, unknown>).replyText)).toEndWith(
+			"Не нашёл: quantum toaster.",
+		);
+	});
+
+	test("the reply model is told the whole outcome too", () => {
+		const [chunk] = replyChunks({ ...state, missingItems: missing }, 1000);
+		expect(chunk).toContain(
+			"1 × Keychron K2 Keyboard, 3 × Braided HDMI Cable 2m",
+		);
+		expect(chunk).toContain("quantum toaster");
+	});
+});
+
+describe("the templated reply after removing every item", () => {
+	const removed = JSON.stringify([
+		{ name: "Spaghetti", quantity: 1 },
+		{ name: "Sea Salt", quantity: 2 },
+	]);
+	const state = {
+		inCart: false,
+		messageIntent: "removeFromCart",
+		scopeAll: true,
+		listRead: true,
+		userMessage: "x",
+		removedItems: removed,
+	};
+	const run = async (extra: Record<string, unknown>) =>
+		(
+			(await createRemovalReplyAction(undefined).execute({
+				state: { ...state, ...extra },
+			} as never)) as Record<string, unknown>
+		).replyText;
+
+	test("it says what was removed in ru, en and kk", async () => {
+		expect(await run({ "page:lang": "en" })).toBe(
+			"Removed from your cart: 1 × Spaghetti, 2 × Sea Salt.",
+		);
+		expect(await run({ "page:lang": "ru" })).toBe(
+			"Убрал из корзины: 1 × Spaghetti, 2 × Sea Salt.",
+		);
+		expect(await run({ "page:lang": "kk" })).toBe(
+			"Себеттен алынды: 1 × Spaghetti, 2 × Sea Salt.",
+		);
+	});
+
+	test("a list the site showed empty is reported as already empty, from the site's answer", async () => {
+		const empty = { removedItems: undefined, listEmpty: true };
+		expect(await run({ ...empty, "page:lang": "en" })).toBe(
+			"Your cart is already empty.",
+		);
+		expect(await run({ ...empty, "page:lang": "ru" })).toBe(
+			"В корзине уже пусто.",
+		);
+	});
+
+	test("the planner uses it only after the list was read, for a removal of everything", () => {
+		const read: GoapAction = {
+			name: "get_cart",
+			cost: 3,
+			preconditions: {},
+			effects: { listRead: true },
+			execute: async () => ({}),
+		};
+		const remove: GoapAction = {
+			name: "update_cart_item",
+			cost: 3,
+			preconditions: { listRead: true },
+			effects: { inCart: false },
+			execute: async () => ({}),
+		};
+		const catalog = [...buildActions(fakeAgentForRemoval, 100), read, remove];
+		const steps = plan(
+			{ messageIntent: "removeFromCart", scopeAll: true },
+			{ replied: true, inCart: false },
+			catalog,
+		);
+		expect(steps?.map((a) => a.name)).toEqual([
+			"get_cart",
+			"update_cart_item",
+			REMOVAL_REPLY_ACTION,
+		]);
+		// One product only: the model's reply, as before.
+		const single = plan(
+			{ messageIntent: "removeFromCart" },
+			{ replied: true, inCart: false },
+			catalog,
+		);
+		expect(single?.map((a) => a.name)).not.toContain(REMOVAL_REPLY_ACTION);
+	});
+});
+
+const fakeAgentForRemoval = {
+	async *handleMessageStream() {},
+	async resetThread() {},
+};
+
+describe("replyChunks after a removal or checkout no tool carried out", () => {
+	test("the model is told nothing was done and to claim nothing about the site", () => {
+		const [chunk] = replyChunks(
+			{ userMessage: "удали все из корзины", messageIntent: "removeFromCart" },
+			1000,
+		);
+		expect(chunk).toContain("удали все из корзины");
+		expect(chunk).toContain("не удалось");
+		expect(chunk).toContain("не утверждай");
+	});
+
+	test("once a tool ran, the old behaviour stays", () => {
+		const [chunk] = replyChunks(
+			{
+				userMessage: "удали сыр",
+				messageIntent: "removeFromCart",
+				"toolResult:update_cart_item": true,
+			},
+			1000,
+		);
+		expect(chunk).toBe("удали сыр");
 	});
 });

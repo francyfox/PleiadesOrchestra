@@ -1,10 +1,13 @@
+import type { LayaRecord } from "@repo/core";
 import type { ToolSpec } from "../delta/delta.types.ts";
+import { NOT_SAID } from "../laya/laya.service.ts";
 import { summarizeRuns } from "../stats/stats.service.ts";
 import type {
 	Category,
 	Expected,
 	FieldVerdict,
 	Kind,
+	LayaCase,
 	LayaResult,
 	LayaSummary,
 	Tally,
@@ -81,4 +84,44 @@ export function summarizeLaya(results: LayaResult[]): LayaSummary {
 		p90Ms,
 		meanMs,
 	};
+}
+
+/**
+ * Laya's raw answers with their right answer, for fitting its temperatures
+ * (`bun laya --samples`): an unsaid optional enum is right when it picks
+ * "(not said)", a flag is right when it matches the expected truth (unsaid and
+ * refused both mean false).
+ */
+export function calibrationRecords(
+	cases: LayaCase[],
+	results: LayaResult[],
+): LayaRecord[] {
+	const records: LayaRecord[] = [];
+	cases.forEach((testCase, index) => {
+		const result = results[index];
+		if (!result || result.error !== undefined) return;
+		for (const [name, want] of Object.entries(testCase.expected)) {
+			const answer = result.answers[name];
+			const source = `${testCase.domain}/${testCase.id}.${name}`;
+			if (answer?.type === "boolean") {
+				records.push({
+					kind: "boolean",
+					source,
+					text: testCase.request,
+					probability: answer.probability,
+					label: want === true,
+				});
+			} else if (answer?.type === "choice" && answer.probabilities) {
+				records.push({
+					kind: "choice",
+					source,
+					text: testCase.request,
+					options: Object.keys(answer.probabilities),
+					probabilities: answer.probabilities,
+					label: want === null ? NOT_SAID : String(want),
+				});
+			}
+		}
+	});
+	return records;
 }

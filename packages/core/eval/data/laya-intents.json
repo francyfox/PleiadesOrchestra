@@ -1,0 +1,2795 @@
+{
+	"at": "2026-10-15T12:28:46.274Z",
+	"records": [
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "hello",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.8292,
+				"chooseStore": 0.0056,
+				"navigate": 0.0043,
+				"search": 0.0731,
+				"filter": 0.0054,
+				"select": 0.02,
+				"addToCart": 0.019,
+				"paginate": 0.0071,
+				"compare": 0.0038,
+				"other": 0.0326
+			},
+			"label": "chat"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "how are you?",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.9988,
+				"chooseStore": 0,
+				"navigate": 0,
+				"search": 0.0002,
+				"filter": 0.0001,
+				"select": 0.0001,
+				"addToCart": 0.0001,
+				"paginate": 0.0001,
+				"compare": 0,
+				"other": 0.0006
+			},
+			"label": "chat"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "thank you!",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.852,
+				"chooseStore": 0.0043,
+				"navigate": 0.0036,
+				"search": 0.0255,
+				"filter": 0.0058,
+				"select": 0.0206,
+				"addToCart": 0.0476,
+				"paginate": 0.0061,
+				"compare": 0.0051,
+				"other": 0.0295
+			},
+			"label": "chat"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "who are you?",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.9494,
+				"chooseStore": 0.0016,
+				"navigate": 0.0013,
+				"search": 0.0081,
+				"filter": 0.0021,
+				"select": 0.0016,
+				"addToCart": 0.0016,
+				"paginate": 0.0025,
+				"compare": 0.0011,
+				"other": 0.0307
+			},
+			"label": "chat"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "hello",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.8292,
+				"chooseStore": 0.0056,
+				"navigate": 0.0043,
+				"search": 0.0731,
+				"filter": 0.0054,
+				"select": 0.02,
+				"addToCart": 0.019,
+				"paginate": 0.0071,
+				"compare": 0.0038,
+				"other": 0.0326
+			},
+			"label": "chat"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "what can you do?",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.4992,
+				"chooseStore": 0.007,
+				"navigate": 0.0054,
+				"search": 0.2373,
+				"filter": 0.0073,
+				"select": 0.0182,
+				"addToCart": 0.025,
+				"paginate": 0.0107,
+				"compare": 0.0043,
+				"other": 0.1855
+			},
+			"label": "chat"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "thanks a lot",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.7091,
+				"chooseStore": 0.0082,
+				"navigate": 0.0051,
+				"search": 0.0749,
+				"filter": 0.0093,
+				"select": 0.031,
+				"addToCart": 0.1064,
+				"paginate": 0.0089,
+				"compare": 0.0068,
+				"other": 0.0403
+			},
+			"label": "chat"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "what is the weather today?",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.7733,
+				"chooseStore": 0.0035,
+				"navigate": 0.0039,
+				"search": 0.052,
+				"filter": 0.0054,
+				"select": 0.0041,
+				"addToCart": 0.0049,
+				"paginate": 0.0046,
+				"compare": 0.0016,
+				"other": 0.1468
+			},
+			"label": "chat"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "go to the store Penny Pantry",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0041,
+				"chooseStore": 0.9213,
+				"navigate": 0.0057,
+				"search": 0.021,
+				"filter": 0.0052,
+				"select": 0.0137,
+				"addToCart": 0.016,
+				"paginate": 0.0043,
+				"compare": 0.0036,
+				"other": 0.0052
+			},
+			"label": "chooseStore"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "I want to buy in Greenleaf Market",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0079,
+				"chooseStore": 0.0295,
+				"navigate": 0.0077,
+				"search": 0.1579,
+				"filter": 0.0125,
+				"select": 0.0496,
+				"addToCart": 0.7107,
+				"paginate": 0.0073,
+				"compare": 0.0065,
+				"other": 0.0104
+			},
+			"label": "chooseStore"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "switch to another store",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0001,
+				"chooseStore": 0.9978,
+				"navigate": 0.0002,
+				"search": 0.0003,
+				"filter": 0.0001,
+				"select": 0.0002,
+				"addToCart": 0.0003,
+				"paginate": 0.0001,
+				"compare": 0.0001,
+				"other": 0.0006
+			},
+			"label": "chooseStore"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "go to the Greenleaf market",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0176,
+				"chooseStore": 0.6778,
+				"navigate": 0.0883,
+				"search": 0.0612,
+				"filter": 0.0123,
+				"select": 0.0317,
+				"addToCart": 0.0541,
+				"paginate": 0.0189,
+				"compare": 0.0096,
+				"other": 0.0284
+			},
+			"label": "chooseStore"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "switch to Harbor Foods",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0005,
+				"chooseStore": 0.9857,
+				"navigate": 0.0011,
+				"search": 0.0021,
+				"filter": 0.0013,
+				"select": 0.0019,
+				"addToCart": 0.0044,
+				"paginate": 0.0007,
+				"compare": 0.001,
+				"other": 0.0013
+			},
+			"label": "chooseStore"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "open the cart",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0036,
+				"chooseStore": 0.0018,
+				"navigate": 0.1553,
+				"search": 0.0032,
+				"filter": 0.0018,
+				"select": 0.0066,
+				"addToCart": 0.815,
+				"paginate": 0.0021,
+				"compare": 0.0019,
+				"other": 0.0087
+			},
+			"label": "navigate"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "show my orders",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.02,
+				"chooseStore": 0.0157,
+				"navigate": 0.7507,
+				"search": 0.0216,
+				"filter": 0.0208,
+				"select": 0.025,
+				"addToCart": 0.0401,
+				"paginate": 0.0299,
+				"compare": 0.0188,
+				"other": 0.0575
+			},
+			"label": "navigate"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "what is in my cart?",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0154,
+				"chooseStore": 0.0068,
+				"navigate": 0.0146,
+				"search": 0.086,
+				"filter": 0.0166,
+				"select": 0.0333,
+				"addToCart": 0.7894,
+				"paginate": 0.0096,
+				"compare": 0.0091,
+				"other": 0.0193
+			},
+			"label": "navigate"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "open the cart",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0036,
+				"chooseStore": 0.0018,
+				"navigate": 0.1553,
+				"search": 0.0032,
+				"filter": 0.0018,
+				"select": 0.0066,
+				"addToCart": 0.815,
+				"paginate": 0.0021,
+				"compare": 0.0019,
+				"other": 0.0087
+			},
+			"label": "navigate"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "show my orders",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.02,
+				"chooseStore": 0.0157,
+				"navigate": 0.7507,
+				"search": 0.0216,
+				"filter": 0.0208,
+				"select": 0.025,
+				"addToCart": 0.0401,
+				"paginate": 0.0299,
+				"compare": 0.0188,
+				"other": 0.0575
+			},
+			"label": "navigate"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "go to the recipes page",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0014,
+				"chooseStore": 0.0017,
+				"navigate": 0.9751,
+				"search": 0.0069,
+				"filter": 0.002,
+				"select": 0.0019,
+				"addToCart": 0.0015,
+				"paginate": 0.004,
+				"compare": 0.0005,
+				"other": 0.0051
+			},
+			"label": "navigate"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "find cheese",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0006,
+				"chooseStore": 0.0017,
+				"navigate": 0.0009,
+				"search": 0.951,
+				"filter": 0.0167,
+				"select": 0.0206,
+				"addToCart": 0.0047,
+				"paginate": 0.001,
+				"compare": 0.0013,
+				"other": 0.0014
+			},
+			"label": "search"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "find milk cheaper than 5 dollars",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0009,
+				"chooseStore": 0.0022,
+				"navigate": 0.0011,
+				"search": 0.8422,
+				"filter": 0.049,
+				"select": 0.0065,
+				"addToCart": 0.0071,
+				"paginate": 0.0011,
+				"compare": 0.0885,
+				"other": 0.0014
+			},
+			"label": "search"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "what do you have from dairy?",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.004,
+				"chooseStore": 0.0023,
+				"navigate": 0.0015,
+				"search": 0.1943,
+				"filter": 0.7779,
+				"select": 0.0053,
+				"addToCart": 0.0049,
+				"paginate": 0.0032,
+				"compare": 0.003,
+				"other": 0.0036
+			},
+			"label": "search"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "do you have apples?",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0003,
+				"chooseStore": 0.0002,
+				"navigate": 0.0002,
+				"search": 0.9961,
+				"filter": 0.0005,
+				"select": 0.0008,
+				"addToCart": 0.001,
+				"paginate": 0.0002,
+				"compare": 0.0002,
+				"other": 0.0005
+			},
+			"label": "search"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "find cheese",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0006,
+				"chooseStore": 0.0017,
+				"navigate": 0.0009,
+				"search": 0.951,
+				"filter": 0.0167,
+				"select": 0.0206,
+				"addToCart": 0.0047,
+				"paginate": 0.001,
+				"compare": 0.0013,
+				"other": 0.0014
+			},
+			"label": "search"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "do you have oat milk?",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0009,
+				"chooseStore": 0.0007,
+				"navigate": 0.0004,
+				"search": 0.9135,
+				"filter": 0.0768,
+				"select": 0.002,
+				"addToCart": 0.0027,
+				"paginate": 0.0005,
+				"compare": 0.0012,
+				"other": 0.0012
+			},
+			"label": "search"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "show me bread",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0018,
+				"chooseStore": 0.0035,
+				"navigate": 0.0045,
+				"search": 0.4751,
+				"filter": 0.0039,
+				"select": 0.4894,
+				"addToCart": 0.0144,
+				"paginate": 0.0031,
+				"compare": 0.0019,
+				"other": 0.0025
+			},
+			"label": "search"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "only vegan",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0079,
+				"chooseStore": 0.0051,
+				"navigate": 0.0014,
+				"search": 0.0263,
+				"filter": 0.9362,
+				"select": 0.0067,
+				"addToCart": 0.01,
+				"paginate": 0.0015,
+				"compare": 0.0019,
+				"other": 0.003
+			},
+			"label": "filter"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "show only gluten-free",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0001,
+				"chooseStore": 0.0005,
+				"navigate": 0.0001,
+				"search": 0.0006,
+				"filter": 0.9963,
+				"select": 0.0018,
+				"addToCart": 0.0002,
+				"paginate": 0.0002,
+				"compare": 0.0001,
+				"other": 0.0001
+			},
+			"label": "filter"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "cheaper than 3 dollars",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.001,
+				"chooseStore": 0.0037,
+				"navigate": 0.0005,
+				"search": 0.0585,
+				"filter": 0.0088,
+				"select": 0.0016,
+				"addToCart": 0.0046,
+				"paginate": 0.0005,
+				"compare": 0.9201,
+				"other": 0.0009
+			},
+			"label": "filter"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "only organic",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0989,
+				"chooseStore": 0.1057,
+				"navigate": 0.0136,
+				"search": 0.2865,
+				"filter": 0.2378,
+				"select": 0.0623,
+				"addToCart": 0.0708,
+				"paginate": 0.0288,
+				"compare": 0.033,
+				"other": 0.0625
+			},
+			"label": "filter"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "open the first product",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0005,
+				"chooseStore": 0.0006,
+				"navigate": 0.0008,
+				"search": 0.004,
+				"filter": 0.0005,
+				"select": 0.9912,
+				"addToCart": 0.0009,
+				"paginate": 0.0006,
+				"compare": 0.0003,
+				"other": 0.0007
+			},
+			"label": "select"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "tell me more about Brie",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.1957,
+				"chooseStore": 0.0244,
+				"navigate": 0.0141,
+				"search": 0.393,
+				"filter": 0.0197,
+				"select": 0.0277,
+				"addToCart": 0.0572,
+				"paginate": 0.0389,
+				"compare": 0.0156,
+				"other": 0.2138
+			},
+			"label": "select"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "open the first one",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0038,
+				"chooseStore": 0.0027,
+				"navigate": 0.0025,
+				"search": 0.0179,
+				"filter": 0.0017,
+				"select": 0.9619,
+				"addToCart": 0.0033,
+				"paginate": 0.0023,
+				"compare": 0.0013,
+				"other": 0.0026
+			},
+			"label": "select"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "buy 1 cheese",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0001,
+				"chooseStore": 0.0003,
+				"navigate": 0.0001,
+				"search": 0.0004,
+				"filter": 0.0004,
+				"select": 0.0051,
+				"addToCart": 0.9934,
+				"paginate": 0.0001,
+				"compare": 0.0001,
+				"other": 0.0001
+			},
+			"label": "addToCart"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "buy cheese",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0008,
+				"chooseStore": 0.0017,
+				"navigate": 0.0006,
+				"search": 0.0179,
+				"filter": 0.0014,
+				"select": 0.0075,
+				"addToCart": 0.9683,
+				"paginate": 0.0004,
+				"compare": 0.0005,
+				"other": 0.001
+			},
+			"label": "addToCart"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "add milk to the cart",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0,
+				"chooseStore": 0,
+				"navigate": 0,
+				"search": 0,
+				"filter": 0,
+				"select": 0,
+				"addToCart": 1,
+				"paginate": 0,
+				"compare": 0,
+				"other": 0
+			},
+			"label": "addToCart"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "I want apples",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0034,
+				"chooseStore": 0.0041,
+				"navigate": 0.0027,
+				"search": 0.4214,
+				"filter": 0.0051,
+				"select": 0.0593,
+				"addToCart": 0.4961,
+				"paginate": 0.0017,
+				"compare": 0.0016,
+				"other": 0.0045
+			},
+			"label": "addToCart"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "order three bananas",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0003,
+				"chooseStore": 0.0005,
+				"navigate": 0.0005,
+				"search": 0.0029,
+				"filter": 0.0004,
+				"select": 0.0018,
+				"addToCart": 0.9929,
+				"paginate": 0.0002,
+				"compare": 0.0002,
+				"other": 0.0004
+			},
+			"label": "addToCart"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "add the cheapest laptop to the cart",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0,
+				"chooseStore": 0,
+				"navigate": 0,
+				"search": 0,
+				"filter": 0,
+				"select": 0,
+				"addToCart": 1,
+				"paginate": 0,
+				"compare": 0,
+				"other": 0
+			},
+			"label": "addToCart"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "put bread in the cart",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0,
+				"chooseStore": 0,
+				"navigate": 0,
+				"search": 0,
+				"filter": 0,
+				"select": 0,
+				"addToCart": 1,
+				"paginate": 0,
+				"compare": 0,
+				"other": 0
+			},
+			"label": "addToCart"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "add one more",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0154,
+				"chooseStore": 0.0017,
+				"navigate": 0.0016,
+				"search": 0.006,
+				"filter": 0.0028,
+				"select": 0.0316,
+				"addToCart": 0.9239,
+				"paginate": 0.0016,
+				"compare": 0.0018,
+				"other": 0.0135
+			},
+			"label": "addToCart"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "buy 1 cheese",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0001,
+				"chooseStore": 0.0003,
+				"navigate": 0.0001,
+				"search": 0.0004,
+				"filter": 0.0004,
+				"select": 0.0051,
+				"addToCart": 0.9934,
+				"paginate": 0.0001,
+				"compare": 0.0001,
+				"other": 0.0001
+			},
+			"label": "addToCart"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "add milk to my cart",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0,
+				"chooseStore": 0,
+				"navigate": 0,
+				"search": 0,
+				"filter": 0,
+				"select": 0,
+				"addToCart": 1,
+				"paginate": 0,
+				"compare": 0,
+				"other": 0
+			},
+			"label": "addToCart"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "I want two loaves of bread",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0043,
+				"chooseStore": 0.0047,
+				"navigate": 0.0022,
+				"search": 0.2033,
+				"filter": 0.0051,
+				"select": 0.018,
+				"addToCart": 0.7508,
+				"paginate": 0.0019,
+				"compare": 0.0048,
+				"other": 0.0048
+			},
+			"label": "addToCart"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "order some apples",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0004,
+				"chooseStore": 0.0013,
+				"navigate": 0.001,
+				"search": 0.0083,
+				"filter": 0.0008,
+				"select": 0.0036,
+				"addToCart": 0.9833,
+				"paginate": 0.0004,
+				"compare": 0.0003,
+				"other": 0.0006
+			},
+			"label": "addToCart"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "show the next ones",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0005,
+				"chooseStore": 0.0001,
+				"navigate": 0.0003,
+				"search": 0.0005,
+				"filter": 0.0001,
+				"select": 0.0001,
+				"addToCart": 0.0001,
+				"paginate": 0.9981,
+				"compare": 0.0001,
+				"other": 0.0002
+			},
+			"label": "paginate"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "further",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0887,
+				"chooseStore": 0.03,
+				"navigate": 0.196,
+				"search": 0.1736,
+				"filter": 0.0257,
+				"select": 0.0453,
+				"addToCart": 0.057,
+				"paginate": 0.3207,
+				"compare": 0.0099,
+				"other": 0.0531
+			},
+			"label": "paginate"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "show more results",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0034,
+				"chooseStore": 0.0008,
+				"navigate": 0.0013,
+				"search": 0.0316,
+				"filter": 0.0027,
+				"select": 0.0023,
+				"addToCart": 0.0015,
+				"paginate": 0.9529,
+				"compare": 0.001,
+				"other": 0.0025
+			},
+			"label": "paginate"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "compare Brie and Gouda",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0,
+				"chooseStore": 0,
+				"navigate": 0,
+				"search": 0,
+				"filter": 0,
+				"select": 0,
+				"addToCart": 0,
+				"paginate": 0,
+				"compare": 1,
+				"other": 0
+			},
+			"label": "compare"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "which is better, oat or almond milk?",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0011,
+				"chooseStore": 0.0005,
+				"navigate": 0.0004,
+				"search": 0.0349,
+				"filter": 0.0063,
+				"select": 0.0017,
+				"addToCart": 0.0014,
+				"paginate": 0.0005,
+				"compare": 0.952,
+				"other": 0.0011
+			},
+			"label": "compare"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_CASES",
+			"text": "compare these two cheeses",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0,
+				"chooseStore": 0,
+				"navigate": 0,
+				"search": 0.0003,
+				"filter": 0,
+				"select": 0.0001,
+				"addToCart": 0.0001,
+				"paginate": 0,
+				"compare": 0.9993,
+				"other": 0
+			},
+			"label": "compare"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "good afternoon",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.8978,
+				"chooseStore": 0.0052,
+				"navigate": 0.0036,
+				"search": 0.0341,
+				"filter": 0.0047,
+				"select": 0.0148,
+				"addToCart": 0.0177,
+				"paginate": 0.0039,
+				"compare": 0.0022,
+				"other": 0.016
+			},
+			"label": "chat"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "tell me about yourself",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.92,
+				"chooseStore": 0.0019,
+				"navigate": 0.0016,
+				"search": 0.0073,
+				"filter": 0.0027,
+				"select": 0.0022,
+				"addToCart": 0.0031,
+				"paginate": 0.0026,
+				"compare": 0.0017,
+				"other": 0.0568
+			},
+			"label": "chat"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "good morning",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.8962,
+				"chooseStore": 0.0056,
+				"navigate": 0.0035,
+				"search": 0.0339,
+				"filter": 0.0052,
+				"select": 0.0147,
+				"addToCart": 0.0178,
+				"paginate": 0.0041,
+				"compare": 0.0022,
+				"other": 0.0167
+			},
+			"label": "chat"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "you're great",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.8038,
+				"chooseStore": 0.0068,
+				"navigate": 0.0036,
+				"search": 0.0632,
+				"filter": 0.0055,
+				"select": 0.0268,
+				"addToCart": 0.0411,
+				"paginate": 0.0062,
+				"compare": 0.0049,
+				"other": 0.038
+			},
+			"label": "chat"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "how much is two plus two?",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0017,
+				"chooseStore": 0.0003,
+				"navigate": 0.0003,
+				"search": 0.0063,
+				"filter": 0.0009,
+				"select": 0.0004,
+				"addToCart": 0.0009,
+				"paginate": 0.0003,
+				"compare": 0.9874,
+				"other": 0.0014
+			},
+			"label": "chat"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "bye!",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.8528,
+				"chooseStore": 0.0086,
+				"navigate": 0.0061,
+				"search": 0.0276,
+				"filter": 0.0079,
+				"select": 0.023,
+				"addToCart": 0.0209,
+				"paginate": 0.0062,
+				"compare": 0.0041,
+				"other": 0.0427
+			},
+			"label": "chat"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "let's go to Harbor Foods Co-op",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0567,
+				"chooseStore": 0.544,
+				"navigate": 0.0314,
+				"search": 0.102,
+				"filter": 0.0231,
+				"select": 0.0529,
+				"addToCart": 0.1186,
+				"paginate": 0.0178,
+				"compare": 0.0115,
+				"other": 0.0418
+			},
+			"label": "chooseStore"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "I will order in Penny Pantry",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0042,
+				"chooseStore": 0.002,
+				"navigate": 0.0044,
+				"search": 0.0087,
+				"filter": 0.0038,
+				"select": 0.0051,
+				"addToCart": 0.965,
+				"paginate": 0.0018,
+				"compare": 0.0016,
+				"other": 0.0033
+			},
+			"label": "chooseStore"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "let's shop at Penny Pantry",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0137,
+				"chooseStore": 0.0737,
+				"navigate": 0.0162,
+				"search": 0.5557,
+				"filter": 0.0264,
+				"select": 0.0545,
+				"addToCart": 0.207,
+				"paginate": 0.0194,
+				"compare": 0.0152,
+				"other": 0.0182
+			},
+			"label": "chooseStore"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "change the store please",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0001,
+				"chooseStore": 0.9993,
+				"navigate": 0.0001,
+				"search": 0.0001,
+				"filter": 0,
+				"select": 0.0001,
+				"addToCart": 0.0001,
+				"paginate": 0.0001,
+				"compare": 0,
+				"other": 0.0002
+			},
+			"label": "chooseStore"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "show the cart",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0142,
+				"chooseStore": 0.005,
+				"navigate": 0.5282,
+				"search": 0.0117,
+				"filter": 0.0053,
+				"select": 0.0162,
+				"addToCart": 0.3868,
+				"paginate": 0.0064,
+				"compare": 0.0046,
+				"other": 0.0216
+			},
+			"label": "navigate"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "go to the page with recipes",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0021,
+				"chooseStore": 0.0045,
+				"navigate": 0.9573,
+				"search": 0.0145,
+				"filter": 0.0032,
+				"select": 0.0037,
+				"addToCart": 0.0028,
+				"paginate": 0.0068,
+				"compare": 0.0007,
+				"other": 0.0045
+			},
+			"label": "navigate"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "where are my orders?",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0507,
+				"chooseStore": 0.0427,
+				"navigate": 0.3386,
+				"search": 0.1492,
+				"filter": 0.0604,
+				"select": 0.0504,
+				"addToCart": 0.0673,
+				"paginate": 0.0505,
+				"compare": 0.0493,
+				"other": 0.1409
+			},
+			"label": "navigate"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "take me to the cart",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0005,
+				"chooseStore": 0.0003,
+				"navigate": 0.9683,
+				"search": 0.0005,
+				"filter": 0.0004,
+				"select": 0.0006,
+				"addToCart": 0.0273,
+				"paginate": 0.0004,
+				"compare": 0.0003,
+				"other": 0.0014
+			},
+			"label": "navigate"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "show the recipes",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.1337,
+				"chooseStore": 0.0242,
+				"navigate": 0.0608,
+				"search": 0.3338,
+				"filter": 0.0346,
+				"select": 0.04,
+				"addToCart": 0.0376,
+				"paginate": 0.1947,
+				"compare": 0.0095,
+				"other": 0.1311
+			},
+			"label": "navigate"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "search for yogurt",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0,
+				"chooseStore": 0,
+				"navigate": 0,
+				"search": 0.9994,
+				"filter": 0.0002,
+				"select": 0.0001,
+				"addToCart": 0,
+				"paginate": 0,
+				"compare": 0,
+				"other": 0.0001
+			},
+			"label": "search"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "is there anything lactose-free?",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0008,
+				"chooseStore": 0.0008,
+				"navigate": 0.0004,
+				"search": 0.9771,
+				"filter": 0.0117,
+				"select": 0.0043,
+				"addToCart": 0.0021,
+				"paginate": 0.0006,
+				"compare": 0.0005,
+				"other": 0.0017
+			},
+			"label": "search"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "what cheeses do you have?",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0008,
+				"chooseStore": 0.0007,
+				"navigate": 0.0004,
+				"search": 0.9878,
+				"filter": 0.0017,
+				"select": 0.0032,
+				"addToCart": 0.0033,
+				"paginate": 0.0008,
+				"compare": 0.0005,
+				"other": 0.0009
+			},
+			"label": "search"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "look for bananas",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0004,
+				"chooseStore": 0.0005,
+				"navigate": 0.0004,
+				"search": 0.9464,
+				"filter": 0.0456,
+				"select": 0.004,
+				"addToCart": 0.0009,
+				"paginate": 0.0005,
+				"compare": 0.0005,
+				"other": 0.0008
+			},
+			"label": "search"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "what kinds of tea do you sell?",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0007,
+				"chooseStore": 0.0006,
+				"navigate": 0.0003,
+				"search": 0.9897,
+				"filter": 0.0014,
+				"select": 0.003,
+				"addToCart": 0.0016,
+				"paginate": 0.0006,
+				"compare": 0.0004,
+				"other": 0.0015
+			},
+			"label": "search"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "find me rice",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0016,
+				"chooseStore": 0.004,
+				"navigate": 0.0039,
+				"search": 0.5779,
+				"filter": 0.0477,
+				"select": 0.1763,
+				"addToCart": 0.1826,
+				"paginate": 0.0018,
+				"compare": 0.0013,
+				"other": 0.0028
+			},
+			"label": "search"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "only cheap ones",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0012,
+				"chooseStore": 0.0075,
+				"navigate": 0.0009,
+				"search": 0.0842,
+				"filter": 0.8516,
+				"select": 0.0331,
+				"addToCart": 0.0109,
+				"paginate": 0.0011,
+				"compare": 0.008,
+				"other": 0.0014
+			},
+			"label": "filter"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "without sugar",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0399,
+				"chooseStore": 0.0542,
+				"navigate": 0.019,
+				"search": 0.2306,
+				"filter": 0.3875,
+				"select": 0.06,
+				"addToCart": 0.1211,
+				"paginate": 0.0204,
+				"compare": 0.0322,
+				"other": 0.0351
+			},
+			"label": "filter"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "under 4 dollars only",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0043,
+				"chooseStore": 0.0047,
+				"navigate": 0.0016,
+				"search": 0.0361,
+				"filter": 0.3525,
+				"select": 0.0511,
+				"addToCart": 0.5409,
+				"paginate": 0.0014,
+				"compare": 0.0049,
+				"other": 0.0025
+			},
+			"label": "filter"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "just the gluten free ones",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0001,
+				"chooseStore": 0.0002,
+				"navigate": 0,
+				"search": 0.0005,
+				"filter": 0.998,
+				"select": 0.0009,
+				"addToCart": 0.0002,
+				"paginate": 0,
+				"compare": 0,
+				"other": 0.0001
+			},
+			"label": "filter"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "show details about the first option",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0148,
+				"chooseStore": 0.0235,
+				"navigate": 0.007,
+				"search": 0.0827,
+				"filter": 0.0044,
+				"select": 0.8403,
+				"addToCart": 0.0096,
+				"paginate": 0.0079,
+				"compare": 0.0031,
+				"other": 0.0066
+			},
+			"label": "select"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "open the second one",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0135,
+				"chooseStore": 0.0113,
+				"navigate": 0.0126,
+				"search": 0.0387,
+				"filter": 0.0086,
+				"select": 0.8592,
+				"addToCart": 0.0213,
+				"paginate": 0.0101,
+				"compare": 0.0097,
+				"other": 0.015
+			},
+			"label": "select"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "tell me more about the second one",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.117,
+				"chooseStore": 0.0071,
+				"navigate": 0.0071,
+				"search": 0.0428,
+				"filter": 0.0227,
+				"select": 0.0195,
+				"addToCart": 0.0156,
+				"paginate": 0.3704,
+				"compare": 0.3332,
+				"other": 0.0646
+			},
+			"label": "select"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "buy two bottles of milk",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.001,
+				"chooseStore": 0.0019,
+				"navigate": 0.0009,
+				"search": 0.023,
+				"filter": 0.0036,
+				"select": 0.0042,
+				"addToCart": 0.9626,
+				"paginate": 0.0006,
+				"compare": 0.0009,
+				"other": 0.0013
+			},
+			"label": "addToCart"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "I need bread",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.003,
+				"chooseStore": 0.0041,
+				"navigate": 0.0037,
+				"search": 0.6127,
+				"filter": 0.0126,
+				"select": 0.0645,
+				"addToCart": 0.2887,
+				"paginate": 0.0028,
+				"compare": 0.0025,
+				"other": 0.0053
+			},
+			"label": "addToCart"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "throw eggs in the cart",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0,
+				"chooseStore": 0,
+				"navigate": 0,
+				"search": 0,
+				"filter": 0,
+				"select": 0,
+				"addToCart": 1,
+				"paginate": 0,
+				"compare": 0,
+				"other": 0
+			},
+			"label": "addToCart"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "take three bananas",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0028,
+				"chooseStore": 0.0065,
+				"navigate": 0.0022,
+				"search": 0.0498,
+				"filter": 0.004,
+				"select": 0.0115,
+				"addToCart": 0.9148,
+				"paginate": 0.0015,
+				"compare": 0.003,
+				"other": 0.0039
+			},
+			"label": "addToCart"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "get me a dozen eggs",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0019,
+				"chooseStore": 0.0029,
+				"navigate": 0.0014,
+				"search": 0.0822,
+				"filter": 0.0035,
+				"select": 0.0144,
+				"addToCart": 0.8889,
+				"paginate": 0.001,
+				"compare": 0.0008,
+				"other": 0.0031
+			},
+			"label": "addToCart"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "put bread in the basket",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0005,
+				"chooseStore": 0.0002,
+				"navigate": 0.0002,
+				"search": 0.0008,
+				"filter": 0.0002,
+				"select": 0.0005,
+				"addToCart": 0.997,
+				"paginate": 0.0001,
+				"compare": 0.0001,
+				"other": 0.0003
+			},
+			"label": "addToCart"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "I'd like to buy some rice",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0009,
+				"chooseStore": 0.0007,
+				"navigate": 0.0004,
+				"search": 0.0174,
+				"filter": 0.0031,
+				"select": 0.0033,
+				"addToCart": 0.9723,
+				"paginate": 0.0004,
+				"compare": 0.0004,
+				"other": 0.0011
+			},
+			"label": "addToCart"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "buy cottage cheese",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0008,
+				"chooseStore": 0.0019,
+				"navigate": 0.0007,
+				"search": 0.0153,
+				"filter": 0.0021,
+				"select": 0.0086,
+				"addToCart": 0.9687,
+				"paginate": 0.0004,
+				"compare": 0.0005,
+				"other": 0.001
+			},
+			"label": "addToCart"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "show more",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0118,
+				"chooseStore": 0.0039,
+				"navigate": 0.0052,
+				"search": 0.0389,
+				"filter": 0.004,
+				"select": 0.0084,
+				"addToCart": 0.0086,
+				"paginate": 0.9064,
+				"compare": 0.002,
+				"other": 0.0108
+			},
+			"label": "paginate"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "previous page",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0046,
+				"chooseStore": 0.0046,
+				"navigate": 0.9591,
+				"search": 0.0151,
+				"filter": 0.0026,
+				"select": 0.0024,
+				"addToCart": 0.0019,
+				"paginate": 0.0047,
+				"compare": 0.0011,
+				"other": 0.0039
+			},
+			"label": "paginate"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "next page",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0078,
+				"chooseStore": 0.0092,
+				"navigate": 0.9087,
+				"search": 0.0222,
+				"filter": 0.0069,
+				"select": 0.0074,
+				"addToCart": 0.0078,
+				"paginate": 0.0173,
+				"compare": 0.0037,
+				"other": 0.009
+			},
+			"label": "paginate"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "what is the difference between the two oils?",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0005,
+				"chooseStore": 0.0001,
+				"navigate": 0.0001,
+				"search": 0.0011,
+				"filter": 0.0001,
+				"select": 0.0001,
+				"addToCart": 0.0001,
+				"paginate": 0.0001,
+				"compare": 0.9976,
+				"other": 0.0002
+			},
+			"label": "compare"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "compare these two yogurts",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0,
+				"chooseStore": 0,
+				"navigate": 0,
+				"search": 0,
+				"filter": 0,
+				"select": 0,
+				"addToCart": 0,
+				"paginate": 0,
+				"compare": 0.9999,
+				"other": 0
+			},
+			"label": "compare"
+		},
+		{
+			"kind": "choice",
+			"source": "INTENT_HOLDOUT",
+			"text": "which one is better, brie or camembert?",
+			"options": [
+				"chat",
+				"chooseStore",
+				"navigate",
+				"search",
+				"filter",
+				"select",
+				"addToCart",
+				"paginate",
+				"compare",
+				"other"
+			],
+			"probabilities": {
+				"chat": 0.0013,
+				"chooseStore": 0.0005,
+				"navigate": 0.0004,
+				"search": 0.0293,
+				"filter": 0.0012,
+				"select": 0.0037,
+				"addToCart": 0.0016,
+				"paginate": 0.0004,
+				"compare": 0.9606,
+				"other": 0.001
+			},
+			"label": "compare"
+		}
+	]
+}

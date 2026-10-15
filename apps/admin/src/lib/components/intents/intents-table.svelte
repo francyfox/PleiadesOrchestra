@@ -51,7 +51,7 @@
 			}),
 			helper.accessor("status", {
 				header: () => $content.columns.status.value,
-				cell: (ctx) => renderSnippet(statusCell, ctx.getValue()),
+				cell: (ctx) => renderSnippet(statusCell, ctx.row.original),
 			}),
 			helper.accessor("source", {
 				header: () => $content.columns.source.value,
@@ -80,8 +80,15 @@
 	<Badge variant="outline" class="font-mono text-xs">{intent}</Badge>
 {/snippet}
 
-{#snippet statusCell(status: IntentExample["status"])}
-	<Badge variant={variant[status]}>{$content.status[status].value}</Badge>
+{#snippet statusCell(item: IntentExample)}
+	<Badge variant={variant[item.status]}>{$content.status[item.status].value}</Badge>
+	{#if item.status === "approved" && item.approvedBy === "auto"}
+		<Badge variant="secondary" class="ml-1">
+			{$content.autoApproved.value}{item.confidence === null
+				? ""
+				: ` ${Math.round(item.confidence * 100)}%`}
+		</Badge>
+	{/if}
 {/snippet}
 
 {#snippet actionsCell(item: IntentExample)}

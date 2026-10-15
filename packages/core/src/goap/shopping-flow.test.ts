@@ -410,3 +410,214 @@ describe("the flow, told to the user", () => {
 		);
 	});
 });
+
+// An electronics shop: none of the grocery names, and its add tool names the
+// list and its fields differently (`lines: [{ title, count }]`).
+const HARDWARE_SEARCH: WebMcpToolDescriptor = {
+	name: "search_products",
+	description: "Search the catalog.",
+	inputSchema: {
+		type: "object",
+		properties: { query: { type: "string" } },
+	},
+};
+const ADD_LINES: WebMcpToolDescriptor = {
+	name: "add_to_cart",
+	description: "Add products to the cart.",
+	inputSchema: {
+		type: "object",
+		properties: {
+			lines: {
+				type: "array",
+				items: {
+					type: "object",
+					properties: { title: { type: "string" }, count: { type: "integer" } },
+					required: ["title"],
+				},
+			},
+		},
+		required: ["lines"],
+	} as WebMcpToolDescriptor["inputSchema"],
+};
+const ADD_ONE: WebMcpToolDescriptor = {
+	name: "add_to_cart",
+	description: "Add one product to the cart.",
+	inputSchema: {
+		type: "object",
+		properties: { product: { type: "string" }, quantity: { type: "integer" } },
+		required: ["product"],
+	} as WebMcpToolDescriptor["inputSchema"],
+};
+
+const CATALOG: Record<string, string> = {
+	keyboard:
+		"Found 2:\n- Keychron K2 Keyboard — $89.00 — in stock\n- Old Keyboard — $5 — OUT OF STOCK",
+	hub: "Found 1:\n- Anker 7-in-1 USB-C Hub — $39.99 — in stock",
+	cable: "Found 1:\n- Braided HDMI Cable 2m — $12.50 — in stock",
+};
+function hardwareAnswer(query: string): string {
+	const hit = Object.keys(CATALOG).find((word) => query.includes(word));
+	return hit ? (CATALOG[hit] as string) : `No products found for "${query}".`;
+}
+
+/** Runs one turn against the hardware shop, answering every tool call like the widget would. */
+async function runHardware(
+	addTool: WebMcpToolDescriptor,
+	message: string,
+	english: string,
+) {
+	const tools = [HARDWARE_SEARCH, addTool];
+	const intents: Record<string, string> = {
+		search_products: "search",
+		add_to_cart: "addToCart",
+	};
+	const laya: DecisionAgent = {
+		async decide(state, questions) {
+			const s = state as { name?: string };
+			return Object.fromEntries(
+				Object.keys(questions).map((key) => [
+					key,
+					choice(s.name ? (intents[s.name] ?? "other") : "addToCart"),
+				]),
+			);
+		},
+	};
+	const toolActions = await createWebMcpActions({ tools, decisionAgent: laya });
+	const parse = createProductRequestAction({ agent: fakeAgent("{}") });
+	const actions = pruneUnproducibleFacts([...toolActions, parse]);
+	let state: WorldState = {
+		userMessage: message,
+		userMessageEn: english,
+		"page:lang": "en",
+		storeOpen: true,
+		messageIntent: "addToCart",
+	};
+	const calls: WebMcpToolCallPayload[] = [];
+	const steps: string[] = [];
+	for (let turn = 0; turn < 20; turn++) {
+		const result = await runPlan({
+			state,
+			goal: { inCart: true },
+			actions,
+			ctx: {},
+			maxActionFailures: 2,
+			onStep: (step) => steps.push(`${step.phase}: ${step.text}`),
+		});
+		state = result.finalState;
+		if (!result.waiting) {
+			return { calls, state, succeeded: result.succeeded, steps };
+		}
+		const payload = result.waiting.payload as WebMcpToolCallPayload;
+		calls.push(payload);
+		state = {
+			...state,
+			[`webmcp:${payload.tool}:result`]: "ok",
+			[`webmcp:${payload.tool}:text`]:
+				payload.tool === "search_products"
+					? hardwareAnswer(String(payload.arguments.query))
+					: "added",
+		};
+	}
+	throw new Error("did not settle");
+}
+
+describe("«buy A, B, C»: one search per thing, then one add", () => {
+	test("searches each thing in turn, then adds all found names in one call with the schema's own field names", async () => {
+		const { calls, succeeded, state } = await runHardware(
+			ADD_LINES,
+			"купи клавиатуру, 2 usb-c hub и hdmi cable",
+			"buy keyboard, 2 usb-c hub and hdmi cable",
+		);
+		expect(calls.map((call) => call.tool)).toEqual([
+			"search_products",
+			"search_products",
+			"search_products",
+			"add_to_cart",
+		]);
+		expect(calls.slice(0, 3).map((call) => call.arguments)).toEqual([
+			{ query: "keyboard" },
+			{ query: "usb-c hub" },
+			{ query: "hdmi cable" },
+		]);
+		expect(calls[3]?.arguments).toEqual({
+			lines: [
+				{ title: "Keychron K2 Keyboard", count: 1 },
+				{ title: "Anker 7-in-1 USB-C Hub", count: 2 },
+				{ title: "Braided HDMI Cable 2m", count: 1 },
+			],
+		});
+		expect(succeeded).toBe(true);
+		expect(state.inCart).toBe(true);
+	});
+
+	test("a thing the site has nothing for is skipped and remembered", async () => {
+		const { calls, state, succeeded } = await runHardware(
+			ADD_LINES,
+			"x",
+			"buy keyboard, quantum toaster, hdmi cable",
+		);
+		expect(calls.at(-1)?.arguments).toEqual({
+			lines: [
+				{ title: "Keychron K2 Keyboard", count: 1 },
+				{ title: "Braided HDMI Cable 2m", count: 1 },
+			],
+		});
+		expect(JSON.parse(String(state.missingItems))).toEqual([
+			{ name: "quantum toaster", quantity: 1 },
+		]);
+		expect(succeeded).toBe(true);
+	});
+
+	test("nothing found at all fails the search and adds nothing", async () => {
+		const { calls, succeeded } = await runHardware(
+			ADD_LINES,
+			"x",
+			"buy quantum toaster, flux capacitor",
+		);
+		expect(calls.map((call) => call.tool)).toEqual([
+			"search_products",
+			"search_products",
+		]);
+		expect(succeeded).toBe(false);
+	});
+
+	test("a tool that adds one product per call is called once for each found thing", async () => {
+		const { calls, succeeded } = await runHardware(
+			ADD_ONE,
+			"x",
+			"buy keyboard, 3 hdmi cable",
+		);
+		expect(calls.map((call) => [call.tool, call.arguments])).toEqual([
+			["search_products", { query: "keyboard" }],
+			["search_products", { query: "hdmi cable" }],
+			["add_to_cart", { product: "Keychron K2 Keyboard", quantity: 1 }],
+			["add_to_cart", { product: "Braided HDMI Cable 2m", quantity: 3 }],
+		]);
+		expect(succeeded).toBe(true);
+	});
+
+	test("a single thing still takes the plain path", async () => {
+		const { calls } = await runHardware(ADD_LINES, "x", "buy 2 hdmi cable");
+		expect(calls.map((call) => call.arguments)).toEqual([
+			{ query: "hdmi cable" },
+			{ lines: [{ title: "Braided HDMI Cable 2m", count: 2 }] },
+		]);
+	});
+
+	test("each step of the list is told to the user", async () => {
+		const { steps } = await runHardware(
+			ADD_LINES,
+			"x",
+			"buy keyboard, hdmi cable",
+		);
+		expect(steps).toContain("done: Understood: 1 × keyboard, 1 × hdmi cable");
+		expect(steps).toContain("running: Searching for “keyboard”…");
+		expect(steps).toContain("running: Searching for “hdmi cable”…");
+		expect(steps).toContain(
+			"done: Found: Keychron K2 Keyboard, Braided HDMI Cable 2m",
+		);
+		expect(steps.at(-1)).toBe(
+			"done: Added to cart: 1 × Keychron K2 Keyboard, 1 × Braided HDMI Cable 2m",
+		);
+	});
+});

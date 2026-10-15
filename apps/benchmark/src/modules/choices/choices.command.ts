@@ -7,7 +7,11 @@ import { layaArguments, layaQuestions } from "../laya/laya.service.ts";
 import { loadLaya } from "../laya/laya.ts";
 import type { LoadedLaya } from "../laya/laya.types.ts";
 import { LAYA_CASES } from "./choices.cases.ts";
-import { judgeChoices, summarizeLaya } from "./choices.service.ts";
+import {
+	calibrationRecords,
+	judgeChoices,
+	summarizeLaya,
+} from "./choices.service.ts";
 import type { LayaResult } from "./choices.types.ts";
 import { renderLayaCase, renderLayaTable } from "./choices.view.ts";
 
@@ -28,6 +32,10 @@ export default defineCommand({
 		}),
 		repo: option(z.string().default("receptron/laya-onnx"), {
 			description: "Hugging Face repo of Laya's ONNX bundle",
+		}),
+		samples: option(z.string().optional(), {
+			description:
+				"Save every answer's raw probabilities with its right answer, to fit Laya's temperatures (packages/core/eval/data/laya-choices.json)",
 		}),
 		output: option(z.string().optional(), {
 			description: "Save the results as JSON, e.g. results/x.json",
@@ -102,6 +110,21 @@ export default defineCommand({
 		);
 		const summary = summarizeLaya(results);
 		console.log(renderLayaTable(run, summary));
+
+		if (flags.samples) {
+			writeFileSync(
+				flags.samples,
+				`${JSON.stringify(
+					{
+						at: new Date().toISOString(),
+						records: calibrationRecords(LAYA_CASES, results),
+					},
+					null,
+					"\t",
+				)}\n`,
+			);
+			process.stderr.write(`\n💾 ${colors.dim(`wrote ${flags.samples}`)}\n`);
+		}
 
 		if (flags.output) {
 			mkdirSync("results", { recursive: true });

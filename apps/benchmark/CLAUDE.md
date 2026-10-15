@@ -7,7 +7,7 @@ See root `CLAUDE.md` for monorepo commands, workflow, code style and repo-wide l
 Every benchmark of the repo as one bunli CLI (not a service, not in compose). `bun start` shows a menu; `bun start <name>` or the script runs one directly (`--help` lists flags). Results go to `results/` (gitignored) with `--output`.
 
 - `bun tools` — delta (Qwen3-1.7B) argument accuracy on the complex cases: one request per kind of site, filled field by field (`fillOnce` from `@repo/core`, answer budgets 48 tokens for the "which optional fields" step, 128 per field). Shows request -> arguments with source words coloured by kind, then a table (all-fields accuracy, per kind, p50/p90, tokens, delta calls). `--laya` hands enums and booleans to Laya in one pass and delta fills the rest.
-- `bun laya` (module `choices`) — Laya accuracy on enum/boolean decisions alone (given / unsaid / refused), the share of `tools --laya`.
+- `bun laya` (module `choices`) — Laya accuracy on enum/boolean decisions alone (given / unsaid / refused), the share of `tools --laya`. `--samples file` saves every raw answer with its right answer (`packages/core/eval/data/laya-choices.json`) for `bun run calibrate` in core.
 - `bun snake` — Laya latency playing Snake (live board or `--headless`); `--threads 1,2,4` compares onnxruntime threads in-process (`bun sweep`).
 
 All three call Laya through `createDecisionAgent` (AI SDK `experimental_decide`): the server model when `LAYA_BASE_URL` is set, otherwise `laya/laya.model.ts`, an in-process decision model over `@receptron/laya`. Same code path either way; one pass and ignored `--threads` for a server.

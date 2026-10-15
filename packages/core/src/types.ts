@@ -103,6 +103,8 @@ export interface LlmCallRecord extends CallContext {
 	latencyMs: number;
 	ok: boolean;
 	error?: string;
+	/** A decision's probability for its answer (classify: the intent's calibrated confidence). */
+	confidence?: number;
 	/** Epoch ms when the call finished. */
 	at: number;
 }

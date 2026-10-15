@@ -32,6 +32,10 @@ export const IntentExample = t.Object({
 	/** Who produced the label: Laya, or an admin's correction. */
 	source: t.UnionEnum(["laya", "admin"]),
 	status: t.UnionEnum(["pending", "approved", "rejected"]),
+	/** Who put it into the model: `auto` = Laya's confidence cleared the threshold, `admin` = a person; null while pending/rejected. */
+	approvedBy: nullable(t.UnionEnum(["auto", "admin"])),
+	/** Laya's calibrated probability of the label, when it gave one. */
+	confidence: nullable(t.Number()),
 	/** The request the label first came from (opens its graph). */
 	planRunId: nullable(t.String()),
 	seenCount: t.Number(),

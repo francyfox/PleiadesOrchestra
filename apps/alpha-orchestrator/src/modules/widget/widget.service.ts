@@ -68,6 +68,7 @@ export class WidgetGuard {
 	private readonly ipLimiter: FixedWindowLimiter;
 	private readonly newVisitorLimiter: FixedWindowLimiter;
 	private readonly threadLimiter: FixedWindowLimiter;
+	private readonly toolResultLimiter: FixedWindowLimiter;
 
 	constructor(private readonly deps: GuardDeps) {
 		const { options, now } = deps;
@@ -90,6 +91,11 @@ export class WidgetGuard {
 		this.threadLimiter = new FixedWindowLimiter(
 			options.threadsPerHour,
 			HOUR_MS,
+			now,
+		);
+		this.toolResultLimiter = new FixedWindowLimiter(
+			options.toolResultsPerMinute,
+			MINUTE_MS,
 			now,
 		);
 	}
@@ -163,6 +169,16 @@ export class WidgetGuard {
 			!this.tokenLimiter.hit(visitor.tokenHash) ||
 			(ipHash !== null && !this.ipLimiter.hit(ipHash));
 		return overLimit ? emptyResponse(429, origin) : null;
+	}
+
+	/** `429` when the visitor sent too many tool results this minute (its own budget, not the messages'). */
+	rejectIfOverToolResultLimit({
+		visitor,
+		origin,
+	}: WidgetAuth): Response | null {
+		return this.toolResultLimiter.hit(visitor.tokenHash)
+			? null
+			: emptyResponse(429, origin);
 	}
 
 	/** `429` when the visitor already created too many threads this hour. */

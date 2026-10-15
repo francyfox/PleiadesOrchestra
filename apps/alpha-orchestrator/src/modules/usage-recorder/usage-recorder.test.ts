@@ -55,6 +55,16 @@ describe("SqliteUsageRecorder", () => {
 		expect(db.select().from(llmCalls).all()).toHaveLength(2);
 	});
 
+	test("stores a decision's confidence, NULL when it has none", () => {
+		const db = testDb();
+		const recorder = new SqliteUsageRecorder(db, new RunBinding());
+		recorder.record(call({ kind: "classify", confidence: 0.87 }));
+		recorder.record(call({ kind: "generate" }));
+		recorder.flush();
+		const rows = db.select().from(llmCalls).all();
+		expect(rows.map((row) => row.confidence)).toEqual([0.87, null]);
+	});
+
 	test("keeps missing usage as NULL, never 0", () => {
 		const db = testDb();
 		const recorder = new SqliteUsageRecorder(db, new RunBinding());

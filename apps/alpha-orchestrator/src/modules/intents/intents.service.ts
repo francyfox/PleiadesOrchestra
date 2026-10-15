@@ -4,6 +4,7 @@ import {
 	type IntentHit,
 	type IntentModel,
 	type MessageIntent,
+	NEEDS_THE_WORDS,
 	normalizeIntentText,
 } from "@repo/core";
 import { and, asc, count, desc, eq, sql } from "drizzle-orm";
@@ -14,9 +15,15 @@ import { limitOffset, type PageParams } from "../http/http.service.ts";
 export type IntentStatus = "pending" | "approved" | "rejected";
 
 /**
- * Keeps what Laya said about a message, for a person to judge. A text that is
- * already there only counts: it never changes a label or a verdict, so an
- * admin's decision can't be overwritten by the same guess coming back.
+ * Keeps what Laya said about a message. By default it waits as `pending` for a
+ * person to judge. When Laya's calibrated `confidence` reaches `autoApproveAt`
+ * the label is approved on its own (`approvedBy: "auto"`) and the site's memory
+ * learns from it - except the intents only a person's own words may decide
+ * (`NEEDS_THE_WORDS`: checkout, removal), which are never approved by a model.
+ * A text that is already there only counts: it never changes a label or a
+ * verdict, so an admin's decision can't be overwritten by the same guess
+ * coming back. Returns whether the row was approved automatically (the
+ * caller then rebuilds the channel's memory).
  */
 export function learnIntent(
 	db: Db,
@@ -27,10 +34,19 @@ export function learnIntent(
 		intent: MessageIntent;
 		planRunId: string | null;
 		now: number;
+		/** Laya's (calibrated) probability of `intent`. */
+		confidence?: number;
+		/** Auto-approve from this confidence up; unset = always wait for a person. */
+		autoApproveAt?: number;
 	},
-): void {
+): boolean {
 	const textKey = normalizeIntentText(input.text);
-	if (textKey === "") return;
+	if (textKey === "") return false;
+	const auto =
+		input.autoApproveAt !== undefined &&
+		input.confidence !== undefined &&
+		input.confidence >= input.autoApproveAt &&
+		!NEEDS_THE_WORDS.has(input.intent);
 	db.insert(intentExamples)
 		.values({
 			id: crypto.randomUUID(),
@@ -39,7 +55,9 @@ export function learnIntent(
 			sample: input.text.slice(0, 500),
 			intent: input.intent,
 			source: "laya",
-			status: "pending",
+			status: auto ? "approved" : "pending",
+			approvedBy: auto ? "auto" : null,
+			confidence: input.confidence ?? null,
 			planRunId: input.planRunId,
 			createdAt: input.now,
 			updatedAt: input.now,
@@ -49,6 +67,7 @@ export function learnIntent(
 			set: { seenCount: sql`${intentExamples.seenCount} + 1` },
 		})
 		.run();
+	return auto;
 }
 
 /** What the channel's classifier is built from: approved examples, oldest first (a later one wins). */
@@ -82,6 +101,8 @@ const exampleColumns = {
 	intent: intentExamples.intent,
 	source: intentExamples.source,
 	status: intentExamples.status,
+	approvedBy: intentExamples.approvedBy,
+	confidence: intentExamples.confidence,
 	planRunId: intentExamples.planRunId,
 	seenCount: intentExamples.seenCount,
 	createdAt: intentExamples.createdAt,
@@ -132,11 +153,14 @@ export function judgeIntentExample(
 	if (!current) return undefined;
 	const corrected =
 		verdict.intent !== undefined && verdict.intent !== current.intent;
+	const status = verdict.status ?? (corrected ? "approved" : current.status);
 	db.update(intentExamples)
 		.set({
 			intent: verdict.intent ?? current.intent,
 			source: verdict.intent !== undefined ? "admin" : current.source,
-			status: verdict.status ?? (corrected ? "approved" : current.status),
+			status,
+			// A person's verdict replaces the automatic mark; a row that is not approved has no approver.
+			approvedBy: status === "approved" ? "admin" : null,
 			updatedAt: now,
 		})
 		.where(eq(intentExamples.id, id))

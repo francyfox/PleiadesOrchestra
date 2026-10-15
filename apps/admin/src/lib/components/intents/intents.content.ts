@@ -9,9 +9,9 @@ const intentsContent = {
 			kk: "Ниеттер",
 		}),
 		hint: t({
-			ru: "Сообщения, по которым классификатор определил намерение. Ответы Laya ждут вашего решения и ни на что не влияют: на их основе сайт учится только после того, как вы их подтвердили или исправили.",
-			en: "Messages the classifier decided an intent for. Laya's answers wait for your verdict and change nothing: a site learns from them only once you approve or correct them.",
-			kk: "Классификатор ниетін анықтаған хабарламалар. Laya жауаптары сіздің шешіміңізді күтеді және ештеңеге әсер етпейді: сайт олардан тек сіз растағаннан немесе түзеткеннен кейін үйренеді.",
+			ru: "Сообщения, по которым классификатор определил намерение. Ответы Laya ждут вашего решения и ни на что не влияют, пока уверенность ниже порога (LAYA_AUTO_APPROVE_CONFIDENCE): такие ответы подтверждаются сами и помечены «авто». Остальные сайт учит только после того, как вы их подтвердили или исправили.",
+			en: "Messages the classifier decided an intent for. Laya's answers wait for your verdict and change nothing while their confidence is below the threshold (LAYA_AUTO_APPROVE_CONFIDENCE); above it they are approved on their own and marked auto. A site learns from the rest only once you approve or correct them.",
+			kk: "Классификатор ниетін анықтаған хабарламалар. Сенімділік шектен (LAYA_AUTO_APPROVE_CONFIDENCE) төмен болса, Laya жауаптары сіздің шешіміңізді күтеді және ештеңеге әсер етпейді; жоғары болса, олар өздігінен расталып, «авто» деп белгіленеді. Қалғандарынан сайт тек сіз растағаннан немесе түзеткеннен кейін үйренеді.",
 		}),
 		empty: t({
 			ru: "Пока нечего проверять",
@@ -37,6 +37,7 @@ const intentsContent = {
 			approved: t({ ru: "подтверждено", en: "approved", kk: "расталған" }),
 			rejected: t({ ru: "отклонено", en: "rejected", kk: "қабылданбаған" }),
 		},
+		autoApproved: t({ ru: "авто", en: "auto", kk: "авто" }),
 		source: {
 			laya: t({ ru: "Laya", en: "Laya", kk: "Laya" }),
 			admin: t({ ru: "админ", en: "admin", kk: "әкімші" }),

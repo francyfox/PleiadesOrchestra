@@ -17,8 +17,11 @@ function fakeDecisionAgent(
 		async decide(state, questions) {
 			agent.capturedState = state;
 			const question = questions.intent;
-			agent.capturedCriteria =
-				question?.type === "choice" ? question.criteria : undefined;
+			// The question is asked in rounds: keep every option seen in any of them.
+			agent.capturedCriteria = {
+				...(agent.capturedCriteria as object | undefined),
+				...(question?.type === "choice" ? question.criteria : undefined),
+			};
 			const result: Record<string, DecisionAnswer> = {};
 			if (answer) result.intent = answer;
 			return result;
@@ -82,6 +85,31 @@ describe("classifyMessageIntentDetailed", () => {
 		expect(decisionAgent.capturedState).toEqual({
 			message: "something tasty for tea",
 		});
+	});
+
+	test("a Laya verdict carries the chosen option's probability as its confidence", async () => {
+		const decisionAgent = fakeDecisionAgent({
+			type: "choice",
+			choice: "search",
+			probabilities: { search: 0.62, chat: 0.38 },
+		});
+		const verdict = await classifyMessageIntentDetailed(
+			{ decisionAgent, rules: "guarded" },
+			"something tasty for tea",
+		);
+		expect(verdict).toMatchObject({ intent: "search", confidence: 0.62 });
+	});
+
+	test("no probabilities, no confidence (never invented)", async () => {
+		const decisionAgent = fakeDecisionAgent({
+			type: "choice",
+			choice: "search",
+		});
+		const verdict = await classifyMessageIntentDetailed(
+			{ decisionAgent, rules: "guarded" },
+			"something tasty for tea",
+		);
+		expect(verdict.confidence).toBeUndefined();
 	});
 
 	test("guarded rules: only the words of checkout/removal are taken from rules, everything else goes to memory and Laya", async () => {
@@ -319,6 +347,25 @@ describe("goalForIntent", () => {
 		expect(goal).toEqual({ replied: true, inCart: true });
 	});
 
+	test("a fact that only has the opposite value in the catalog is not producible: removal degrades instead of an unplannable goal", () => {
+		const addOnly: GoapAction = {
+			name: "cartTool",
+			cost: 3,
+			preconditions: {},
+			effects: { inCart: true },
+			execute: async () => ({}),
+		};
+
+		expect(goalForIntent("removeFromCart", baseGoal, [addOnly])).toEqual({
+			replied: true,
+		});
+		expect(
+			goalForIntent("removeFromCart", baseGoal, [
+				{ ...addOnly, effects: { inCart: false } },
+			]),
+		).toEqual({ replied: true, inCart: false });
+	});
+
 	test("an intent with no effects (e.g. paginate) never extends the goal, even with a matching action name", () => {
 		const paginate: GoapAction = {
 			name: "paginateTool",
@@ -331,5 +378,29 @@ describe("goalForIntent", () => {
 		const goal = goalForIntent("paginate", baseGoal, [paginate]);
 
 		expect(goal).toEqual({ replied: true });
+	});
+});
+
+describe("the message-intent question", () => {
+	test("is one Laya call of at most 10 options, without the intents only words may decide", async () => {
+		let calls = 0;
+		let options: string[] = [];
+		const agent: DecisionAgent = {
+			async decide(_state, questions) {
+				calls++;
+				const q = questions.intent;
+				options = q?.type === "choice" ? Object.keys(q.criteria) : [];
+				return { intent: choiceAnswer("search") };
+			},
+		};
+		const intent = await classifyMessageIntent(
+			{ decisionAgent: agent, cues: false },
+			"find cheese",
+		);
+		expect(intent).toBe("search");
+		expect(calls).toBe(1);
+		expect(options.length).toBeLessThanOrEqual(10);
+		expect(options).not.toContain("checkout");
+		expect(options).not.toContain("removeFromCart");
 	});
 });

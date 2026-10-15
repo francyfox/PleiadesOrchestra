@@ -5,14 +5,18 @@ import type {
 	WorldState,
 } from "@repo/core";
 import {
+	bindListScope,
 	classifyMessageIntentDetailed,
 	goalForIntent,
 	MAX_TOOL_TEXT_CHARS,
+	matchSpecialist,
 	PAGE_FACT,
 	PAGE_LANG_FACT,
 	parsePage,
+	preferSpecialist,
 	recordCall,
 	reuseLastProduct,
+	scopeFacts,
 } from "@repo/core";
 import {
 	customerFacts,
@@ -25,6 +29,7 @@ import { AWAITED_TOOL_FACT } from "../run-stream/run-stream.service.ts";
 import { sessionFacts } from "../run-stream/run-stream.ts";
 import type { PreparedRun } from "../run-stream/run-stream.types.ts";
 import { normalizeText } from "../text/text.service.ts";
+import { translateAroundLatin } from "../translate/translate.service.ts";
 import type { UserRow } from "../users/users.types.ts";
 import type { ReplyOptions, ToolOutcome } from "../widget/widget.types.ts";
 import type { ReplyDeps } from "./reply.types.ts";
@@ -145,7 +150,8 @@ async function translateMessage(
 			...outcome,
 		});
 	try {
-		const translated = (await deps.translate(text)) || undefined;
+		const translated =
+			(await translateAroundLatin(text, deps.translate)) || undefined;
 		report({ ok: true });
 		return translated;
 	} catch (error) {
@@ -183,6 +189,9 @@ function reportIntent(
 		latencyMs,
 		at: deps.now(),
 		ok: verdict.source !== "fallback",
+		...(verdict.source === "laya" && verdict.confidence !== undefined
+			? { confidence: verdict.confidence }
+			: {}),
 		...(verdict.source === "fallback"
 			? { error: "Laya did not answer; decided by words or chat" }
 			: {}),
@@ -241,26 +250,38 @@ export async function prepareNewMessage(
 	// rules, and memory is already what a person approved.
 	if (verdict.source === "laya") {
 		try {
-			learnIntent(deps.db, {
+			const approved = learnIntent(deps.db, {
 				channelId: user.channelId,
 				text: english ?? original,
 				intent,
 				planRunId,
 				now: deps.now(),
+				confidence: verdict.confidence,
+				autoApproveAt: deps.layaAutoApproveConfidence,
 			});
+			// The label went straight into the site's memory: rebuild its model.
+			if (approved) deps.intentMemory?.invalidate(user.channelId);
 		} catch (error) {
 			deps.onError?.(error);
 		}
 	}
-	const goal = goalForIntent(intent, REPLY_GOAL, actions);
 	// «Now buy them» names nothing: the product the last search found is bought,
 	// and that search is not repeated.
 	const remembered =
 		intent === "addToCart" ? reuseLastProduct(state) : undefined;
+	// A message that says one of a tool's own options («… Weeknight Beef Tacos»)
+	// asks for that tool: the value is its argument, the search is not needed.
+	const withIntent = { ...state, ...remembered, messageIntent: intent };
+	const specialist = matchSpecialist(actions, withIntent);
+	// «Remove everything»: the list is read first, then each item removed.
+	const scope = scopeFacts(withIntent);
+	const prepared = { ...withIntent, ...specialist, ...scope };
+	const scoped = bindListScope(actions, prepared);
+	const goal = goalForIntent(intent, REPLY_GOAL, scoped);
 	return {
-		state: { ...state, ...remembered, messageIntent: intent },
+		state: prepared,
 		goal,
-		actions: replyAfterTask(actions, goal),
+		actions: replyAfterTask(preferSpecialist(scoped, prepared), goal),
 	};
 }
 
@@ -381,8 +402,13 @@ export async function prepareResume(
 			[`webmcp:${toolResult.tool}:text`]: toolResultText(toolResult.result),
 		},
 		goal: checkpoint.goal,
+		// The checkpoint keeps the facts of a named tool (`specialistTool`), so
+		// the resumed plan still prefers it.
 		actions: replyAfterTask(
-			[...deps.actions, ...dynamicActions],
+			preferSpecialist(
+				bindListScope([...deps.actions, ...dynamicActions], checkpoint.state),
+				checkpoint.state,
+			),
 			checkpoint.goal,
 		),
 	};

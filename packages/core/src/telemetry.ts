@@ -20,6 +20,8 @@ export interface LlmStateFields {
 	latencyMs: number;
 	ok: boolean;
 	error?: string;
+	/** A decision's probability for its answer. */
+	confidence?: number;
 }
 
 /** Structured JSON-lines reporter for production — one flat object per line, to stdout. */
@@ -77,6 +79,7 @@ export function createTelemetry(
 				duration_ms: fields.latencyMs,
 				ok: fields.ok,
 				"error.type": fields.error,
+				"llm.confidence": fields.confidence,
 			});
 		},
 	};

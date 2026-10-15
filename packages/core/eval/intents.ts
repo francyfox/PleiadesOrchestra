@@ -6,17 +6,35 @@
  * Both case sets, each message sorted two ways: Laya alone, and as shipped
  * (lexical cues first, Laya for the rest, its checkout/removal answers refused
  * without the words for them). `INTENT_HOLDOUT` was written before the cues
- * and never used to shape them.
+ * and never used to shape them. Russian cases are sent as `englishOf(...)`
+ * (`intent-cases-en.ts`), as production sends the translation.
  */
+
 import { createDecisionAgent } from "../src/decision-agent.ts";
+import type { DecisionAgent } from "../src/decision-types.ts";
 import { INTENT_CASES, INTENT_HOLDOUT } from "../src/goap/intent-cases.ts";
+import { englishOf } from "../src/goap/intent-cases-en.ts";
 import { classifyMessageIntent } from "../src/goap/message-intent.ts";
 
-const agent = createDecisionAgent({
+const laya = createDecisionAgent({
 	baseURL: process.env.LAYA_API_BASE_URL ?? "http://localhost:8090",
 	apiKey: process.env.LAYA_API_KEY ?? "",
 	telemetry: { logLlmState() {}, logMessageEvent() {} } as never,
 });
+
+// Laya reads English only (like production, where the orchestrator translates
+// first): the Russian cases go along with their English rendering, and the run
+// stops if anything that is not Latin still reaches the model.
+const agent: DecisionAgent = {
+	decide(state, questions) {
+		if (
+			/(?!\p{Script=Latin})\p{L}/u.test(JSON.stringify({ state, questions }))
+		) {
+			throw new Error("non-English text reached Laya");
+		}
+		return laya.decide(state, questions);
+	},
+};
 
 const showMisses = process.argv.includes("--misses");
 const lang = (message: string) => (/[а-яё]/i.test(message) ? "ru" : "en");
@@ -36,6 +54,7 @@ for (const [setName, cases] of [
 			const got = await classifyMessageIntent(
 				{ decisionAgent: agent, cues },
 				testCase.message,
+				englishOf(testCase.message),
 			);
 			const hit = got === testCase.expected;
 			ok += hit ? 1 : 0;

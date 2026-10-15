@@ -1,8 +1,9 @@
+import { decideInRounds } from "../choice-rounds";
 import type { DecisionAgent } from "../decision-types";
 import type { IntentHit } from "./intent-memory";
 import {
 	EFFECTS_BY_INTENT,
-	INTENT_DESCRIPTIONS,
+	LAYA_INTENT_DESCRIPTIONS,
 	TOOL_INTENTS,
 	type ToolIntent,
 } from "./intent-taxonomy";
@@ -11,7 +12,10 @@ import type { GoapAction, WorldState } from "./types";
 
 export type MessageIntent = "chat" | ToolIntent;
 
-const MESSAGE_INTENTS: readonly MessageIntent[] = ["chat", ...TOOL_INTENTS];
+const MESSAGE_INTENTS: readonly MessageIntent[] = [
+	"chat",
+	...TOOL_INTENTS.filter((intent) => intent !== "readState"),
+];
 
 /** Where an intent came from — shown in the admin's graph, and what decides whether to learn from it. */
 export type IntentSource = "words" | "memory" | "laya" | "fallback";
@@ -19,7 +23,12 @@ export type IntentSource = "words" | "memory" | "laya" | "fallback";
 export interface IntentVerdict {
 	intent: MessageIntent;
 	source: IntentSource;
-	/** Memory's own confidence; Laya's is saturated (1.00 even when wrong) and not reported. */
+	/**
+	 * Memory's own confidence; for Laya the chosen option's probability, as the
+	 * agent returned it (`withCalibration` makes it the refitted one; unwrapped
+	 * it is Laya's shipped, over/under-confident probability). Undefined when
+	 * the model returned none.
+	 */
 	confidence?: number;
 }
 
@@ -37,11 +46,30 @@ export interface ClassifyMessageIntentConfig {
 	cues?: boolean;
 }
 
+export const MESSAGE_INTENT_INSTRUCTIONS =
+	"Is the user just chatting, or asking to do something in an online shop? " +
+	"Pick the single closest match; when unsure, pick chat.";
+
 /** Intents with a side effect the shopper must have asked for in so many words. */
-const NEEDS_THE_WORDS: ReadonlySet<MessageIntent> = new Set([
+export const NEEDS_THE_WORDS: ReadonlySet<MessageIntent> = new Set([
 	"checkout",
 	"removeFromCart",
 ]);
+
+/**
+ * `chat` first, then the rest — minus the intents only the words decide (Laya's
+ * answer for them would be refused anyway). That leaves 10 options: one Laya
+ * call, inside its 192-token option budget and calibrated temperature. A
+ * second round per message measured no better as shipped, so keep it at 10.
+ */
+export const MESSAGE_INTENT_CRITERIA: Record<string, string> = {
+	chat: "greeting, thanks or small talk, nothing to do with shopping",
+	...Object.fromEntries(
+		Object.entries(LAYA_INTENT_DESCRIPTIONS).filter(
+			([intent]) => !NEEDS_THE_WORDS.has(intent as MessageIntent),
+		),
+	),
+};
 
 /**
  * One cheap Laya `choice` call that decides whether a turn needs the WebMCP/
@@ -105,23 +133,18 @@ export async function classifyMessageIntentDetailed(
 	// along, and Laya let them outweigh the message: "привет" came back as
 	// `navigate`, «купи 1 сыр» as `checkout` (measured, docs/laya-autonomous-webmcp.md).
 	// "Already on that page" is handled where the page is known (`samePage`).
-	let answers: Awaited<ReturnType<DecisionAgent["decide"]>>;
+	let choice: string | undefined;
+	let probability: number | undefined;
 	try {
-		answers = await config.decisionAgent.decide(
+		({ choice, probability } = await decideInRounds(
+			config.decisionAgent,
 			{ message: english ?? message },
 			{
-				intent: {
-					type: "choice",
-					instructions:
-						"Is the user just chatting, or asking to do something in an online " +
-						"shop? Pick the single closest match; when unsure, pick chat.",
-					criteria: {
-						chat: 'greeting, thanks, small talk, or a question that has nothing to do with shopping ("hi", "thanks", "how are you", "what is the weather")',
-						...INTENT_DESCRIPTIONS,
-					},
-				},
+				questionKey: "intent",
+				instructions: MESSAGE_INTENT_INSTRUCTIONS,
+				criteria: MESSAGE_INTENT_CRITERIA,
 			},
-		);
+		));
 	} catch {
 		// Laya being down must not lose the message: whatever the words say, else chat.
 		const rescue =
@@ -131,8 +154,6 @@ export async function classifyMessageIntentDetailed(
 					(english ? intentFromCues(english) : undefined));
 		return { intent: rescue ?? "chat", source: "fallback" };
 	}
-	const answer = answers.intent;
-	const choice = answer?.type === "choice" ? answer.choice : undefined;
 	if (!choice || !(MESSAGE_INTENTS as readonly string[]).includes(choice)) {
 		return { intent: "chat", source: "laya" };
 	}
@@ -144,6 +165,7 @@ export async function classifyMessageIntentDetailed(
 			? "chat"
 			: (choice as MessageIntent),
 		source: "laya",
+		confidence: probability,
 	};
 }
 
@@ -163,11 +185,11 @@ export function goalForIntent(
 ): Partial<WorldState> {
 	if (intent === "chat") return baseGoal;
 
-	const producible = new Set(
-		actions.flatMap((action) => Object.keys(action.effects)),
-	);
-	const extra = Object.entries(EFFECTS_BY_INTENT[intent]).filter(([key]) =>
-		producible.has(key),
+	// The fact AND its value: `inCart: false` is not produced by tools that only
+	// put things into the cart (`inCart: true`); asking for it made "remove X"
+	// unplannable (`no_plan`) on a site with no tool that removes.
+	const extra = Object.entries(EFFECTS_BY_INTENT[intent]).filter(
+		([key, value]) => actions.some((action) => action.effects[key] === value),
 	);
 	return extra.length > 0
 		? { ...baseGoal, ...Object.fromEntries(extra) }

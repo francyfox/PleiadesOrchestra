@@ -27,6 +27,13 @@ export interface WidgetOptions {
 	messagesPerMinute: number;
 	/** Messages per client IP per minute, across all visitors. */
 	ipMessagesPerMinute: number;
+	/**
+	 * Tool results per visitor token per minute. Not counted as messages: one
+	 * request can fan out into a call per item («очисти корзину» on a 12-line
+	 * cart is 13 browser round trips), and each result only continues a run the
+	 * visitor already started (it must answer the call the run awaits).
+	 */
+	toolResultsPerMinute: number;
 	/** New visitor tokens per client IP per hour. */
 	visitorsPerHourPerIp: number;
 	/** Where the client IP comes from (see `resolveClientIp`). */
@@ -47,6 +54,7 @@ export const DEFAULT_WIDGET_OPTIONS: WidgetOptions = {
 	maxCatalogThreads: 1000,
 	messagesPerMinute: 10,
 	ipMessagesPerMinute: 30,
+	toolResultsPerMinute: 120,
 	visitorsPerHourPerIp: 20,
 	clientIpSource: "socket",
 	trustedProxyHops: 1,

@@ -694,6 +694,49 @@ describe("widget threads and messages", () => {
 		expect((await sendMessage(ctx, token, threadId)).status).toBe(200);
 	});
 
+	test("tool results of a run are not counted as messages: a 12-item fan-out fits a 1-per-minute message limit", async () => {
+		const ctx = setup({ messagesPerMinute: 1, ipMessagesPerMinute: 1 });
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+		const toolResult = () =>
+			ctx.app.handle(
+				widgetRequest("/v1/widget/tool-results", {
+					token,
+					body: {
+						threadId,
+						callId: "c",
+						tool: "t",
+						result: { ok: true },
+						isError: false,
+					},
+				}),
+			);
+		for (let i = 0; i < 12; i++)
+			expect((await toolResult()).status).not.toBe(429);
+	});
+
+	test("tool results have their own per-visitor limit → 429", async () => {
+		const ctx = setup({ toolResultsPerMinute: 2 });
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+		const toolResult = () =>
+			ctx.app.handle(
+				widgetRequest("/v1/widget/tool-results", {
+					token,
+					body: {
+						threadId,
+						callId: "c",
+						tool: "t",
+						result: { ok: true },
+						isError: false,
+					},
+				}),
+			);
+		expect((await toolResult()).status).not.toBe(429);
+		expect((await toolResult()).status).not.toBe(429);
+		expect((await toolResult()).status).toBe(429);
+	});
+
 	test("rate limit per IP applies across visitors → 429", async () => {
 		const ctx = setup({ ipMessagesPerMinute: 1 });
 		const first = await newVisitor(ctx);
@@ -860,7 +903,12 @@ describe("widget WebMCP round trip", () => {
 			async decide(_state, questions) {
 				const result: Record<string, DecisionAnswer> = {};
 				if (questions.intent) {
-					classifications += 1;
+					// A classification is asked in rounds: count it once, by its first round.
+					const options =
+						questions.intent.type === "choice"
+							? Object.keys(questions.intent.criteria)
+							: [];
+					if (options.includes("chooseStore")) classifications += 1;
 					result.intent = choiceAnswer("search");
 				}
 				return result;

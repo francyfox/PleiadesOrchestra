@@ -48,7 +48,7 @@ CREATE TABLE `llm_calls` (
 	`output_tokens` integer,
 	`latency_ms` integer NOT NULL,
 	`ok` integer NOT NULL,
-	`error` text,
+	`error` text, `confidence` real,
 	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE set null,
 	FOREIGN KEY (`channel_id`) REFERENCES `channels`(`id`) ON UPDATE no action ON DELETE set null,
 	FOREIGN KEY (`thread_id`) REFERENCES `threads`(`id`) ON UPDATE no action ON DELETE set null,
@@ -165,7 +165,7 @@ CREATE TABLE `intent_examples` (
 	`plan_run_id` text,
 	`seen_count` integer DEFAULT 1 NOT NULL,
 	`created_at` integer NOT NULL,
-	`updated_at` integer NOT NULL,
+	`updated_at` integer NOT NULL, `approved_by` text, `confidence` real,
 	FOREIGN KEY (`channel_id`) REFERENCES `channels`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`plan_run_id`) REFERENCES `plan_runs`(`id`) ON UPDATE no action ON DELETE set null
 );
@@ -195,6 +195,7 @@ INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '3
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '74e583ce5482cdacd33eca83cc9809f9f63ac2dac81c8a8198f4caeb721de086', 1791201968932);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'e5a55bcd7b449634f7420b4c4a92845a20045387933fce5306ecd715d14c03e8', 1791962321909);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '48965880e5304670ae74b3a4cd18fd4536966e182ec9e3d7d891ed6789962ffe', 1791969766860);
+INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '6c4e5151567f806becb8e1ec5d7c0f17c95da9eb9ccce15423fa368848512993', 1792067635675);
 INSERT INTO "channels" ("id", "slug", "kind", "name", "access_mode", "publishable_key", "secret_key_hash", "allowed_origins", "disabled_at", "created_at", "catalog_language") VALUES ('ch_telegram', 'telegram', 'telegram', 'Telegram', 'whitelist', NULL, NULL, '[]', NULL, CAST(strftime('%s', 'now') AS INTEGER) * 1000, 'en');
 INSERT INTO "channels" ("id", "slug", "kind", "name", "access_mode", "publishable_key", "secret_key_hash", "allowed_origins", "disabled_at", "created_at", "catalog_language") VALUES ('ch_cli', 'cli', 'cli', 'CLI', 'open', NULL, NULL, '[]', NULL, CAST(strftime('%s', 'now') AS INTEGER) * 1000, 'en');
 COMMIT;

@@ -41,8 +41,14 @@ export interface WaitingOn {
 	payload: unknown;
 }
 
-/** Either the real/expected effects, or a request to pause the run (see `WaitingOn`). */
-export type ActionResult = Partial<WorldState> | { waiting: WaitingOn };
+/**
+ * Either the real/expected effects, or a request to pause the run (see
+ * `WaitingOn`). A pause may carry `facts` the action wants in the checkpoint
+ * the run resumes from — a cursor through several calls of one tool, say.
+ */
+export type ActionResult =
+	| Partial<WorldState>
+	| { waiting: WaitingOn; facts?: Partial<WorldState> };
 
 /** Where an action is, for the user-facing progress text (see `GoapAction.describe`). */
 export type StepPhase = "running" | "done" | "failed";
@@ -70,6 +76,21 @@ export interface GoapAction {
 	 * action found. Text is user-facing, not a log line.
 	 */
 	describe?(state: WorldState, phase: StepPhase): string | undefined;
+	/**
+	 * For an action built once per catalog but wanted only by some requests: does
+	 * THIS request ask for it by name (a tool's option spoken in the message)?
+	 * `facts` are written into the request's state, `score` ranks several hits
+	 * (see `specialist.ts`).
+	 */
+	bindToRequest?(
+		state: WorldState,
+	): { facts: Partial<WorldState>; score: number } | undefined;
+	/**
+	 * Extra preconditions for a request about EVERY item of a list (`scopeAll`):
+	 * a remover that needs an item waits for the list to be read first
+	 * (`bindListScope` in `list-removal.ts`).
+	 */
+	scopedPreconditions?: Partial<WorldState>;
 }
 
 /**

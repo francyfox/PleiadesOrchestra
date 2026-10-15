@@ -24,6 +24,7 @@ export function recordCall(
 		latencyMs: call.latencyMs,
 		ok: call.ok,
 		error: call.error,
+		confidence: call.confidence,
 	});
 	usageRecorder?.record(call);
 }

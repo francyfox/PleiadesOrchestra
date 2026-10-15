@@ -1,3 +1,4 @@
+import { LAYA_CALIBRATION, withCalibration } from "@repo/core";
 import { createObservability, serve } from "@repo/elysia-kit";
 import { createApp } from "./app.ts";
 import {
@@ -9,6 +10,7 @@ import { channelDirectory } from "./modules/channel-directory/channel-directory.
 import { config } from "./modules/config/config.service.ts";
 import { db } from "./modules/database/database.instance.ts";
 import { decisionAgent } from "./modules/decisions/decisions.instance.ts";
+import { withEnglishOnly } from "./modules/english-only/english-only.ts";
 import { functionCallAgent } from "./modules/function-calls/function-calls.instance.ts";
 import { historyStore } from "./modules/history/history.instance.ts";
 import { assertRetentionCoversHistory } from "./modules/retention/retention.service.ts";
@@ -47,10 +49,22 @@ void loadTranslator(reportError("translator_unavailable")).then((loaded) => {
 	if (loaded) logger.info({ message: "translator ready" });
 });
 
+const translate = async (text: string) =>
+	(await translator?.translate(text)) ?? "";
+
 const app = createApp({
-	translate: async (text) => (await translator?.translate(text)) ?? "",
+	translate,
 	agent,
-	decisionAgent,
+	// Laya reads English only: whatever still is not (a Russian site's tool
+	// descriptions and enum values) is translated here, or the call is refused.
+	// Probabilities are refitted on our own data (`bun run calibrate` in
+	// packages/core) closest to Laya, so every consumer, the intent confidence
+	// included, sees the calibrated ones.
+	decisionAgent: withEnglishOnly(
+		withCalibration(decisionAgent, LAYA_CALIBRATION),
+		{ translate },
+	),
+	layaAutoApproveConfidence: config.LAYA_AUTO_APPROVE_CONFIDENCE,
 	productRequestAgent,
 	functionCallAgent,
 	apiKey: config.HARNESS_API_KEY,
@@ -101,6 +115,7 @@ const app = createApp({
 		maxCatalogThreads: config.WIDGET_MAX_CATALOG_THREADS,
 		messagesPerMinute: config.WIDGET_MESSAGES_PER_MINUTE,
 		ipMessagesPerMinute: config.WIDGET_IP_MESSAGES_PER_MINUTE,
+		toolResultsPerMinute: config.WIDGET_TOOL_RESULTS_PER_MINUTE,
 		visitorsPerHourPerIp: config.WIDGET_VISITORS_PER_HOUR_PER_IP,
 		clientIpSource: config.CLIENT_IP_SOURCE,
 		trustedProxyHops: config.TRUSTED_PROXY_HOPS,

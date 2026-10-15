@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { INTENT_CASES, INTENT_HOLDOUT } from "./intent-cases.ts";
-import { intentFromCues } from "./message-cues.ts";
+import { asksForAll, intentFromCues } from "./message-cues.ts";
 
 describe("intentFromCues", () => {
 	test("the more specific intent wins over the broader one that shares its words", () => {
@@ -64,5 +64,37 @@ describe("intentFromCues", () => {
 		const all = [...INTENT_CASES, ...INTENT_HOLDOUT];
 		const silent = all.filter((c) => intentFromCues(c.message) === undefined);
 		expect(silent.length / all.length).toBeLessThan(0.05);
+	});
+});
+
+describe("removal of everything", () => {
+	test("«clear the cart» is a removal; a question about an empty cart is not", () => {
+		expect(intentFromCues("очисти корзину")).toBe("removeFromCart");
+		expect(intentFromCues("clear my cart")).toBe("removeFromCart");
+		expect(intentFromCues("empty the basket")).toBe("removeFromCart");
+		expect(intentFromCues("is my cart empty?")).not.toBe("removeFromCart");
+	});
+
+	test("«all / every / everything / всё / все / каждый» is the scope, a plain removal is not", () => {
+		for (const message of [
+			"удали все из корзины",
+			"удали всё",
+			"remove everything",
+			"remove all items",
+			"delete every booking",
+			"убери каждый товар",
+			"очисти корзину",
+			"clear the cart",
+		]) {
+			expect(asksForAll(message)).toBe(true);
+		}
+		for (const message of [
+			"удали сыр из корзины",
+			"remove the cheese",
+			"cancel my booking",
+			"remove the small one",
+		]) {
+			expect(asksForAll(message)).toBe(false);
+		}
 	});
 });

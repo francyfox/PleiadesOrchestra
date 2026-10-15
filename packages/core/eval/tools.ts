@@ -22,17 +22,22 @@ for (const [mode, rename] of [
 	["as shipped", (name: string) => name],
 ] as const) {
 	let ok = 0;
+	let total = 0;
 	const lines: string[] = [];
 	for (const tool of DEMO_TOOLS) {
+		// `readState` is a tool's role read from its name; Laya is never offered it.
+		if (mode === "Laya alone" && tool.expected === "readState") continue;
 		const got = await classifyToolIntent(agent, {
 			name: rename(tool.name),
 			description: tool.description,
+			inputSchema: tool.inputSchema,
 		});
 		ok += got === tool.expected ? 1 : 0;
+		total++;
 		if (got !== tool.expected) {
 			lines.push(`    ${tool.name} → ${got} (want ${tool.expected})`);
 		}
 	}
-	console.log(`${mode.padEnd(11)} ${ok}/${DEMO_TOOLS.length}`);
+	console.log(`${mode.padEnd(11)} ${ok}/${total}`);
 	for (const line of lines) console.log(line);
 }

@@ -155,6 +155,11 @@ export function buildConfig(env: Record<string, string | undefined>) {
 				.int()
 				.positive()
 				.default(30),
+			WIDGET_TOOL_RESULTS_PER_MINUTE: z.coerce
+				.number()
+				.int()
+				.positive()
+				.default(120),
 			WIDGET_VISITORS_PER_HOUR_PER_IP: z.coerce
 				.number()
 				.int()
@@ -182,6 +187,14 @@ export function buildConfig(env: Record<string, string | undefined>) {
 				.positive()
 				.default(1),
 			LAYA_MAX_CONCURRENCY: z.coerce.number().int().positive().default(4),
+			// Laya's intent answers with calibrated confidence from here up are
+			// approved on their own (the site's memory learns them); below, a
+			// person judges them in /intents. 0.85: the Laya authors' suggested start.
+			LAYA_AUTO_APPROVE_CONFIDENCE: z.coerce
+				.number()
+				.min(0)
+				.max(1)
+				.default(0.85),
 		},
 		runtimeEnv: env,
 		// `SENTRY_DSN=` in a copied .env.example means "off", not an invalid URL.

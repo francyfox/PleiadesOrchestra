@@ -398,6 +398,27 @@ describe("runPlan cancellation", () => {
 });
 
 describe("runPlan waiting", () => {
+	test("facts carried by a `waiting` result are in the state the run stops with", async () => {
+		const askBrowser = action(
+			"askBrowser",
+			1,
+			{},
+			{ inCart: true },
+			async () => ({
+				waiting: { kind: "webmcp_tool_call", payload: {} },
+				facts: { cursor: 1, stale: undefined },
+			}),
+		);
+		const result = await runPlan({
+			state: { stale: "x" },
+			goal: { inCart: true },
+			actions: [askBrowser],
+			ctx: {},
+		});
+		expect(result.finalState.cursor).toBe(1);
+		expect(result.finalState.stale).toBeUndefined();
+	});
+
 	test("an action returning `waiting` stops the run immediately, without throwing or counting as failure the same way no_plan does", async () => {
 		const askBrowser = action(
 			"askBrowser",

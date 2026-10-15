@@ -6,7 +6,18 @@ import type {
 	StreamingContext,
 	WorldState,
 } from "@repo/core";
-import { createTextAction, PAGE_LANG_FACT } from "@repo/core";
+import {
+	createTextAction,
+	FOUND_ITEMS,
+	itemsText,
+	LIST_EMPTY,
+	LIST_READ,
+	MISSING_ITEMS,
+	PAGE_LANG_FACT,
+	REMOVED_ITEMS,
+	readItems,
+	SCOPE_ALL,
+} from "@repo/core";
 import { chunkText } from "../text/text.service.ts";
 import type { CustomerContext } from "../widget/widget.types.ts";
 
@@ -31,19 +42,59 @@ export const TEMPLATE_REPLY_ACTION = "replyFromTemplate";
 
 const CYRILLIC = /\p{Script=Cyrillic}/u;
 
+type ReplyLanguage = "ru" | "kk" | "en";
+
+/** The language to answer in: the page's, else the message's script. */
+function replyLanguage(state: WorldState): ReplyLanguage {
+	const lang = state[PAGE_LANG_FACT];
+	if (lang === "kk") return "kk";
+	const message = String(state.userMessage ?? "");
+	return lang === "ru" || (lang === undefined && CYRILLIC.test(message))
+		? "ru"
+		: "en";
+}
+
+/** What was taken out of the cart (or that it was empty already), from the facts the removing steps wrote. */
+function removalReplyText(state: WorldState): string {
+	const language = replyLanguage(state);
+	if (state[LIST_EMPTY] === true) {
+		return {
+			ru: "В корзине уже пусто.",
+			kk: "Себет бос.",
+			en: "Your cart is already empty.",
+		}[language];
+	}
+	const what = itemsText(readItems(state, REMOVED_ITEMS));
+	const store = typeof state.store === "string" ? ` (${state.store})` : "";
+	return {
+		ru: `Убрал из корзины: ${what}${store}.`,
+		kk: `Себеттен алынды: ${what}${store}.`,
+		en: `Removed from your cart: ${what}${store}.`,
+	}[language];
+}
+
 /** What was put in the cart, in the language the shopper writes in (the page's, else the message's script). */
 function cartReplyText(state: WorldState): string {
 	const quantity = typeof state.quantity === "number" ? state.quantity : 1;
-	const product = String(state.product ?? "");
+	const found = readItems(state, FOUND_ITEMS);
+	// Several things: all of them; one: as always.
+	const what =
+		found.length > 1
+			? itemsText(found)
+			: `${quantity} × ${String(state.product ?? "")}`;
+	const missing = readItems(state, MISSING_ITEMS)
+		.map((item) => item.name)
+		.join(", ");
 	const store = typeof state.store === "string" ? ` (${state.store})` : "";
 	const lang = state[PAGE_LANG_FACT];
 	const message = String(state.userMessage ?? "");
-	if (lang === "kk")
-		return `Себетке қосылды: ${quantity} × ${product}${store}.`;
-	if (lang === "ru" || (lang === undefined && CYRILLIC.test(message))) {
-		return `Добавил в корзину: ${quantity} × ${product}${store}.`;
+	if (lang === "kk") {
+		return `Себетке қосылды: ${what}${store}.${missing ? ` Табылмады: ${missing}.` : ""}`;
 	}
-	return `Added to your cart: ${quantity} × ${product}${store}.`;
+	if (lang === "ru" || (lang === undefined && CYRILLIC.test(message))) {
+		return `Добавил в корзину: ${what}${store}.${missing ? ` Не нашёл: ${missing}.` : ""}`;
+	}
+	return `Added to your cart: ${what}${store}.${missing ? ` Not found: ${missing}.` : ""}`;
 }
 
 /**
@@ -58,17 +109,57 @@ function cartReplyText(state: WorldState): string {
 export function createTemplateReplyAction(
 	history: HistoryStore | undefined,
 ): GoapAction {
-	return {
-		name: TEMPLATE_REPLY_ACTION,
-		cost: 1,
+	return templateReply(
+		TEMPLATE_REPLY_ACTION,
 		// `messageIntent` is a fact no action produces, so the template is only
 		// ever planned for a message classified as a purchase — never for a chat
 		// that a cheap-enough chain of tools could otherwise reach.
-		preconditions: { inCart: true, messageIntent: "addToCart" },
+		{ inCart: true, messageIntent: "addToCart" },
+		cartReplyText,
+		history,
+	);
+}
+
+/** Name of the action that answers a removal of every item from a template. */
+export const REMOVAL_REPLY_ACTION = "replyFromTemplate:removal";
+
+/**
+ * The reply to «remove everything» once the list was read and each item taken
+ * out — or the list was empty: what the site's own answer showed, with no model
+ * (which, asked about a cart it never saw, said "the cart is empty" at random).
+ * `scopeAll` and `listRead` keep it from a one-product removal or a site that
+ * clears with one call (those are answered by the model from the tool's answer).
+ */
+export function createRemovalReplyAction(
+	history: HistoryStore | undefined,
+): GoapAction {
+	return templateReply(
+		REMOVAL_REPLY_ACTION,
+		{
+			inCart: false,
+			messageIntent: "removeFromCart",
+			[SCOPE_ALL]: true,
+			[LIST_READ]: true,
+		},
+		removalReplyText,
+		history,
+	);
+}
+
+function templateReply(
+	name: string,
+	preconditions: Partial<WorldState>,
+	textOf: (state: WorldState) => string,
+	history: HistoryStore | undefined,
+): GoapAction {
+	return {
+		name,
+		cost: 1,
+		preconditions,
 		effects: { replied: true },
 		async execute(ctx: ActionContext) {
 			const { state } = ctx;
-			const text = cartReplyText(state);
+			const text = textOf(state);
 			(ctx as ActionContext & StreamingContext).onDelta?.(text);
 			await history?.append(
 				{
@@ -76,7 +167,7 @@ export function createTemplateReplyAction(
 					userId: String(state.userId ?? ""),
 					planRunId:
 						typeof state.planRunId === "string" ? state.planRunId : undefined,
-					actionName: TEMPLATE_REPLY_ACTION,
+					actionName: name,
 				},
 				[
 					{ role: "user", content: userTurn(state) },
@@ -103,6 +194,7 @@ export function buildActions(
 ): GoapAction[] {
 	return [
 		createTemplateReplyAction(history),
+		createRemovalReplyAction(history),
 		createTextAction({
 			name: REPLY_ACTION,
 			// The only action for now, so its cost doesn't compete with anything yet.
@@ -163,6 +255,17 @@ function lastToolAnswer(state: WorldState): string | undefined {
 		: undefined;
 }
 
+/** Intents with a side effect that is only ever taken from the shopper's own words (`message-intent.ts`). */
+const NEEDS_THE_WORDS: ReadonlySet<string> = new Set([
+	"checkout",
+	"removeFromCart",
+]);
+
+/** Some tool step ended (well or not) in this run. */
+function ranATool(state: WorldState): boolean {
+	return Object.keys(state).some((key) => key.startsWith("toolResult:"));
+}
+
 /** A tool step that ended in failure (`toolResult:<tool> = false`). */
 function failedTool(state: WorldState): string | undefined {
 	return Object.keys(state)
@@ -186,10 +289,16 @@ export function replyChunks(
 		typeof state.messageIntent === "string" && state.messageIntent !== "chat";
 	if (state.inCart === true && typeof state.product === "string") {
 		const quantity = typeof state.quantity === "number" ? state.quantity : 1;
+		const found = readItems(state, FOUND_ITEMS);
+		const what =
+			found.length > 1 ? itemsText(found) : `${quantity} × ${state.product}`;
+		const missing = readItems(state, MISSING_ITEMS)
+			.map((item) => item.name)
+			.join(", ");
 		const store =
 			typeof state.store === "string" ? `, магазин ${state.store}` : "";
 		return [
-			`Пользователь написал: «${message}». Это уже сделано на сайте: в корзину добавлено ${quantity} × ${state.product}${store}. Коротко сообщи ему об этом, не отказывайся.`,
+			`Пользователь написал: «${message}». Это уже сделано на сайте: в корзину добавлено ${what}${store}.${missing ? ` Не нашлось: ${missing}.` : ""} Коротко сообщи ему об этом, не отказывайся.`,
 		];
 	}
 	if (task) {
@@ -207,6 +316,17 @@ export function replyChunks(
 			];
 		}
 		const answer = lastToolAnswer(state);
+		if (
+			!answer &&
+			NEEDS_THE_WORDS.has(String(state.messageIntent)) &&
+			!ranATool(state)
+		) {
+			// No step ran (no tool on the site does it, or no plan): the model has
+			// seen nothing of the site, so it must not describe the site's state.
+			return [
+				`Пользователь написал: «${message}». На сайте это сделать не удалось: ни один шаг не выполнялся. Коротко и честно скажи об этом на языке сообщения пользователя и не утверждай ничего о том, что сейчас на сайте (в корзине, в заказах), — ты этого не видел.`,
+			];
+		}
 		if (answer) {
 			return [
 				`Пользователь написал: «${message}». Сайт уже ответил на запрос: «${answer}». Коротко перескажи пользователю результат на языке его сообщения (названия, имена и числа из ответа сайта оставь как есть), не говори, что не можешь этого сделать.`,

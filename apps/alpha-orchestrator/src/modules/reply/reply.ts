@@ -3,6 +3,7 @@ import {
 	createProductRequestAction,
 	createWebMcpActions,
 	pruneUnproducibleFacts,
+	UntranslatableError,
 } from "@repo/core";
 import { REPLY_GOAL } from "../goap/goap.service.ts";
 import { hashTools } from "../mcp/mcp.service.ts";
@@ -88,12 +89,23 @@ export class ReplyService implements WidgetReply {
 			webmcpCatalog.set(threadId, cached);
 			return;
 		}
-		const toolActions = await createWebMcpActions({
-			tools,
-			decisionAgent,
-			functionCallAgent,
-			onError: this.deps.onError,
-		});
+		let toolActions: GoapAction[];
+		try {
+			toolActions = await createWebMcpActions({
+				tools,
+				decisionAgent,
+				functionCallAgent,
+				onError: this.deps.onError,
+			});
+		} catch (error) {
+			// Laya reads English only and the site's tool text could not be
+			// translated yet (translator still loading): no catalog now, not a
+			// wrong one remembered; the next registration classifies it again.
+			if (!(error instanceof UntranslatableError)) throw error;
+			webmcpCatalog.delete(threadId);
+			this.deps.onError?.(error);
+			return;
+		}
 		const parseRequest = productRequestAgent
 			? [createProductRequestAction({ agent: productRequestAgent })]
 			: [];

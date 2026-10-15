@@ -57,7 +57,7 @@ export interface RunPlanResult {
  */
 function isWaitingResult(
 	outcome: Awaited<ReturnType<GoapAction["execute"]>>,
-): outcome is { waiting: WaitingOn } {
+): outcome is { waiting: WaitingOn; facts?: Partial<WorldState> } {
 	const value = (outcome as { waiting?: unknown }).waiting;
 	return typeof value === "object" && value !== null;
 }
@@ -219,6 +219,7 @@ async function attempt(
 			throw error;
 		}
 		if (isWaitingResult(outcome)) {
+			if (outcome.facts) nextState = { ...nextState, ...outcome.facts };
 			emit({
 				type: "waiting",
 				attempt: attemptIndex,

@@ -8,9 +8,11 @@ describe("INTENT_CASES", () => {
 		for (const { expected } of INTENT_CASES)
 			expect(known.has(expected)).toBe(true);
 		const covered = new Set<string>(INTENT_CASES.map((c) => c.expected));
-		// `other` is the catch-all: nothing can be said to "need" it.
+		// `other` is the catch-all: nothing can be said to "need" it. `readState`
+		// is a tool's role, never what a shopper asks for.
 		for (const intent of known) {
-			if (intent !== "other") expect(covered.has(intent)).toBe(true);
+			if (intent !== "other" && intent !== "readState")
+				expect(covered.has(intent)).toBe(true);
 		}
 	});
 

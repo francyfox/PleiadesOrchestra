@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import type { ToolSpec } from "../delta/delta.types.ts";
-import { judgeChoices, summarizeLaya } from "./choices.service.ts";
+import {
+	calibrationRecords,
+	judgeChoices,
+	summarizeLaya,
+} from "./choices.service.ts";
 import type { LayaResult } from "./choices.types.ts";
 
 const tool: ToolSpec = {
@@ -112,5 +116,74 @@ describe("summarizeLaya", () => {
 		});
 		expect(summary.p50Ms).toBe(30);
 		expect(summary.p90Ms).toBe(50);
+	});
+});
+
+describe("calibrationRecords", () => {
+	const clothes: ToolSpec = {
+		...tool,
+		inputSchema: { ...tool.inputSchema, required: ["size"] },
+	};
+	const result = (answers: LayaResult["answers"]): LayaResult => ({
+		id: "x",
+		latencyMs: 1,
+		answers,
+		actual: {},
+		fields: [],
+	});
+
+	test("labels an enum with the expected value, an unsaid optional one with (not said)", () => {
+		const records = calibrationRecords(
+			[
+				{
+					id: "x",
+					domain: "clothes",
+					tool: clothes,
+					request: "XL please",
+					expected: { size: "XL", fit: null, gift: true, express: false },
+				},
+			],
+			[
+				result({
+					size: {
+						type: "choice",
+						choice: "XL",
+						probabilities: { L: 0.2, XL: 0.8 },
+					},
+					fit: {
+						type: "choice",
+						choice: "slim",
+						probabilities: { slim: 0.3, relaxed: 0.2, "(not said)": 0.5 },
+					},
+					gift: { type: "boolean", probability: 0.9 },
+					express: { type: "boolean", probability: 0.1 },
+				}),
+			],
+		);
+		expect(records.map((r) => [r.kind, r.label])).toEqual([
+			["choice", "XL"],
+			["choice", "(not said)"],
+			["boolean", true],
+			["boolean", false],
+		]);
+		expect(records[0]?.options).toEqual(["L", "XL"]);
+		expect(records[0]?.text).toBe("XL please");
+	});
+
+	test("a request that failed has no records", () => {
+		expect(
+			calibrationRecords(
+				[
+					{
+						id: "x",
+						domain: "d",
+						tool: clothes,
+						request: "r",
+						expected: { size: "XL" },
+					},
+				],
+				[{ ...result({}), error: "down" }],
+			),
+		).toEqual([]);
 	});
 });

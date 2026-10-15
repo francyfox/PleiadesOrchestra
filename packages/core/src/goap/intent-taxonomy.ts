@@ -20,42 +20,51 @@ export const TOOL_INTENTS = [
 	"checkout",
 	"paginate",
 	"compare",
+	"readState",
 	"other",
 ] as const;
 
 export type ToolIntent = (typeof TOOL_INTENTS)[number];
 
 /**
- * One line per intent, passed to Laya as the `choice` criteria descriptions —
- * the cases the lexical cues (`message-cues.ts`, `tool-cues.ts`) leave to it.
- * Bare labels were easy to confuse ("go to the Greenleaf market" came back as
- * `checkout`), so each option says what it means and gives examples in both
- * languages; with examples Laya's accuracy on shopper messages went 55% → 68%
- * (`bun run eval:intents`).
+ * One short line per intent, passed to Laya as the `choice` criteria
+ * descriptions — the cases the lexical cues (`message-cues.ts`, `tool-cues.ts`)
+ * leave to it. This is the shop-domain layer. Bare labels were easy to confuse
+ * ("go to the Greenleaf market" came back as `checkout`), so each option says
+ * what it means. English only (Laya reads English; the message is translated
+ * first) and short on purpose: Laya shares one 192-token budget between all
+ * options of a question and silently cuts them when over it, so a big question
+ * is asked in rounds (`choice-rounds.ts`) and a guard test keeps every round
+ * inside the estimated budget.
  */
 export const INTENT_DESCRIPTIONS: Record<ToolIntent, string> = {
-	chooseStore:
-		'go to, enter or switch to one particular store ("go to the Greenleaf market", "switch to another store", "перейди в магазин Penny Pantry")',
-	navigate:
-		'open a page of the site: the cart, orders, recipes ("open the cart", "show my orders", "открой корзину", "что в корзине")',
-	search:
-		'look for products or ask what is available ("find cheese", "do you have milk", "найди сыр", "что есть из молочки")',
-	filter:
-		'narrow the shown products by diet, price or department ("only vegan", "cheaper than 3 dollars", "только веганские")',
-	select:
-		'open or pick ONE product from the results ("open the first one", "tell me more about Brie", "расскажи про Brie")',
-	addToCart:
-		'buy a product or put it into the cart ("buy 1 cheese", "add milk", "купи сыр", "добавь молоко в корзину", "хочу яблоки")',
-	removeFromCart:
-		'take a product out of the cart ("remove the cheese", "убери молоко", "удали из корзины")',
-	checkout:
-		'pay and place the order, finish shopping ("checkout", "place my order", "оформи заказ", "оплатить")',
-	paginate:
-		'show the next or previous page of results ("show more", "next", "дальше")',
-	compare:
-		'compare two or more products ("compare these", "сравни Brie и Gouda", "что лучше")',
-	other: "anything else that is not one of the above",
+	chooseStore: "go to or switch to a particular store",
+	navigate: "open a page of the site: cart, orders",
+	search: "look for products or ask what is available",
+	filter: "narrow products by diet, price or department",
+	select: "open or pick one product from the results",
+	addToCart: "buy a product or put it in the cart",
+	removeFromCart: "take a product out of the cart",
+	checkout: "pay and place the order",
+	paginate: "show more results, next page",
+	compare: "compare two or more products",
+	readState: "only read what the site holds now: the cart, bookings",
+	other: "anything else",
 };
+
+/**
+ * What Laya may choose from, for a tool and for a message. `readState` is not
+ * an option: it is a tool's role (read the current list, so a request about
+ * «every item» knows the items), recognised by the tool's name
+ * (`intentFromToolCues`) — a shopper never asks for it, and a sixth-hand
+ * description line only gave a 1B classifier one more way to be wrong.
+ */
+export const LAYA_INTENT_DESCRIPTIONS: Record<string, string> =
+	Object.fromEntries(
+		Object.entries(INTENT_DESCRIPTIONS).filter(
+			([intent]) => intent !== "readState",
+		),
+	);
 
 /** The single place domain semantics ("online shop") live — not in the tools, not in Laya. */
 export const EFFECTS_BY_INTENT: Record<ToolIntent, Partial<WorldState>> = {
@@ -69,6 +78,7 @@ export const EFFECTS_BY_INTENT: Record<ToolIntent, Partial<WorldState>> = {
 	checkout: { checkoutComplete: true },
 	paginate: {},
 	compare: {},
+	readState: { listRead: true },
 	other: {},
 };
 
@@ -97,6 +107,7 @@ export const PRECONDITIONS_BY_INTENT: Record<
 	checkout: { inCart: true },
 	paginate: {},
 	compare: {},
+	readState: { storeOpen: true },
 	other: {},
 };
 

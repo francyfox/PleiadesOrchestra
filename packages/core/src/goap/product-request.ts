@@ -1,11 +1,25 @@
 import type { Agent } from "../types";
+import {
+	itemsText,
+	REQUESTED_ITEMS,
+	readItems,
+	writeItems,
+} from "./shopping-list";
 import { fact, say } from "./step-text";
 import type { ActionContext, GoapAction, WorldState } from "./types";
 
-export interface ProductRequest {
+export interface ProductItem {
 	/** What to search the catalog for, in the catalog's own language. */
 	query: string;
 	quantity: number;
+}
+
+export interface ProductRequest extends ProductItem {
+	/**
+	 * Present only when the message asks for two or more things («buy A, B and
+	 * C»), one entry each; `query`/`quantity` are then the first entry's.
+	 */
+	items?: ProductItem[];
 }
 
 const MAX_QUANTITY = 99;
@@ -56,6 +70,92 @@ export function parseProductRequest(
 		query: userMessage.trim(),
 		quantity: clampQuantity(firstNumber(userMessage)),
 	};
+}
+
+// --- a message that asks for several things --------------------------------
+
+/**
+ * Fixed pairs joined by «and» that name ONE product, so «and» between them is
+ * not a list separator (`left|right`, lower case). Shop-domain layer: a short
+ * closed list, not a dictionary — anything else that reads «A and B» with two
+ * short sides is taken as two things.
+ */
+const FIXED_PAIRS = new Set([
+	"mac|cheese",
+	"salt|pepper",
+	"bread|butter",
+	"fish|chips",
+	"nuts|bolts",
+	"black|decker",
+	"соль|перец",
+]);
+/** «;» and «,» — but not the comma of a decimal number («1,5 литра»). */
+const LIST_COMMA = /\s*(?:;|,(?!\d)|(?<!\d),)\s*/;
+const LIST_LEAD_IN = /^(?:and|also|plus|и|а также|ещё|еще)\s+/iu;
+/** Most words the last thing of a comma list may have after its «and» (the per-item cap). */
+const LAST_ITEM_WORDS = 4;
+/** Most words a side of a bare «A and B» may have, and of a side that starts with a count. */
+const BARE_SIDE_WORDS = 2;
+const COUNTED_SIDE_WORDS = 6;
+
+const wordsOf = (text: string) => text.split(/\s+/).filter(Boolean);
+
+function isFixedPair(left: string, right: string): boolean {
+	const before = wordsOf(left.toLowerCase()).at(-1) ?? "";
+	const after = wordsOf(right.toLowerCase())[0] ?? "";
+	return FIXED_PAIRS.has(`${before}|${after}`);
+}
+
+/**
+ * The things a message asks for, as separate phrases: split on «,» and «;»,
+ * and on «and» (`and`: the word in the message's language) by a conservative
+ * rule — «A, B and C» ends a comma list at its last «and»; without a comma
+ * «A and B» is two things only when each side is at most two words, or the
+ * second side starts with a count («2 pens and 3 notebooks»). «salt & pepper»
+ * is never split, nor a fixed pair like «mac and cheese». A sentence with no
+ * separator comes back as one phrase, unchanged.
+ */
+export function splitProductList(
+	text: string,
+	and: string,
+	startsWithCount: (phrase: string) => boolean,
+): string[] {
+	const segments = text
+		.split(LIST_COMMA)
+		.map((segment) => segment.trim())
+		.filter(Boolean);
+	const joiner = new RegExp(`\\s+${and}\\s+`, "iu");
+	const phrases: string[] = [];
+	segments.forEach((segment, index) => {
+		const pieces = segment.split(joiner);
+		const pairs = pieces.slice(1).map((right, i) => [pieces[i] ?? "", right]);
+		if (
+			pieces.length < 2 ||
+			pairs.some(([l, r]) => isFixedPair(l ?? "", r ?? ""))
+		) {
+			phrases.push(segment);
+			return;
+		}
+		const endsList = segments.length > 1 && index === segments.length - 1;
+		if (endsList) {
+			const right = pieces[pieces.length - 1] as string;
+			if (wordsOf(right).length <= LAST_ITEM_WORDS) {
+				phrases.push(pieces.slice(0, -1).join(` ${and} `), right);
+				return;
+			}
+		}
+		// A side that starts with a count may be longer («2 packs of pens»).
+		const short = pieces.every(
+			(piece) =>
+				wordsOf(piece).length <=
+				(startsWithCount(piece) ? COUNTED_SIDE_WORDS : BARE_SIDE_WORDS),
+		);
+		if (short) phrases.push(...pieces);
+		else phrases.push(segment);
+	});
+	return phrases
+		.map((phrase) => phrase.replace(LIST_LEAD_IN, "").trim())
+		.filter(Boolean);
 }
 
 const NUMBER_WORDS: Record<string, number> = {
@@ -111,6 +211,34 @@ export function extractProductRequest(
 	text = text.replace(LEADING, "").trim();
 	for (let i = 0; i < 2; i++) text = text.replace(TRAILING, "").trim();
 
+	const phrases = splitProductList(text, "and", startsEnglishCount);
+	if (phrases.length > 1) {
+		const items = phrases.flatMap((phrase) => {
+			const item = readEnglishItem(phrase);
+			return item.query
+				? [{ query: item.query, quantity: item.quantity ?? 1 }]
+				: [];
+		});
+		if (items.length > 1) return { ...(items[0] as ProductItem), items };
+	}
+	const { query, quantity } = readEnglishItem(text);
+	return query
+		? { query, quantity: quantity ?? 1 }
+		: { query: userMessage.trim(), quantity: quantity ?? 1 };
+}
+
+/** Whether a phrase begins with a count («3 cables», «a dozen eggs», «two pens»). */
+function startsEnglishCount(phrase: string): boolean {
+	const first = wordsOf(phrase.toLowerCase())[0] ?? "";
+	return /^\d/.test(first) || Object.hasOwn(NUMBER_WORDS, first);
+}
+
+/** One thing: its count (if it names one) peeled off the front, determiners and containers dropped, four words at most. */
+function readEnglishItem(phrase: string): {
+	query: string;
+	quantity?: number;
+} {
+	let text = phrase;
 	// A count: digits, or a number word at the front ("three bananas", "a dozen eggs").
 	let quantity: number | undefined;
 	const digits = text.match(/^(\d+)\s+/);
@@ -135,10 +263,7 @@ export function extractProductRequest(
 	}
 	text = text.replace(DETERMINERS, "").replace(CONTAINERS, "").trim();
 
-	const query = text.split(" ").slice(0, 4).join(" ").trim();
-	return query
-		? { query, quantity: quantity ?? 1 }
-		: { query: userMessage.trim(), quantity: quantity ?? 1 };
+	return { query: text.split(" ").slice(0, 4).join(" ").trim(), quantity };
 }
 
 const RU_NUMBERS: Record<string, number> = {
@@ -184,6 +309,31 @@ export function extractProductRequestRu(message: string): ProductRequest {
 		.replace(/^[\s,]+/, "")
 		.trim();
 
+	const phrases = splitProductList(text, "и", startsRussianCount);
+	if (phrases.length > 1) {
+		const items = phrases.flatMap((phrase) => {
+			const item = readRussianItem(phrase);
+			return item.query
+				? [{ query: item.query, quantity: item.quantity ?? 1 }]
+				: [];
+		});
+		if (items.length > 1) return { ...(items[0] as ProductItem), items };
+	}
+	const { query, quantity } = readRussianItem(text);
+	return query
+		? { query, quantity: quantity ?? 1 }
+		: { query: message.trim(), quantity: quantity ?? 1 };
+}
+
+/** Whether a phrase begins with a count («3 кабеля», «три чехла»). */
+function startsRussianCount(phrase: string): boolean {
+	const first = wordsOf(phrase.toLowerCase())[0] ?? "";
+	return /^\d/.test(first) || Object.hasOwn(RU_NUMBERS, first);
+}
+
+/** One thing in Russian: leading count and container peeled off, four words at most. */
+function readRussianItem(phrase: string): { query: string; quantity?: number } {
+	let text = phrase;
 	let quantity: number | undefined;
 	const digits = text.match(/^(\d+)\s+(?=\p{L})/u);
 	if (digits) {
@@ -201,14 +351,13 @@ export function extractProductRequestRu(message: string): ProductRequest {
 	}
 	text = text.replace(RU_CONTAINERS, "").trim();
 
-	const query = text.split(/\s+/).slice(0, 4).join(" ").trim();
-	return query
-		? { query, quantity: quantity ?? 1 }
-		: { query: message.trim(), quantity: quantity ?? 1 };
+	return { query: text.split(/\s+/).slice(0, 4).join(" ").trim(), quantity };
 }
 
 /** Longer than this, the English text is condensed by the text model before the tools see it. */
 const LONG_REQUEST_CHARS = 300;
+/** Longest list of several things the rules still read. */
+const MAX_LIST_WORDS = 40;
 /** Clause words: the product is not simply what follows the verb («if you can't find X, find Y»). */
 const CLAUSE_WORDS =
 	/\b(?:if|but|because|since|so|then|instead|otherwise|can't|cannot|couldn't|won't|didn't|don't|not)\b/i;
@@ -224,7 +373,19 @@ export function isSimpleRequest(english: string): boolean {
 	const text = english.trim().replace(/[.!?…]+$/g, "");
 	if (CLAUSE_WORDS.test(text)) return false;
 	const words = text.split(/\s+/).length;
-	return words <= 3 || (LEADING.test(text.toLowerCase()) && words <= 12);
+	if (words <= 3) return true;
+	const command = LEADING.test(text.toLowerCase());
+	if (command && words <= 12) return true;
+	// A long shopping list is no clause: each of its things is read on its own.
+	return (
+		command &&
+		words <= MAX_LIST_WORDS &&
+		splitProductList(
+			text.toLowerCase().replace(LEADING, "").trim(),
+			"and",
+			startsEnglishCount,
+		).length > 1
+	);
 }
 
 /**
@@ -291,6 +452,29 @@ export function reuseLastProduct(state: {
 	};
 }
 
+/**
+ * The facts of a parsed request: `query` and `quantity` (the first thing, what
+ * single-product tools read) and, for a message that asks for several things,
+ * the whole list as the `requestedItems` fact (see `shopping-list.ts`).
+ */
+function requestFacts(request: ProductRequest): Partial<WorldState> {
+	const { query, quantity, items } = request;
+	return {
+		query,
+		quantity,
+		...(items
+			? {
+					[REQUESTED_ITEMS]: writeItems(
+						items.map((item) => ({
+							name: item.query,
+							quantity: item.quantity,
+						})),
+					),
+				}
+			: {}),
+	};
+}
+
 export interface ProductRequestActionConfig {
 	/**
 	 * An `Agent` whose system prompt asks for `{"query": …, "quantity": …}` and
@@ -326,6 +510,13 @@ export function createProductRequestAction(
 				});
 			}
 			if (phase === "done") {
+				const requested = readItems(state, REQUESTED_ITEMS);
+				if (requested.length > 1) {
+					return say(state, {
+						ru: `Понял: ${itemsText(requested)}`,
+						en: `Understood: ${itemsText(requested)}`,
+					});
+				}
 				return say(state, {
 					ru: `Понял: ${quantity} × «${query}»`,
 					en: `Understood: ${quantity} × “${query}”`,
@@ -343,11 +534,17 @@ export function createProductRequestAction(
 			// the site's catalog (`catalogLang`, default English), not the shopper's.
 			const catalogLang = String(state.catalogLang ?? "en").split("-")[0];
 			if (catalogLang === "ru") {
-				return { requestParsed: true, ...extractProductRequestRu(message) };
+				return {
+					requestParsed: true,
+					...requestFacts(extractProductRequestRu(message)),
+				};
 			}
 			if (catalogLang !== "en") {
 				// No rules for this language: its own words are the best query there is.
-				return { requestParsed: true, ...parseProductRequest("", message) };
+				return {
+					requestParsed: true,
+					...requestFacts(parseProductRequest("", message)),
+				};
 			}
 			// A translation exists: the verbs and politeness are peeled off the
 			// English text, no model call (~0 ms instead of ~400 ms).
@@ -359,8 +556,10 @@ export function createProductRequestAction(
 					// guess from the first words would beat the model's reading.
 					return { requestParsed: true, quantity: 1 };
 				}
-				const { query, quantity } = extractProductRequest(english, message);
-				return { requestParsed: true, query, quantity };
+				return {
+					requestParsed: true,
+					...requestFacts(extractProductRequest(english, message)),
+				};
 			}
 			let reply = "";
 			for await (const event of config.agent.handleMessageStream({

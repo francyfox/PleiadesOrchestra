@@ -1,0 +1,962 @@
+{
+	"at": "2026-10-15T12:29:26.128Z",
+	"records": [
+		{
+			"kind": "choice",
+			"source": "food delivery/food-hot-door.spice",
+			"text": "Spicy noodles, as fiery as you make them, leave it at the door",
+			"options": ["mild", "medium", "hot", "(not said)"],
+			"probabilities": {
+				"mild": 0.2394,
+				"medium": 0.2656,
+				"hot": 0.4226,
+				"(not said)": 0.0725
+			},
+			"label": "hot"
+		},
+		{
+			"kind": "choice",
+			"source": "food delivery/food-hot-door.delivery",
+			"text": "Spicy noodles, as fiery as you make them, leave it at the door",
+			"options": ["delivery", "pickup", "(not said)"],
+			"probabilities": {
+				"delivery": 0.5068,
+				"pickup": 0.2006,
+				"(not said)": 0.2926
+			},
+			"label": "(not said)"
+		},
+		{
+			"kind": "boolean",
+			"source": "food delivery/food-hot-door.contactless",
+			"text": "Spicy noodles, as fiery as you make them, leave it at the door",
+			"probability": 0.5137,
+			"label": true
+		},
+		{
+			"kind": "boolean",
+			"source": "food delivery/food-hot-door.cutlery",
+			"text": "Spicy noodles, as fiery as you make them, leave it at the door",
+			"probability": 0.0995,
+			"label": false
+		},
+		{
+			"kind": "choice",
+			"source": "food delivery/food-pickup-no-forks.spice",
+			"text": "I'll come and get it myself, mild curry, no need for forks",
+			"options": ["mild", "medium", "hot", "(not said)"],
+			"probabilities": {
+				"mild": 0.8021,
+				"medium": 0.1369,
+				"hot": 0.0132,
+				"(not said)": 0.0477
+			},
+			"label": "mild"
+		},
+		{
+			"kind": "choice",
+			"source": "food delivery/food-pickup-no-forks.delivery",
+			"text": "I'll come and get it myself, mild curry, no need for forks",
+			"options": ["delivery", "pickup", "(not said)"],
+			"probabilities": {
+				"delivery": 0.0883,
+				"pickup": 0.2612,
+				"(not said)": 0.6505
+			},
+			"label": "pickup"
+		},
+		{
+			"kind": "boolean",
+			"source": "food delivery/food-pickup-no-forks.contactless",
+			"text": "I'll come and get it myself, mild curry, no need for forks",
+			"probability": 0.1165,
+			"label": false
+		},
+		{
+			"kind": "boolean",
+			"source": "food delivery/food-pickup-no-forks.cutlery",
+			"text": "I'll come and get it myself, mild curry, no need for forks",
+			"probability": 0.2798,
+			"label": false
+		},
+		{
+			"kind": "choice",
+			"source": "food delivery/food-plain.spice",
+			"text": "Two margherita pizzas please",
+			"options": ["mild", "medium", "hot", "(not said)"],
+			"probabilities": {
+				"mild": 0.3311,
+				"medium": 0.3677,
+				"hot": 0.1035,
+				"(not said)": 0.1978
+			},
+			"label": "(not said)"
+		},
+		{
+			"kind": "choice",
+			"source": "food delivery/food-plain.delivery",
+			"text": "Two margherita pizzas please",
+			"options": ["delivery", "pickup", "(not said)"],
+			"probabilities": {
+				"delivery": 0.2654,
+				"pickup": 0.1902,
+				"(not said)": 0.5444
+			},
+			"label": "(not said)"
+		},
+		{
+			"kind": "boolean",
+			"source": "food delivery/food-plain.contactless",
+			"text": "Two margherita pizzas please",
+			"probability": 0.2074,
+			"label": false
+		},
+		{
+			"kind": "boolean",
+			"source": "food delivery/food-plain.cutlery",
+			"text": "Two margherita pizzas please",
+			"probability": 0.1071,
+			"label": false
+		},
+		{
+			"kind": "choice",
+			"source": "cinema/cinema-giant-screen-back.format",
+			"text": "Two tickets for the giant-screen version, somewhere in the last rows",
+			"options": ["2D", "3D", "IMAX", "(not said)"],
+			"probabilities": {
+				"2D": 0.0217,
+				"3D": 0.036,
+				"IMAX": 0.8641,
+				"(not said)": 0.0782
+			},
+			"label": "IMAX"
+		},
+		{
+			"kind": "choice",
+			"source": "cinema/cinema-giant-screen-back.seat_zone",
+			"text": "Two tickets for the giant-screen version, somewhere in the last rows",
+			"options": ["front", "middle", "back", "(not said)"],
+			"probabilities": {
+				"front": 0.0587,
+				"middle": 0.0607,
+				"back": 0.7932,
+				"(not said)": 0.0875
+			},
+			"label": "back"
+		},
+		{
+			"kind": "boolean",
+			"source": "cinema/cinema-giant-screen-back.wheelchair",
+			"text": "Two tickets for the giant-screen version, somewhere in the last rows",
+			"probability": 0.1093,
+			"label": false
+		},
+		{
+			"kind": "choice",
+			"source": "cinema/cinema-wheelchair.format",
+			"text": "My grandmother uses a wheelchair, a regular flat screening is fine",
+			"options": ["2D", "3D", "IMAX", "(not said)"],
+			"probabilities": {
+				"2D": 0.2586,
+				"3D": 0.1349,
+				"IMAX": 0.1676,
+				"(not said)": 0.4389
+			},
+			"label": "2D"
+		},
+		{
+			"kind": "choice",
+			"source": "cinema/cinema-wheelchair.seat_zone",
+			"text": "My grandmother uses a wheelchair, a regular flat screening is fine",
+			"options": ["front", "middle", "back", "(not said)"],
+			"probabilities": {
+				"front": 0.2104,
+				"middle": 0.2747,
+				"back": 0.1402,
+				"(not said)": 0.3747
+			},
+			"label": "(not said)"
+		},
+		{
+			"kind": "boolean",
+			"source": "cinema/cinema-wheelchair.wheelchair",
+			"text": "My grandmother uses a wheelchair, a regular flat screening is fine",
+			"probability": 0.1632,
+			"label": true
+		},
+		{
+			"kind": "choice",
+			"source": "cinema/cinema-plain.format",
+			"text": "Tickets for tonight's show",
+			"options": ["2D", "3D", "IMAX", "(not said)"],
+			"probabilities": {
+				"2D": 0.0579,
+				"3D": 0.0425,
+				"IMAX": 0.3487,
+				"(not said)": 0.5509
+			},
+			"label": "(not said)"
+		},
+		{
+			"kind": "choice",
+			"source": "cinema/cinema-plain.seat_zone",
+			"text": "Tickets for tonight's show",
+			"options": ["front", "middle", "back", "(not said)"],
+			"probabilities": {
+				"front": 0.6192,
+				"middle": 0.1591,
+				"back": 0.0897,
+				"(not said)": 0.132
+			},
+			"label": "(not said)"
+		},
+		{
+			"kind": "boolean",
+			"source": "cinema/cinema-plain.wheelchair",
+			"text": "Tickets for tonight's show",
+			"probability": 0.0683,
+			"label": false
+		},
+		{
+			"kind": "choice",
+			"source": "car rental/car-no-stick-seven.transmission",
+			"text": "I can't drive stick, we are seven people with luggage",
+			"options": ["manual", "automatic", "(not said)"],
+			"probabilities": {
+				"manual": 0.3419,
+				"automatic": 0.5659,
+				"(not said)": 0.0921
+			},
+			"label": "automatic"
+		},
+		{
+			"kind": "choice",
+			"source": "car rental/car-no-stick-seven.size",
+			"text": "I can't drive stick, we are seven people with luggage",
+			"options": ["compact", "midsize", "SUV", "van", "(not said)"],
+			"probabilities": {
+				"compact": 0.0443,
+				"midsize": 0.4431,
+				"SUV": 0.0533,
+				"van": 0.2956,
+				"(not said)": 0.1637
+			},
+			"label": "van"
+		},
+		{
+			"kind": "boolean",
+			"source": "car rental/car-no-stick-seven.child_seat",
+			"text": "I can't drive stick, we are seven people with luggage",
+			"probability": 0.086,
+			"label": false
+		},
+		{
+			"kind": "boolean",
+			"source": "car rental/car-no-stick-seven.full_insurance",
+			"text": "I can't drive stick, we are seven people with luggage",
+			"probability": 0.0576,
+			"label": false
+		},
+		{
+			"kind": "choice",
+			"source": "car rental/car-small-toddler.transmission",
+			"text": "Something small for city parking, our toddler comes too",
+			"options": ["manual", "automatic", "(not said)"],
+			"probabilities": {
+				"manual": 0.5729,
+				"automatic": 0.1835,
+				"(not said)": 0.2436
+			},
+			"label": "(not said)"
+		},
+		{
+			"kind": "choice",
+			"source": "car rental/car-small-toddler.size",
+			"text": "Something small for city parking, our toddler comes too",
+			"options": ["compact", "midsize", "SUV", "van", "(not said)"],
+			"probabilities": {
+				"compact": 0.7137,
+				"midsize": 0.2064,
+				"SUV": 0.0111,
+				"van": 0.0109,
+				"(not said)": 0.058
+			},
+			"label": "compact"
+		},
+		{
+			"kind": "boolean",
+			"source": "car rental/car-small-toddler.child_seat",
+			"text": "Something small for city parking, our toddler comes too",
+			"probability": 0.6736,
+			"label": true
+		},
+		{
+			"kind": "boolean",
+			"source": "car rental/car-small-toddler.full_insurance",
+			"text": "Something small for city parking, our toddler comes too",
+			"probability": 0.0439,
+			"label": false
+		},
+		{
+			"kind": "choice",
+			"source": "car rental/car-suv-no-worries.transmission",
+			"text": "An SUV, and I don't want to pay a cent if it gets scratched",
+			"options": ["manual", "automatic", "(not said)"],
+			"probabilities": {
+				"manual": 0.4652,
+				"automatic": 0.2113,
+				"(not said)": 0.3235
+			},
+			"label": "(not said)"
+		},
+		{
+			"kind": "choice",
+			"source": "car rental/car-suv-no-worries.size",
+			"text": "An SUV, and I don't want to pay a cent if it gets scratched",
+			"options": ["compact", "midsize", "SUV", "van", "(not said)"],
+			"probabilities": {
+				"compact": 0.0038,
+				"midsize": 0.0592,
+				"SUV": 0.8985,
+				"van": 0.0276,
+				"(not said)": 0.0109
+			},
+			"label": "SUV"
+		},
+		{
+			"kind": "boolean",
+			"source": "car rental/car-suv-no-worries.child_seat",
+			"text": "An SUV, and I don't want to pay a cent if it gets scratched",
+			"probability": 0.0623,
+			"label": false
+		},
+		{
+			"kind": "boolean",
+			"source": "car rental/car-suv-no-worries.full_insurance",
+			"text": "An SUV, and I don't want to pay a cent if it gets scratched",
+			"probability": 0.0836,
+			"label": true
+		},
+		{
+			"kind": "choice",
+			"source": "car rental/car-manual-no-extras.transmission",
+			"text": "A manual is fine, no extras at all",
+			"options": ["manual", "automatic", "(not said)"],
+			"probabilities": {
+				"manual": 0.8962,
+				"automatic": 0.0247,
+				"(not said)": 0.0791
+			},
+			"label": "manual"
+		},
+		{
+			"kind": "choice",
+			"source": "car rental/car-manual-no-extras.size",
+			"text": "A manual is fine, no extras at all",
+			"options": ["compact", "midsize", "SUV", "van", "(not said)"],
+			"probabilities": {
+				"compact": 0.2339,
+				"midsize": 0.3742,
+				"SUV": 0.0476,
+				"van": 0.0398,
+				"(not said)": 0.3045
+			},
+			"label": "(not said)"
+		},
+		{
+			"kind": "boolean",
+			"source": "car rental/car-manual-no-extras.child_seat",
+			"text": "A manual is fine, no extras at all",
+			"probability": 0.0311,
+			"label": false
+		},
+		{
+			"kind": "boolean",
+			"source": "car rental/car-manual-no-extras.full_insurance",
+			"text": "A manual is fine, no extras at all",
+			"probability": 0.2438,
+			"label": false
+		},
+		{
+			"kind": "choice",
+			"source": "pharmacy/pharmacy-kid-cough.form",
+			"text": "Something for my 4-year-old's cough, she can't swallow pills",
+			"options": ["tablet", "syrup", "spray", "cream", "(not said)"],
+			"probabilities": {
+				"tablet": 0.213,
+				"syrup": 0.2917,
+				"spray": 0.0916,
+				"cream": 0.3682,
+				"(not said)": 0.0355
+			},
+			"label": "syrup"
+		},
+		{
+			"kind": "choice",
+			"source": "pharmacy/pharmacy-kid-cough.age_group",
+			"text": "Something for my 4-year-old's cough, she can't swallow pills",
+			"options": ["adult", "child", "(not said)"],
+			"probabilities": {
+				"adult": 0.0037,
+				"child": 0.9839,
+				"(not said)": 0.0124
+			},
+			"label": "child"
+		},
+		{
+			"kind": "boolean",
+			"source": "pharmacy/pharmacy-kid-cough.prescription_free",
+			"text": "Something for my 4-year-old's cough, she can't swallow pills",
+			"probability": 0.7593,
+			"label": false
+		},
+		{
+			"kind": "choice",
+			"source": "pharmacy/pharmacy-rash-no-doctor.form",
+			"text": "Something to rub on an itchy rash that I can buy without seeing a doctor",
+			"options": ["tablet", "syrup", "spray", "cream", "(not said)"],
+			"probabilities": {
+				"tablet": 0.0421,
+				"syrup": 0.006,
+				"spray": 0.0741,
+				"cream": 0.8628,
+				"(not said)": 0.015
+			},
+			"label": "cream"
+		},
+		{
+			"kind": "choice",
+			"source": "pharmacy/pharmacy-rash-no-doctor.age_group",
+			"text": "Something to rub on an itchy rash that I can buy without seeing a doctor",
+			"options": ["adult", "child", "(not said)"],
+			"probabilities": {
+				"adult": 0.2288,
+				"child": 0.0915,
+				"(not said)": 0.6796
+			},
+			"label": "(not said)"
+		},
+		{
+			"kind": "boolean",
+			"source": "pharmacy/pharmacy-rash-no-doctor.prescription_free",
+			"text": "Something to rub on an itchy rash that I can buy without seeing a doctor",
+			"probability": 0.8531,
+			"label": true
+		},
+		{
+			"kind": "choice",
+			"source": "furniture/furniture-oak-desk.material",
+			"text": "A solid oak desk for working from home, I'm hopeless with tools",
+			"options": ["wood", "metal", "glass", "fabric", "(not said)"],
+			"probabilities": {
+				"wood": 0.9346,
+				"metal": 0.0147,
+				"glass": 0.0142,
+				"fabric": 0.016,
+				"(not said)": 0.0205
+			},
+			"label": "wood"
+		},
+		{
+			"kind": "choice",
+			"source": "furniture/furniture-oak-desk.room",
+			"text": "A solid oak desk for working from home, I'm hopeless with tools",
+			"options": ["living room", "bedroom", "kitchen", "office", "(not said)"],
+			"probabilities": {
+				"living room": 0.0632,
+				"bedroom": 0.0447,
+				"kitchen": 0.0174,
+				"office": 0.8348,
+				"(not said)": 0.0399
+			},
+			"label": "office"
+		},
+		{
+			"kind": "boolean",
+			"source": "furniture/furniture-oak-desk.assembly",
+			"text": "A solid oak desk for working from home, I'm hopeless with tools",
+			"probability": 0.2826,
+			"label": true
+		},
+		{
+			"kind": "choice",
+			"source": "furniture/furniture-glass-kitchen.material",
+			"text": "A glass table for where we cook and eat, I'll put it together myself",
+			"options": ["wood", "metal", "glass", "fabric", "(not said)"],
+			"probabilities": {
+				"wood": 0.0141,
+				"metal": 0.0217,
+				"glass": 0.9052,
+				"fabric": 0.0114,
+				"(not said)": 0.0477
+			},
+			"label": "glass"
+		},
+		{
+			"kind": "choice",
+			"source": "furniture/furniture-glass-kitchen.room",
+			"text": "A glass table for where we cook and eat, I'll put it together myself",
+			"options": ["living room", "bedroom", "kitchen", "office", "(not said)"],
+			"probabilities": {
+				"living room": 0.2521,
+				"bedroom": 0.0341,
+				"kitchen": 0.5611,
+				"office": 0.0601,
+				"(not said)": 0.0925
+			},
+			"label": "kitchen"
+		},
+		{
+			"kind": "boolean",
+			"source": "furniture/furniture-glass-kitchen.assembly",
+			"text": "A glass table for where we cook and eat, I'll put it together myself",
+			"probability": 0.3686,
+			"label": false
+		},
+		{
+			"kind": "choice",
+			"source": "pets/pets-old-labrador.animal",
+			"text": "Food for my 12-year-old labrador, he's allergic to wheat",
+			"options": ["dog", "cat", "bird", "fish", "(not said)"],
+			"probabilities": {
+				"dog": 0.9482,
+				"cat": 0.0156,
+				"bird": 0.0056,
+				"fish": 0.0054,
+				"(not said)": 0.0252
+			},
+			"label": "dog"
+		},
+		{
+			"kind": "choice",
+			"source": "pets/pets-old-labrador.life_stage",
+			"text": "Food for my 12-year-old labrador, he's allergic to wheat",
+			"options": ["young", "adult", "senior", "(not said)"],
+			"probabilities": {
+				"young": 0.5079,
+				"adult": 0.0546,
+				"senior": 0.0421,
+				"(not said)": 0.3953
+			},
+			"label": "senior"
+		},
+		{
+			"kind": "boolean",
+			"source": "pets/pets-old-labrador.grain_free",
+			"text": "Food for my 12-year-old labrador, he's allergic to wheat",
+			"probability": 0.8506,
+			"label": true
+		},
+		{
+			"kind": "choice",
+			"source": "pets/pets-new-kitten.animal",
+			"text": "Something for the kitten we just brought home",
+			"options": ["dog", "cat", "bird", "fish", "(not said)"],
+			"probabilities": {
+				"dog": 0.0051,
+				"cat": 0.9424,
+				"bird": 0.0232,
+				"fish": 0.009,
+				"(not said)": 0.0203
+			},
+			"label": "cat"
+		},
+		{
+			"kind": "choice",
+			"source": "pets/pets-new-kitten.life_stage",
+			"text": "Something for the kitten we just brought home",
+			"options": ["young", "adult", "senior", "(not said)"],
+			"probabilities": {
+				"young": 0.6273,
+				"adult": 0.0371,
+				"senior": 0.0256,
+				"(not said)": 0.31
+			},
+			"label": "young"
+		},
+		{
+			"kind": "boolean",
+			"source": "pets/pets-new-kitten.grain_free",
+			"text": "Something for the kitten we just brought home",
+			"probability": 0.1544,
+			"label": false
+		},
+		{
+			"kind": "choice",
+			"source": "software/saas-yearly-team-trial.plan",
+			"text": "We pay once a year for the whole team, but let us try it first",
+			"options": ["free", "team", "enterprise", "(not said)"],
+			"probabilities": {
+				"free": 0.1225,
+				"team": 0.704,
+				"enterprise": 0.0651,
+				"(not said)": 0.1084
+			},
+			"label": "team"
+		},
+		{
+			"kind": "choice",
+			"source": "software/saas-yearly-team-trial.billing",
+			"text": "We pay once a year for the whole team, but let us try it first",
+			"options": ["monthly", "yearly", "(not said)"],
+			"probabilities": {
+				"monthly": 0.0119,
+				"yearly": 0.9495,
+				"(not said)": 0.0386
+			},
+			"label": "yearly"
+		},
+		{
+			"kind": "boolean",
+			"source": "software/saas-yearly-team-trial.trial",
+			"text": "We pay once a year for the whole team, but let us try it first",
+			"probability": 0.8899,
+			"label": true
+		},
+		{
+			"kind": "choice",
+			"source": "software/saas-free.plan",
+			"text": "Just the version that costs nothing",
+			"options": ["free", "team", "enterprise", "(not said)"],
+			"probabilities": {
+				"free": 0.9732,
+				"team": 0.0062,
+				"enterprise": 0.0091,
+				"(not said)": 0.0116
+			},
+			"label": "free"
+		},
+		{
+			"kind": "choice",
+			"source": "software/saas-free.billing",
+			"text": "Just the version that costs nothing",
+			"options": ["monthly", "yearly", "(not said)"],
+			"probabilities": {
+				"monthly": 0.2487,
+				"yearly": 0.267,
+				"(not said)": 0.4843
+			},
+			"label": "(not said)"
+		},
+		{
+			"kind": "boolean",
+			"source": "software/saas-free.trial",
+			"text": "Just the version that costs nothing",
+			"probability": 0.8197,
+			"label": false
+		},
+		{
+			"kind": "choice",
+			"source": "concerts/concert-best-money.section",
+			"text": "The best experience money can buy, backstage access included",
+			"options": ["standing", "seated", "vip", "(not said)"],
+			"probabilities": {
+				"standing": 0.0603,
+				"seated": 0.1122,
+				"vip": 0.6614,
+				"(not said)": 0.1661
+			},
+			"label": "vip"
+		},
+		{
+			"kind": "boolean",
+			"source": "concerts/concert-best-money.accessible",
+			"text": "The best experience money can buy, backstage access included",
+			"probability": 0.6325,
+			"label": false
+		},
+		{
+			"kind": "boolean",
+			"source": "concerts/concert-best-money.merch_bundle",
+			"text": "The best experience money can buy, backstage access included",
+			"probability": 0.6854,
+			"label": false
+		},
+		{
+			"kind": "choice",
+			"source": "concerts/concert-crowd-no-shirt.section",
+			"text": "I want to be in the crowd near the stage, skip the t-shirt",
+			"options": ["standing", "seated", "vip", "(not said)"],
+			"probabilities": {
+				"standing": 0.1523,
+				"seated": 0.1775,
+				"vip": 0.1743,
+				"(not said)": 0.4959
+			},
+			"label": "standing"
+		},
+		{
+			"kind": "boolean",
+			"source": "concerts/concert-crowd-no-shirt.accessible",
+			"text": "I want to be in the crowd near the stage, skip the t-shirt",
+			"probability": 0.5631,
+			"label": false
+		},
+		{
+			"kind": "boolean",
+			"source": "concerts/concert-crowd-no-shirt.merch_bundle",
+			"text": "I want to be in the crowd near the stage, skip the t-shirt",
+			"probability": 0.0725,
+			"label": false
+		},
+		{
+			"kind": "choice",
+			"source": "groceries/groceries-lactose-shelf.dietary",
+			"text": "Lactose-free yogurt, only what is on the shelf right now",
+			"options": [
+				"organic",
+				"vegan",
+				"gluten-free",
+				"dairy-free",
+				"(not said)"
+			],
+			"probabilities": {
+				"organic": 0.1142,
+				"vegan": 0.1412,
+				"gluten-free": 0.16,
+				"dairy-free": 0.3746,
+				"(not said)": 0.2101
+			},
+			"label": "dairy-free"
+		},
+		{
+			"kind": "boolean",
+			"source": "groceries/groceries-lactose-shelf.in_stock_only",
+			"text": "Lactose-free yogurt, only what is on the shelf right now",
+			"probability": 0.6064,
+			"label": true
+		},
+		{
+			"kind": "choice",
+			"source": "groceries/groceries-plain.dietary",
+			"text": "Bread",
+			"options": [
+				"organic",
+				"vegan",
+				"gluten-free",
+				"dairy-free",
+				"(not said)"
+			],
+			"probabilities": {
+				"organic": 0.0985,
+				"vegan": 0.1015,
+				"gluten-free": 0.2521,
+				"dairy-free": 0.109,
+				"(not said)": 0.4389
+			},
+			"label": "(not said)"
+		},
+		{
+			"kind": "boolean",
+			"source": "groceries/groceries-plain.in_stock_only",
+			"text": "Bread",
+			"probability": 0.1057,
+			"label": false
+		},
+		{
+			"kind": "choice",
+			"source": "travel/stays-sand-cat.area",
+			"text": "Somewhere near the sand and the waves, our cat travels with us",
+			"options": [
+				"city center",
+				"quiet residential",
+				"beach",
+				"airport",
+				"(not said)"
+			],
+			"probabilities": {
+				"city center": 0.0068,
+				"quiet residential": 0.0465,
+				"beach": 0.9212,
+				"airport": 0.0045,
+				"(not said)": 0.0211
+			},
+			"label": "beach"
+		},
+		{
+			"kind": "boolean",
+			"source": "travel/stays-sand-cat.pets_allowed",
+			"text": "Somewhere near the sand and the waves, our cat travels with us",
+			"probability": 0.3969,
+			"label": true
+		},
+		{
+			"kind": "choice",
+			"source": "travel/stays-early-flight.area",
+			"text": "Close to the terminal, we have a 6am flight",
+			"options": [
+				"city center",
+				"quiet residential",
+				"beach",
+				"airport",
+				"(not said)"
+			],
+			"probabilities": {
+				"city center": 0.0044,
+				"quiet residential": 0.0021,
+				"beach": 0.0011,
+				"airport": 0.9836,
+				"(not said)": 0.0088
+			},
+			"label": "airport"
+		},
+		{
+			"kind": "boolean",
+			"source": "travel/stays-early-flight.pets_allowed",
+			"text": "Close to the terminal, we have a 6am flight",
+			"probability": 0.0003,
+			"label": false
+		},
+		{
+			"kind": "choice",
+			"source": "clothing/clothing-baggy-xl.size",
+			"text": "Baggy jeans in extra large",
+			"options": ["XS", "S", "M", "L", "XL", "(not said)"],
+			"probabilities": {
+				"XS": 0.0114,
+				"S": 0.0049,
+				"M": 0.0235,
+				"L": 0.3439,
+				"XL": 0.5758,
+				"(not said)": 0.0405
+			},
+			"label": "XL"
+		},
+		{
+			"kind": "choice",
+			"source": "clothing/clothing-baggy-xl.fit",
+			"text": "Baggy jeans in extra large",
+			"options": ["slim", "regular", "relaxed", "(not said)"],
+			"probabilities": {
+				"slim": 0.0624,
+				"regular": 0.3749,
+				"relaxed": 0.2024,
+				"(not said)": 0.3603
+			},
+			"label": "relaxed"
+		},
+		{
+			"kind": "boolean",
+			"source": "clothing/clothing-baggy-xl.new_arrivals_only",
+			"text": "Baggy jeans in extra large",
+			"probability": 0.5747,
+			"label": false
+		},
+		{
+			"kind": "choice",
+			"source": "clothing/clothing-slim-latest.size",
+			"text": "A small slim shirt, anything from the latest collection",
+			"options": ["XS", "S", "M", "L", "XL", "(not said)"],
+			"probabilities": {
+				"XS": 0.0848,
+				"S": 0.6702,
+				"M": 0.026,
+				"L": 0.0117,
+				"XL": 0.0067,
+				"(not said)": 0.2006
+			},
+			"label": "S"
+		},
+		{
+			"kind": "choice",
+			"source": "clothing/clothing-slim-latest.fit",
+			"text": "A small slim shirt, anything from the latest collection",
+			"options": ["slim", "regular", "relaxed", "(not said)"],
+			"probabilities": {
+				"slim": 0.759,
+				"regular": 0.0431,
+				"relaxed": 0.1212,
+				"(not said)": 0.0766
+			},
+			"label": "slim"
+		},
+		{
+			"kind": "boolean",
+			"source": "clothing/clothing-slim-latest.new_arrivals_only",
+			"text": "A small slim shirt, anything from the latest collection",
+			"probability": 0.8027,
+			"label": true
+		},
+		{
+			"kind": "choice",
+			"source": "electronics/electronics-best-reviewed-new.sort",
+			"text": "Headphones, best reviewed first, brand new only",
+			"options": [
+				"relevance",
+				"price_low",
+				"price_high",
+				"rating",
+				"(not said)"
+			],
+			"probabilities": {
+				"relevance": 0.0693,
+				"price_low": 0.1384,
+				"price_high": 0.07,
+				"rating": 0.4609,
+				"(not said)": 0.2614
+			},
+			"label": "rating"
+		},
+		{
+			"kind": "boolean",
+			"source": "electronics/electronics-best-reviewed-new.include_refurbished",
+			"text": "Headphones, best reviewed first, brand new only",
+			"probability": 0.1361,
+			"label": false
+		},
+		{
+			"kind": "choice",
+			"source": "electronics/electronics-priciest.sort",
+			"text": "Show the most expensive cameras first",
+			"options": [
+				"relevance",
+				"price_low",
+				"price_high",
+				"rating",
+				"(not said)"
+			],
+			"probabilities": {
+				"relevance": 0.0378,
+				"price_low": 0.0731,
+				"price_high": 0.5819,
+				"rating": 0.0589,
+				"(not said)": 0.2483
+			},
+			"label": "price_high"
+		},
+		{
+			"kind": "boolean",
+			"source": "electronics/electronics-priciest.include_refurbished",
+			"text": "Show the most expensive cameras first",
+			"probability": 0.1546,
+			"label": false
+		},
+		{
+			"kind": "choice",
+			"source": "electronics/electronics-plain.sort",
+			"text": "Phones",
+			"options": [
+				"relevance",
+				"price_low",
+				"price_high",
+				"rating",
+				"(not said)"
+			],
+			"probabilities": {
+				"relevance": 0.2385,
+				"price_low": 0.1844,
+				"price_high": 0.1821,
+				"rating": 0.1217,
+				"(not said)": 0.2734
+			},
+			"label": "(not said)"
+		},
+		{
+			"kind": "boolean",
+			"source": "electronics/electronics-plain.include_refurbished",
+			"text": "Phones",
+			"probability": 0.1584,
+			"label": false
+		}
+	]
+}

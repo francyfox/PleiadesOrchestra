@@ -17,17 +17,25 @@ describe("intentFromToolCues", () => {
 	});
 
 	test("a tool that only reads or only edits settings produces no shop effect: other", () => {
+		for (const name of ["update_staples", "update_cart_item"]) {
+			expect(intentFromToolCues({ name })).toBe("other");
+		}
+	});
+
+	test("a tool that reads the current list is readState; one that cancels is a removal", () => {
 		for (const name of [
 			"get_cart",
 			"get_order_status",
 			"get_staples",
 			"list_orders",
 			"view_cart",
-			"update_staples",
-			"update_cart_item",
+			"list_bookings",
 		]) {
-			expect(intentFromToolCues({ name })).toBe("other");
+			expect(intentFromToolCues({ name })).toBe("readState");
 		}
+		expect(intentFromToolCues({ name: "cancel_booking" })).toBe(
+			"removeFromCart",
+		);
 	});
 
 	test("camelCase and kebab-case names are read like snake_case", () => {
@@ -47,7 +55,7 @@ describe("intentFromToolCues", () => {
 				name: "get_cart",
 				description: "Read the cart, then add what is missing",
 			}),
-		).toBe("other");
+		).toBe("readState");
 	});
 });
 

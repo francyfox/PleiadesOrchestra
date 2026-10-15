@@ -1,15 +1,42 @@
+import { decideInRounds } from "../choice-rounds";
 import type { DecisionAgent } from "../decision-types";
 import type { FunctionCallAgent } from "../function-call-agent";
+import { UntranslatableError } from "../untranslatable-error";
 import { validateArguments } from "../validate-arguments";
+import { cursorFact, fanOutFor } from "./fan-out";
 import {
 	EFFECTS_BY_INTENT,
-	INTENT_DESCRIPTIONS,
+	LAYA_INTENT_DESCRIPTIONS,
 	PRECONDITIONS_BY_INTENT,
 	TOOL_INTENTS,
 	type ToolIntent,
 } from "./intent-taxonomy";
+import {
+	countedItems,
+	findZeroField,
+	LIST_EMPTY,
+	LIST_ITEM,
+	LIST_READ,
+	LISTED_ITEMS,
+	looksEmpty,
+	NAME_END,
+	parseListedItems,
+	REMOVED_ITEMS,
+	removalArguments,
+	removesAtZero,
+	SCOPE_ALL,
+} from "./list-removal";
 import { PAGE_FACT, samePage } from "./page";
+import {
+	FOUND_ITEMS,
+	MISSING_ITEMS,
+	REQUESTED_ITEMS,
+	readItems,
+	writeItems,
+} from "./shopping-list";
+import { bindEnumValues, SPECIALIST_FACT } from "./specialist";
 import { intentFromToolCues, specialistPenalty } from "./tool-cues";
+import { recoveryFromToolError } from "./tool-error-recovery";
 import { buildArguments } from "./tool-source";
 import type {
 	ActionContext,
@@ -64,6 +91,9 @@ const PARAM_CHOICE_COST = 1;
 /** Longest tool answer kept in the world state (`webmcp:<tool>:text`). */
 export const MAX_TOOL_TEXT_CHARS = 4000;
 
+export const TOOL_INTENT_INSTRUCTIONS =
+	"Which online-shop action does this tool most likely perform?";
+
 /**
  * The tool's name decides when it can (`intentFromToolCues`); Laya sorts the
  * rest. Laya never starts a checkout or empties the cart on its own account:
@@ -74,20 +104,21 @@ export async function classifyToolIntent(
 	tool: WebMcpToolDescriptor,
 ): Promise<ToolIntent> {
 	const byName = intentFromToolCues(tool);
+	// An edit tool whose schema says that 0 removes («quantity … 0 removes it»)
+	// is how this site removes: the name («update_cart_item») cannot say it.
+	if ((byName === undefined || byName === "other") && removesAtZero(tool)) {
+		return "removeFromCart";
+	}
 	if (byName) return byName;
-	const answers = await decisionAgent.decide(
+	const { choice } = await decideInRounds(
+		decisionAgent,
 		{ name: tool.name, description: tool.description ?? "" },
 		{
-			intent: {
-				type: "choice",
-				instructions:
-					"Which online-shop action does this tool most likely perform?",
-				criteria: { ...INTENT_DESCRIPTIONS },
-			},
+			questionKey: "intent",
+			instructions: TOOL_INTENT_INSTRUCTIONS,
+			criteria: LAYA_INTENT_DESCRIPTIONS,
 		},
 	);
-	const answer = answers.intent;
-	const choice = answer?.type === "choice" ? answer.choice : undefined;
 	if (!choice || !(TOOL_INTENTS as readonly string[]).includes(choice)) {
 		return "other";
 	}
@@ -99,8 +130,6 @@ export async function classifyToolIntent(
 // --- reading what the tool answered ------------------------------------
 
 const OUT_OF_STOCK = /out of stock|unavailable|sold out/i;
-const LIST_ITEM = /^\s*(?:[-*•]|\d+[.)])\s+(.+)$/;
-const NAME_END = /\s+[—–-]\s+|\s+\(|\s+\$\d/;
 
 /**
  * Name of the first product in a search answer that is a bulleted/numbered
@@ -130,6 +159,41 @@ function factsFromAnswer(
 	text: string,
 	state: WorldState,
 ): { facts: Partial<WorldState>; failed: boolean } {
+	if (intent === "readState") {
+		// The items the site lists, for a request about every one of them.
+		const items = parseListedItems(text);
+		return {
+			facts: {
+				[LISTED_ITEMS]: writeItems(items),
+				[LIST_EMPTY]: items.length === 0 && looksEmpty(text) ? true : undefined,
+			},
+			failed: false,
+		};
+	}
+	if (intent === "removeFromCart" && state[SCOPE_ALL] === true) {
+		return {
+			facts: { [REMOVED_ITEMS]: state[LISTED_ITEMS] as string | undefined },
+			failed: false,
+		};
+	}
+	if (intent === "addToCart") {
+		// A tool that picked the items itself (a recipe, a bundle) had no search
+		// before it: what it says it added is what the reply should name.
+		if (state.product || readItems(state, FOUND_ITEMS).length > 0)
+			return { facts: {}, failed: false };
+		const added = countedItems(text);
+		const [first] = added;
+		return {
+			facts: first
+				? {
+						product: first.name,
+						quantity: first.quantity,
+						[FOUND_ITEMS]: writeItems(added),
+					}
+				: {},
+			failed: false,
+		};
+	}
 	if (intent !== "search") return { facts: {}, failed: false };
 	// `lastProduct` outlives the request (see `SESSION_FACTS`): «buy them» in
 	// the next message buys it. A failed search empties it, so «buy them» never
@@ -159,8 +223,20 @@ const INTERNAL_FACTS = new Set([
 	"messageIntent",
 	"catalogLang",
 	"lastProduct",
+	REQUESTED_ITEMS,
+	FOUND_ITEMS,
+	MISSING_ITEMS,
+	LISTED_ITEMS,
+	REMOVED_ITEMS,
+	SPECIALIST_FACT,
 ]);
-const INTERNAL_PREFIXES = ["webmcp:", "toolResult:", "param:", "page:"];
+const INTERNAL_PREFIXES = [
+	"webmcp:",
+	"toolResult:",
+	"param:",
+	"page:",
+	"fanOut:",
+];
 const MAX_FACT_CHARS = 200;
 /** Longest tool answer shown to the function-call model (its context is small). */
 const MAX_ANSWER_CHARS = 1500;
@@ -314,6 +390,15 @@ function requiredEnumParameters(tool: WebMcpToolDescriptor): EnumParameter[] {
 	return result;
 }
 
+/** A remover that has to be told WHAT to remove (it has required parameters). */
+function needsItem(tool: WebMcpToolDescriptor): boolean {
+	const schema = tool.inputSchema;
+	const required = schema?.required;
+	return required
+		? required.length > 0
+		: Object.keys(schema?.properties ?? {}).length > 0;
+}
+
 const parameterFlag = (tool: string, parameter: string) =>
 	`param:${tool}:${parameter}`;
 
@@ -341,16 +426,28 @@ function createParameterChoiceAction(
 			if (typeof current === "string" && parameter.values.includes(current)) {
 				return { [flag]: true };
 			}
-			const answers = await decisionAgent.decide(
-				{ message: String(ctx.state.userMessage ?? "") },
-				{
-					[question]: {
-						type: "choice",
-						instructions: `Which ${parameter.name} fits the user's request best? When the request doesn't say, pick the first.`,
-						criteria: parameter.descriptions,
+			// Laya reads English: the translation of the message when there is one.
+			let answers: Awaited<ReturnType<DecisionAgent["decide"]>> = {};
+			try {
+				answers = await decisionAgent.decide(
+					{
+						message: String(
+							ctx.state.userMessageEn ?? ctx.state.userMessage ?? "",
+						),
 					},
-				},
-			);
+					{
+						[question]: {
+							type: "choice",
+							instructions: `Which ${parameter.name} fits the user's request best? When the request doesn't say, pick the first.`,
+							criteria: parameter.descriptions,
+						},
+					},
+				);
+			} catch (error) {
+				// Nothing could be translated for Laya: the same as a request that
+				// doesn't say — the first option (what the instruction above asks).
+				if (!(error instanceof UntranslatableError)) throw error;
+			}
 			const answer = answers[question];
 			const picked = answer?.type === "choice" ? answer.choice : undefined;
 			const value =
@@ -386,14 +483,18 @@ export async function createWebMcpActions(
 
 	/** Tools classified as searches: their answers are what later calls copy names from. */
 	const searchTools = new Set<string>();
+	/** Every tool's intent, filled while classifying (read by the error recovery, long after). */
+	const intentOf = new Map<string, ToolIntent>();
 
 	const perTool = await Promise.all(
 		config.tools.map(async (tool): Promise<GoapAction[]> => {
 			const intent = await classifyToolIntent(config.decisionAgent, tool);
 			if (intent === "search") searchTools.add(tool.name);
+			intentOf.set(tool.name, intent);
 			const toolResultKey = `toolResult:${tool.name}`;
 			const resultKey = `webmcp:${tool.name}:result`;
 			const textKey = `webmcp:${tool.name}:text`;
+			const recoveryKey = `recovery:${tool.name}`;
 
 			const parameters = requiredEnumParameters(tool);
 			const choices = parameters.map((parameter) =>
@@ -413,9 +514,66 @@ export async function createWebMcpActions(
 				preconditions: { ...PRECONDITIONS_BY_INTENT[intent], ...needsChoices },
 				effects: { ...EFFECTS_BY_INTENT[intent], [toolResultKey]: true },
 				describe: describeTool(tool, intent),
+				// «Remove everything» through a tool that removes one named thing:
+				// the list is read first (`bindListScope`). A tool that needs no
+				// item (clear_cart) has no such wait.
+				...(intent === "removeFromCart" && needsItem(tool)
+					? { scopedPreconditions: { [LIST_READ]: true } }
+					: {}),
+				// A message that says one of this tool's options is a request for it (`specialist.ts`).
+				bindToRequest: bindEnumValues(tool, intent, (parameter) =>
+					parameterFlag(tool.name, parameter),
+				),
 				async execute(ctx: ActionContext): Promise<ActionResult> {
 					const resultFact = ctx.state[resultKey];
-					if (resultFact === "ok") {
+					// Every item of a list the site showed: nothing listed means
+					// nothing to remove (told truthfully from the answer, not from a
+					// model's guess); a list this could not read is a failed step.
+					if (intent === "removeFromCart" && ctx.state[SCOPE_ALL] === true) {
+						if (ctx.state[LIST_READ] === true) {
+							if (ctx.state[LIST_EMPTY] === true) {
+								return { ...EFFECTS_BY_INTENT[intent], [toolResultKey]: true };
+							}
+							if (readItems(ctx.state, LISTED_ITEMS).length === 0) {
+								return { [toolResultKey]: false };
+							}
+						}
+					}
+					// Several things asked for at once: this tool is called once per
+					// thing, a waiting run at a time (`fan-out.ts`).
+					const fan = fanOutFor(
+						tool,
+						intent,
+						ctx.state,
+						firstListedProductName,
+					);
+					let callState = ctx.state;
+					let carried: Partial<WorldState> | undefined;
+					if (fan && resultFact === "ok") {
+						const step = fan.advance(
+							ctx.state,
+							String(ctx.state[textKey] ?? ""),
+						);
+						if (step.done) {
+							return step.failed
+								? { [toolResultKey]: false, ...step.facts }
+								: {
+										...EFFECTS_BY_INTENT[intent],
+										[toolResultKey]: true,
+										...step.facts,
+									};
+						}
+						// The answer is consumed; the next call's checkpoint starts clean.
+						carried = {
+							...step.facts,
+							[resultKey]: undefined,
+							[textKey]: undefined,
+						};
+					}
+					if (fan && resultFact !== "error") {
+						callState = fan.callState(ctx.state, carried ?? {});
+					}
+					if (resultFact === "ok" && !fan) {
 						const text = String(ctx.state[textKey] ?? "");
 						const { facts, failed } = factsFromAnswer(intent, text, ctx.state);
 						// A search that found nothing did not do its job.
@@ -428,15 +586,67 @@ export async function createWebMcpActions(
 						};
 					}
 					if (resultFact === "error") {
-						return { [toolResultKey]: false };
+						// The site's own error may name the step that is missing
+						// ("Call choose_store first"): invalidate that tool's effects so
+						// the plan runs it and then repeats this call. Once per distinct
+						// error text — the same error again, after the recovery, is final.
+						const errorText = String(ctx.state[textKey] ?? "");
+						const recovery =
+							ctx.state[recoveryKey] === errorText
+								? undefined
+								: recoveryFromToolError(
+										errorText,
+										tool.name,
+										config.tools.flatMap((other) => {
+											const otherIntent = intentOf.get(other.name);
+											return otherIntent
+												? [{ name: other.name, intent: otherIntent }]
+												: [];
+										}),
+									);
+						if (!recovery) return { [toolResultKey]: false };
+						return {
+							...recovery.facts,
+							[recoveryKey]: errorText,
+							[toolResultKey]: false,
+							[resultKey]: undefined,
+						};
 					}
-					const args = await argumentsFor(
-						tool,
-						ctx.state,
-						config.functionCallAgent,
-						config.onError,
-						searchTools,
-					);
+					// A list of found things fills the tool's list parameter in code;
+					// no model is asked to copy names.
+					const fromList =
+						intent === "addToCart" &&
+						readItems(callState, FOUND_ITEMS).length > 1;
+					const schema = tool.inputSchema ?? { type: "object" as const };
+					// The items to remove come from the list the site showed, the
+					// field to fill from the tool's schema: no model, no names.
+					const listed =
+						intent === "removeFromCart" && callState[SCOPE_ALL] === true
+							? readItems(callState, LISTED_ITEMS)
+							: [];
+					const cursor = Number(callState[cursorFact(tool.name)] ?? 0);
+					const removal =
+						listed.length > 0
+							? removalArguments(
+									schema,
+									fan ? listed.slice(cursor, cursor + 1) : listed,
+								)
+							: undefined;
+					const zero =
+						intent === "removeFromCart" ? findZeroField(schema) : undefined;
+					const args = removal
+						? removal
+						: fromList
+							? buildArguments(callState, schema)
+							: await argumentsFor(
+									tool,
+									callState,
+									config.functionCallAgent,
+									config.onError,
+									searchTools,
+								);
+					// A removal by setting a number to 0 (any single product too).
+					if (zero && !removal) args[zero] = 0;
 					// A call the schema would reject is not worth a browser round trip.
 					const problems = validateArguments(
 						tool.inputSchema ?? { type: "object" },
@@ -474,7 +684,10 @@ export async function createWebMcpActions(
 						tool: tool.name,
 						arguments: args,
 					};
-					return { waiting: { kind: "webmcp_tool_call", payload } };
+					return {
+						waiting: { kind: "webmcp_tool_call", payload },
+						...(carried ? { facts: carried } : {}),
+					};
 				},
 			};
 			return [...choices, action];

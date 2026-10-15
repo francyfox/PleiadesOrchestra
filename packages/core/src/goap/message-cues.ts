@@ -48,11 +48,14 @@ const RULES = [
 			"не\\s+надо",
 			"не\\s+нужн",
 			"не\\s+хочу",
+			"очист",
+			"опустош",
 		),
 		stems("передума"),
 		words(
 			"remove",
 			"delete",
+			"(?:clear|empty)(?:\\s+out)?\\s+(?:my|the|this|your|all|everything)",
 			"take\\s+out",
 			"get\\s+rid\\s+of",
 			"don'?t\\s+want",
@@ -202,4 +205,36 @@ export function intentFromCues(message: string): MessageIntent | undefined {
 		if (regex.test(text)) return intent;
 	}
 	return undefined;
+}
+
+/**
+ * «All of them» (shop-domain layer, a short closed list): a removal that says
+ * it is for every item of a list — «удали всё из корзины», «remove everything»,
+ * «очисти корзину», «clear the cart». Without one of these a removal names a
+ * single product. Only meaningful next to a `removeFromCart` message.
+ */
+const ALL = new RegExp(
+	[
+		stems("очист", "опустош", "кажд", "целиком", "полностью"),
+		words(
+			"все",
+			"всё",
+			"всех",
+			"всю",
+			"all",
+			"everything",
+			"every",
+			"each",
+			"entire",
+			"whole",
+			"(?:clear|empty)(?:\\s+out)?\\s+(?:my|the|this|your)",
+		),
+	]
+		.join("|")
+		.replaceAll("ё", "е"),
+	"iu",
+);
+
+export function asksForAll(message: string): boolean {
+	return ALL.test(message.toLowerCase().replaceAll("ё", "е"));
 }

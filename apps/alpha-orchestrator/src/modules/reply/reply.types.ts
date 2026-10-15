@@ -22,6 +22,12 @@ export interface ReplyDeps {
 	catalogLanguage?: (channelId: string) => string | undefined;
 	/** What each site's classifier has been taught; asked before Laya. */
 	intentMemory?: IntentMemory;
+	/**
+	 * Laya's intent answers with (calibrated) confidence from here up are
+	 * stored as approved (`approvedBy: "auto"`) and taught to the site's memory;
+	 * below, or unset, they wait for a person.
+	 */
+	layaAutoApproveConfidence?: number;
 	/** Translates a message that is not English; absent when no translator is loaded. */
 	translate?: (text: string) => string | Promise<string>;
 	/** `delta-function-call`: fills in WebMCP tool arguments as JSON; unset = built from facts. */

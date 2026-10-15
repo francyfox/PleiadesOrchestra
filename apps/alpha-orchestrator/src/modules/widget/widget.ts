@@ -230,7 +230,9 @@ export function widgetRoutes(deps: WidgetDeps) {
 					const auth = guard.authorize(request, server);
 					if (auth instanceof Response) return auth;
 
-					const rejected = rejectIfNotAllowedToUse(auth, body.threadId);
+					const rejected =
+						guard.rejectIfOverToolResultLimit(auth) ??
+						rejectIfForeignThread(auth, body.threadId);
 					if (rejected) return rejected;
 
 					const stream = reply.resumeReply(

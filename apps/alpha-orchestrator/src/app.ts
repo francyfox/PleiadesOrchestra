@@ -55,6 +55,8 @@ export interface AppDeps {
 	adminCorsOrigins?: string;
 	agent: Agent;
 	decisionAgent: DecisionAgent;
+	/** See `ReplyDeps.layaAutoApproveConfidence`; unset = Laya's intents always wait for a person. */
+	layaAutoApproveConfidence?: number;
 	/** Extracts `{query, quantity}` from a shopping message; optional (tests leave it out). */
 	productRequestAgent?: Agent;
 	/** Russian → English for a message as it comes in (Opus-MT, ~30 ms); unset = the text stays as typed. */
@@ -122,6 +124,7 @@ export function createApp(deps: AppDeps) {
 		productRequestAgent: deps.productRequestAgent,
 		translate: deps.translate,
 		intentMemory,
+		layaAutoApproveConfidence: deps.layaAutoApproveConfidence,
 		catalogLanguage: (channelId) =>
 			deps.channels.byId(channelId)?.catalogLanguage,
 		functionCallAgent: deps.functionCallAgent,

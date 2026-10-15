@@ -18,6 +18,8 @@ const EXAMPLE = {
 	intent: "addToCart",
 	source: "laya",
 	status: "pending",
+	approvedBy: null,
+	confidence: 0.62,
 	planRunId: "r1",
 	seenCount: 2,
 	createdAt: 1,
@@ -42,6 +44,24 @@ describe("intents (proxied)", () => {
 		expect(await response.json()).toEqual({ items: [EXAMPLE], total: 1 });
 		expect(upstream[0]?.url).toContain("status=pending");
 		expect(upstream[0]?.url).toContain("channelId=c1");
+	});
+
+	test("an auto-approved example keeps its mark and Laya's confidence", async () => {
+		const cookie = await signedIn();
+		const auto = {
+			...EXAMPLE,
+			status: "approved",
+			approvedBy: "auto",
+			confidence: 0.91,
+		};
+		setRespond(
+			() =>
+				new Response(JSON.stringify({ items: [auto], total: 1 }), {
+					headers: { "content-type": "application/json" },
+				}),
+		);
+		const response = await call("/api/intents", { cookie });
+		expect(await response.json()).toEqual({ items: [auto], total: 1 });
 	});
 
 	test("a verdict is sent as the signed-in admin; an unknown intent or status is refused here", async () => {
