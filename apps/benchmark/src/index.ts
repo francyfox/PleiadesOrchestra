@@ -1,13 +1,14 @@
 #!/usr/bin/env bun
 import { createCLI } from "@bunli/core";
-import { menuText, pick } from "./menu.ts";
-import snake from "./snake/command.ts";
-import tools from "./tools/command.ts";
+import choices from "./modules/choices/choices.command.ts";
+import { menuText, pick } from "./modules/menu/menu.service.ts";
+import snake from "./modules/snake/snake.command.ts";
+import tools from "./modules/tools/tools.command.ts";
 
 // Every benchmark of the repo: `bun start` asks which one, `bun start tools …`
-// or `bun start snake …` runs it directly (`--help` after the name lists flags).
+// `bun start laya …` or `bun start snake …` runs it directly (`--help` after the name lists flags).
 
-const commands = [tools, snake];
+const commands = [tools, choices, snake];
 
 const cli = await createCLI({
 	name: "benchmark",
