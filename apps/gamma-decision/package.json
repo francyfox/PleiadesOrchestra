@@ -19,7 +19,9 @@
 		"zod": "catalog:"
 	},
 	"devDependencies": {
+		"@ai-sdk/typesafe-ai": "catalog:",
 		"@types/bun": "catalog:",
+		"ai": "catalog:",
 		"typescript": "catalog:"
 	}
 }
