@@ -86,6 +86,7 @@ Or from a bundler: `import "@shalotts/pleiades-widget"` (it registers the elemen
 | `examples` | built-in three | Up to three things to try, shown until the first message: a JSON array, e.g. `'["Find a jacket","Where is my order?"]'`. `'[]'` hides them. |
 
 Dictation: where the browser has the Web Speech API (`SpeechRecognition`, Chrome/Edge/Safari; Firefox keeps it behind a flag), a microphone button sits below the message box, next to Send: one press listens for one phrase in the widget's language and puts the text in the box (it is not sent by itself). Chrome and Safari send the audio to Google's / Apple's servers to recognize it. Where the API is missing the button stays but is dimmed, and hovering it says the browser doesn't support speech recognition; a refused microphone permission dims it the same way.
+| `test-api` | absent | Boolean; also exposes `window.pleiadesChat.send(text)` for browser automation. Off by default (no global on production pages). |
 | `open` | absent | Boolean; also a property: `el.open = true`, `el.toggle()`. |
 
 ### Customer context
@@ -165,3 +166,14 @@ bun run dev           # vite on :5199
 **WebMCP** (side panel's tool-mode switch, defaults to `webmcp`): `lib/webmcp.ts`'s `WebMcpProvider` is a narrow abstraction over the page's `document.modelContext` — an experimental, still-unstable browser API, so `chat.ts`'s round trip logic depends on this interface, not the real one, and is fully unit-tested against a fake provider instead. The tool catalog is registered once, via `POST /v1/widget/tools`, when the panel opens (and again if the tool mode changes while it's already open) — not resent with every message; a real catalog is several kB, and doing that per message both wasted a Laya classification call and risked a `413` on `WIDGET_MAX_TEXT_CHARS`. When the server's reply needs a tool it can't call itself (only the browser can), the NDJSON stream ends on a `tool_call` line instead of `done`; `chat.ts` calls `webmcp.callTool(...)` and resumes via `POST /v1/widget/tool-results` — see `docs/laya-autonomous-webmcp.md` for the full design and `docs/admin-api.md` for the wire contract. No WebMCP provider in the page (every real browser today) means the widget never calls `/v1/widget/tools` at all, and the server never asks for one.
 
 Why not Svelte: an empty Svelte 5 custom element is already ~11 kB brotli, Svelte 4 leaves ~6 kB for everything else. A message list doesn't need virtualization either — the server keeps only the last 10 messages per visitor.
+
+## Automation / testing
+
+`el.send(text)` sends a message exactly like a visitor typing and pressing Send (it opens the panel, runs the page's WebMCP tool calls) and resolves when the turn ends, never on a timer:
+
+```js
+const r = await document.querySelector("pleiades-chat").send("buy A, B, C");
+// { requestId?, reply, steps: [{ text, phase }], status: "done" | "failed" | "error", error? }
+```
+
+`failed` means the site could not do the task (`error` holds its advice); `error` covers busy, not connected and server faults. With the `test-api` attribute the same is available as `window.pleiadesChat.send(text)`.

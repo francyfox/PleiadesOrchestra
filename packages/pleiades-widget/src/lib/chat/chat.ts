@@ -30,6 +30,27 @@ export interface ChatMessage {
 	steps?: ChatStep[];
 }
 
+/**
+ * How a turn ended, as `send()` reports it: `done` — the run reached its goal;
+ * `failed` — the server worked but the site could not do the task (`task_failed`);
+ * `error` — anything else (busy, not connected, too long, a server fault, a stop).
+ */
+export interface SendResult {
+	/**
+	 * The plan run that opens admin `/flow/<id>`: the first run of the turn. The
+	 * stream carries it only as the `callId` of a `tool_call` line, so it is
+	 * missing for a turn that used no browser-side tool.
+	 */
+	requestId?: string;
+	/** The final assistant text of the turn. */
+	reply: string;
+	/** The flow lines shown for the turn. */
+	steps: { text: string; phase: ChatStep["phase"] }[];
+	status: "done" | "failed" | "error";
+	/** For `failed`: the site's own advice if it gave one; for `error`: what went wrong. */
+	error?: string;
+}
+
 export interface ChatState {
 	messages: ChatMessage[];
 	/** A visitor session and thread exist and the history is loaded. */
@@ -181,6 +202,8 @@ export function createChat({
 	/** The site's advice from the last `task_failed` line, until `send` reads it. */
 	let requestHint: string | undefined;
 	let counter = 0;
+	/** The first `tool_call` id of the turn in progress = its first plan run id. */
+	let turnRequestId: string | undefined;
 	let pingTimer: ReturnType<typeof setInterval> | undefined;
 	/** The in-flight `send()`, if any — `stop()` flags it before aborting so the abort is told apart from an idle-timeout one. */
 	let activeSend:
@@ -402,6 +425,7 @@ export function createChat({
 					return "failed";
 				} else if (event.type === "tool_call") {
 					toolCall = event;
+					turnRequestId ??= event.callId;
 				}
 			}
 			if (!toolCall) return "ok";
@@ -427,13 +451,22 @@ export function createChat({
 	async function send(
 		raw: string,
 		customerContext?: CustomerContext,
-	): Promise<void> {
+	): Promise<SendResult> {
 		const text = raw.trim();
-		if (!text || state.busy || state.connection === "offline") return;
+		const refused = (error: string): SendResult => ({
+			reply: "",
+			steps: [],
+			status: "error",
+			error,
+		});
+		if (!text) return refused("empty");
+		if (state.busy) return refused("busy");
+		if (state.connection === "offline") return refused("not connected");
 		if (text.length > maxChars) {
 			update({ error: "too_long" });
-			return;
+			return refused("too_long");
 		}
+		turnRequestId = undefined;
 		state.busy = true;
 		state.error = undefined;
 		state.errorHint = undefined;
@@ -443,7 +476,7 @@ export function createChat({
 		await init();
 		if (!session) {
 			update({ busy: false });
-			return;
+			return refused(state.error ?? "not connected");
 		}
 
 		const user: ChatMessage = { id: nextId(), role: "user", content: text };
@@ -513,6 +546,31 @@ export function createChat({
 			if (activeSend === active) activeSend = undefined;
 		}
 
+		const result: SendResult = {
+			...(turnRequestId ? { requestId: turnRequestId } : {}),
+			reply: assistant.content,
+			steps: (assistant.steps ?? []).map(({ text, phase }) => ({
+				text,
+				phase,
+			})),
+			status: cleanStop
+				? "error"
+				: outcome === undefined
+					? "done"
+					: outcome === "request"
+						? "failed"
+						: "error",
+			...(cleanStop
+				? { error: "stopped" }
+				: outcome === "request"
+					? requestHint
+						? { error: requestHint }
+						: {}
+					: outcome
+						? { error: outcome }
+						: {}),
+		};
+
 		// A reply that is only a flow (a task that failed, say) is still worth showing.
 		if (!hasOutput(assistant)) {
 			state.messages = state.messages.filter(
@@ -524,6 +582,7 @@ export function createChat({
 			error: cleanStop ? undefined : outcome,
 			errorHint: outcome === "request" && !cleanStop ? requestHint : undefined,
 		});
+		return result;
 	}
 
 	/** Aborts the reply in progress, if any — the partial text already streamed is kept, no error is shown. */

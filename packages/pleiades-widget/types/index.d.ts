@@ -58,6 +58,24 @@ export interface PleiadesChatAttributes {
 	examples?: string;
 	/** Boolean attribute: the panel starts open. */
 	open?: boolean;
+	/**
+	 * Boolean attribute for browser automation / tests: also exposes
+	 * `window.pleiadesChat.send(text)`. Off by default — no global on production pages.
+	 */
+	"test-api"?: boolean;
+}
+
+/** How a turn ended: `done` (goal reached), `failed` (the site could not do the task), `error` (busy, not connected, server fault…). */
+export interface PleiadesSendResult {
+	/** The run that opens admin `/flow/<id>`. Taken from the first `tool_call`; absent for a turn with no browser-side tool call. */
+	requestId?: string;
+	/** The final assistant text of the turn. */
+	reply: string;
+	/** The flow lines shown for the turn. */
+	steps: { text: string; phase: "running" | "done" | "failed" }[];
+	status: "done" | "failed" | "error";
+	/** `failed`: the site's own advice, if any. `error`: what went wrong. */
+	error?: string;
 }
 
 /** The element itself: the attributes above as properties, plus a small API. */
@@ -83,9 +101,19 @@ export interface PleiadesChatElement extends HTMLElement {
 	 * `undefined` while the element is not configured.
 	 */
 	getVisitorToken(): Promise<string | undefined>;
+	/**
+	 * Sends `text` exactly like a visitor typing and pressing Send (opens the
+	 * panel, same WebMCP tool calls) and resolves when the turn ends. Never
+	 * rejects: busy / not connected come back as `status: "error"`.
+	 */
+	send(text: string): Promise<PleiadesSendResult>;
 }
 
 declare global {
+	interface Window {
+		/** Only with the `test-api` attribute on `<pleiades-chat>`. */
+		pleiadesChat?: { send(text: string): Promise<PleiadesSendResult> };
+	}
 	interface HTMLElementTagNameMap {
 		"pleiades-chat": PleiadesChatElement;
 	}

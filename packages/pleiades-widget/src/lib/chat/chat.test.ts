@@ -959,3 +959,150 @@ describe("createChat follows toolchange", () => {
 		expect(registeredTools).toHaveLength(1);
 	});
 });
+
+describe("createChat send() result", () => {
+	const searchTool: WebMcpToolDescriptor = { name: "search_products" };
+
+	test("resolves after a tool-call round trip with the reply, flow lines and the first run id", async () => {
+		const webmcp: WebMcpProvider = {
+			listTools: async () => [searchTool],
+			callTool: async () => ({ result: { items: [] } }),
+		};
+		const { chat } = harness(
+			{
+				stream: () =>
+					replies(
+						{ type: "step", id: "plan", phase: "running", text: "Searching…" },
+						{
+							type: "tool_call",
+							tool: "search_products",
+							arguments: {},
+							callId: "run-1",
+						},
+					),
+				toolResult: () =>
+					replies(
+						{ type: "step", id: "plan", phase: "done", text: "Found 3" },
+						{ type: "delta", text: "Here you go" },
+						{ type: "done", elapsedMs: 1 },
+					),
+			},
+			1000,
+			{ webmcp },
+		);
+
+		const result = await chat.send("find a laptop");
+
+		expect(result).toEqual({
+			requestId: "run-1",
+			reply: "Here you go",
+			steps: [{ text: "Found 3", phase: "done" }],
+			status: "done",
+		});
+		expect(chat.state.busy).toBe(false);
+	});
+
+	test("the id is the first tool_call of the turn, not a later one", async () => {
+		let resumed = 0;
+		const webmcp: WebMcpProvider = {
+			listTools: async () => [searchTool],
+			callTool: async () => ({ result: {} }),
+		};
+		const { chat } = harness(
+			{
+				stream: () =>
+					replies({
+						type: "tool_call",
+						tool: "search_products",
+						arguments: {},
+						callId: "run-1",
+					}),
+				toolResult: () =>
+					++resumed === 1
+						? replies({
+								type: "tool_call",
+								tool: "search_products",
+								arguments: {},
+								callId: "run-2",
+							})
+						: replies({ type: "done", elapsedMs: 1 }),
+			},
+			1000,
+			{ webmcp },
+		);
+		expect((await chat.send("a")).requestId).toBe("run-1");
+	});
+
+	test("a turn without tool calls has no id", async () => {
+		const { chat } = harness();
+		const result = await chat.send("hi");
+		expect(result).toEqual({ reply: "ok", steps: [], status: "done" });
+	});
+
+	test("task_failed resolves as failed with the site's advice and the flow", async () => {
+		const { chat } = harness({
+			stream: () =>
+				replies(
+					{ type: "step", id: "s", phase: "failed", text: "Nothing found" },
+					{
+						type: "error",
+						code: "task_failed",
+						message: "no plan reached the goal",
+						hint: "Try a broader word.",
+					},
+				),
+		});
+		expect(await chat.send("buy x")).toEqual({
+			reply: "",
+			steps: [{ text: "Nothing found", phase: "failed" }],
+			status: "failed",
+			error: "Try a broader word.",
+		});
+	});
+
+	test("a server fault resolves as error", async () => {
+		const { chat } = harness({
+			stream: () => replies({ type: "error", message: "boom" }),
+		});
+		expect(await chat.send("hi")).toMatchObject({
+			status: "error",
+			error: "failed",
+		});
+	});
+
+	test("while a turn is running a second send resolves as error busy and leaves the first alone", async () => {
+		let release!: () => void;
+		const gate = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		const { chat } = harness({
+			stream: async function* () {
+				await gate;
+				yield { type: "delta", text: "late" } as StreamEvent;
+				yield { type: "done", elapsedMs: 1 } as StreamEvent;
+			},
+		});
+		const first = chat.send("one");
+		const second = await chat.send("two");
+		expect(second).toMatchObject({ status: "error", error: "busy" });
+		release();
+		expect(await first).toMatchObject({ status: "done", reply: "late" });
+	});
+
+	test("offline resolves as error not connected", async () => {
+		const { chat } = harness(
+			{
+				stream: () => {
+					throw new ApiError(0);
+				},
+			},
+			1000,
+			{ pingIntervalMs: 1_000_000 },
+		);
+		await chat.send("first");
+		expect(await chat.send("second")).toMatchObject({
+			status: "error",
+			error: "not connected",
+		});
+	});
+});

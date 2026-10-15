@@ -5,7 +5,7 @@ import { installWebMcpPolyfill } from "@repo/webmcp-polyfill";
 // asset — a reference for integrators, see the "Theming" section of the README.
 import css from "@/components/styles.css?inline";
 import { createWidgetApi } from "@/lib/api/api.ts";
-import { type Chat, createChat } from "@/lib/chat/chat.ts";
+import { type Chat, createChat, type SendResult } from "@/lib/chat/chat.ts";
 import {
 	describeConfigError,
 	normalizePosition,
@@ -52,6 +52,7 @@ const ATTRIBUTES = {
 	hotkey: "hotkey",
 	micHotkey: "mic-hotkey",
 	exposeToolsTo: "expose-tools-to",
+	testApi: "test-api",
 } as const;
 
 type Prop = keyof typeof ATTRIBUTES;
@@ -77,6 +78,7 @@ export class PleiadesChat extends HTMLElement {
 	declare hotkey: string;
 	declare micHotkey: string;
 	declare exposeToolsTo: string;
+	declare testApi: string;
 
 	#root = this.attachShadow({ mode: "open" });
 	#chat?: Chat;
@@ -84,6 +86,7 @@ export class PleiadesChat extends HTMLElement {
 	#ui?: Widget;
 	#off?: () => void;
 	#pending = false;
+	#customerContext?: ReturnType<typeof parseCustomerContext>;
 	#timer?: ReturnType<typeof setTimeout>;
 
 	attributeChangedCallback(name: string) {
@@ -124,6 +127,7 @@ export class PleiadesChat extends HTMLElement {
 	disconnectedCallback() {
 		document.removeEventListener("keydown", this.#onKeyDown);
 		this.#chat?.dispose();
+		this.#syncTestApi(false);
 		this.#off?.();
 		this.#ui?.destroy();
 		this.#off = this.#chat = this.#ui = undefined;
@@ -146,6 +150,25 @@ export class PleiadesChat extends HTMLElement {
 	/** For the site's server-side `identify` call: the visitor token of this browser. */
 	getVisitorToken(): Promise<string | undefined> {
 		return this.#chat?.getVisitorToken() ?? Promise.resolve(undefined);
+	}
+
+	/**
+	 * Sends `text` exactly as if typed and submitted (same bubble, same WebMCP
+	 * tool calls, same resume loop), opening the panel if needed, and resolves
+	 * when the turn ends — never rejects: busy / not connected come back as
+	 * `status: "error"`.
+	 */
+	send(text: string): Promise<SendResult> {
+		const chat = this.#chat;
+		if (!chat)
+			return Promise.resolve<SendResult>({
+				reply: "",
+				steps: [],
+				status: "error",
+				error: "not configured",
+			});
+		this.open = true;
+		return chat.send(text, this.#customerContext);
 	}
 
 	// Attributes arrive one by one while the parser/framework sets them: rebuild once, in a microtask.
@@ -208,6 +231,7 @@ export class PleiadesChat extends HTMLElement {
 		}
 		const chat = this.#chat;
 		const customerContext = parseCustomerContext(attr("customerContext"));
+		this.#customerContext = customerContext;
 		const lang = pickLang(
 			attr("lang") || document.documentElement.lang || navigator.language,
 		);
@@ -245,6 +269,14 @@ export class PleiadesChat extends HTMLElement {
 		// Alpine starts on the element once it is in the shadow root.
 		ui.start();
 		this.#syncOpen();
+		this.#syncTestApi(this.hasAttribute("test-api"));
+	}
+
+	/** `test-api` attribute: `window.pleiadesChat.send(text)` for browser automation. Off by default — no global on production pages. */
+	#syncTestApi(on: boolean) {
+		const w = window as { pleiadesChat?: { send: PleiadesChat["send"] } };
+		if (on) w.pleiadesChat = { send: (text) => this.send(text) };
+		else if (w.pleiadesChat) delete w.pleiadesChat;
 	}
 
 	#syncOpen() {
