@@ -18,6 +18,8 @@ This replaces the earlier `POST /v1/decide`; the route module is `modules/system
 
 Config (`modules/config/config.ts`): `LAYA_API_KEY` (required), `LAYA_MODEL_REPO` (default `receptron/laya-onnx`, weights downloaded on first use into `~/.cache/receptron-laya`), `LAYA_MODEL_SUBFOLDER`, `LAYA_THREADS` (onnxruntime intra-op threads, default 6; 0 = onnxruntime default), `PORT` (8080).
 
+Compose profile `gamma` (set `COMPOSE_PROFILES` in the root `.env`). To run Laya on another machine, drop `gamma` and set `LAYA_API_BASE_URL` (+ `LAYA_MODEL`); `alpha-orchestrator` depends on it with `required: false`. Compose feeds the sidecar from `apps/gamma-decision/.env` (`LAYA_THREADS`); `LAYA_MAX_CONCURRENCY` on the orchestrator should match what that machine can run in parallel.
+
 Commands: `bun --cwd apps/gamma-decision run dev|start|test`. Host port `127.0.0.1:8090` in compose.
 
 ## Why a separate glibc image

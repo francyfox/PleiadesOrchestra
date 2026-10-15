@@ -8,12 +8,24 @@ services:
     env_file:
       - apps/alpha-orchestrator/.env
     environment:
-      # Talk to the beta-text/gamma-decision services over the compose network —
-      # apps/alpha-orchestrator/.env(.example) defaults to localhost ports, for
-      # running alpha-orchestrator standalone outside compose.
-      LLM_BASE_URL: http://beta-text:8080/v1
+      # Each model runs locally in compose (default: the compose-network URL of its
+      # service) or on another machine: drop its profile from COMPOSE_PROFILES
+      # (beta / gamma / delta) and set its *_BASE_URL in the root .env. Empty
+      # model/temperature/concurrency/effort = the app default (the orchestrator
+      # treats empty strings as unset). apps/alpha-orchestrator/.env(.example)
+      # defaults to localhost ports, for running it standalone outside compose.
+      # Each *_MAX_CONCURRENCY should match the parallel slots of the server it
+      # talks to (beta: PARALLEL, delta: DELTA_PARALLEL, gamma: its own threads).
+      # LLM_TEMPERATURE is also read by beta-text's llama-server (--temp, via its
+      # env_file), so passing it here keeps client and server consistent.
+      LLM_BASE_URL: ${LLM_BASE_URL:-http://beta-text:8080/v1}
+      LLM_MODEL: ${LLM_MODEL:-}
+      LLM_TEMPERATURE: ${LLM_TEMPERATURE:-}
+      LLM_MAX_CONCURRENCY: ${LLM_MAX_CONCURRENCY:-}
       LLM_API_KEY: ${LLM_API_KEY:?set LLM_API_KEY in .env (same value as beta-text)}
-      LAYA_API_BASE_URL: http://gamma-decision:8080
+      LAYA_API_BASE_URL: ${LAYA_API_BASE_URL:-http://gamma-decision:8080}
+      LAYA_MODEL: ${LAYA_MODEL:-}
+      LAYA_MAX_CONCURRENCY: ${LAYA_MAX_CONCURRENCY:-}
       LAYA_API_KEY: ${LAYA_API_KEY:?set LAYA_API_KEY in .env (same value as gamma-decision)}
       # Shared secret with telegram-bot — sourced from the root .env so both
       # services always agree on it, instead of syncing it by hand across
@@ -30,8 +42,13 @@ services:
       # Safe only while port 3000 stays on 127.0.0.1 (else the header is forgeable).
       CLIENT_IP_SOURCE: cf-connecting-ip
       # Tool-call arguments are written by delta-function-call (no depends_on — the
-      # model downloads on first start). Same key as the delta service below.
-      FUNCTION_CALL_BASE_URL: http://delta-function-call:8080/v1
+      # model downloads on first start), local or external, see above. Same key as
+      # the delta service below. FUNCTION_CALL_REASONING_EFFORT=none for Ollama + Qwen3.
+      FUNCTION_CALL_BASE_URL: ${FUNCTION_CALL_BASE_URL:-http://delta-function-call:8080/v1}
+      FUNCTION_CALL_MODEL: ${FUNCTION_CALL_MODEL:-}
+      FUNCTION_CALL_TEMPERATURE: ${FUNCTION_CALL_TEMPERATURE:-}
+      FUNCTION_CALL_REASONING_EFFORT: ${FUNCTION_CALL_REASONING_EFFORT:-}
+      FUNCTION_CALL_MAX_CONCURRENCY: ${FUNCTION_CALL_MAX_CONCURRENCY:-}
       FUNCTION_CALL_API_KEY: ${FUNCTION_CALL_API_KEY:?set FUNCTION_CALL_API_KEY in .env (same value as delta-function-call)}
     # SQLite on the host, not in a Docker volume: visible, easy to back up,
     # survives `docker compose down -v`. ./data is gitignored.
@@ -43,16 +60,23 @@ services:
     # through the `tunnel` profile over the compose network, not this port.
     ports:
       - "127.0.0.1:3000:3000"
+    # required: false — with the beta/gamma profile off (model runs on another
+    # machine) the dependency is skipped instead of failing or force-starting it.
     depends_on:
       beta-text:
         condition: service_healthy
+        required: false
       gamma-decision:
         condition: service_healthy
+        required: false
 
   beta-text:
     build:
       context: .
       dockerfile: apps/beta-text/Dockerfile
+    # Local reply model; off when COMPOSE_PROFILES has no `beta`.
+    profiles:
+      - beta
     env_file:
       - .env
     # Loopback only. Published for standalone alpha-orchestrator on the host
@@ -75,7 +99,13 @@ services:
     build:
       context: .
       dockerfile: apps/delta-function-call/Dockerfile
+    # Local function-call model; off when COMPOSE_PROFILES has no `delta`.
+    profiles:
+      - delta
     environment:
+      # Server-side slots/threads; keep FUNCTION_CALL_MAX_CONCURRENCY equal to PARALLEL.
+      PARALLEL: ${DELTA_PARALLEL:-1}
+      THREADS: ${DELTA_THREADS:-2}
       # Required, like LLM_API_KEY: an empty key makes llama-server accept
       # unauthenticated requests.
       API_KEY: ${FUNCTION_CALL_API_KEY:?set FUNCTION_CALL_API_KEY in .env (same value as alpha-orchestrator)}
@@ -95,6 +125,9 @@ services:
     build:
       context: .
       dockerfile: apps/gamma-decision/Dockerfile
+    # Local Laya; off when COMPOSE_PROFILES has no `gamma`.
+    profiles:
+      - gamma
     env_file:
       - apps/gamma-decision/.env
     # Loopback only: for standalone alpha-orchestrator on the host (LAYA_API_BASE_URL).

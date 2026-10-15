@@ -10,7 +10,7 @@ Every app and package of the monorepo, one line each. Internals live in each one
 - `apps/alpha-orchestrator` — Elysia HTTP service: GOAP stream, access control, SQLite, widget and admin APIs; see `apps/alpha-orchestrator/CLAUDE.md`.
 - `apps/beta-text` — `llama-server` (Vulkan) for the reply model, compose service only; see `apps/beta-text/CLAUDE.md`.
 - `apps/gamma-decision` — Laya typed-decision sidecar; see `apps/gamma-decision/CLAUDE.md`.
-- `apps/delta-function-call` — Qwen3-1.7B `llama-server` that fills JSON arguments for WebMCP tool calls (same image/entrypoint as `beta-text`, port 8282); see `apps/alpha-orchestrator/CLAUDE.md` (Delta section).
+- `apps/delta-function-call` — Qwen3-1.7B `llama-server` that fills JSON arguments for WebMCP tool calls (same image/entrypoint as `beta-text`, port 8282, compose profile `delta`); see `apps/delta-function-call/CLAUDE.md`. Each model service (beta, gamma, delta) can instead run on another machine: drop its compose profile and set its `*_BASE_URL` in the root `.env`.
 - `apps/telegram-bot` — GramIO webhook adapter; see `apps/telegram-bot/CLAUDE.md`.
 - `apps/cli` (`albedo`) — thin orchestrator HTTP client; see `apps/cli/CLAUDE.md`.
 - `apps/admin-api` — Elysia BFF for the admin panel; see `apps/admin-api/CLAUDE.md`.
