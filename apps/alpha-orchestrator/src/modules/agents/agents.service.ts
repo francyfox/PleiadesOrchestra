@@ -37,6 +37,11 @@ export function healthUrl(baseUrl: string): string {
 	return `${baseUrl.replace(/\/+$/, "").replace(/\/v1$/, "")}/health`;
 }
 
+/** The OpenAI-style model list, answered by Ollama and other servers without `/health`. */
+export function modelsUrl(baseUrl: string): string {
+	return `${baseUrl.replace(/\/+$/, "")}/models`;
+}
+
 /** The base URL without userinfo, query or fragment; "" if it isn't a URL (never echoed raw). */
 export function publicEndpoint(baseUrl: string): string {
 	try {
@@ -47,9 +52,27 @@ export function publicEndpoint(baseUrl: string): string {
 	}
 }
 
+/** True when a GET to `url` answers 2xx within the timeout; never throws. */
+async function answers(
+	fetchFn: FetchLike,
+	url: string,
+	timeoutMs: number,
+): Promise<boolean> {
+	try {
+		const response = await fetchFn(url, {
+			signal: AbortSignal.timeout(timeoutMs),
+		});
+		return response.ok;
+	} catch {
+		return false;
+	}
+}
+
 /**
- * Checks every agent's `/health` in parallel. Never throws: an unreachable,
- * slow or non-2xx agent is just `down`. No credentials are sent — health
+ * Checks every agent's `/health` in parallel. The text and function-call
+ * agents may sit on an OpenAI-compatible server without `/health` (Ollama):
+ * when `/health` fails they get a second try on `{base}/models`. Never throws:
+ * an unreachable, slow or non-2xx agent is just `down`. No credentials are sent — health
  * endpoints are open, and a probe must not be a way to leak the API key.
  */
 export function probeAgents(
@@ -63,14 +86,9 @@ export function probeAgents(
 	return Promise.all(
 		specs.map(async (spec): Promise<AgentHealth> => {
 			const startedAt = now();
-			let up = false;
-			try {
-				const response = await fetchFn(healthUrl(spec.baseUrl), {
-					signal: AbortSignal.timeout(timeoutMs),
-				});
-				up = response.ok;
-			} catch {
-				up = false;
+			let up = await answers(fetchFn, healthUrl(spec.baseUrl), timeoutMs);
+			if (!up && spec.role !== "decision") {
+				up = await answers(fetchFn, modelsUrl(spec.baseUrl), timeoutMs);
 			}
 			const checkedAt = now();
 			return {

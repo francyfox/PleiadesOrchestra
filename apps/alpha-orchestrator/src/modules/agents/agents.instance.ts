@@ -25,6 +25,7 @@ const baseAgent = createAgent({
 	baseURL: config.LLM_BASE_URL,
 	apiKey: config.LLM_API_KEY,
 	model: config.LLM_MODEL,
+	temperature: config.LLM_TEMPERATURE,
 	// Replies are written in the channel's persona; this is the standard one.
 	systemPrompt: DEFAULT_REPLY_PROMPT,
 	maxHistoryMessages: AGENT_MAX_HISTORY_MESSAGES,
@@ -32,9 +33,9 @@ const baseAgent = createAgent({
 	usageRecorder,
 });
 
-// beta-text is one shared CPU-bound llama-server — bounds how many calls run
-// concurrently instead of letting every request hit it at once. Replies and
-// request extraction share the limit: it is the same server.
+// Bounds how many calls run concurrently instead of letting every request hit
+// the model server at once; LLM_MAX_CONCURRENCY should match its parallel
+// slots. Replies and request extraction share the limit: it is the same server.
 const llmLimiter = createConcurrencyLimiter(config.LLM_MAX_CONCURRENCY);
 export const agent = withConcurrencyLimit(baseAgent, llmLimiter);
 
@@ -49,6 +50,7 @@ export const productRequestAgent = withConcurrencyLimit(
 		baseURL: config.LLM_BASE_URL,
 		apiKey: config.LLM_API_KEY,
 		model: config.LLM_MODEL,
+		temperature: config.LLM_TEMPERATURE,
 		systemPrompt: productRequestPrompt(),
 		maxHistoryMessages: 0,
 		maxOutputTokens: 48,

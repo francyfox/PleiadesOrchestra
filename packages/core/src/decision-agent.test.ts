@@ -19,6 +19,30 @@ const urgentQuestion = {
 } as const;
 
 describe("createDecisionAgent", () => {
+	test("modelId reaches the request body, defaulting to laya", async () => {
+		const bodies: Record<string, unknown>[] = [];
+		const fetchImpl = fakeFetch((_input, init) => {
+			bodies.push(JSON.parse(String(init?.body)));
+			return new Response(
+				JSON.stringify({
+					model: "m",
+					answers: { urgent: { type: "noul", noul: 0.5 } },
+					usage: { input_tokens: 1, output_tokens: 1 },
+				}),
+				{ headers: { "content-type": "application/json" } },
+			);
+		});
+		for (const modelId of [undefined, "laya-big"]) {
+			await createDecisionAgent({
+				baseURL: BASE_URL,
+				apiKey: API_KEY,
+				modelId,
+				fetchImpl,
+			}).decide({ ticket: "x" }, urgentQuestion);
+		}
+		expect(bodies.map((body) => body.model)).toEqual(["laya", "laya-big"]);
+	});
+
 	test("by default decide posts to /v1/systemone with a bearer token and returns SDK-shaped answers", async () => {
 		let capturedUrl: string | undefined;
 		let capturedInit: RequestInit | undefined;

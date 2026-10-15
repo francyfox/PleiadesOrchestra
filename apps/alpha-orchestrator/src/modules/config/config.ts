@@ -20,19 +20,32 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			LLM_BASE_URL: z.url(),
 			LLM_API_KEY: z.string().min(1),
 			LLM_MODEL: z.string().default("vikhr-llama-3.2-1b"),
+			// Unset = nothing is sent and the server's own default applies.
+			LLM_TEMPERATURE: z.coerce.number().min(0).max(2).optional(),
 
 			// gamma-decision — typed-decision sidecar (see apps/gamma-decision), reached
 			// the same way as beta-text: its own base URL + shared bearer secret.
 			LAYA_API_BASE_URL: z.url(),
 			LAYA_API_KEY: z.string().min(1),
+			// Model name in the request body; an external Laya server may name it differently.
+			LAYA_MODEL: z.string().default("laya"),
 
 			// delta-function-call — writes the JSON arguments of WebMCP tool calls
 			// (see apps/delta-function-call). Optional: without a base URL the
 			// arguments are built mechanically from the facts of the run.
 			FUNCTION_CALL_BASE_URL: z.url().optional(),
 			FUNCTION_CALL_API_KEY: z.string().default(""),
-			// llama-server serves one model and ignores the name; it is for the usage ledger.
+			// llama-server serves one model and ignores the name (it is for the usage
+			// ledger); Ollama needs the real tag, e.g. `qwen3:1.7b-q8_0`.
 			FUNCTION_CALL_MODEL: z.string().default("qwen3-1.7b"),
+			// Arguments must be reproducible, hence 0.
+			FUNCTION_CALL_TEMPERATURE: z.coerce.number().min(0).max(2).default(0),
+			// Ollama + Qwen3 needs `none`: otherwise the model "thinks" ~1000 tokens
+			// and returns `{}`. Unset = nothing is sent (core always turns thinking
+			// off for llama-server via chat_template_kwargs).
+			FUNCTION_CALL_REASONING_EFFORT: z
+				.enum(["none", "low", "medium", "high"])
+				.optional(),
 
 			// Translating a message to English as it comes in (Opus-MT through
 			// CTranslate2, called over bun:ffi — see native/ and the Dockerfile).
@@ -156,14 +169,13 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			// the client IP is this many entries from the right.
 			TRUSTED_PROXY_HOPS: z.coerce.number().int().positive().default(1),
 
-			// beta-text/gamma-decision are single CPU-bound sidecars with a
-			// calibrated thread count (see the beta-text/gamma-decision Lessons
-			// learned) — more concurrent clients than this just queue at the
-			// model server instead of here, where it's at least bounded and
-			// visible. Conservative defaults; raise alongside LAYA_THREADS/the
-			// beta-text thread count if the hardware has room.
+			// Concurrent calls per model server. Match each server's parallel slots
+			// (local llama-server PARALLEL, Ollama OLLAMA_NUM_PARALLEL, the Laya
+			// server's threads): more clients than that just queue at the server
+			// instead of here, where the wait is at least bounded and visible.
+			// Conservative defaults for the local CPU-bound sidecars.
 			LLM_MAX_CONCURRENCY: z.coerce.number().int().positive().default(4),
-			// delta-function-call runs with PARALLEL=1 (see its Dockerfile).
+			// The local delta-function-call runs with PARALLEL=1 (see its Dockerfile).
 			FUNCTION_CALL_MAX_CONCURRENCY: z.coerce
 				.number()
 				.int()

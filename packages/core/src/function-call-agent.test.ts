@@ -55,6 +55,40 @@ function setup(respond: (body: Record<string, unknown>) => Response) {
 }
 
 describe("createFunctionCallAgent", () => {
+	test("temperature and providerOptions from the config reach the request body", async () => {
+		const bodies: Record<string, unknown>[] = [];
+		const agent = createFunctionCallAgent({
+			baseURL: "http://ollama/v1",
+			apiKey: "k",
+			model: "qwen3:1.7b-q8_0",
+			temperature: 0.2,
+			providerOptions: { reasoningEffort: "none" },
+			telemetry: { logLlmState() {}, logMessageEvent() {} } as never,
+			fetchImpl: (async (
+				_input: string | URL | Request,
+				init?: RequestInit,
+			) => {
+				bodies.push(JSON.parse(String(init?.body)));
+				return completion('{"query":"cheese"}');
+			}) as typeof fetch,
+		});
+		await agent.fillArguments({
+			tool: SEARCH,
+			facts: {},
+			request: "find cheese",
+		});
+		expect(bodies[0]?.temperature).toBe(0.2);
+		expect(bodies[0]?.reasoning_effort).toBe("none");
+		expect(bodies[0]?.model).toBe("qwen3:1.7b-q8_0");
+	});
+
+	test("temperature is 0 and no reasoning_effort without config", async () => {
+		const { agent, calls } = setup(() => completion('{"query":"cheese"}'));
+		await agent.fillArguments({ tool: SEARCH, facts: {}, request: "cheese" });
+		expect(calls[0]?.body.temperature).toBe(0);
+		expect("reasoning_effort" in (calls[0]?.body ?? {})).toBe(false);
+	});
+
 	test("asks for JSON constrained to the tool's schema and returns the object", async () => {
 		const { agent, calls } = setup(() => completion('{"query":"cheese"}'));
 		const args = await agent.fillArguments({
@@ -335,6 +369,18 @@ describe("fillOnce (wire level)", () => {
 		expect(body.reasoning_effort).toBe("none");
 		expect(body.top_k).toBe(5);
 		expect(body.chat_template_kwargs).toEqual({ enable_thinking: false });
+	});
+
+	test("temperature defaults to 0 and can be set", async () => {
+		const { model, bodies } = capture('{"query":"a"}');
+		await fillOnce({
+			model,
+			messages,
+			schema: SEARCH.inputSchema,
+			maxOutputTokens: 10,
+			temperature: 0.4,
+		});
+		expect(bodies[0]?.temperature).toBe(0.4);
 	});
 
 	test("text that is not valid JSON is returned, not thrown", async () => {

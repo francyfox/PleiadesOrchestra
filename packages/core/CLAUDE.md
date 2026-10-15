@@ -10,9 +10,9 @@ HTTP model calls go through the Vercel AI SDK: `ai`, `@ai-sdk/openai-compatible`
 
 ## Ports and adapters
 
-- `Agent` (`agent.ts`, `createAgent`) — `handleMessage` / `resetThread`; text model.
-- `DecisionAgent` (`decision-agent.ts`, `decision-types.ts`) — typed questions to `gamma-decision`.
-- `FunctionCallAgent` (`function-call-agent.ts`) — json_schema-constrained argument filling on `delta-function-call`; helpers `repair-arguments.ts`, `validate-arguments.ts`, `ground-arguments.ts`.
+- `Agent` (`agent.ts`, `createAgent`) — `handleMessage` / `resetThread`; text model; optional `temperature` (unset = nothing sent, server default).
+- `DecisionAgent` (`decision-agent.ts`, `decision-types.ts`) — typed questions to `gamma-decision` or any Laya server; `modelId` (default `laya`) is the request-body model.
+- `FunctionCallAgent` (`function-call-agent.ts`) — json_schema-constrained argument filling on `delta-function-call` or Ollama; config `temperature` (default 0) and `providerOptions` (e.g. `{ reasoningEffort: "none" }` -> wire `reasoning_effort`; a literal `reasoning_effort` key gets overwritten); helpers `repair-arguments.ts`, `validate-arguments.ts`, `ground-arguments.ts`.
 - `HistoryStore` (`history.ts`), `ConcurrencyLimiter` + `withConcurrencyLimit` / `withDecisionConcurrencyLimit` (`concurrency-limiter.ts`) wrap agents, `withTimeout` (`timeout.ts`), `recordCall` (`record-call.ts`, single reporting path: telemetry line + `llm_calls` row), `telemetry.ts` (`logMessageEvent`/`logLlmState`, OpenTelemetry GenAI field names, JSON to stdout).
 
 ## GOAP (`src/goap/`)

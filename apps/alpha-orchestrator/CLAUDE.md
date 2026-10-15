@@ -31,6 +31,8 @@ Modules: `access`, `active-runs`, `agents`, `auth`, `blocked-ips`, `channel-dire
 
 **Flow requests (admin `/flow`)** — a *request* = chain of `plan_runs` linked by `plan_runs.root_run_id`. `ActiveRuns` holds in-memory events of runs executing now. The BFF (`modules/requests`, `buildRequestView`) merges DB + registry into `RequestView` nodes: `prompt → translate → understand → steps → result` with per-step time, tool args, tool answers, effects, model calls.
 
+**External model servers**: env picks base URL, model, temperature and concurrency per model — `LLM_*` (beta), `FUNCTION_CALL_*` (delta; `FUNCTION_CALL_REASONING_EFFORT=none` for Ollama + Qwen3), `LAYA_*` (gamma; `LAYA_MODEL`). `probeAgents` tries `/health`, and for text/function-call falls back to `{base}/models` (Ollama has no `/health`). Examples in `.env.example`.
+
 **`recordCall`** (`packages/core/src/record-call.ts`) is the single reporting path: telemetry line + `llm_calls` row. Four `LlmCallKind` values: `text`, `decision`, `classify`, `translate`. Translate rows use `provider: ctranslate2`, no tokens.
 
 ## Delta function-call agent

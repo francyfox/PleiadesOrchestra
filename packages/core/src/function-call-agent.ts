@@ -56,6 +56,10 @@ export interface FunctionCallAgentConfig {
 	apiKey: string;
 	model: string;
 	maxOutputTokens?: number;
+	/** Default 0: arguments must be reproducible. */
+	temperature?: number;
+	/** Extra request-body fields for every call, e.g. `{ reasoningEffort: "none" }` for Ollama (camelCase: it lands on the wire as `reasoning_effort`). */
+	providerOptions?: Record<string, JSONValue>;
 	usageRecorder?: UsageRecorder;
 	telemetry?: ReturnType<typeof createTelemetry>;
 	fetchImpl?: typeof fetch;
@@ -140,6 +144,8 @@ export interface FillOnceInput {
 	/** JSON schema the decoding is constrained to. */
 	schema: Record<string, unknown>;
 	maxOutputTokens: number;
+	/** Default 0. */
+	temperature?: number;
 	/** Extra request-body fields (e.g. `{ reasoningEffort: "none" }` for Ollama), merged over the defaults. */
 	providerOptions?: Record<string, JSONValue>;
 	abortSignal?: AbortSignal;
@@ -152,7 +158,7 @@ export interface FillOnceResult {
 }
 
 /**
- * One schema-constrained chat completion at temperature 0. Always returns the
+ * One schema-constrained chat completion (temperature 0 unless given). Always returns the
  * model's raw text, also when the SDK can't parse it as an object; only
  * transport errors throw. No SDK retries: the caller owns the correction loop.
  */
@@ -167,7 +173,7 @@ export async function fillOnce(input: FillOnceInput): Promise<FillOnceResult> {
 				schema: jsonSchema(input.schema),
 				name: "arguments",
 			}),
-			temperature: 0,
+			temperature: input.temperature ?? 0,
 			maxOutputTokens: input.maxOutputTokens,
 			maxRetries: 0,
 			abortSignal: input.abortSignal,
@@ -222,7 +228,7 @@ const MAX_ATTEMPTS = 3;
  * formatter (`repairArguments`); what that can't fix goes back to the model with
  * the problems named, up to two corrections, then it throws. Then optional fields the request
  * doesn't back are removed (`groundArguments`). Transport errors (HTTP, network)
- * are not retried. Temperature 0 — arguments must be reproducible. Every
+ * are not retried. Temperature 0 by default — arguments must be reproducible. Every
  * attempt goes to telemetry and the usage ledger (as a `decision` call,
  * provider `delta`: a typed answer, no chat text).
  */
@@ -271,6 +277,8 @@ export function createFunctionCallAgent(
 						messages,
 						schema,
 						maxOutputTokens: config.maxOutputTokens ?? 256,
+						temperature: config.temperature,
+						providerOptions: config.providerOptions,
 					});
 				} catch (error) {
 					report(request, startedAt, {

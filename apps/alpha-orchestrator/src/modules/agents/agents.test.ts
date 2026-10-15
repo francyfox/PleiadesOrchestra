@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
 	type AgentSpec,
 	healthUrl,
+	modelsUrl,
 	probeAgents,
 	productRequestPrompt,
 	publicEndpoint,
@@ -42,6 +43,14 @@ describe("healthUrl", () => {
 		);
 		expect(healthUrl("http://gamma-decision:3001")).toBe(
 			"http://gamma-decision:3001/health",
+		);
+	});
+});
+
+describe("modelsUrl", () => {
+	test("the OpenAI-style model list under the configured base", () => {
+		expect(modelsUrl("http://ollama:11434/v1/")).toBe(
+			"http://ollama:11434/v1/models",
 		);
 	});
 });
@@ -96,6 +105,68 @@ describe("probeAgents", () => {
 		});
 		expect(result.map((agent) => agent.status)).toEqual(["down", "down"]);
 		expect(result.map((agent) => agent.latencyMs)).toEqual([null, null]);
+	});
+
+	test("Ollama has no /health: a text or function-call agent is up when /v1/models answers", async () => {
+		const ollama: AgentSpec = {
+			id: "delta-function-call",
+			name: "delta-function-call",
+			role: "function-call",
+			baseUrl: "http://192.168.100.39:11434/v1",
+			model: "qwen3:1.7b-q8_0",
+		};
+		const time = clock();
+		const urls: string[] = [];
+		const [agent] = await probeAgents([ollama, text], {
+			now: time.now,
+			fetch: async (input) => {
+				const url = String(input);
+				urls.push(url);
+				time.advance(10);
+				return url.endsWith("/health")
+					? new Response("not found", { status: 404 })
+					: new Response("{}");
+			},
+		});
+		expect(urls).toContain("http://192.168.100.39:11434/health");
+		expect(urls).toContain("http://192.168.100.39:11434/v1/models");
+		expect(agent?.status).toBe("up");
+	});
+
+	test("llama-server answering /health is not asked for /models", async () => {
+		const urls: string[] = [];
+		await probeAgents([text], {
+			fetch: async (input) => {
+				urls.push(String(input));
+				return new Response("ok");
+			},
+		});
+		expect(urls).toEqual(["http://beta-text:8080/health"]);
+	});
+
+	test("both endpoints down (404 and network error) → down, never throws", async () => {
+		const [agent] = await probeAgents([text], {
+			fetch: async (input) => {
+				if (String(input).endsWith("/health")) {
+					return new Response("no", { status: 404 });
+				}
+				throw new Error("ECONNREFUSED");
+			},
+		});
+		expect(agent?.status).toBe("down");
+		expect(agent?.latencyMs).toBeNull();
+	});
+
+	test("the decision agent is probed on /health only", async () => {
+		const urls: string[] = [];
+		const [agent] = await probeAgents([decision], {
+			fetch: async (input) => {
+				urls.push(String(input));
+				return new Response("no", { status: 404 });
+			},
+		});
+		expect(urls).toEqual(["http://gamma-decision:3001/health"]);
+		expect(agent?.status).toBe("down");
 	});
 
 	test("probes run in parallel and keep the input order", async () => {

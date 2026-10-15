@@ -15,6 +15,8 @@ export interface DecisionAgentConfig {
 	/** `gamma-decision` root, without `/v1` (the TypeSafe client appends it). */
 	baseURL: string;
 	apiKey: string;
+	/** Model name sent in the request body (`laya` by default); an external Laya server may serve it under another name. */
+	modelId?: string;
 	/** Any AI SDK decision model; defaults to `gamma-decision` over HTTP. */
 	model?: Experimental_DecisionModel;
 	fetchImpl?: typeof fetch;
@@ -41,7 +43,7 @@ export function createDecisionAgent(
 			baseURL: `${config.baseURL}/v1`,
 			apiKey: config.apiKey,
 			fetch: config.fetchImpl,
-		}).decisionModel("laya");
+		}).decisionModel(config.modelId ?? "laya");
 	const telemetry = config.telemetry ?? defaultTelemetry;
 
 	return {

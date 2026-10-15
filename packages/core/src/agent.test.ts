@@ -24,7 +24,11 @@ function fakeLlm(options: {
 	finalUsage?: Usage | null;
 	failFinal?: boolean;
 }) {
-	const requests: { stream: boolean; messages: unknown[] }[] = [];
+	const requests: {
+		stream: boolean;
+		messages: unknown[];
+		body: Record<string, unknown>;
+	}[] = [];
 	const server = Bun.serve({
 		port: 0,
 		async fetch(request) {
@@ -32,7 +36,11 @@ function fakeLlm(options: {
 				stream?: boolean;
 				messages: unknown[];
 			};
-			requests.push({ stream: Boolean(body.stream), messages: body.messages });
+			requests.push({
+				stream: Boolean(body.stream),
+				messages: body.messages,
+				body: body as Record<string, unknown>,
+			});
 
 			if (!body.stream) {
 				const usage =
@@ -113,7 +121,7 @@ afterEach(() => stop?.());
 
 function setup(
 	options: Parameters<typeof fakeLlm>[0] = {},
-	agentConfig: { maxHistoryMessages?: number } = {},
+	agentConfig: { maxHistoryMessages?: number; temperature?: number } = {},
 ) {
 	const llm = fakeLlm(options);
 	stop = () => llm.server.stop(true);
@@ -149,6 +157,27 @@ const message = (
 });
 
 describe("createAgent", () => {
+	test("temperature goes on the wire of every call when set", async () => {
+		const { llm, agent } = setup({}, { temperature: 0.3 });
+		await collect(
+			agent.handleMessageStream(message({ chunks: ["long part", "last"] })),
+		);
+		expect(llm.requests).toHaveLength(2);
+		for (const request of llm.requests) {
+			expect(request.body.temperature).toBe(0.3);
+		}
+	});
+
+	test("without a temperature nothing is sent: the server default applies", async () => {
+		const { llm, agent } = setup();
+		await collect(
+			agent.handleMessageStream(message({ chunks: ["long part", "last"] })),
+		);
+		for (const request of llm.requests) {
+			expect("temperature" in request.body).toBe(false);
+		}
+	});
+
 	test("records one generate call with context fields and token usage", async () => {
 		const { agent, usageRecorder } = setup();
 

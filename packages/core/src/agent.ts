@@ -29,6 +29,8 @@ export interface AgentConfig {
 	maxHistoryMessages?: number;
 	/** Hard cap on generated tokens — without one, a repetition loop can run until it exhausts the context. */
 	maxOutputTokens?: number;
+	/** Sampling temperature of every call. Unset = nothing is sent and the server's own default applies. */
+	temperature?: number;
 	/** Token cap for the lightweight per-chunk "ingest" pass used on all but the last chunk of a multi-chunk message. */
 	maxIngestTokens?: number;
 	telemetry?: ReturnType<typeof createTelemetry>;
@@ -148,6 +150,7 @@ export function createAgent(config: AgentConfig): Agent {
 						system: INGEST_SYSTEM_PROMPT,
 						messages: [{ role: "user", content: chunk }],
 						maxOutputTokens: maxIngestTokens,
+						temperature: config.temperature,
 					});
 
 					reportCall(callContext, "ingest", inFlight.startedAt, {
@@ -193,6 +196,7 @@ export function createAgent(config: AgentConfig): Agent {
 					system: message.systemPrompt ?? systemPrompt,
 					messages: [...past, userMessage],
 					maxOutputTokens,
+					temperature: config.temperature,
 				});
 
 				for await (const delta of result.textStream) {
