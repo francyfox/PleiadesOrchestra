@@ -1,0 +1,34 @@
+{
+	"name": "docs",
+	"version": "0.0.1",
+	"license": "AGPL-3.0-only",
+	"author": "Danil Golota",
+	"private": true,
+	"type": "module",
+	"devDependencies": {
+		"@shalotts/pleiades-widget": "workspace:*",
+		"@sveltejs/adapter-static": "catalog:",
+		"@sveltejs/kit": "catalog:",
+		"@sveltejs/vite-plugin-svelte": "catalog:",
+		"@sveltepress/theme-default": "catalog:",
+		"@sveltepress/vite": "catalog:",
+		"@tailwindcss/vite": "catalog:",
+		"@types/bun": "catalog:",
+		"svelte": "catalog:",
+		"svelte-check": "catalog:",
+		"tailwindcss": "catalog:",
+		"typescript": "catalog:",
+		"vite": "catalog:"
+	},
+	"scripts": {
+		"dev": "bun --bun vite dev --port 3004",
+		"build": "bun --bun vite build",
+		"preview": "bun --bun vite preview --port 3004",
+		"prepare": "svelte-kit sync || echo ''",
+		"check-types": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --threshold error",
+		"lint": "biome check ."
+	},
+	"imports": {
+		"#lib/*": "./src/lib/*"
+	}
+}

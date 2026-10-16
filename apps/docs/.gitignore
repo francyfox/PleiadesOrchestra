@@ -1,0 +1,11 @@
+node_modules
+/.svelte-kit
+/build
+.env
+.env.*
+!.env.example
+vite.config.ts.timestamp-*
+# Generated from content/<locale>/*.md by vite/content-routes.ts
+/src/routes/docs
+/src/routes/*/docs
+/.sveltepress

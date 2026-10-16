@@ -1,0 +1,193 @@
+/*
+ * Landing + playground styles. Tailwind WITHOUT preflight and tokens scoped to .po-site,
+ * so nothing here leaks into the SveltePress docs pages (Tailwind utilities are class-only).
+ */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme {
+	--font-mono:
+		"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas,
+		"Liberation Mono", monospace;
+}
+
+.po-site {
+	--bg: #f6f5f1;
+	--panel: #ecece5;
+	--fg: #24261f;
+	--dim: #4b4a3a;
+	--accent: #8a5a2b;
+	--accent-2: #2e6767;
+	--rule: #d8d6cc;
+	--danger: #a8432f;
+	/* Height of the SveltePress navbar above the page. */
+	--po-nav: 73px;
+
+	background: var(--bg);
+	color: var(--fg);
+	font-family: var(--font-mono);
+	font-size: 16px;
+	font-feature-settings: "liga" 0;
+	-webkit-font-smoothing: antialiased;
+	min-height: calc(100dvh - var(--po-nav));
+}
+
+@media (max-width: 949px) {
+	.po-site {
+		--po-nav: 56px;
+	}
+}
+
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]):not(.light) .po-site {
+		--bg: #16181c;
+		--panel: #1d2025;
+		--fg: #dddfd8;
+		--dim: #a6aca1;
+		--accent: #d3944b;
+		--accent-2: #6fbfbf;
+		--rule: #2b2f35;
+		--danger: #d97a63;
+	}
+}
+
+/* SveltePress sets the dark class on <html>. */
+:root.dark .po-site {
+	--bg: #16181c;
+	--panel: #1d2025;
+	--fg: #dddfd8;
+	--dim: #a6aca1;
+	--accent: #d3944b;
+	--accent-2: #6fbfbf;
+	--rule: #2b2f35;
+	--danger: #d97a63;
+}
+
+/* Minimal reset (what Tailwind's preflight would do), only inside .po-site. */
+.po-site *,
+.po-site *::before,
+.po-site *::after {
+	box-sizing: border-box;
+	border-color: var(--rule);
+}
+.po-site :is(h1, h2, h3, h4, p, ul, ol, li, figure, dl, dd) {
+	margin: 0;
+}
+.po-site :is(h1, h2, h3, h4) {
+	font-size: inherit;
+	font-weight: inherit;
+	color: inherit;
+}
+.po-site :is(ul, ol) {
+	padding: 0;
+	list-style: none;
+}
+.po-site li + li {
+	margin-top: 0;
+}
+.po-site p {
+	line-height: 1.5;
+}
+.po-site a {
+	color: inherit;
+	text-decoration: none;
+}
+.po-site table {
+	margin: 0;
+	border-collapse: collapse;
+}
+.po-site :is(th, td) {
+	padding: 0;
+}
+.po-site table th {
+	border: 0;
+}
+.po-site table tbody tr:hover {
+	background: none;
+}
+.po-site :is(button, select) {
+	font: inherit;
+	color: inherit;
+}
+.po-site :is(video, img, svg) {
+	display: block;
+}
+
+.po-site ::selection {
+	background: var(--accent);
+	color: var(--bg);
+}
+
+.po-site :focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+	border-radius: 2px;
+}
+
+/* Plain text links: the underline fills in like a progress bar. */
+.po-site .link-underline {
+	position: relative;
+	text-decoration: none;
+}
+.po-site .link-underline::after {
+	content: "";
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: -0.15em;
+	height: 1px;
+	background: currentColor;
+	transform: scaleX(0);
+	transform-origin: left;
+	transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.po-site .link-underline:hover::after,
+.po-site .link-underline:focus-visible::after,
+.po-site a:hover > .link-underline::after,
+.po-site a:focus-visible > .link-underline::after {
+	transform: scaleX(1);
+}
+
+/* Bordered chip controls. */
+.po-site .chip {
+	color: var(--dim);
+	border-color: var(--rule);
+	transition:
+		border-color 0.15s ease,
+		color 0.15s ease;
+}
+.po-site .chip:hover:not(:disabled),
+.po-site .chip:focus-visible:not(:disabled) {
+	color: var(--fg);
+	border-color: var(--accent);
+}
+.po-site .chip:disabled {
+	opacity: 0.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.po-site *,
+	.po-site *::before,
+	.po-site *::after {
+		animation-duration: 0.01ms !important;
+		transition-duration: 0.01ms !important;
+	}
+}
+
+/*
+ * The SveltePress layout renders the sidebar/TOC before the page sets its chrome flags
+ * (layout: false in frontmatter), so prerendered HTML of these pages can carry the previous
+ * page's sidebar. Hide it by CSS; client navigation fixes the stores itself.
+ */
+:root:has(.po-site) .theme-default-sidebar,
+:root:has(.po-site) .toc {
+	display: none;
+}
+main:has(> .po-site) {
+	padding-top: 73px;
+}
+@media (max-width: 949px) {
+	main:has(> .po-site) {
+		padding-top: 56px;
+	}
+}

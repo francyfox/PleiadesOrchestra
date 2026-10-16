@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <meta
+      name="description"
+      content="Basketful is a grocery delivery demo whose whole shopping journey is exposed to browser agents through WebMCP tools."
+    />
+    <link rel="icon" type="image/svg+xml" href="/playground-demos/basketful/favicon.svg" />
+    <script>
+      // Served as .../basketful/index.html; drop the file name so the router sees "/".
+      if (location.pathname.endsWith("/index.html")) history.replaceState(null, "", location.pathname.slice(0, -10) + location.search + location.hash);
+    </script>
+    <script src="../shared/webmcp-polyfill.js"></script>
+    <title>Basketful · Groceries, delivered</title>
+    <script type="module" crossorigin src="/playground-demos/basketful/assets/index-qp9XngeD.js"></script>
+    <link rel="stylesheet" crossorigin href="/playground-demos/basketful/assets/index-yieS0CBW.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
