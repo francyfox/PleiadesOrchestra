@@ -92,7 +92,7 @@ const app = createApp({
 				name: "gamma-decision",
 				role: "decision",
 				baseUrl: config.LAYA_API_BASE_URL,
-				model: null,
+				model: config.LAYA_MODEL,
 			},
 			...(config.FUNCTION_CALL_BASE_URL
 				? [
