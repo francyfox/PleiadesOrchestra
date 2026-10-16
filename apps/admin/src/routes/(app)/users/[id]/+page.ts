@@ -2,7 +2,7 @@ import { prefetch } from "#lib/query/prefetch.js";
 import { liveQueries } from "#lib/query/queries.js";
 import type { PageLoad } from "./$types";
 
-export const load: PageLoad = async ({ params }) => {
-	await prefetch(liveQueries.user({ id: params.id }));
+export const load: PageLoad = async ({ fetch, params }) => {
+	await prefetch(fetch, liveQueries.user({ id: params.id }));
 	return { id: params.id };
 };

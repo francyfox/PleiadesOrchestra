@@ -20,7 +20,7 @@ One `queryClient` per tab (`src/lib/query/client.ts`). Defaults: `staleTime` 30 
 
 `queries.ts`: `liveQueries.<topic>(params)` (key = `topicKey(topic, params)`, `staleTime: Infinity`) and `queries.*` (session, system, allChannels for selects). Query functions call Eden through `unwrap()` (`api/result.ts`), which throws `ApiError(status, body)`.
 
-`load` functions in `+page.ts` only parse the URL and `prefetch()` queries into the cache; the root `+layout.ts` fetches `GET /api/session` with `staleTime: 0` on every navigation.
+`load` functions in `+page.ts` only parse the URL and `prefetch(fetch, query)` queries into the cache — `fetch` is `load`'s own; `prefetch` runs the query function under `withFetch` (`api/client.ts`) so `api()` uses it (a `window.fetch` call inside `load` warns `window_fetch_in_load` in dev); the root `+layout.ts` fetches `GET /api/session` with `staleTime: 0` on every navigation.
 
 `useActionEnhance({ run })` (`#lib/components/use-action-enhance.ts`) — a `use:` action that runs a handler from `#lib/actions.ts` as a `createMutation`, toasts the result and calls `queryClient.invalidateQueries()`. `startsSession` in `actions.ts` empties the cache on sign-in/register.
 

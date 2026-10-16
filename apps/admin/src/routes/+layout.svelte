@@ -3,7 +3,6 @@
 	import { QueryClientProvider } from "@tanstack/svelte-query";
 	import { ModeWatcher } from "mode-watcher";
 	import { setupIntlayer, useIntlayer } from "svelte-intlayer";
-	import favicon from "#lib/assets/favicon.svg";
 	import { Toaster } from "#lib/components/ui/sonner/index.js";
 	import { queryClient } from "#lib/query/client.js";
 
@@ -24,7 +23,6 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
 	<title>{$common.appTitle.value}</title>
 </svelte:head>
 

@@ -3,8 +3,11 @@ import { prefetch } from "#lib/query/prefetch.js";
 import { liveQueries } from "#lib/query/queries.js";
 import type { PageLoad } from "./$types";
 
-export const load: PageLoad = async ({ url }) => {
+export const load: PageLoad = async ({ fetch, url }) => {
 	const page = parsePage(url.searchParams.get("page"));
-	await prefetch(liveQueries.admins({ page, pageSize: DEFAULT_PAGE_SIZE }));
+	await prefetch(
+		fetch,
+		liveQueries.admins({ page, pageSize: DEFAULT_PAGE_SIZE }),
+	);
 	return { page };
 };

@@ -5,7 +5,7 @@ import type { PageLoad } from "./$types";
 
 const STATUSES = ["pending", "approved", "rejected"] as const;
 
-export const load: PageLoad = async ({ url }) => {
+export const load: PageLoad = async ({ fetch, url }) => {
 	const page = parsePage(url.searchParams.get("page"));
 	// Waiting for a verdict is what the page is for; "any" is an explicit choice.
 	const asked = url.searchParams.get("status");
@@ -16,6 +16,7 @@ export const load: PageLoad = async ({ url }) => {
 	const channelId = url.searchParams.get("channel") || undefined;
 	await Promise.all([
 		prefetch(
+			fetch,
 			liveQueries.intents({
 				page,
 				pageSize: DEFAULT_PAGE_SIZE,
@@ -23,7 +24,7 @@ export const load: PageLoad = async ({ url }) => {
 				...(channelId && { channelId }),
 			}),
 		),
-		prefetch(queries.allChannels()),
+		prefetch(fetch, queries.allChannels()),
 	]);
 	return { page, status, channelId };
 };
