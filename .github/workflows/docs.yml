@@ -1,0 +1,54 @@
+name: docs
+# Builds apps/docs and publishes build/ as docs.tar.gz on a single rolling prerelease (tag `docs`,
+# re-pointed at each build). The VPS behind pleiades.shalotts.site polls that release and swaps
+# the site in; nothing pushes to the server.
+on:
+  push:
+    branches: [master]
+    paths:
+      - "apps/docs/**"
+      - "packages/pleiades-widget/**"
+      - "packages/webmcp-polyfill/**"
+      - "bun.lock"
+      - "package.json"
+      - ".github/workflows/docs.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: docs-release
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TURBO_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          # Same Bun as root package.json devEngines (the version that writes bun.lock).
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+      # turbo builds pleiades-widget first (docs depends on it as a workspace package).
+      - run: bunx turbo run build --filter=docs
+        env:
+          # Publishable widget key: public by design (sent from the browser), server checks origin.
+          PUBLIC_PLEIADES_AGENT_URL: https://albedo.shalotts.site
+          PUBLIC_PLEIADES_KEY: pk_4W7-m9YLaUvDFj0Y0gjVuFbgYtmHGKHy
+
+      - run: tar -czf docs.tar.gz -C apps/docs/build .
+
+      - name: Replace the rolling `docs` release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete docs --cleanup-tag --yes || true
+          gh release create docs docs.tar.gz \
+            --target "$GITHUB_SHA" --prerelease --latest=false \
+            --title "docs (${GITHUB_SHA::7})" \
+            --notes "Built from $GITHUB_SHA. Deployed to https://pleiades.shalotts.site by the VPS poller."
