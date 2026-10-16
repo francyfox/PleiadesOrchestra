@@ -102,6 +102,13 @@ export interface PleiadesChatElement extends HTMLElement {
 	 */
 	getVisitorToken(): Promise<string | undefined>;
 	/**
+	 * Starts a new conversation for the same visitor: a new thread and an empty
+	 * panel, so nothing the agent learned in the old one carries over. For a
+	 * page that swaps one app for another (several demos on one page). Never
+	 * rejects; a failure shows in the panel like a failed open.
+	 */
+	resetSession(): Promise<void>;
+	/**
 	 * Sends `text` exactly like a visitor typing and pressing Send (opens the
 	 * panel, same WebMCP tool calls) and resolves when the turn ends. Never
 	 * rejects: busy / not connected come back as `status: "error"`.

@@ -110,6 +110,15 @@ Parts: `launcher`, `panel`, `header`, `close`, `messages`, `error`, `mode`, `hin
 
 `el.getVisitorToken()` returns the visitor token of this browser, for the site's server-side `POST /v1/channels/:slug/identify` call (links an anonymous visitor to a logged-in account).
 
+`el.resetSession()` starts a new conversation for the same visitor: a new thread, an empty panel, and the page's current tools announced again. The agent keeps what it learned per conversation (which store is open, the last product found), so a page that swaps one app for another calls it on every switch:
+
+```js
+const chat = document.querySelector("pleiades-chat");
+demoPicker.addEventListener("change", () => chat.resetSession());
+```
+
+Apps that are really different sites are better served by separate channels (one `publishable-key` each): switching the key gives each its own conversation, kept across reloads.
+
 Invalid configuration renders nothing and logs one `[pleiades-widget] <code>` line to the console (`missing_agent_url`, `invalid_agent_url`, `insecure_agent_url`, `missing_key`, `secret_key`, `invalid_key`). An origin the channel doesn't allow shows up as a network error: the server answers `403` without CORS headers, so the browser hides the reason.
 
 ## Types

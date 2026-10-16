@@ -152,6 +152,14 @@ export class PleiadesChat extends HTMLElement {
 		return this.#chat?.getVisitorToken() ?? Promise.resolve(undefined);
 	}
 
+	/** A new conversation for the same visitor (a page that swaps one app for another). */
+	async resetSession(): Promise<void> {
+		// Attributes changed in the same tick (another key) remount on a
+		// microtask: reset the chat they make, not the one being replaced.
+		if (this.#pending) await Promise.resolve();
+		await this.#chat?.resetSession();
+	}
+
 	/**
 	 * Sends `text` exactly as if typed and submitted (same bubble, same WebMCP
 	 * tool calls, same resume loop), opening the panel if needed, and resolves
@@ -192,6 +200,7 @@ export class PleiadesChat extends HTMLElement {
 		this.#off?.();
 		this.#ui?.destroy();
 		if (!config.ok) {
+			this.#chat?.dispose();
 			this.#chat = this.#ui = this.#off = undefined;
 			this.#scope = "";
 			this.#root.replaceChildren();
@@ -215,6 +224,9 @@ export class PleiadesChat extends HTMLElement {
 		const webmcp = createDocumentWebMcpProvider();
 		const scope = `${config.config.agentUrl} ${config.config.publishableKey}`;
 		if (!this.#chat || scope !== this.#scope) {
+			// Switched to another channel: the old chat would keep announcing
+			// the page's tools to the channel it was made for.
+			this.#chat?.dispose();
 			this.#chat = createChat({
 				api: createWidgetApi(config.config),
 				store: createSessionStore(config.config),

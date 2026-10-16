@@ -581,6 +581,100 @@ describe("createChat.getVisitorToken", () => {
 	});
 });
 
+describe("createChat empty catalog", () => {
+	const tools: WebMcpToolDescriptor[] = [];
+	const page: WebMcpProvider = {
+		listTools: async () => tools,
+		callTool: async () => ({ result: "" }),
+	};
+
+	test("a page with no tools registers nothing (the polyfill is always there)", async () => {
+		const { chat, log } = harness({}, 1000, { webmcp: page });
+		await chat.init();
+
+		expect(log.some((line) => line.startsWith("webmcp-register"))).toBe(false);
+	});
+
+	test("tools that were announced are cleared when they are gone", async () => {
+		tools.push({ name: "set_pizza_size" });
+		const { chat, log } = harness({}, 1000, { webmcp: page });
+		await chat.init();
+		tools.length = 0;
+		chat.setToolMode("mcp");
+		await new Promise((resolve) => setTimeout(resolve, 0));
+
+		expect(log.filter((line) => line.startsWith("webmcp-register"))).toEqual([
+			"webmcp-register:t1@tok1:set_pizza_size",
+			"webmcp-register:t1@tok1:",
+		]);
+	});
+});
+
+describe("createChat.resetSession", () => {
+	const site: WebMcpProvider = {
+		listTools: async () => [{ name: "set_pizza_size" }],
+		callTool: async () => ({ result: "" }),
+	};
+
+	test("starts a new thread for the same visitor, with an empty panel", async () => {
+		const { chat, store } = harness();
+		await chat.init();
+		await chat.send("hi");
+		expect(chat.state.messages).not.toHaveLength(0);
+
+		await chat.resetSession();
+
+		expect(store.load(1000)).toMatchObject({
+			visitorToken: "tok1",
+			threadId: "t2",
+		});
+		expect(chat.state.messages).toEqual([]);
+	});
+
+	test("the next message goes to the new thread", async () => {
+		const { chat, log } = harness();
+		await chat.init();
+		await chat.resetSession();
+		await chat.send("hello");
+
+		expect(log).toContain("send:t2@tok1:hello");
+	});
+
+	test("the page's tools are announced for the new thread", async () => {
+		const { chat, log } = harness({}, 1000, { webmcp: site });
+		await chat.init();
+		await chat.resetSession();
+
+		expect(log).toContain("webmcp-register:t2@tok1:set_pizza_size");
+	});
+
+	test("before the panel ever opened it just opens a session", async () => {
+		const { chat, store } = harness();
+		await chat.resetSession();
+
+		expect(store.load(1000)).toMatchObject({ visitorToken: "tok1" });
+		expect(chat.state.ready).toBe(true);
+	});
+
+	test("a refused visitor token begins as a new visitor", async () => {
+		const { chat, api, store } = harness();
+		await chat.init();
+		const createThread = api.createThread;
+		let refused = false;
+		api.createThread = async (token) => {
+			if (!refused) {
+				refused = true;
+				throw new ApiError(401);
+			}
+			return createThread(token);
+		};
+
+		await chat.resetSession();
+
+		expect(store.load(1000).visitorToken).toBe("tok2");
+	});
+});
+
 describe("createChat tool mode", () => {
 	test("defaults to webmcp when nothing was chosen before", () => {
 		const { chat } = harness();
@@ -838,23 +932,23 @@ describe("createChat WebMCP round trip", () => {
 		await flush();
 		expect(registeredTools).toEqual([]);
 
-		// First send() triggers init()/open(), which registers once — empty,
-		// since toolMode is "mcp" — then this send's own message goes out
-		// with no further tool-catalog call.
+		// First send() triggers init()/open(): toolMode is "mcp", so the
+		// catalog is empty and nothing was announced on this thread yet —
+		// no call at all; this send's own message goes out on its own.
 		await chat.send("hi");
-		expect(registeredTools).toEqual([[]]);
+		expect(registeredTools).toEqual([]);
 
 		// Switching mode while already open registers again, directly.
 		chat.setToolMode("webmcp");
 		await flush();
-		expect(registeredTools).toEqual([[], [searchTool]]);
+		expect(registeredTools).toEqual([[searchTool]]);
 
-		// A second message doesn't register a third time.
+		// A second message doesn't register again.
 		await chat.send("hi again");
-		expect(registeredTools).toEqual([[], [searchTool]]);
+		expect(registeredTools).toEqual([[searchTool]]);
 		expect(
 			log.filter((entry) => entry.startsWith("webmcp-register")),
-		).toHaveLength(2);
+		).toHaveLength(1);
 	});
 });
 

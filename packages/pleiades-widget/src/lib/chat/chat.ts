@@ -342,6 +342,17 @@ export function createChat({
 		// A `toolchange` that left the catalog as it was costs no request.
 		const key = `${session.threadId}:${JSON.stringify(tools)}`;
 		if (onlyIfChanged && key === lastAnnounced) return;
+		// The polyfill gives every page a `document.modelContext`: an empty list
+		// is sent only to clear tools this thread was told about.
+		// shortcut: a thread restored after a reload is not cleared by a page with
+		// no tools, upgrade when the server keeps catalogs across visits.
+		const toldThisThread =
+			lastAnnounced?.startsWith(`${session.threadId}:`) &&
+			lastAnnounced !== `${session.threadId}:[]`;
+		if (tools.length === 0 && !toldThisThread) {
+			lastAnnounced = key;
+			return;
+		}
 		lastAnnounced = key;
 		await api
 			.registerWebMcpTools(session.visitorToken, session.threadId, tools)
@@ -592,6 +603,39 @@ export function createChat({
 		activeSend.controller.abort();
 	}
 
+	/**
+	 * A new conversation for the same visitor: a new thread, an empty panel.
+	 * The server keeps a conversation's facts per thread (which store, the last
+	 * product), so a page that swaps one app for another (demos on one page)
+	 * calls this instead of carrying them over. The visitor stays: a new one
+	 * per switch would run into the server's new-visitor limit. Never rejects —
+	 * a failure shows up in `state.error`, like a failed open.
+	 */
+	async function resetSession(): Promise<void> {
+		stop();
+		const hadSession = session !== undefined;
+		await init();
+		// Nothing was said yet: the session just opened is already a fresh one.
+		if (!session || !hadSession) return;
+		try {
+			const thread = await api.createThread(session.visitorToken);
+			store.save({ threadId: thread.threadId });
+			session = { ...session, threadId: thread.threadId };
+		} catch (cause) {
+			try {
+				if (!isUnauthorized(cause)) throw cause;
+				await renew();
+			} catch (failure) {
+				const code = errorCodeOf(failure);
+				if (code === "network") goOffline();
+				update({ error: code });
+				return;
+			}
+		}
+		update({ messages: [], error: undefined, errorHint: undefined });
+		await syncWebMcpTools();
+	}
+
 	function setToolMode(mode: ToolMode): void {
 		store.saveToolMode(mode);
 		update({ toolMode: mode });
@@ -614,6 +658,7 @@ export function createChat({
 		init,
 		send,
 		stop,
+		resetSession,
 		setToolMode,
 		/** Stops following the page's tool changes (the element left the document). */
 		dispose(): void {

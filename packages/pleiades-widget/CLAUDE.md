@@ -4,7 +4,7 @@ See root `CLAUDE.md` for monorepo commands, workflow, code style and repo-wide l
 
 ## Overview
 
-Framework-agnostic `<pleiades-chat>` web component: launcher in a corner (default bottom-left) + side panel. **Size budget: 40 kB brotli** (raised from 10 kB when moving to Alpine.js), checked by `size-limit` inside `bun run build` — 29.2 kB now after dropping anime.js (motion is the Web Animations API, `el.animate`, in `components/motion.ts`).
+Framework-agnostic `<pleiades-chat>` web component: launcher in a corner (default bottom-left) + side panel. **Size budget: 40 kB brotli** (raised from 10 kB when moving to Alpine.js), checked by `size-limit` inside `bun run build` — 35.6 kB now (anime.js dropped; motion is the Web Animations API, `el.animate`, in `components/motion.ts`).
 
 Alpine.js **CSP build** (`@alpinejs/csp`) is bundled into the IIFE; PostCSS-compiled nested CSS (`postcss.config.js`). The CSP build is deliberate: third-party sites often forbid `unsafe-eval` which standard Alpine needs. Templates may only use property and method names (no inline logic) — every decision lives in a plain model object, unit-tested without a DOM.
 
@@ -55,6 +55,7 @@ const r = await document.querySelector("pleiades-chat").send("buy A, B, C");
 - `requestId` is the `callId` of the turn's first `tool_call` line, which the server sets to the plan run id (opens admin `/flow/<id>`). The stream carries no run id otherwise, so a turn with no browser-side tool call has no `requestId`.
 - `window.pleiadesChat.send(text)` exists only if the element has the `test-api` attribute (off by default, no global on production pages). The element method is always there.
 - Types: `PleiadesSendResult` in `types/index.d.ts`; logic is `SendResult` in `lib/chat/chat.ts`.
+- `el.resetSession()` — new thread for the same visitor, empty panel, tools re-announced (`chat.resetSession`). The orchestrator keeps session facts (`store`, `lastProduct`) per thread, so a page switching demos must call it; otherwise one demo's facts leak into the next. Keeps the visitor (a new one per switch hits the new-visitor limit). Never rejects.
 
 ## CSS gotchas
 
