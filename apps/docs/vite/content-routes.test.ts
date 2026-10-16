@@ -10,6 +10,7 @@ import {
 	type PageSet,
 	parseFrontmatter,
 	rewriteLinks,
+	sidebarItems,
 } from "./content-routes.ts";
 
 const root = join(import.meta.dirname, "..");
@@ -119,19 +120,14 @@ describe("buildPage", () => {
 			],
 		]);
 
-	test("review: pending turns the notice on, otherwise it is off", () => {
+	test("review: pending puts the notice at the top, other pages get none", () => {
 		const pending = "---\ntitle: T\nreview: pending\n---\n\n# T\n";
 		expect(parseFrontmatter(pending).review).toBe("pending");
-		expect(buildPage("kk", "a.md", set(pending))).toContain("pending={true}");
+		expect(buildPage("kk", "a.md", set(pending))).toContain(
+			'<ReviewNotice locale="kk" />',
+		);
 		const ok = "---\ntitle: T\n---\n\n# T\n";
-		expect(buildPage("en", "a.md", set(ok))).toContain("pending={false}");
-	});
-
-	test("the language switch component gets the docs path", () => {
-		const md = "---\ntitle: T\n---\n\n# T\n";
-		const out = buildPage("kk", "b/index.md", set(md));
-		expect(out).toContain('path="/b/"');
-		expect(out).toContain('locale="kk"');
+		expect(buildPage("en", "a.md", set(ok))).not.toContain("ReviewNotice");
 	});
 });
 
@@ -184,5 +180,21 @@ describe("translations mirror English", () => {
 		expect(listMarkdown(join(root, "content", "en"))).toContain(
 			"api/server.md",
 		);
+	});
+});
+
+describe("sidebar", () => {
+	const pages: PageSet = new Map([
+		["index.md", "---\ntitle: Обзор\n---\n"],
+		["widget/index.md", "---\ntitle: Виджет\n---\n"],
+		["api/server.md", "---\ntitle: Серверный API\n---\n"],
+	]);
+
+	test("one item per page, titled in the page's language, linked by logical path", () => {
+		expect(sidebarItems(pages)).toEqual([
+			{ title: "Обзор", to: "/docs/" },
+			{ title: "Серверный API", to: "/docs/api/server/" },
+			{ title: "Виджет", to: "/docs/widget/" },
+		]);
 	});
 });

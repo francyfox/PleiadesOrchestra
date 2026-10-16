@@ -1,0 +1,8 @@
+/* The theme keeps the menu links and the language select in the header only from 1440px,
+   moving them into the menu below that; the site keeps them in the header on desktop. */
+@media (min-width: 950px) {
+	.desktop-nav-items,
+	.desktop-locale-selector {
+		display: flex !important;
+	}
+}

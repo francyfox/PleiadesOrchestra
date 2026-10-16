@@ -1,9 +1,10 @@
 <script lang="ts">
 	import Pane from "#lib/components/Pane.svelte";
+	import { localeFromPath } from "#lib/i18n.js";
 	import { landingContent } from "#lib/landing/content.js";
 	import { page } from "$app/state";
 
-	let t = $derived(landingContent(page.params.locale).benefits);
+	let t = $derived(landingContent(localeFromPath(page.url.pathname)).benefits);
 </script>
 
 <Pane title="guest@pleiades — benefits" header={false} id="benefits" class="lg:col-span-2">

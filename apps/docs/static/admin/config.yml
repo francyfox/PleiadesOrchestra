@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://unpkg.com/@sveltia/cms/schema/sveltia-cms.json
+
+# Docs pages of apps/docs, per language in apps/docs/content/<locale>/ (see apps/docs/CLAUDE.md).
+backend:
+  name: github
+  repo: francyfox/PleiadesOrchestra
+  branch: master
+
+# Sign in with a GitHub personal access token ("Sign In with Token"), as on
+# shalotts.site/admin: no OAuth app or proxy to host.
+
+media_folder: /apps/docs/static/media
+public_folder: /media
+
+i18n:
+  structure: multiple_folders
+  locales: [en, ru, kk]
+  default_locale: en
+
+# A new page is a new file here and in content/<locale>/ for every language
+# (the build test wants the same pages and headings in each).
+collections:
+  - name: docs
+    label: Docs
+    i18n: true
+    files:
+      - name: api-server
+        label: Server API
+        file: apps/docs/content/{{locale}}/api/server.md
+        i18n: true
+        # Fields of every page (the others reuse them): frontmatter `title`,
+        # `review: pending` (machine translation under review, shows a notice), the body.
+        fields: &page
+          - { label: Title, name: title, widget: string, i18n: true }
+          - { label: Review, name: review, widget: select, options: [pending], required: false, i18n: true, hint: "pending = translation under review" }
+          - { label: Body, name: body, widget: markdown, i18n: true }
+      - name: api-widget
+        label: Widget API
+        file: apps/docs/content/{{locale}}/api/widget.md
+        i18n: true
+        fields: *page
+      - name: index
+        label: PleiadesOrchestra
+        file: apps/docs/content/{{locale}}/index.md
+        i18n: true
+        fields: *page
+      - name: intents
+        label: Intents
+        file: apps/docs/content/{{locale}}/intents.md
+        i18n: true
+        fields: *page
+      - name: tools
+        label: Tools
+        file: apps/docs/content/{{locale}}/tools/index.md
+        i18n: true
+        fields: *page
+      - name: widget
+        label: Widget
+        file: apps/docs/content/{{locale}}/widget/index.md
+        i18n: true
+        fields: *page

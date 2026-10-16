@@ -1,16 +1,18 @@
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { localizeHref } from "#lib/i18n.js";
+	import { localeFromPath, localizeHref } from "#lib/i18n.js";
 	import { landingContent } from "#lib/landing/content.js";
 	import { PLEIADES_REPO_URL } from "#lib/site.js";
 	import { page } from "$app/state";
 
-	let t = $derived(landingContent(page.params.locale).video);
+	let t = $derived(landingContent(localeFromPath(page.url.pathname)).video);
 	let playgroundHref = $derived(
-		localizeHref("/playground", page.params.locale),
+		localizeHref("/playground", localeFromPath(page.url.pathname)),
 	);
 
-	let docsHref = $derived(localizeHref("/docs", page.params.locale));
+	let docsHref = $derived(
+		localizeHref("/docs", localeFromPath(page.url.pathname)),
+	);
 
 	let video: HTMLVideoElement;
 	let playing = $state(true);

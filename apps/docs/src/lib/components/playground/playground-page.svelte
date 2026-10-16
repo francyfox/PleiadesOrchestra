@@ -1,4 +1,5 @@
 <script lang="ts">
+	import "#lib/pleiades-site.css";
 	import { onMount } from "svelte";
 	import PlaygroundDemoPanel from "#lib/components/playground/PlaygroundDemoPanel.svelte";
 	import PlaygroundGraphPanel from "#lib/components/playground/PlaygroundGraphPanel.svelte";
@@ -109,6 +110,7 @@
 	});
 </script>
 
+<div class="po-site">
 <main id="main-content" class="playground">
 	<PlaygroundDemoPanel
 		{demos}
@@ -129,6 +131,7 @@
 		onReset={resetGraph}
 	/>
 </main>
+</div>
 
 <style>
 	.playground {

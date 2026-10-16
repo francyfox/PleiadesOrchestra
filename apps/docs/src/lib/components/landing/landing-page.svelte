@@ -1,4 +1,5 @@
 <script lang="ts">
+	import "#lib/pleiades-site.css";
 	import LandingAbout from "#lib/components/landing/LandingAbout.svelte";
 	import LandingBenefits from "#lib/components/landing/LandingBenefits.svelte";
 	import LandingHistory from "#lib/components/landing/LandingHistory.svelte";
@@ -13,6 +14,7 @@
 	<meta name="robots" content="noindex" />
 </svelte:head>
 
+<div class="po-site">
 <main id="main-content" class="flex flex-col gap-2">
 	<LandingVideo />
 
@@ -26,3 +28,4 @@
 		<LandingPricing />
 	</div>
 </main>
+</div>

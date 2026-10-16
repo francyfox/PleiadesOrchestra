@@ -32,12 +32,18 @@ export function contentRouteFile(rel: string, locale: string): string {
 	return [prefix, "docs", dir, "+page.md"].filter(Boolean).join("/");
 }
 
-/** The `/docs/...` URL path (no locale) of a page. */
-function docsPath(rel: string): string {
-	const dir = contentRouteFile(rel, DEFAULT_LOCALE)
-		.replace(/^docs\/?/, "")
-		.replace(/\/?\+page\.md$/, "");
-	return dir ? `/${dir}/` : "/";
+/**
+ * A language's sidebar: its own page titles, linked by the logical path the
+ * theme prefixes with the locale. The theme's auto sidebar is built for the
+ * site-level options only and keeps English titles on translated pages.
+ */
+export function sidebarItems(pages: PageSet): { title: string; to: string }[] {
+	return [...pages]
+		.map(([rel, md]) => ({
+			title: parseFrontmatter(md).title ?? rel,
+			to: `/${contentRouteFile(rel, DEFAULT_LOCALE).replace(/\+page\.md$/, "")}`,
+		}))
+		.sort((a, b) => a.to.localeCompare(b.to));
 }
 
 export function listMarkdown(dir: string, base = dir): string[] {
@@ -203,14 +209,18 @@ export function buildPage(
 					own: content.get(locale) ?? new Map(),
 				});
 	const pending = parseFrontmatter(md).review === "pending";
-	const header = [
-		"<script>",
-		"\timport DocsLang from '#lib/components/DocsLang.svelte'",
-		"</script>",
-		"",
-		`<DocsLang locale="${locale}" path="${docsPath(rel)}" pending={${pending}} />`,
-		"",
-	].join("\n");
+	// A machine translation under review says so at the top; the language
+	// switch itself is the theme's (sveltepress `locales` in vite.config.ts).
+	const header = pending
+		? [
+				"<script>",
+				"\timport ReviewNotice from '#lib/components/ReviewNotice.svelte'",
+				"</script>",
+				"",
+				`<ReviewNotice locale="${locale}" />`,
+				"",
+			].join("\n")
+		: "";
 	const front = /^---\r?\n[\s\S]*?\r?\n---\r?\n?/.exec(body)?.[0] ?? "";
 	return `${front}\n${header}\n${body.slice(front.length)}`;
 }

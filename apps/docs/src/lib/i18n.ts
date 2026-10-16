@@ -1,7 +1,8 @@
 export const DEFAULT_LOCALE = "en" as const;
 
 // Extra locales, prefixed in the URL (e.g. /ru/blog). The default locale is
-// unprefixed (/blog) and content-only translations are managed via Sveltia CMS.
+// unprefixed (/blog). Each has its own route folder (src/routes/ru, …), as SveltePress
+// locales expect.
 export const LOCALES = ["ru", "kk"] as const;
 
 export type Locale = typeof DEFAULT_LOCALE | (typeof LOCALES)[number];
@@ -15,4 +16,10 @@ export function localizeHref(path: string, locale: string | undefined): string {
 	const href =
 		!locale || locale === DEFAULT_LOCALE ? path : `/${locale}${path}`;
 	return href.endsWith("/") ? href : `${href}/`;
+}
+
+/** The locale a path is under: its first segment when that is a locale, else the default. */
+export function localeFromPath(pathname: string): Locale {
+	const first = pathname.split("/")[1];
+	return LOCALES.find((locale) => locale === first) ?? DEFAULT_LOCALE;
 }

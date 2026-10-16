@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Pane from "#lib/components/Pane.svelte";
+	import { localeFromPath } from "#lib/i18n.js";
 	import { landingContent } from "#lib/landing/content.js";
 	import {
 		PLEIADES_BUY_URL,
@@ -9,7 +10,7 @@
 	} from "#lib/site.js";
 	import { page } from "$app/state";
 
-	let t = $derived(landingContent(page.params.locale).pricing);
+	let t = $derived(landingContent(localeFromPath(page.url.pathname)).pricing);
 
 	const buyHref =
 		PLEIADES_BUY_URL ||

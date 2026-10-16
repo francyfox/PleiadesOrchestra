@@ -1,9 +1,10 @@
 <script lang="ts">
 	import Pane from "#lib/components/Pane.svelte";
+	import { localeFromPath } from "#lib/i18n.js";
 	import { landingContent } from "#lib/landing/content.js";
 	import { page } from "$app/state";
 
-	let c = $derived(landingContent(page.params.locale));
+	let c = $derived(landingContent(localeFromPath(page.url.pathname)));
 	let t = $derived(c.security);
 
 	// Positions are the team's reading of the market; facts are linked. See docs/reserch/threats-security-monetization.md.
