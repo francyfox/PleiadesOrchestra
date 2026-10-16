@@ -8,8 +8,10 @@ export interface WidgetMockOptions {
 }
 
 export interface RecordedRequest {
-	path: "tools" | "messages" | "tool-results";
+	path: "visitors" | "threads" | "tools" | "messages" | "tool-results";
 	body: unknown;
+	/** Request headers (lower-case): `x-publishable-key` on visitors, `x-visitor-token` after. */
+	headers: Record<string, string>;
 }
 
 /**
@@ -22,27 +24,43 @@ export interface RecordedRequest {
  */
 export async function mockWidgetApi(
 	page: Page,
-	options: WidgetMockOptions,
+	options: WidgetMockOptions = { firstReply: [] },
 ): Promise<RecordedRequest[]> {
 	const requests: RecordedRequest[] = [];
+	let threadCount = 0;
 
-	await page.route("**/v1/widget/visitors", (route) =>
-		route.fulfill({
+	await page.route("**/v1/widget/visitors", (route) => {
+		requests.push({
+			path: "visitors",
+			body: null,
+			headers: route.request().headers(),
+		});
+		return route.fulfill({
 			status: 201,
 			contentType: "application/json",
 			body: JSON.stringify({
 				visitorToken: "tok-e2e",
 				expiresAt: Date.now() + 60_000,
 			}),
-		}),
-	);
-	await page.route("**/v1/widget/threads", (route) =>
-		route.fulfill({
+		});
+	});
+	await page.route("**/v1/widget/threads", (route) => {
+		requests.push({
+			path: "threads",
+			body: null,
+			headers: route.request().headers(),
+		});
+		threadCount += 1;
+		return route.fulfill({
 			status: 201,
 			contentType: "application/json",
-			body: JSON.stringify({ threadId: "thread-e2e" }),
-		}),
-	);
+			// The first thread keeps the id the older tests expect.
+			body: JSON.stringify({
+				threadId:
+					threadCount === 1 ? "thread-e2e" : `thread-e2e-${threadCount}`,
+			}),
+		});
+	});
 	await page.route("**/v1/widget/threads/*/messages", (route) =>
 		route.fulfill({
 			status: 200,
@@ -51,11 +69,19 @@ export async function mockWidgetApi(
 		}),
 	);
 	await page.route("**/v1/widget/tools", async (route) => {
-		requests.push({ path: "tools", body: route.request().postDataJSON() });
+		requests.push({
+			path: "tools",
+			body: route.request().postDataJSON(),
+			headers: route.request().headers(),
+		});
 		await route.fulfill({ status: 204 });
 	});
 	await page.route("**/v1/widget/messages", async (route) => {
-		requests.push({ path: "messages", body: route.request().postDataJSON() });
+		requests.push({
+			path: "messages",
+			body: route.request().postDataJSON(),
+			headers: route.request().headers(),
+		});
 		await route.fulfill({
 			status: 200,
 			contentType: "application/x-ndjson",
@@ -66,6 +92,7 @@ export async function mockWidgetApi(
 		requests.push({
 			path: "tool-results",
 			body: route.request().postDataJSON(),
+			headers: route.request().headers(),
 		});
 		await route.fulfill({
 			status: 200,
