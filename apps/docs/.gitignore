@@ -9,3 +9,5 @@ vite.config.ts.timestamp-*
 /src/routes/docs
 /src/routes/*/docs
 /.sveltepress
+# Built from packages/webmcp-polyfill by `bun run polyfill`
+/static/playground-demos/shared/webmcp-polyfill.js

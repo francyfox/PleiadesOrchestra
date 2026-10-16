@@ -2,8 +2,8 @@
 
 Copies of WebMCP demos from https://github.com/GoogleChromeLabs/webmcp-tools
 (commit 04732fb, `demos/`), Apache-2.0 — see `LICENSE` in this directory.
-Served same-origin so the playground (`/landing/pleiades-orchestra/playground`)
-can read their tools in every browser.
+Served same-origin so the playground (`/playground/` of `apps/docs`) can read
+their tools in every browser.
 
 Modifications:
 
@@ -12,6 +12,9 @@ Modifications:
   googlechromelabs.github.io; in Chrome they switch on native WebMCP, the
   polyfill then steps aside, and native tool registration in an embedded frame
   is denied — the demo ends up with zero tools.
+- `shared/webmcp-polyfill.js` is not Google's file: it is built from this repo's
+  `packages/webmcp-polyfill` (the polyfill the widget ships) by `bun run polyfill`
+  in `apps/docs`, and git-ignored.
 - Added `<script src="../shared/webmcp-polyfill.js">` to `explainer`,
   `ticket-booking`, `react-flightsearch` and `hotel-chain` (pizza-maker already
   loads it).
