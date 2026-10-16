@@ -1,6 +1,6 @@
 import { DEFAULT_LOCALE, type Locale } from "#lib/i18n.js";
 
-// All landing (/landing/pleiades-orchestra) copy, per locale. Sources/links stay in the components'
+// All landing (/, /ru/, /kk/) copy, per locale. Sources/links stay in the components'
 // data; only text lives here. Every other locale must have the same shape as `en` (the `Record<Locale, ...>` below makes a missing language a type error).
 const en = {
 	nav: {

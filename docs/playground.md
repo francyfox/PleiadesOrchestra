@@ -1,6 +1,6 @@
 # Playground
 
-по маршруту /landing/pleiades-orchestra/playground
+по адресу https://pleiades.shalotts.site/playground/ (`apps/docs`; раньше — /landing/pleiades-orchestra/playground в репо shalotts)
 Нужно создать spa playground. 
 В playground будет 4 окна как тайлинги.
 
