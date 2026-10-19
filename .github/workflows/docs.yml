@@ -32,7 +32,7 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           # Same Bun as root package.json devEngines (the version that writes bun.lock).
-          bun-version: 1.4.2
+          bun-version: 1.4.3
       - run: bun install --frozen-lockfile
       # turbo builds pleiades-widget first (docs depends on it as a workspace package).
       - run: bunx turbo run build --filter=docs
