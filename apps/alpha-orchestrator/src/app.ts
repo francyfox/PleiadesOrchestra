@@ -15,11 +15,15 @@ import {
 	type Observability,
 	onRequestGuard,
 } from "@repo/elysia-kit";
+import { Elysia } from "elysia";
 import { accessRoutes } from "./modules/access/access.ts";
 import { ActiveRuns } from "./modules/active-runs/active-runs.ts";
+import type { AgentSettings } from "./modules/agent-settings/agent-settings.service.ts";
+import { agentSettingsRoutes } from "./modules/agent-settings/agent-settings.ts";
 import type { AgentSpec, FetchLike } from "./modules/agents/agents.service.ts";
 import { agentsRoutes } from "./modules/agents/agents.ts";
 import { authorizeRequest } from "./modules/auth/auth.service.ts";
+import { billingRoutes } from "./modules/billing/billing.ts";
 import { blockedIpsRoutes } from "./modules/blocked-ips/blocked-ips.ts";
 import type { ChannelDirectory } from "./modules/channel-directory/channel-directory.ts";
 import { channelsRoutes } from "./modules/channels/channels.ts";
@@ -35,10 +39,12 @@ import { mcpRoutes } from "./modules/mcp/mcp.ts";
 import { messagesRoutes } from "./modules/messages/messages.ts";
 import { performanceRoutes } from "./modules/performance/performance.ts";
 import { personaRoutes } from "./modules/persona/persona.ts";
+import type { PriceBook } from "./modules/prices/prices.service.ts";
 import { ReplyService } from "./modules/reply/reply.ts";
 import { requestsRoutes } from "./modules/requests/requests.ts";
 import type { RunBinding } from "./modules/run-binding/run-binding.ts";
 import { statsRoutes } from "./modules/stats/stats.ts";
+import { subscriptionsRoutes } from "./modules/subscriptions/subscriptions.ts";
 import { threadsRoutes } from "./modules/threads/threads.ts";
 import { usageRoutes } from "./modules/usage/usage.ts";
 import { usersRoutes } from "./modules/users/users.ts";
@@ -91,8 +97,16 @@ export interface AppDeps {
 	/** Classified WebMCP actions per thread; in-memory default, lost on restart (the widget re-registers). */
 	webmcpCatalog?: Map<string, GoapAction[]>;
 	ipHashSalt: string;
-	/** Agents listed (and health-probed) by `GET /v1/admin/agents`. */
-	agents?: { specs: AgentSpec[]; fetch?: FetchLike };
+	/** Agents listed (and health-probed) by `GET /v1/admin/agents`; a function is re-read on every call (settings change without a restart). */
+	agents?: { specs: AgentSpec[] | (() => AgentSpec[]); fetch?: FetchLike };
+	/** Per-agent model settings; without it the settings routes are not mounted. */
+	agentSettings?: AgentSettings;
+	/** OpenRouter model prices for the usage spend; unset = spend is `null`. */
+	prices?: PriceBook;
+	/** Polar webhook receiver; without it `POST /v1/billing/polar` does not exist (404). */
+	billing?: { webhookSecret: string };
+	/** Prefix of a subscription's page in Polar's dashboard (`<it>/<id>`); unset = no link in the panel. */
+	polarDashboardUrl?: string;
 	/** Widget limits and settings; unset fields use `DEFAULT_WIDGET_OPTIONS`. */
 	widget?: Partial<WidgetOptions>;
 	now?: () => number;
@@ -195,13 +209,23 @@ export function createApp(deps: AppDeps) {
 					now,
 				}),
 			)
+			.use(
+				deps.billing
+					? billingRoutes({
+							db,
+							webhookSecret: deps.billing.webhookSecret,
+							now,
+							log: (message) => observability.logger.info({ message }),
+						})
+					: new Elysia(),
+			)
 			// Admin routes
 			.use(usersRoutes({ db, now }))
 			.use(channelsRoutes({ db, directory, now }))
 			.use(personaRoutes({ db, directory, now }))
 			.use(blockedIpsRoutes({ db, ipHashSalt: deps.ipHashSalt, now }))
 			.use(intentsRoutes({ db, memory: intentMemory, now }))
-			.use(usageRoutes({ db, now }))
+			.use(usageRoutes({ db, now, prices: deps.prices }))
 			.use(statsRoutes({ db, now }))
 			.use(performanceRoutes({ db, now }))
 			.use(
@@ -217,7 +241,19 @@ export function createApp(deps: AppDeps) {
 					),
 				}),
 			)
+			.use(
+				subscriptionsRoutes({
+					db,
+					now,
+					polarBaseUrl: deps.polarDashboardUrl,
+				}),
+			)
 			.use(mcpRoutes(db))
 			.use(agentsRoutes({ agents: deps.agents, now }))
+			.use(
+				deps.agentSettings
+					? agentSettingsRoutes({ settings: deps.agentSettings })
+					: new Elysia(),
+			)
 	);
 }

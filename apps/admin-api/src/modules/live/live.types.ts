@@ -27,9 +27,15 @@ export interface PageParams {
 /** `GET /api/dashboard`. */
 export interface DashboardData {
 	stats: Stats;
-	byDay: { day: string; inputTokens: number; outputTokens: number }[];
+	byDay: {
+		day: string;
+		inputTokens: number;
+		outputTokens: number;
+		costUsd: number | null;
+	}[];
 	topUsers: UsageRow[];
 	byChannel: UsageRow[];
+	byModel: UsageRow[];
 }
 
 /**

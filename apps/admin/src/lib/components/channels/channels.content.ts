@@ -20,7 +20,13 @@ const channelsContent = {
 				kk: "Каталог тілі",
 			}),
 			created: t({ ru: "Создан", en: "Created", kk: "Құрылған" }),
+			plan: t({ ru: "Тариф", en: "Plan", kk: "Тариф" }),
 		},
+		planUntil: t({
+			ru: insert("{{plan}} · до {{date}}"),
+			en: insert("{{plan}} · until {{date}}"),
+			kk: insert("{{plan}} · {{date}} дейін"),
+		}),
 		accessMode: {
 			whitelist: t({ ru: "Белый список", en: "Whitelist", kk: "Ақ тізім" }),
 			open: t({ ru: "Открытый", en: "Open", kk: "Ашық" }),

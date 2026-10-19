@@ -82,6 +82,19 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			// a leaked transport key must not be able to read every chat.
 			ADMIN_API_KEY: z.string().min(1),
 
+			// Encrypts the provider API keys the admin panel stores (AES-GCM, key =
+			// SHA-256 of this). Unset = provider keys cannot be saved (agents keep
+			// the env keys). Losing or changing it makes stored keys unreadable.
+			PROVIDER_KEYS_SECRET: z.string().min(16).optional(),
+
+			// Signing secret of the Polar webhook endpoint (`whsec_...` or Polar's
+			// plain secret). Unset = POST /v1/billing/polar does not exist.
+			POLAR_WEBHOOK_SECRET: z.string().min(1).optional(),
+			// Where a subscription is shown in Polar, without the id:
+			// https://polar.sh/dashboard/<org-slug>/sales/subscriptions (check the path in
+			// your dashboard). Unset = no link in the admin panel.
+			POLAR_DASHBOARD_URL: z.url().optional(),
+
 			// Comma-separated origins allowed to call /v1/admin/requests/* from a
 			// browser (CORS). The token is still required on every actual request —
 			// CORS only lets the browser send the cross-origin fetch at all.

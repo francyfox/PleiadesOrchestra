@@ -2,18 +2,21 @@ import { Elysia, t } from "elysia";
 import type { Db } from "../database/database.ts";
 import { DAY_MS } from "../http/http.service.ts";
 import { oneOf } from "../http/http.ts";
+import type { PriceBook } from "../prices/prices.service.ts";
 import { usageRows } from "./usage.service.ts";
 
 export interface UsageDeps {
 	db: Db;
 	now: () => number;
+	/** Model prices for `costUsd`; without it (or if they cannot be fetched) costs are `null`. */
+	prices?: PriceBook;
 }
 
-/** Admin route: token usage grouped by day, user, channel or model. */
-export function usageRoutes({ db, now }: UsageDeps) {
+/** Admin route: token usage (and spend, when prices are known) grouped by day, user, channel or model. */
+export function usageRoutes({ db, now, prices }: UsageDeps) {
 	return new Elysia({ prefix: "/v1/admin/usage" }).get(
 		"/",
-		({ query }) => {
+		async ({ query }) => {
 			const current = now();
 			return {
 				rows: usageRows(
@@ -22,6 +25,7 @@ export function usageRoutes({ db, now }: UsageDeps) {
 					query.from ?? current - 30 * DAY_MS,
 					query.to ?? current,
 					query.channel,
+					await prices?.get(),
 				),
 			};
 		},

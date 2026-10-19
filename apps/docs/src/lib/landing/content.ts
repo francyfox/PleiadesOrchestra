@@ -306,12 +306,25 @@ const en = {
 		},
 	},
 	pricing: {
-		heading: "Community or business",
+		heading: "Community, cloud or business",
 		community: {
 			title: "Community",
 			price: "free",
 			text: "Open code under the GNU AGPLv3. Run it for yourself, change it, contribute. If you let people use a modified version over a network, you publish your changes.",
 			cta: "get the source",
+		},
+		cloud: {
+			title: "Cloud",
+			perMonth: "per month",
+			text: "We host it for you. Install the WordPress plugin, paste the key, done.",
+			includes: [
+				"The hosted agent, no servers of your own",
+				"The WordPress / WooCommerce plugin",
+				"Paid models for replies and tool arguments",
+			],
+			privacy:
+				"Privacy: messages go to the model providers through OpenRouter.",
+			buy: "subscribe",
 		},
 		business: {
 			title: "Business",
@@ -639,12 +652,25 @@ const ru: LandingContent = {
 		},
 	},
 	pricing: {
-		heading: "Сообщество или бизнес",
+		heading: "Сообщество, облако или бизнес",
 		community: {
 			title: "Сообщество",
 			price: "бесплатно",
 			text: "Открытый код под GNU AGPLv3. Запускайте для себя, меняйте, вносите вклад. Если вы даёте людям пользоваться изменённой версией по сети, вы публикуете свои изменения.",
 			cta: "получить исходники",
+		},
+		cloud: {
+			title: "Облако",
+			perMonth: "в месяц",
+			text: "Мы размещаем всё за вас. Поставьте плагин для WordPress, вставьте ключ — готово.",
+			includes: [
+				"Размещённый агент, свои серверы не нужны",
+				"Плагин для WordPress / WooCommerce",
+				"Платные модели для ответов и аргументов инструментов",
+			],
+			privacy:
+				"Приватность: сообщения уходят провайдерам моделей через OpenRouter.",
+			buy: "подписаться",
 		},
 		business: {
 			title: "Бизнес",
@@ -970,12 +996,25 @@ const kk: LandingContent = {
 		},
 	},
 	pricing: {
-		heading: "Қауымдастық немесе бизнес",
+		heading: "Қауымдастық, бұлт немесе бизнес",
 		community: {
 			title: "Қауымдастық",
 			price: "тегін",
 			text: "GNU AGPLv3 бойынша ашық код. Өзіңіз үшін іске қосыңыз, өзгертіңіз, үлес қосыңыз. Егер адамдарға өзгертілген нұсқаны желі арқылы пайдалануға берсеңіз, өз өзгерістеріңізді жариялайсыз.",
 			cta: "бастапқы кодты алу",
+		},
+		cloud: {
+			title: "Бұлт",
+			perMonth: "айына",
+			text: "Барлығын біз орналастырамыз. WordPress плагинін орнатыңыз, кілтті қойыңыз — дайын.",
+			includes: [
+				"Орналастырылған агент, өз серверлеріңіз қажет емес",
+				"WordPress / WooCommerce плагині",
+				"Жауаптар мен құралдар аргументтеріне арналған ақылы модельдер",
+			],
+			privacy:
+				"Құпиялылық: хабарламалар модель провайдерлеріне OpenRouter арқылы жіберіледі.",
+			buy: "жазылу",
 		},
 		business: {
 			title: "Бизнес",

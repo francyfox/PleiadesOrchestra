@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
 	import AgentsTable from "#lib/components/agents/agents-table.svelte";
+	import ProviderKeysCard from "#lib/components/agents/provider-keys-card.svelte";
 	import { useLiveQuery } from "#lib/live/use-live-query.svelte.js";
 
 	const live = useLiveQuery("agents", () => ({}));
@@ -12,3 +13,5 @@
 <p class="text-sm text-muted-foreground">{$content.subtitle.value}</p>
 
 <AgentsTable agents={live.current.items} />
+
+<ProviderKeysCard />

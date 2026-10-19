@@ -30,3 +30,10 @@ test("gigabytes: single value and used/total pair with one localized unit", () =
 	expect(en.gb(null)).toBe("—");
 	expect(createFormat("ru").gb(1.5 * GiB)).toBe("1,5 ГБ");
 });
+
+test("USD keeps sub-cent amounts visible", () => {
+	const en = createFormat("en");
+	expect(en.usd(0.0231)).toBe("$0.0231");
+	expect(en.usd(12)).toBe("$12.00");
+	expect(en.usd(null)).toBe("—");
+});

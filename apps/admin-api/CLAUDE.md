@@ -20,7 +20,7 @@ Follows the root "Code style" convention. Specific here: `src/app.types.ts` (`Ad
 
 `apps/admin` imports only two paths: `admin-api` (the `App` type from `src/app.ts`) and `admin-api/types` (`src/types.ts`, re-exports from modules) — keep both paths stable.
 
-Modules: `admin-policy`, `admins`, `agents`, `auth`, `blocked-ips`, `channels`, `common`, `config`, `dashboard`, `database`, `live`, `live-hub`, `live-topics`, `mcp`, `orchestrator`, `origin-guard`, `performance`, `plan-runs`, `requests`, `session`, `stats`, `system`, `system-feed`, `usage`, `users`.
+Modules: `admin-policy`, `admins`, `agents`, `auth`, `blocked-ips`, `channels`, `common`, `config`, `dashboard`, `database`, `live`, `live-hub`, `live-topics`, `mcp`, `orchestrator`, `origin-guard`, `performance`, `plan-runs`, `requests`, `session`, `stats`, `subscriptions`, `system`, `system-feed`, `usage`, `users`.
 
 ## Accounts and super admin
 

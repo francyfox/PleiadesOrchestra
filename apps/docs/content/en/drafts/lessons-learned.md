@@ -173,3 +173,28 @@ Critical items are duplicated in the root `CLAUDE.md`. This file has the full li
 
 - The design notes, contracts, plans, the audit and this file moved from `docs/` to `apps/docs/content/en/drafts/` (site `/docs/drafts/`), translated to English, so GitHub issues can link a page with an anchor. Images (`cover.png`, `covers/`, `logo.svg`) and the raw traces (`trace/`) stay in `docs/`.
 - **SveltePress compiles Markdown as Svelte**: inline code becomes a template literal with only `\` and backticks escaped, so a dollar sign followed by a brace inside inline code is interpolated and fails the build ("Unexpected token"). HTML entities do not help (remark decodes them back). Write it as a Svelte string expression in a `code` tag, see the compose lessons above. An unknown fence language (`toml`) also fails the build until it is added to `highlighter.languages`.
+
+## Agent settings in the DB over env (2026-10-19)
+
+- **Agents are no longer module-level singletons built from `config`.** `agents.instance.ts` and `function-calls.instance.ts` build from `agentSettings.effective(id)` through `agentSettings.track(build)` and rebuild on every admin save; the exported `agent` / `productRequestAgent` / `functionCallAgent` are thin delegates, so a run in progress keeps the instance it started with. Limiters and the history store are created once and survive a rebuild. `GET /v1/admin/agents` takes `specs` as a function for the same reason.
+- **WebCrypto decrypts asynchronously, agents are built synchronously**: `effective()` answers from a cache that `refresh()` fills (startup top-level await in `agent-settings.instance.ts`, and after each save).
+- **The env API key must not follow a changed base URL**: an override of `baseUrl` without a picked provider key sends no key, otherwise pointing an agent at a third-party host would leak the local server's key.
+- Changing or losing `PROVIDER_KEYS_SECRET` makes stored provider keys unreadable (the keys must be entered again). `llm_calls.provider` is now the provider key's name when one is picked.
+
+## WordPress plugin MVP (2026-10-19)
+
+- **The widget installs the WebMCP polyfill at mount, not at script load.** A page registering its own tools cannot count on `document.modelContext`. The widget now dispatches `pleiades:webmcp-ready` on `document` right after installing it; the plugin registers at once if the API exists, else on that event. Verified in a real browser.
+- **`docker compose up` with `COMPOSE_PROFILES=wordpress` still starts every service without a profile** (alpha-orchestrator, admin-api) and needs their `${VAR:?}` values. Moved WordPress to its own `compose.wp.yml` (project `pleiades-wordpress`) so it never starts the main stack.
+- **`wordpress:6-*` is too old for the current WooCommerce** (needs WP 7.0): use the `wordpress:php8.3-apache` tag.
+- **WooCommerce's `sample_products.csv` imported through WP-CLI creates no posts** (it reports 25 imported; the IDs in the file point nowhere). Use `sample_products.xml` with `wordpress-importer`, then `wc tool run regenerate_product_lookup_tables` (price filters read that table) and delete the `wc_products_onsale` transient (`on_sale=true` returned nothing until then).
+- **Store API specifics the tools depend on**: `min_price`/`max_price` are in minor units; add-item `variation` is a list of `{attribute, value}` where `attribute` is the product attribute's name exactly as `get_product` shows it (case-sensitive: `color`, not `Color`); `category` accepts an id or a slug.
+- **The widget drops tool `annotations`** (`listTools` in `lib/webmcp/webmcp.ts` keeps name/description/inputSchema) and the orchestrator does not read them yet: the plugin registers them, but `readOnlyHint` has no effect until both sides pass it on.
+
+## Billing: Polar webhook and spend (2026-10-19)
+
+- **Polar signs two ways.** Endpoints created after 2026-09-08 follow Standard Webhooks (`whsec_` + base64 key, pass the secret as-is to the library); older ones and user-provided secrets sign with the UTF-8 bytes of the whole secret string (the SDK base64-encodes it first). The receiver tries both keys. Not tested against a live Polar delivery: send a test event from the Polar dashboard after setting `POLAR_WEBHOOK_SECRET`.
+- **The webhook route is outside both bearer keys** (`isOpenPath` in `auth.service.ts`): Polar cannot send them. Without it every delivery would be a 401. The route is mounted only when the secret is set, so an unconfigured instance answers `404`, not an unauthenticated write path.
+- **Raw body**: the signature covers the exact bytes, so the route uses `parse: "text"` and parses JSON itself after the check.
+- **Out-of-order events** are decided by the payload's `modified_at` (skip older, equal wins), not by arrival order; the manual `channel_id` is outside the overwrite. `billing_webhooks` grows by a row per delivery and is not pruned (a few rows a month at launch; prune by `received_at` if it ever matters).
+- **Spend is an estimate**: today's OpenRouter price applied to past tokens, a model without a price costs 0 (a typo in a paid model name would show as free). Store a price per call (`costUsd`, PO-8) when it matters.
+

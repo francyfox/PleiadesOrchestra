@@ -2,7 +2,7 @@ import { queryOptions } from "@tanstack/svelte-query";
 import type { LiveTopics } from "admin-api/types";
 import { api } from "#lib/api/client.js";
 import { unwrap } from "#lib/api/result.js";
-import type { Persona } from "#lib/api-types.js";
+import type { Persona, PlanStatus } from "#lib/api-types.js";
 import { SYSTEM_KEY, topicKey } from "./keys";
 
 /** Data the WebSocket keeps current: never stale by itself; a mutation still invalidates it. */
@@ -112,6 +112,25 @@ export const queries = {
 		queryOptions({
 			queryKey: ["channels", "all"],
 			queryFn: () => unwrap(api().channels.get({ query: {} })),
+		}),
+	/** One agent's settings; asked only while its dialog is open and always fresh (a stale form must not overwrite a save made elsewhere). */
+	agentSettings: (id: string) =>
+		queryOptions({
+			queryKey: ["agents", id, "settings"],
+			queryFn: () => unwrap(api().agents({ id }).get()),
+			staleTime: 0,
+		}),
+	/** Plans tab; `status` undefined = all. Kept fresh by `useActionEnhance` invalidating after a link. */
+	subscriptions: (status?: PlanStatus) =>
+		queryOptions({
+			queryKey: ["subscriptions", status ?? "all"],
+			queryFn: () =>
+				unwrap(api().subscriptions.get({ query: status ? { status } : {} })),
+		}),
+	providerKeys: () =>
+		queryOptions({
+			queryKey: ["provider-keys"],
+			queryFn: () => unwrap(api()["provider-keys"].get()),
 		}),
 	/** A channel's persona; asked only while its dialog is open and always fresh (an edit elsewhere must not be overwritten by a stale form). */
 	persona: (channelId: string) =>

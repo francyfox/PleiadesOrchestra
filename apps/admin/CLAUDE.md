@@ -53,6 +53,7 @@ List pages with item detail have a `[id]` route built on `page-header.svelte` (b
 - `/intents` — Intent examples: approve / reject / correct Laya's pending answers. Correction = admin's label, approved immediately, rebuilds channel model.
 - `/performance` — p50/p90/p99 charts per model kind (including Translation tab). `/recommendations` — Lighthouse-style audit (`lib/system/audit.ts`, scores against `IDEAL_MACHINE = 100`), client-side on cached system snapshot.
 - `/faq` — Getting started + Q&A. 300 px fixed-height question list virtualized with `@tanstack/svelte-virtual` (44 px rows, arrows/Home/End). Search: Fuse.js fuzzy from 3 chars, plain substring for 1–2 chars. Code samples via `CodeBlock` → Prism (markup + bash, token colours in `code-block.svelte`).
+- `/plans` — Polar subscriptions (`?status=` filter, plans expiring within 7 days first; channel linked by hand through a `SearchSelect` that submits a hidden form). The channels list has a plan column. The dashboard shows spend (`costUsd`) per day, channel and model; model prices come from OpenRouter via the orchestrator.
 - `/channels` — channel list with **Embed code** dialog (`embed-dialog.svelte`, `lib/embed-snippet.ts`, refuses `sk_` keys).
 - The header meter (`system-meter.svelte`) shows green/yellow/red badges (`lib/system/load-level.ts`: <70 / 70–90 / ≥90, integrated GPU judged by GTT) fed by `/api/system/stream` WebSocket (`use-system-snapshot.svelte.ts`, runed's `IsDocumentVisible`: socket closed while tab hidden).
 

@@ -12,7 +12,11 @@ export type {
 export type {
 	Agent,
 	AgentRole,
+	AgentSettingsPatch,
+	AgentSettingsView,
 	AgentStatus,
+	AgentTestResult,
+	ProviderKey,
 } from "./modules/agents/agents.schema.ts";
 export type {
 	BlockedIp,
@@ -76,6 +80,10 @@ export type {
 } from "./modules/requests/requests.schema.ts";
 export type { Session } from "./modules/session/session.schema.ts";
 export type { Stats } from "./modules/stats/stats.schema.ts";
+export type {
+	PlanStatus,
+	Subscription,
+} from "./modules/subscriptions/subscriptions.schema.ts";
 export type {
 	CpuInfo,
 	GpuInfo,

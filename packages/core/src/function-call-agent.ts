@@ -60,6 +60,8 @@ export interface FunctionCallAgentConfig {
 	temperature?: number;
 	/** Extra request-body fields for every call, e.g. `{ reasoningEffort: "none" }` for Ollama (camelCase: it lands on the wire as `reasoning_effort`). */
 	providerOptions?: Record<string, JSONValue>;
+	/** Name written to the usage ledger. Default `delta`. */
+	provider?: string;
 	usageRecorder?: UsageRecorder;
 	telemetry?: ReturnType<typeof createTelemetry>;
 	fetchImpl?: typeof fetch;
@@ -253,7 +255,7 @@ export function createFunctionCallAgent(
 				threadId: request.context?.threadId ?? "",
 				userId: request.context?.userId ?? "",
 				kind: "decision",
-				provider: "delta",
+				provider: config.provider ?? PROVIDER_NAME,
 				model: config.model,
 				latencyMs,
 				at: Date.now(),

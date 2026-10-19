@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { createQuery } from "@tanstack/svelte-query";
 	import { useIntlayer } from "svelte-intlayer";
 	import type { Channel } from "#lib/api-types.js";
 	import ChannelKeysCard from "#lib/components/channels/channel-keys-card.svelte";
@@ -8,6 +9,8 @@
 	import { issued } from "#lib/components/channels/issued-secret.svelte.js";
 	import { useLiveQuery } from "#lib/live/use-live-query.svelte.js";
 	import { DEFAULT_PAGE_SIZE } from "#lib/pagination.js";
+	import { prefetched } from "#lib/query/prefetch.js";
+	import { queries } from "#lib/query/queries.js";
 
 	let { data } = $props();
 
@@ -15,6 +18,8 @@
 		page: data.page,
 		pageSize: DEFAULT_PAGE_SIZE,
 	}));
+
+	const subscriptions = createQuery(() => queries.subscriptions());
 
 	const content = useIntlayer("channels");
 	let editing = $state<Channel | null>(null);
@@ -38,6 +43,7 @@
 	channels={live.current.items}
 	total={live.current.total}
 	page={data.page}
+	plans={prefetched(subscriptions).items}
 	onEdit={(channel) => (editing = channel)}
 />
 

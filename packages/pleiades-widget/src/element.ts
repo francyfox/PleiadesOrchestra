@@ -221,6 +221,8 @@ export class PleiadesChat extends HTMLElement {
 				.map((o) => o.trim())
 				.filter(Boolean),
 		});
+		// A page that registers its own tools (the WordPress plugin) waits for this: the polyfill is installed lazily, at mount.
+		document.dispatchEvent(new Event("pleiades:webmcp-ready"));
 		const webmcp = createDocumentWebMcpProvider();
 		const scope = `${config.config.agentUrl} ${config.config.publishableKey}`;
 		if (!this.#chat || scope !== this.#scope) {

@@ -24,6 +24,7 @@ const appSidebarContent = {
 				en: "Recommendations",
 				kk: "Ұсыныстар",
 			}),
+			plans: t({ ru: "Тарифы", en: "Plans", kk: "Тарифтер" }),
 			channels: t({ ru: "Каналы", en: "Channels", kk: "Арналар" }),
 			blockedIps: t({
 				ru: "Блокировки IP",

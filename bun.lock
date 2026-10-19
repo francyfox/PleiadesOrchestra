@@ -213,6 +213,12 @@
         "typescript": "catalog:",
       },
     },
+    "apps/wordpress-plugin": {
+      "name": "@repo/wordpress-plugin",
+      "devDependencies": {
+        "@shalotts/pleiades-widget": "workspace:*",
+      },
+    },
     "packages/core": {
       "name": "@repo/core",
       "version": "0.0.0",
@@ -253,7 +259,7 @@
     },
     "packages/pleiades-widget": {
       "name": "@shalotts/pleiades-widget",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "devDependencies": {
         "@alpinejs/csp": "^3.17.4",
         "@repo/webmcp-polyfill": "workspace:*",
@@ -1000,6 +1006,8 @@
     "@repo/elysia-kit": ["@repo/elysia-kit@workspace:packages/elysia-kit"],
 
     "@repo/webmcp-polyfill": ["@repo/webmcp-polyfill@workspace:packages/webmcp-polyfill"],
+
+    "@repo/wordpress-plugin": ["@repo/wordpress-plugin@workspace:apps/wordpress-plugin"],
 
     "@rolldown/binding-android-arm-eabi": ["@rolldown/binding-android-arm-eabi@1.2.14", "", { "os": "android", "cpu": "arm" }, "sha512-aWR+XKH9+rW7m5fWq/5360J3mHycrx/o6xZM2DQFdJnTMdyP7/WzxPjhtLbVWdKo2y612/4U1bWqb3HQhiF7vg=="],
 

@@ -155,6 +155,8 @@ The paid offer: our hosted orchestrator with paid models, for a monthly fee. For
 
 ## Phases
 
+Status 2026-10-19: phase 3 is implemented (webhook, `subscriptions`, Plans tab, prices and spend, Cloud card). Open: the real Polar checkout link in `apps/docs/src/lib/site.ts`, `POLAR_WEBHOOK_SECRET` and `POLAR_DASHBOARD_URL` on the hosted instance, a test delivery from Polar.
+
 1. **Agent settings** in the orchestrator and the admin panel: the table, the routes, rebuilding agents on save, env as the default. Then a `bun tools` run for the delta candidate and switching beta-text and delta to paid models on our instance. Test-first: a saved override wins over env, an empty field falls back to env, a key is never returned in clear.
 2. **Plugin MVP**: settings page, bundled widget, `customer-context`, the read-only tools and the cart tools, nonce handling, the mini-cart refresh. Tested on a local WordPress + WooCommerce (a compose profile) with a classic and a block theme, and on products from different domains (clothing with variations, electronics), not only groceries.
 3. **Billing**: the Polar product and webhook receiver, the `subscriptions` table, the "Plans" tab, model prices and spend on the dashboard, the "Cloud" card on the landing. Test-first: signature check (valid, tampered, stale), replayed `webhook-id`, out-of-order events.

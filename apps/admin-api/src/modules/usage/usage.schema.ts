@@ -26,6 +26,17 @@ export const UsageRow = t.Composite([
 		key: nullable(t.String()),
 		label: t.String(),
 		avgLatencyMs: t.Number(),
+		/** tokens × model price; `null` when prices could not be fetched, 0 for local models. */
+		costUsd: nullable(t.Number()),
+		/** Model rows only: USD per 1M tokens; `null` = no price (a local model). */
+		price: t.Optional(
+			nullable(
+				t.Object({
+					inputPerMillion: t.Number(),
+					outputPerMillion: t.Number(),
+				}),
+			),
+		),
 	}),
 ]);
 

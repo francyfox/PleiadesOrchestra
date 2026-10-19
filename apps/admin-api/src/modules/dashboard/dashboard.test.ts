@@ -25,6 +25,7 @@ describe("dashboard", () => {
 				key: label,
 				label,
 				avgLatencyMs: 1,
+				costUsd: tokens / 10,
 			});
 			return json({ rows: [rows("small", 1), rows("big", 100)] });
 		});
@@ -36,6 +37,7 @@ describe("dashboard", () => {
 			day: "small",
 			inputTokens: 1,
 			outputTokens: 2,
+			costUsd: 0.1,
 		});
 		expect(body.topUsers.map((r: { label: string }) => r.label)).toEqual([
 			"big",

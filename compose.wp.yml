@@ -1,0 +1,67 @@
+# Local WordPress + WooCommerce for the plugin (apps/wordpress-plugin), separate from the main stack.
+# Build the plugin first: bun run --cwd apps/wordpress-plugin build. Then
+# docker compose -f compose.wp.yml up -d. Site: http://localhost:8088 (admin/admin).
+name: pleiades-wordpress
+
+services:
+  wordpress-db:
+    image: mariadb:11
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_PASSWORD: wordpress
+      MARIADB_RANDOM_ROOT_PASSWORD: "1"
+    volumes:
+      - wordpress-db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      retries: 20
+    restart: unless-stopped
+
+  wordpress:
+    image: wordpress:php8.3-apache
+    depends_on:
+      wordpress-db:
+        condition: service_healthy
+    environment:
+      WORDPRESS_DB_HOST: wordpress-db
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+    ports:
+      - "127.0.0.1:${WORDPRESS_PORT:-8088}:80"
+    volumes:
+      - wordpress-data:/var/www/html
+      - ./apps/wordpress-plugin/pleiades-assistant:/var/www/html/wp-content/plugins/pleiades-assistant:ro
+    restart: unless-stopped
+
+  wordpress-setup:
+    image: wordpress:cli-php8.3
+    user: "33:33"
+    depends_on:
+      - wordpress
+    environment:
+      WORDPRESS_DB_HOST: wordpress-db
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_PORT: ${WORDPRESS_PORT:-8088}
+      HOME: /tmp
+      WORDPRESS_THEME: ${WORDPRESS_THEME:-}
+      # Optional: preset the plugin's key and agent URL (a pk_ key of a channel that allows the site origin).
+      PLEIADES_KEY: ${WORDPRESS_PLEIADES_KEY:-}
+      PLEIADES_AGENT_URL: ${WORDPRESS_PLEIADES_AGENT_URL:-}
+    volumes:
+      - wordpress-data:/var/www/html
+      - ./apps/wordpress-plugin/pleiades-assistant:/var/www/html/wp-content/plugins/pleiades-assistant:ro
+      - ./apps/wordpress-plugin/dev/setup.sh:/setup.sh:ro
+    entrypoint: ["sh", "/setup.sh"]
+    restart: "no"
+
+volumes:
+  # Pinned to the names they had under compose.yml, so an existing store survives the move.
+  wordpress-db:
+    name: pleiades-orchestra_wordpress-db
+  wordpress-data:
+    name: pleiades-orchestra_wordpress-data

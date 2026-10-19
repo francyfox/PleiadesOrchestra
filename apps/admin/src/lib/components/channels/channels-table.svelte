@@ -7,7 +7,7 @@
 		tableFeatures,
 	} from "@tanstack/svelte-table";
 	import { useIntlayer } from "svelte-intlayer";
-	import type { Channel } from "#lib/api-types.js";
+	import type { Channel, Subscription } from "#lib/api-types.js";
 	import CopyValue from "#lib/components/copy-value.svelte";
 	import DataTable from "#lib/components/data-table.svelte";
 	import { Badge } from "#lib/components/ui/badge/index.js";
@@ -20,9 +20,12 @@
 		channels,
 		total,
 		page,
+		plans,
 		onEdit,
 	}: {
 		channels: Channel[];
+		/** All subscriptions; the one linked to a channel shows as its plan. */
+		plans: Subscription[];
 		total: number;
 		page: number;
 		onEdit: (channel: Channel) => void;
@@ -30,6 +33,18 @@
 
 	const content = useIntlayer("channels");
 	const format = useFormat();
+
+	/** The channel's live plan with its expiry; an ended one only if there is nothing else. */
+	function planOf(channelId: string) {
+		const linked = plans.filter((plan) => plan.channelId === channelId);
+		const plan = linked.find((p) => p.status !== "ended") ?? linked[0];
+		return plan
+			? $content.planUntil({
+					plan: plan.plan ?? "—",
+					date: $format.date(plan.currentPeriodEnd),
+				})
+			: "—";
+	}
 
 	const features = tableFeatures({});
 	const helper = createColumnHelper<typeof features, Channel>();
@@ -55,6 +70,11 @@
 			helper.accessor("publishableKey", {
 				header: () => $content.columns.publishableKey.value,
 				cell: (ctx) => renderSnippet(publishableKey, ctx.getValue()),
+			}),
+			helper.display({
+				id: "plan",
+				header: () => $content.columns.plan.value,
+				cell: (ctx) => planOf(ctx.row.original.id),
 			}),
 			helper.accessor("createdAt", {
 				header: () => $content.columns.created.value,

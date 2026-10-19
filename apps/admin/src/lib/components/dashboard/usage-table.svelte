@@ -10,9 +10,11 @@
 	import DataTable from "#lib/components/data-table.svelte";
 	import { useFormat } from "#lib/i18n/use-format.js";
 
-	/** Usage rows grouped by user or channel; user rows link to the user card. */
-	let { rows, groupBy }: { rows: UsageRow[]; groupBy: "user" | "channel" } =
-		$props();
+	/** Usage rows grouped by user, channel or model; user rows link to the user card, model rows show the price. */
+	let {
+		rows,
+		groupBy,
+	}: { rows: UsageRow[]; groupBy: "user" | "channel" | "model" } = $props();
 
 	const content = useIntlayer("dashboard");
 	const format = useFormat();
@@ -33,6 +35,26 @@
 			header: () => $content.columns.output.value,
 			cell: (ctx) => $format.number(ctx.getValue()),
 		}),
+		helper.accessor("costUsd", {
+			header: () => $content.columns.spend.value,
+			cell: (ctx) => $format.usd(ctx.getValue()),
+		}),
+		// groupBy is fixed for the table's lifetime, so the column set is decided once.
+		// svelte-ignore state_referenced_locally
+		...(groupBy === "model"
+			? [
+					helper.display({
+						id: "price",
+						header: () => $content.columns.price.value,
+						cell: (ctx) => {
+							const price = ctx.row.original.price;
+							return price
+								? `${$format.usd(price.inputPerMillion)} / ${$format.usd(price.outputPerMillion)}`
+								: "—";
+						},
+					}),
+				]
+			: []),
 		helper.accessor("calls", {
 			header: () => $content.columns.calls.value,
 			cell: (ctx) => $format.number(ctx.getValue()),

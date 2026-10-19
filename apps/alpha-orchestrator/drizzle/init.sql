@@ -182,6 +182,45 @@ CREATE TABLE `channel_persona` (
 	`updated_at` integer NOT NULL, `instructions` text DEFAULT '' NOT NULL,
 	FOREIGN KEY (`channel_id`) REFERENCES `channels`(`id`) ON UPDATE no action ON DELETE cascade
 );
+CREATE TABLE `agent_settings` (
+	`agent_id` text PRIMARY KEY NOT NULL,
+	`source` text,
+	`base_url` text,
+	`model` text,
+	`provider_key` text,
+	`parameters` text DEFAULT '{}' NOT NULL,
+	`updated_by` text NOT NULL,
+	`updated_at` integer NOT NULL,
+	FOREIGN KEY (`provider_key`) REFERENCES `provider_keys`(`name`) ON UPDATE no action ON DELETE set null
+);
+CREATE TABLE `provider_keys` (
+	`name` text PRIMARY KEY NOT NULL,
+	`encrypted_key` text NOT NULL,
+	`updated_by` text NOT NULL,
+	`updated_at` integer NOT NULL
+);
+CREATE TABLE `billing_webhooks` (
+	`id` text PRIMARY KEY NOT NULL,
+	`type` text NOT NULL,
+	`received_at` integer NOT NULL
+);
+CREATE TABLE `subscriptions` (
+	`id` text PRIMARY KEY NOT NULL,
+	`customer_id` text NOT NULL,
+	`customer_email` text,
+	`product_id` text,
+	`product_name` text,
+	`status` text NOT NULL,
+	`started_at` integer,
+	`current_period_start` integer,
+	`current_period_end` integer,
+	`cancel_at_period_end` integer NOT NULL,
+	`ended_at` integer,
+	`polar_modified_at` integer,
+	`channel_id` text,
+	`updated_at` integer NOT NULL,
+	FOREIGN KEY (`channel_id`) REFERENCES `channels`(`id`) ON UPDATE no action ON DELETE set null
+);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'bdcb798cc72df040fe7ab496925f0e8c88132b905ac04cc8813006debb64f096', 1790244167287);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '18fd9f1b24512d674e4f6017463dec4418b32e8c7e134ed0e5b62399ac042d07', 1790244167777);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'ad4ae2f758bf5af433c6ae25117ef6dd2e3c7f7e7209d36c91ffb2a3f5bd24cf', 1790251963003);
@@ -196,6 +235,8 @@ INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '7
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'e5a55bcd7b449634f7420b4c4a92845a20045387933fce5306ecd715d14c03e8', 1791962321909);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '48965880e5304670ae74b3a4cd18fd4536966e182ec9e3d7d891ed6789962ffe', 1791969766860);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '6c4e5151567f806becb8e1ec5d7c0f17c95da9eb9ccce15423fa368848512993', 1792067635675);
+INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'baafd4f141151a7bee8035dc9de67409daf1f4113b5dff5b9765d56dd7c9b46e', 1792416591678);
+INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '6eb757b5d29868e175799e0dd02e48c71d3f3b6f3992bdd5d6f546b564b42455', 1792417145450);
 INSERT INTO "channels" ("id", "slug", "kind", "name", "access_mode", "publishable_key", "secret_key_hash", "allowed_origins", "disabled_at", "created_at", "catalog_language") VALUES ('ch_telegram', 'telegram', 'telegram', 'Telegram', 'whitelist', NULL, NULL, '[]', NULL, CAST(strftime('%s', 'now') AS INTEGER) * 1000, 'en');
 INSERT INTO "channels" ("id", "slug", "kind", "name", "access_mode", "publishable_key", "secret_key_hash", "allowed_origins", "disabled_at", "created_at", "catalog_language") VALUES ('ch_cli', 'cli', 'cli', 'CLI', 'open', NULL, NULL, '[]', NULL, CAST(strftime('%s', 'now') AS INTEGER) * 1000, 'en');
 COMMIT;

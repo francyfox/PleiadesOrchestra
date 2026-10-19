@@ -1,6 +1,7 @@
 import { LAYA_CALIBRATION, withCalibration } from "@repo/core";
 import { createObservability, serve } from "@repo/elysia-kit";
 import { createApp } from "./app.ts";
+import { agentSettings } from "./modules/agent-settings/agent-settings.instance.ts";
 import {
 	AGENT_MAX_HISTORY_MESSAGES,
 	agent,
@@ -13,6 +14,7 @@ import { decisionAgent } from "./modules/decisions/decisions.instance.ts";
 import { withEnglishOnly } from "./modules/english-only/english-only.ts";
 import { functionCallAgent } from "./modules/function-calls/function-calls.instance.ts";
 import { historyStore } from "./modules/history/history.instance.ts";
+import { createPriceBook } from "./modules/prices/prices.service.ts";
 import { assertRetentionCoversHistory } from "./modules/retention/retention.service.ts";
 import { startRetentionJobs } from "./modules/retention/retention.ts";
 import { runs } from "./modules/run-binding/run-binding.instance.ts";
@@ -78,34 +80,46 @@ const app = createApp({
 	historyStore,
 	worldStateStore: new SqliteWorldStateStore(db),
 	ipHashSalt: config.IP_HASH_SALT,
+	agentSettings,
+	prices: createPriceBook(),
+	billing: config.POLAR_WEBHOOK_SECRET
+		? { webhookSecret: config.POLAR_WEBHOOK_SECRET }
+		: undefined,
+	polarDashboardUrl: config.POLAR_DASHBOARD_URL,
 	agents: {
-		specs: [
-			{
-				id: "beta-text",
-				name: "beta-text",
-				role: "text",
-				baseUrl: config.LLM_BASE_URL,
-				model: config.LLM_MODEL,
-			},
-			{
-				id: "gamma-decision",
-				name: "gamma-decision",
-				role: "decision",
-				baseUrl: config.LAYA_API_BASE_URL,
-				model: config.LAYA_MODEL,
-			},
-			...(config.FUNCTION_CALL_BASE_URL
-				? [
-						{
-							id: "delta-function-call",
-							name: "delta-function-call",
-							role: "function-call" as const,
-							baseUrl: config.FUNCTION_CALL_BASE_URL,
-							model: config.FUNCTION_CALL_MODEL,
-						},
-					]
-				: []),
-		],
+		// A function: the models behind the agents change without a restart.
+		specs: () => {
+			const text = agentSettings.effective("beta-text");
+			const laya = agentSettings.effective("gamma-decision");
+			const delta = agentSettings.effective("delta-function-call");
+			return [
+				{
+					id: "beta-text",
+					name: "beta-text",
+					role: "text" as const,
+					baseUrl: text.baseUrl,
+					model: text.model,
+				},
+				{
+					id: "gamma-decision",
+					name: "gamma-decision",
+					role: "decision" as const,
+					baseUrl: laya.baseUrl,
+					model: laya.model,
+				},
+				...(delta.baseUrl
+					? [
+							{
+								id: "delta-function-call",
+								name: "delta-function-call",
+								role: "function-call" as const,
+								baseUrl: delta.baseUrl,
+								model: delta.model,
+							},
+						]
+					: []),
+			];
+		},
 	},
 	widget: {
 		maxTextChars: config.WIDGET_MAX_TEXT_CHARS,

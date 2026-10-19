@@ -359,6 +359,64 @@ export const channelPersona = sqliteTable("channel_persona", {
 	updatedAt: integer("updated_at").notNull(),
 });
 
+/** One API key per provider ("openrouter"), entered once and picked by agents. AES-GCM, see agent-settings.service.ts. */
+export const providerKeys = sqliteTable("provider_keys", {
+	name: text("name").primaryKey(),
+	encryptedKey: text("encrypted_key").notNull(),
+	updatedBy: text("updated_by").notNull(),
+	updatedAt: integer("updated_at").notNull(),
+});
+
+/** Admin overrides of an agent's model settings; a NULL column = "the env value". */
+export const agentSettings = sqliteTable("agent_settings", {
+	agentId: text("agent_id").primaryKey(),
+	source: text("source", { enum: ["local", "external"] }),
+	baseUrl: text("base_url"),
+	model: text("model"),
+	providerKey: text("provider_key").references(() => providerKeys.name, {
+		onDelete: "set null",
+	}),
+	parameters: text("parameters", { mode: "json" })
+		.$type<Record<string, unknown>>()
+		.notNull()
+		.default({}),
+	updatedBy: text("updated_by").notNull(),
+	updatedAt: integer("updated_at").notNull(),
+});
+
+/** Polar subscriptions: each `subscription.*` webhook overwrites the row with the payload's fields. */
+export const subscriptions = sqliteTable("subscriptions", {
+	// Polar's subscription id.
+	id: text("id").primaryKey(),
+	customerId: text("customer_id").notNull(),
+	customerEmail: text("customer_email"),
+	productId: text("product_id"),
+	productName: text("product_name"),
+	// Polar's own status (active, past_due, canceled, ...).
+	status: text("status").notNull(),
+	startedAt: integer("started_at"),
+	currentPeriodStart: integer("current_period_start"),
+	currentPeriodEnd: integer("current_period_end"),
+	cancelAtPeriodEnd: integer("cancel_at_period_end", {
+		mode: "boolean",
+	}).notNull(),
+	endedAt: integer("ended_at"),
+	// Polar's `modified_at`: an older event never overwrites a newer row.
+	polarModifiedAt: integer("polar_modified_at"),
+	// Set by hand in the admin panel.
+	channelId: text("channel_id").references(() => channels.id, {
+		onDelete: "set null",
+	}),
+	updatedAt: integer("updated_at").notNull(),
+});
+
+/** `webhook-id`s already handled: Polar redelivers, a replay must not run twice. */
+export const billingWebhooks = sqliteTable("billing_webhooks", {
+	id: text("id").primaryKey(),
+	type: text("type").notNull(),
+	receivedAt: integer("received_at").notNull(),
+});
+
 export const schema = {
 	channels,
 	channelPersona,
@@ -372,4 +430,8 @@ export const schema = {
 	blockedIps,
 	intentExamples,
 	threadWorldState,
+	providerKeys,
+	agentSettings,
+	subscriptions,
+	billingWebhooks,
 };

@@ -9,7 +9,7 @@ Follows the root "Code style" convention (`src/index.ts` composition root with c
 - `*.instance.ts` singletons (e.g. `translate.instance.ts`) — only `index.ts` and other `*.instance.ts` import them.
 - Test helpers: `database.testing.ts` -> `testDb()`, `http.testing.ts` -> `setupAdminApp()`/`admin()`/`json()`.
 
-Modules: `access`, `active-runs`, `agents`, `auth`, `blocked-ips`, `channel-directory`, `channels`, `config`, `database`, `decisions`, `english-only`, `goap`, `history`, `http`, `identify`, `messages`, `performance`, `persona`, `plan-runs`, `rate-limit`, `reply`, `retention`, `run-binding`, `run-stream`, `security`, `stats`, `streaming`, `telegram-whitelist`, `text`, `threads`, `translate`, `usage`, `usage-recorder`, `users`, `visitors`, `widget`, `world-state`.
+Modules: `access`, `active-runs`, `agent-settings`, `agents`, `auth`, `billing`, `blocked-ips`, `channel-directory`, `channels`, `config`, `database`, `decisions`, `english-only`, `goap`, `history`, `http`, `identify`, `messages`, `performance`, `persona`, `plan-runs`, `prices`, `rate-limit`, `reply`, `retention`, `run-binding`, `run-stream`, `security`, `stats`, `streaming`, `subscriptions`, `telegram-whitelist`, `text`, `threads`, `translate`, `usage`, `usage-recorder`, `users`, `visitors`, `widget`, `world-state`.
 
 ## Commands
 
@@ -136,3 +136,7 @@ Elysia drops body fields not in schema — `inputSchema.required` was once lost 
 ## `drizzle/init.sql` (first-time setup)
 
 One generated SQL file with the full schema, seed data and the `__drizzle_migrations` rows (so the migrator sees all existing migrations as applied). After every `db:generate`, run `bun run db:snapshot` (`scripts/db-snapshot.ts` → `src/modules/database/database.snapshot.ts`, which runs the real migrator in a temp DB and dumps it). `database.snapshot.test.ts` fails if the committed file is stale. Services keep applying incremental migrations at startup; init.sql is only for provisioning a fresh DB (`sqlite3 db < drizzle/init.sql`).
+
+## Billing (Polar)
+
+`modules/billing`: `POST /v1/billing/polar`, mounted only with `POLAR_WEBHOOK_SECRET`, outside both bearer keys (`isOpenPath`). Signature, replay (`billing_webhooks`) and out-of-order rules: `admin-api.md` ("Polar webhook"). `modules/subscriptions`: admin list and channel link (`/v1/admin/subscriptions`). `modules/prices`: OpenRouter price list (cache a day, failure = no prices) behind the `costUsd` of `/v1/admin/usage`.

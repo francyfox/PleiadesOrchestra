@@ -17,6 +17,7 @@ import { foreignOriginRejection } from "./modules/origin-guard/origin-guard.serv
 import { performanceRoutes } from "./modules/performance/performance.ts";
 import { requestsRoutes } from "./modules/requests/requests.ts";
 import { sessionRoutes } from "./modules/session/session.ts";
+import { subscriptionsRoutes } from "./modules/subscriptions/subscriptions.ts";
 import { systemRoutes } from "./modules/system/system.ts";
 import { createSystemFeed } from "./modules/system-feed/system-feed.ts";
 import { usersRoutes } from "./modules/users/users.ts";
@@ -83,6 +84,7 @@ export function createApp(input: AdminApiDeps) {
 				.use(channelsRoutes(deps))
 				.use(blockedIpsRoutes(deps))
 				.use(intentsRoutes(deps))
+				.use(subscriptionsRoutes(deps))
 				.use(systemRoutes(deps))
 				.use(liveRoutes(deps)),
 		);

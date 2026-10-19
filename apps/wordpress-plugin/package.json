@@ -1,0 +1,14 @@
+{
+	"name": "@repo/wordpress-plugin",
+	"private": true,
+	"license": "GPL-2.0-or-later",
+	"scripts": {
+		"build": "bun scripts/build.ts",
+		"test": "bun test pleiades-assistant",
+		"lint": "biome check .",
+		"check-types": "echo \"no types: PHP and plain JS\""
+	},
+	"devDependencies": {
+		"@shalotts/pleiades-widget": "workspace:*"
+	}
+}

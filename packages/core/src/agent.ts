@@ -1,5 +1,10 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { generateText, type ModelMessage, streamText } from "ai";
+import {
+	generateText,
+	type JSONValue,
+	type ModelMessage,
+	streamText,
+} from "ai";
 import { InMemoryHistoryStore } from "./history";
 import { recordCall } from "./record-call";
 import {
@@ -31,6 +36,10 @@ export interface AgentConfig {
 	maxOutputTokens?: number;
 	/** Sampling temperature of every call. Unset = nothing is sent and the server's own default applies. */
 	temperature?: number;
+	/** Extra request-body fields for every call, e.g. `{ provider: { require_parameters: true } }` for OpenRouter (camelCase keys land on the wire as snake_case). */
+	providerOptions?: Record<string, JSONValue>;
+	/** Name written to the usage ledger. Default `albedo`. */
+	provider?: string;
 	/** Token cap for the lightweight per-chunk "ingest" pass used on all but the last chunk of a multi-chunk message. */
 	maxIngestTokens?: number;
 	telemetry?: ReturnType<typeof createTelemetry>;
@@ -39,6 +48,9 @@ export interface AgentConfig {
 	/** Called for every model call, including ingest passes. */
 	usageRecorder?: UsageRecorder;
 }
+
+/** Name of the AI SDK provider; extra request-body fields live under this key of `providerOptions`. */
+const PROVIDER_NAME = "albedo";
 
 const DEFAULT_SYSTEM_PROMPT =
 	"You are a helpful assistant. Answer briefly in plain text. Say only what you were told or can see; never invent facts, links or contact details.";
@@ -50,7 +62,7 @@ const INGEST_SYSTEM_PROMPT =
 
 export function createAgent(config: AgentConfig): Agent {
 	const provider = createOpenAICompatible({
-		name: "albedo",
+		name: PROVIDER_NAME,
 		baseURL: config.baseURL,
 		apiKey: config.apiKey,
 		// Without this, a streamed response never carries token usage (needs
@@ -67,6 +79,9 @@ export function createAgent(config: AgentConfig): Agent {
 	const maxIngestTokens = config.maxIngestTokens ?? 96;
 	const telemetry = config.telemetry ?? defaultTelemetry;
 	const usageRecorder = config.usageRecorder;
+	const providerOptions = config.providerOptions && {
+		[PROVIDER_NAME]: config.providerOptions,
+	};
 
 	/** Every model call goes through here: telemetry (stdout) plus the usage port. */
 	function reportCall(
@@ -83,7 +98,7 @@ export function createAgent(config: AgentConfig): Agent {
 			{
 				...callContext,
 				kind,
-				provider: "albedo",
+				provider: config.provider ?? PROVIDER_NAME,
 				model: config.model,
 				latencyMs,
 				at: Date.now(),
@@ -151,6 +166,7 @@ export function createAgent(config: AgentConfig): Agent {
 						messages: [{ role: "user", content: chunk }],
 						maxOutputTokens: maxIngestTokens,
 						temperature: config.temperature,
+						providerOptions,
 					});
 
 					reportCall(callContext, "ingest", inFlight.startedAt, {
@@ -197,6 +213,7 @@ export function createAgent(config: AgentConfig): Agent {
 					messages: [...past, userMessage],
 					maxOutputTokens,
 					temperature: config.temperature,
+					providerOptions,
 				});
 
 				for await (const delta of result.textStream) {

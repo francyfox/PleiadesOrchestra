@@ -152,8 +152,11 @@ An unknown `:id` → `404`.
 `GET /v1/admin/usage?groupBy=day|user|channel|model&from&to&channel`
 
 ```json
-{ "rows": [{ "key": "2026-09-24", "label": "2026-09-24", "inputTokens": 0, "outputTokens": 0, "calls": 0, "callsWithoutUsage": 0, "avgLatencyMs": 0 }] }
+{ "rows": [{ "key": "2026-09-24", "label": "2026-09-24", "inputTokens": 0, "outputTokens": 0, "calls": 0, "callsWithoutUsage": 0, "avgLatencyMs": 0,
+  "costUsd": 0.0123, "price": { "inputPerMillion": 0.09, "outputPerMillion": 0.3 } }] }
 ```
+
+`costUsd` = tokens × the model's price, summed per row; `null` when the prices could not be fetched (`GET https://openrouter.ai/api/v1/models`, per-token `pricing.prompt`/`completion`, cached a day in memory, a failure is retried after 5 minutes and keeps the previous list). A model with no price (a local one, or unknown to OpenRouter) costs 0. `price` (USD per 1M tokens, `null` = no price) is present on `groupBy=model` rows only. Shortcut: today's price is applied to past tokens.
 
 `key` is a day (`YYYY-MM-DD`, UTC) / user id / channel slug / model. `label` is human-readable (for a user, the displayName or externalUserId; for deleted anonymous users `"(удалён)"` ("deleted") with key `null`). By default `from` = 30 days ago, `to` = now.
 
@@ -163,6 +166,31 @@ An unknown `:id` → `404`.
 { "users": { "total": 0, "pending": 0, "blocked": 0, "anonymous": 0 },
   "usage": { "today": UsageTotals, "last7d": UsageTotals, "last30d": UsageTotals } }
 ```
+
+### Subscriptions (Polar, the "Cloud" plan)
+
+Filled by `POST /v1/billing/polar` (below). `status` is derived: `ended` (Polar `canceled`/`incomplete_expired`, or `ended_at` set), `past_due` (also `unpaid`, `incomplete`), `canceling` (active with `cancel_at_period_end`), `active` (also `trialing`).
+
+| Method | Path | Body | Response |
+|---|---|---|---|
+| GET | `/v1/admin/subscriptions?status=active\|canceling\|past_due\|ended` | — | `{ "items": [Subscription] }` — plans expiring within 7 days first, then by `currentPeriodEnd`, ended last |
+| PUT | `/v1/admin/subscriptions/:id/channel` | `{ "channelId": string \| null }` | `Subscription`; `404` unknown subscription, `400` unknown channel; `null` unlinks |
+
+```ts
+interface Subscription {
+  id: string;                       // Polar subscription id
+  customerId: string; customerEmail: string | null;
+  plan: string | null;              // Polar product name
+  status: "active" | "canceling" | "past_due" | "ended";
+  startedAt: number | null;
+  currentPeriodEnd: number | null;  // the expiry date
+  endedAt: number | null;
+  channelId: string | null; channelName: string | null;  // set by hand
+  polarUrl: string | null;          // POLAR_DASHBOARD_URL + "/" + id; null when unset
+}
+```
+
+Nothing is blocked when a plan ends: the panel shows it (Plans tab, a plan column on the channels page).
 
 ### Performance
 
@@ -277,6 +305,48 @@ interface Agent {
 ```
 
 The list comes from the orchestrator's configuration (`LLM_BASE_URL`/`LLM_MODEL` for the text agent, `LAYA_API_BASE_URL` for the decision agent). On each request the orchestrator calls `GET <base without /v1>/health` in parallel with a 1.5 s timeout and no auth keys; a network error, a timeout or a non-2xx give `down`, and the request itself does not fail.
+
+### Agent settings and provider keys
+
+Per-agent overrides of the env values (`LLM_*` for `beta-text`, `FUNCTION_CALL_*` for `delta-function-call`, `LAYA_*` for `gamma-decision`). Ids: `beta-text`, `delta-function-call`, `gamma-decision`; an unknown id is `404`. `gamma-decision` can be read but not changed or tested (`400`): Laya stays on its env server.
+
+| Method | Path | Body | Response |
+|---|---|---|---|
+| GET | `/v1/admin/agents/:id` | — | `AgentSettings` |
+| PATCH | `/v1/admin/agents/:id` | `AgentSettingsPatch` | `AgentSettings` |
+| POST | `/v1/admin/agents/:id/test` | — | `{ "ok": boolean, "answer"?: string, "error"?: string, "latencyMs": number }` |
+| GET | `/v1/admin/provider-keys` | — | `{ "items": [ProviderKey] }` |
+| PUT | `/v1/admin/provider-keys/:name` | `{ "key": string }` | `ProviderKey` (adds or replaces) |
+| DELETE | `/v1/admin/provider-keys/:name` | — | `{ "ok": true }`; agents that picked it fall back to env |
+
+```ts
+interface AgentSettingsPatch {   // a field left out stays, null clears it (= the env value)
+  source?: "local" | "external" | null;
+  baseUrl?: string | null;       // http(s) URL
+  model?: string | null;
+  providerKey?: string | null;   // name of a provider key; 400 if it does not exist
+  parameters?: {                 // replaced as a whole; null or {} clears
+    temperature?: number;        // 0..2
+    reasoningEffort?: "none" | "low" | "medium" | "high";
+    extraBody?: Record<string, unknown>; // extra request-body fields, e.g. { "provider": { "require_parameters": true } }
+  } | null;
+}
+interface AgentSettings {
+  id: string;
+  editable: boolean;             // false for gamma-decision
+  overrides: { source, baseUrl, model, providerKey, parameters };   // as saved, null = not set
+  defaults: { baseUrl, model, temperature, reasoningEffort };       // today's env values (the placeholders)
+  effective: { source, baseUrl, model, provider, temperature, reasoningEffort, extraBody }; // what the agent runs with
+  updatedBy: string | null;      // X-Admin-Id of the last save
+  updatedAt: number | null;
+}
+interface ProviderKey { name: string; mask: string; updatedBy: string; updatedAt: number } // mask = "••••" + last 4 characters
+```
+
+- **Effective = override if set, else env.** `source: "local"` ignores `baseUrl`/`model`/`providerKey` (the env server is used); parameters apply either way. The env API key is never sent to a base URL that differs from the env one: such an agent uses the picked provider key, or none.
+- **Keys** are stored AES-GCM encrypted with a key derived from `PROVIDER_KEYS_SECRET` (without it `PUT /provider-keys` is `400`). No route returns a key, base URLs are returned without login/password/query.
+- **No restart:** a save rebuilds the agent; a run already going keeps the one it started with. `GET /v1/admin/agents` (health) and `llm_calls` (`provider` = the picked key's name, `model`) use the effective values. Shortcut: delta can be switched on by a saved URL only if a base URL was in effect at startup.
+- **Test** sends one plain chat completion (`max_tokens` 16) with the effective settings, also for delta (it is not schema-constrained); a failing call is `200` with `ok: false`.
 
 ## Widget API (public, for the web chat widget on a site)
 
@@ -402,6 +472,16 @@ The thread's latest messages (≤ `MESSAGE_RETENTION_PER_USER`), oldest to newes
 | `429` | more than `WIDGET_MESSAGES_PER_MINUTE` messages per token or `WIDGET_IP_MESSAGES_PER_MINUTE` per IP per minute |
 
 Limits are in process memory and reset on restart. The client IP is taken by `CLIENT_IP_SOURCE`: `socket` (from the connection, the default), `cf-connecting-ip` (the Cloudflare header, as in compose) or `xff-rightmost` (the `TRUSTED_PROXY_HOPS`-th element of `X-Forwarded-For` from the right; the left elements are written by the client). Without the needed header the connection address is used. Blocks and limits match on `sha256(IP_HASH_SALT:ip)`; the visitor's clear-text IP is written to `users.last_ip` only for the admin panel (see [IP blocks](#IP-blocks)).
+
+## `POST /v1/billing/polar` (Polar webhook)
+
+Public: no bearer key, the signature is the credential. The route exists only when `POLAR_WEBHOOK_SECRET` is set (otherwise `404`).
+
+- **Verification** (Standard Webhooks): headers `webhook-id`, `webhook-timestamp` (seconds), `webhook-signature` (`v1,<base64>`, several separated by spaces). HMAC-SHA256 over `${id}.${timestamp}.${raw body}`, base64, compared in constant time; the body is read raw (`parse: "text"`), never re-serialized. A timestamp more than 5 minutes from now (either way) is rejected. Key: for a `whsec_` secret the base64 part is decoded (Standard Webhooks); the UTF-8 bytes of the whole secret string are tried as well, which is what Polar's older endpoints and user-provided secrets use (its SDK base64-encodes the string before handing it to the library). Both are accepted.
+- **Idempotent** by `webhook-id` (table `billing_webhooks`): a repeat is answered `200 {"ok":true,"duplicate":true}` and not applied. The id is recorded in the same transaction as the change, so a failed apply can be redelivered.
+- **Events**: every `subscription.*` event (`created`, `active`, `updated`, `cycled`, `canceled`, `uncanceled`, `revoked`, `past_due`) carries the whole subscription and overwrites its row in `subscriptions` (keyed by Polar id). Out of order: an event whose `data.modified_at` is older than the stored one is skipped (equal or newer wins); without `modified_at` the last delivery wins. `channel_id` is never touched by an event. `order.paid` and any other type are only logged.
+- Statuses: `200` ok / duplicate; `400` signed but not JSON or a `subscription.*` payload without `id`, `customer_id`, `status`; `401` missing or wrong signature or a stale timestamp.
+- Config: `POLAR_WEBHOOK_SECRET`; `POLAR_DASHBOARD_URL` (optional, the prefix of the subscription page in Polar for the panel's link).
 
 ## `POST /v1/channels/:slug/identify` (server-to-server, the integrating site's backend)
 

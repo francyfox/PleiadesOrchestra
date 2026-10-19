@@ -16,7 +16,7 @@ export function dashboardRoutes({ auth, orchestrator, now }: RouteDeps) {
 				detail: {
 					summary: "Dashboard numbers",
 					description:
-						"Stats plus 30 days of usage by day, top-10 users and channels.",
+						"Stats plus 30 days of usage by day, top-10 users, channels and models, with spend when model prices are known.",
 				},
 			}),
 		);

@@ -17,11 +17,12 @@ export async function fetchDashboard({
 	now,
 }: Pick<FetchContext, "orchestrator" | "now">): Promise<DashboardData> {
 	const from = now() - 30 * DAY_MS;
-	const [stats, byDay, byUser, byChannel] = await Promise.all([
+	const [stats, byDay, byUser, byChannel, byModel] = await Promise.all([
 		orchestrator.stats(),
 		orchestrator.usage({ groupBy: "day", from }),
 		orchestrator.usage({ groupBy: "user", from }),
 		orchestrator.usage({ groupBy: "channel", from }),
+		orchestrator.usage({ groupBy: "model", from }),
 	]);
 	return {
 		stats,
@@ -29,8 +30,10 @@ export async function fetchDashboard({
 			day: row.label,
 			inputTokens: row.inputTokens,
 			outputTokens: row.outputTokens,
+			costUsd: row.costUsd,
 		})),
 		topUsers: [...byUser.rows].sort(byTokens).slice(0, 10),
 		byChannel: [...byChannel.rows].sort(byTokens),
+		byModel: [...byModel.rows].sort(byTokens),
 	};
 }

@@ -31,6 +31,13 @@ export function createFormat(locale: string) {
 		minimumFractionDigits: 1,
 	});
 	const seconds = unit("second", 1);
+	// Token spend is often a fraction of a cent: show up to 4 decimals.
+	const dollars = new Intl.NumberFormat(locale, {
+		style: "currency",
+		currency: "USD",
+		minimumFractionDigits: 2,
+		maximumFractionDigits: 4,
+	});
 
 	return {
 		locale,
@@ -52,6 +59,8 @@ export function createFormat(locale: string) {
 				.join("");
 			return `${oneDecimal.format(used / GiB)} / ${oneDecimal.format(total / GiB)}${unitPart}`;
 		},
+		usd: (value: number | null | undefined) =>
+			value === null || value === undefined ? "—" : dollars.format(value),
 		ms: (value: number | null | undefined) => {
 			if (value === null || value === undefined) return "—";
 			return value < 1000

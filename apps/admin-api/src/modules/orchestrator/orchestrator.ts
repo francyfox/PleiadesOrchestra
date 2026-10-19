@@ -1,5 +1,11 @@
 import { retryFetch } from "@repo/elysia-kit";
-import type { Agent } from "../agents/agents.schema.ts";
+import type {
+	Agent,
+	AgentSettingsPatch,
+	AgentSettingsView,
+	AgentTestResult,
+	ProviderKey,
+} from "../agents/agents.schema.ts";
 import type {
 	BlockedIp,
 	CreateBlockedIpInput,
@@ -26,6 +32,10 @@ import type {
 	UpstreamRequestDetails,
 } from "../requests/requests.schema.ts";
 import type { Stats } from "../stats/stats.schema.ts";
+import type {
+	PlanStatus,
+	Subscription,
+} from "../subscriptions/subscriptions.schema.ts";
 import type { UsageGroupBy, UsageRow } from "../usage/usage.schema.ts";
 import type {
 	AdminUser,
@@ -172,6 +182,15 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 				`/v1/admin/blocked-ips${toSearch({ ...query })}`,
 			),
 		listAgents: () => request<{ items: Agent[] }>("GET", "/v1/admin/agents"),
+		getAgentSettings: (id: string) =>
+			request<AgentSettingsView>("GET", `/v1/admin/agents/${segment(id)}`),
+		listSubscriptions: (status?: PlanStatus) =>
+			request<{ items: Subscription[] }>(
+				"GET",
+				`/v1/admin/subscriptions${toSearch({ status })}`,
+			),
+		listProviderKeys: () =>
+			request<{ items: ProviderKey[] }>("GET", "/v1/admin/provider-keys"),
 	};
 
 	function writes(adminId: string) {
@@ -222,6 +241,33 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 					"POST",
 					`/v1/admin/channels/${segment(channelId)}/persona/preview`,
 					persona,
+				),
+			patchAgentSettings: (id: string, patch: AgentSettingsPatch) =>
+				write<AgentSettingsView>(
+					"PATCH",
+					`/v1/admin/agents/${segment(id)}`,
+					patch,
+				),
+			testAgent: (id: string) =>
+				write<AgentTestResult>(
+					"POST",
+					`/v1/admin/agents/${segment(id)}/test`,
+					{},
+				),
+			saveProviderKey: (name: string, key: string) =>
+				write<ProviderKey>("PUT", `/v1/admin/provider-keys/${segment(name)}`, {
+					key,
+				}),
+			deleteProviderKey: (name: string) =>
+				write<{ ok: true }>(
+					"DELETE",
+					`/v1/admin/provider-keys/${segment(name)}`,
+				),
+			linkSubscriptionChannel: (id: string, channelId: string | null) =>
+				write<Subscription>(
+					"PUT",
+					`/v1/admin/subscriptions/${segment(id)}/channel`,
+					{ channelId },
 				),
 			rotateChannelKeys: (id: string) =>
 				write<{ channel: Channel; secretKey: string }>(

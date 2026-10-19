@@ -251,3 +251,111 @@ export const blockedIpActions = {
 				.delete(),
 		),
 };
+
+const REASONING_EFFORTS = ["none", "low", "medium", "high"] as const;
+
+/** Reads the settings form into the PATCH body; a blank field is `null` = "the env value". */
+function settingsPatch(form: FormData) {
+	const extra = text(form, "extraBody");
+	let extraBody: Record<string, unknown> | undefined;
+	if (extra) {
+		try {
+			const parsed: unknown = JSON.parse(extra);
+			if (
+				parsed === null ||
+				typeof parsed !== "object" ||
+				Array.isArray(parsed)
+			)
+				return null;
+			extraBody = parsed as Record<string, unknown>;
+		} catch {
+			return null;
+		}
+	}
+	const temperature = text(form, "temperature");
+	const reasoningEffort = REASONING_EFFORTS.find(
+		(effort) => effort === form.get("reasoningEffort"),
+	);
+	return {
+		source:
+			form.get("source") === "external"
+				? ("external" as const)
+				: ("local" as const),
+		baseUrl: text(form, "baseUrl") || null,
+		model: text(form, "model") || null,
+		providerKey: text(form, "providerKey") || null,
+		parameters: {
+			temperature: temperature ? Number(temperature) : undefined,
+			reasoningEffort,
+			extraBody,
+		},
+	};
+}
+
+export const agentActions = {
+	save: (form: FormData) => {
+		const patch = settingsPatch(form);
+		if (!patch)
+			return Promise.resolve<ActionResult>({
+				ok: false,
+				data: { error: "invalid_json" },
+			});
+		return submitted(
+			api()
+				.agents({ id: text(form, "id") })
+				.patch(patch),
+		);
+	},
+	/** Clears every override: the env values apply again. */
+	reset: (form: FormData) =>
+		submitted(
+			api()
+				.agents({ id: text(form, "id") })
+				.patch({
+					source: null,
+					baseUrl: null,
+					model: null,
+					providerKey: null,
+					parameters: null,
+				}),
+		),
+	/** The call itself can fail with a 200 (`ok: false`); that is a failure for the panel too. */
+	test: async (form: FormData) => {
+		const result = await submitted(
+			api()
+				.agents({ id: text(form, "id") })
+				.test.post(),
+		);
+		return result.ok && result.data.ok === false
+			? {
+					ok: false as const,
+					data: { message: String(result.data.error ?? "") },
+				}
+			: result;
+	},
+};
+
+export const providerKeyActions = {
+	save: (form: FormData) =>
+		submitted(
+			api()
+				["provider-keys"]({ name: text(form, "name") })
+				.put({ key: text(form, "key") }),
+		),
+	remove: (form: FormData) =>
+		submitted(
+			api()
+				["provider-keys"]({ name: text(form, "name") })
+				.delete(),
+		),
+};
+
+export const subscriptionActions = {
+	/** An empty `channelId` unlinks. */
+	link: (form: FormData) =>
+		submitted(
+			api()
+				.subscriptions({ id: text(form, "id") })
+				.channel.put({ channelId: text(form, "channelId") || null }),
+		),
+};

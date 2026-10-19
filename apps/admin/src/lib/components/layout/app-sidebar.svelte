@@ -4,6 +4,7 @@
 	import BotIcon from "@lucide/svelte/icons/bot";
 	import BrainIcon from "@lucide/svelte/icons/brain";
 	import CircleQuestionMarkIcon from "@lucide/svelte/icons/circle-question-mark";
+	import CreditCardIcon from "@lucide/svelte/icons/credit-card";
 	import GaugeIcon from "@lucide/svelte/icons/gauge";
 	import GlobeIcon from "@lucide/svelte/icons/globe";
 	import LightbulbIcon from "@lucide/svelte/icons/lightbulb";
@@ -30,6 +31,7 @@
 		{ href: "/agents", key: "agents", icon: BotIcon },
 		{ href: "/performance", key: "performance", icon: GaugeIcon },
 		{ href: "/recommendations", key: "recommendations", icon: LightbulbIcon },
+		{ href: "/plans", key: "plans", icon: CreditCardIcon },
 		{ href: "/channels", key: "channels", icon: GlobeIcon },
 		{ href: "/blocked-ips", key: "blockedIps", icon: BanIcon },
 		{ href: "/admins", key: "admins", icon: ShieldIcon },

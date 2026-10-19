@@ -45,7 +45,29 @@ const dashboardContent = {
 			en: "Usage by channel",
 			kk: "Арналар бойынша шығын",
 		}),
+		byModel: t({
+			ru: "Расход и цена по моделям",
+			en: "Usage and price by model",
+			kk: "Модельдер бойынша шығын және баға",
+		}),
+		spendByDay: t({
+			ru: insert("Расход в долларах по дням (30 дней, всего {{total}})"),
+			en: insert("Spend per day (30 days, {{total}} in total)"),
+			kk: insert("Күн бойынша шығын (30 күн, барлығы {{total}})"),
+		}),
+		pricesNote: t({
+			ru: "Цена — по тарифам OpenRouter на сегодня, применена ко всем токенам периода; локальные модели бесплатны. Нет цен — прочерк.",
+			en: "Prices are OpenRouter's today, applied to all tokens of the period; local models are free. No prices — a dash.",
+			kk: "Баға — OpenRouter-дің бүгінгі тарифі, кезеңнің барлық токендеріне қолданылған; жергілікті модельдер тегін. Баға жоқ — сызықша.",
+		}),
 		columns: {
+			model: t({ ru: "Модель", en: "Model", kk: "Модель" }),
+			spend: t({ ru: "Расход", en: "Spend", kk: "Шығын" }),
+			price: t({
+				ru: "Цена за 1M (вход / выход)",
+				en: "Price per 1M (in / out)",
+				kk: "1M үшін баға (кіріс / шығыс)",
+			}),
 			user: t({ ru: "Пользователь", en: "User", kk: "Пайдаланушы" }),
 			channel: t({ ru: "Канал", en: "Channel", kk: "Арна" }),
 			input: t({ ru: "Вход", en: "Input", kk: "Кіріс" }),

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import SettingsIcon from "@lucide/svelte/icons/settings";
 	import {
 		createColumnHelper,
 		createTable,
@@ -9,14 +10,19 @@
 	import type { Agent } from "#lib/api-types.js";
 	import CopyValue from "#lib/components/copy-value.svelte";
 	import DataTable from "#lib/components/data-table.svelte";
+	import IconButton from "#lib/components/icon-button.svelte";
 	import { Badge } from "#lib/components/ui/badge/index.js";
 	import { useFormat } from "#lib/i18n/use-format.js";
 	import { levelBadgeClass, levelDotClass } from "../level-styles";
+	import AgentSettingsDialog from "./agent-settings-dialog.svelte";
 
 	let { agents }: { agents: Agent[] } = $props();
 
 	const content = useIntlayer("agents");
 	const format = useFormat();
+
+	let editing = $state<Agent | null>(null);
+	let dialogOpen = $state(false);
 
 	const features = tableFeatures({});
 	const helper = createColumnHelper<typeof features, Agent>();
@@ -52,12 +58,26 @@
 				header: () => $content.columns.checked.value,
 				cell: (ctx) => $format.date(ctx.getValue()),
 			}),
+			helper.display({
+				id: "actions",
+				header: "",
+				cell: (ctx) => renderSnippet(actionsCell, ctx.row.original),
+			}),
 		]),
 		get data() {
 			return agents;
 		},
 	});
 </script>
+
+{#snippet actionsCell(agent: Agent)}
+	<div class="flex justify-end">
+		<IconButton icon={SettingsIcon} tone="primary" label={$content.settings.action.value} onclick={() => {
+			editing = agent;
+			dialogOpen = true;
+		}} />
+	</div>
+{/snippet}
 
 {#snippet nameCell(agent: Agent)}
 	<span class="font-medium">{agent.name}</span>
@@ -77,3 +97,7 @@
 {/snippet}
 
 <DataTable {table} emptyText={$content.empty.value} />
+
+{#if editing}
+	<AgentSettingsDialog agent={editing} bind:open={dialogOpen} />
+{/if}

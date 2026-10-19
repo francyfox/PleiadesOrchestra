@@ -19,9 +19,13 @@ function isAdminPath(pathname: string): boolean {
 	return pathname === "/v1/admin" || pathname.startsWith("/v1/admin/");
 }
 
-/** Liveness and API docs stay open so they can be reached without the shared secret. */
+/** Liveness and API docs stay open so they can be reached without the shared secret; the Polar webhook proves itself by its signature. */
 function isOpenPath(pathname: string): boolean {
-	return pathname === "/health" || pathname.startsWith("/swagger");
+	return (
+		pathname === "/health" ||
+		pathname.startsWith("/swagger") ||
+		pathname === "/v1/billing/polar"
+	);
 }
 
 /**
