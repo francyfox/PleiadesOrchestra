@@ -1,0 +1,4 @@
+# GUI git clients (WebStorm) run hooks without the shell profile, so bun is not on PATH.
+export PATH="$HOME/.bun/bin:$PATH"
+bunx biome check --staged --no-errors-on-unmatched
+bun run check-types
