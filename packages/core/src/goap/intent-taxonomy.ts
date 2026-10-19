@@ -3,7 +3,7 @@ import type { WorldState } from "./types";
 /**
  * Fixed e-commerce intent taxonomy a WebMCP/MCP tool call can fall under.
  * Shared between two different Laya classification points (see
- * docs/laya-autonomous-webmcp.md): per-tool, at catalog-build time
+ * apps/docs/content/en/drafts/laya-autonomous-webmcp.md): per-tool, at catalog-build time
  * (`createClassifiedMcpToolSource`, proposed, not yet implemented), and
  * per-message, before planning (`message-intent.ts`, `classifyMessageIntent`).
  * Both need the same fixed, bounded set of options for Laya's `choice`
@@ -89,7 +89,7 @@ export const EFFECTS_BY_INTENT: Record<ToolIntent, Partial<WorldState>> = {
  * default. A plan that gets it wrong isn't wrong forever: the real call
  * just returns an error/different effect and `runPlan`'s replanning already
  * handles that (see `executor.ts`) — at the cost of one extra tool call,
- * not a crash. See docs/laya-autonomous-webmcp.md, "Ограничения".
+ * not a crash. See apps/docs/content/en/drafts/laya-autonomous-webmcp.md, "Limitations".
  */
 export const PRECONDITIONS_BY_INTENT: Record<
 	ToolIntent,

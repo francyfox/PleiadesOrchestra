@@ -4,6 +4,7 @@ import { ALL_LOCALES, DEFAULT_LOCALE, LOCALES } from "../src/lib/i18n.ts";
 import {
 	buildPage,
 	contentRouteFile,
+	DRAFTS_DIR,
 	headingSlugs,
 	listMarkdown,
 	loadContent,
@@ -132,7 +133,11 @@ describe("buildPage", () => {
 });
 
 describe("translations mirror English", () => {
-	const en = content.get(DEFAULT_LOCALE) ?? new Map<string, string>();
+	const en = new Map(
+		[...(content.get(DEFAULT_LOCALE) ?? [])].filter(
+			([rel]) => !rel.startsWith(DRAFTS_DIR),
+		),
+	);
 
 	test("all locales are present", () => {
 		expect([...content.keys()].sort()).toEqual([...ALL_LOCALES].sort());

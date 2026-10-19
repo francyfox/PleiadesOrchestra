@@ -67,7 +67,7 @@ function toAdminUser(row: UserJoinRow): AdminUser {
 	};
 }
 
-// Cursors are opaque to clients (docs/admin-api.md); inside they are just an
+// Cursors are opaque to clients (apps/docs/content/en/drafts/admin-api.md); inside they are just an
 // offset — simple and stable enough for an admin table with server-side sorting.
 export function encodeCursor(offset: number): string {
 	return Buffer.from(JSON.stringify({ o: offset })).toString("base64url");

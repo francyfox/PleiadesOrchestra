@@ -31,7 +31,7 @@ Take the first option that fully works:
 
 Never cut: validation at trust boundaries, error handling that prevents data loss, security, accessibility, the calibration real hardware needs, anything the user asked for.
 
-PleiadesOrchestra: a Turborepo monorepo (Bun workspaces, hexagonal style) of small agent-shaped services that orchestrate small local models with a GOAP planner. Services are named after Pleiades Six Stars maids with greek-letter role prefixes (`alpha-orchestrator`, `beta-text`, `gamma-decision`, `delta-function-call`). Design and phase status: `docs/harness-goap-orchestrator-plan.md`. Failures and architecture changes: `docs/lessons-learned.md`.
+PleiadesOrchestra: a Turborepo monorepo (Bun workspaces, hexagonal style) of small agent-shaped services that orchestrate small local models with a GOAP planner. Services are named after Pleiades Six Stars maids with greek-letter role prefixes (`alpha-orchestrator`, `beta-text`, `gamma-decision`, `delta-function-call`). Design notes, contracts and plans: `apps/docs/content/en/drafts/` (English only, published at `/docs/drafts/`). Failures and architecture changes: `apps/docs/content/en/drafts/lessons-learned.md`.
 
 ## Commands
 
@@ -49,7 +49,7 @@ Run from the repo root (Turborepo fans out per package; `test` depends on `^buil
 
 ## Architecture
 
-Map of every app and package: `docs/architecture.md`. Each has its own `CLAUDE.md` — read it before working there.
+Map of every app and package: `apps/docs/content/en/drafts/architecture.md`. Each has its own `CLAUDE.md` — read it before working there.
 
 ## Domain: not one shop
 
@@ -79,8 +79,8 @@ Angular-like modules in composition style (verified in `alpha-orchestrator`, `ad
 - **Env validation**: `@t3-oss/env-core` + `zod`. Don't build `createEnv(...)` at module top-level in files imported by tests — use the `buildConfig(env)` / `config.service.ts` split above.
 - **Lint/format**: Biome (`biome.json` at root, tabs + double quotes). `bun run lint`, `bun run lint:fix` / `bun run format`.
 - **Production build**: `bun build ./src/index.ts --compile --target=bun-linux-x64-musl --outfile dist/<name>`. Still links `libstdc++`/`libgcc` dynamically — install those in the final Alpine stage.
-- **On failure or architecture change**: record in `docs/lessons-learned.md` so it isn't repeated.
-- **Keep this root CLAUDE.md minimal.** Every app/package has its own CLAUDE.md with its internals; a new app or package gets its own CLAUDE.md and one line in `docs/architecture.md` (linked from here, not `@`-imported, so it isn't loaded into every session).
+- **On failure or architecture change**: record in `apps/docs/content/en/drafts/lessons-learned.md` so it isn't repeated.
+- **Keep this root CLAUDE.md minimal.** Every app/package has its own CLAUDE.md with its internals; a new app or package gets its own CLAUDE.md and one line in `apps/docs/content/en/drafts/architecture.md` (linked from here, not `@`-imported, so it isn't loaded into every session).
 - Don't create files/scaffolding outside what's explicitly asked for.
 - **Delete confirmed-dead code/infra** rather than leaving it.
 - **New agent-shaped service = propose first**: don't scaffold without asking; don't fold new agent responsibility into existing services.

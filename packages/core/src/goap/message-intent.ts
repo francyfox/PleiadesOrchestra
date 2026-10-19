@@ -79,7 +79,7 @@ export const MESSAGE_INTENT_CRITERIA: Record<string, string> = {
  * picks between many different possible outcomes for the same question, so
  * its result has to shape the `goal` passed into `runPlan` itself, not
  * become one more node inside the graph it produces — same reasoning as the
- * rejected-autopilot section in docs/laya-autonomous-webmcp.md, one level up
+ * rejected-autopilot section in apps/docs/content/en/drafts/laya-autonomous-webmcp.md, one level up
  * (message routing instead of tool dispatch).
  */
 export async function classifyMessageIntent(
@@ -131,7 +131,7 @@ export async function classifyMessageIntentDetailed(
 
 	// Only the message goes to Laya. The visitor's page and language used to go
 	// along, and Laya let them outweigh the message: "привет" came back as
-	// `navigate`, «купи 1 сыр» as `checkout` (measured, docs/laya-autonomous-webmcp.md).
+	// `navigate`, «купи 1 сыр» as `checkout` (measured, apps/docs/content/en/drafts/laya-autonomous-webmcp.md).
 	// "Already on that page" is handled where the page is known (`samePage`).
 	let choice: string | undefined;
 	let probability: number | undefined;
@@ -173,7 +173,7 @@ export async function classifyMessageIntentDetailed(
  * Extends `baseGoal` with the classified intent's usual effects — but only
  * the ones some action in `actions` can actually produce. A thread with no
  * WebMCP/MCP catalog bound to it yet (`threadActionsFor` returning nothing,
- * still the common case — see docs/laya-autonomous-webmcp.md) has no action
+ * still the common case — see apps/docs/content/en/drafts/laya-autonomous-webmcp.md) has no action
  * producing e.g. `inCart`, so a `"addToCart"`-classified message degrades
  * back to `baseGoal` alone instead of demanding a fact nothing can supply,
  * which `plan()` would otherwise fail outright to reach.

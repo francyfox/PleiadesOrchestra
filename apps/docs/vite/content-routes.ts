@@ -14,6 +14,9 @@ import { ALL_LOCALES, DEFAULT_LOCALE } from "../src/lib/i18n.ts";
 /** One locale's pages: path relative to `content/<locale>/` (`/`-separated) -> Markdown. */
 export type PageSet = Map<string, string>;
 
+/** English-only working notes (`content/en/drafts/`): not translated, so translations don't mirror them. */
+export const DRAFTS_DIR = "drafts/";
+
 /**
  * SveltePress renders pages only from `src/routes/**\/+page.md`. The docs pages are
  * written as plain `content/<locale>/**\/*.md`; this maps one of them (path relative to

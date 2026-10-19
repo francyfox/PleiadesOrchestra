@@ -47,7 +47,7 @@ const DEFAULT_MCP_TOOL_COST = 3;
  * schema's own property names — covers parameters whose value is already
  * known (extracted earlier by some other action), the same way for any
  * tool source keyed on a JSON-Schema-shaped `inputSchema` (MCP here,
- * WebMCP in `webmcp-actions.ts`). See docs/laya-autonomous-webmcp.md,
+ * WebMCP in `webmcp-actions.ts`). See apps/docs/content/en/drafts/laya-autonomous-webmcp.md,
  * "Аргументы тула: bounded vs open".
  */
 export function buildArguments(

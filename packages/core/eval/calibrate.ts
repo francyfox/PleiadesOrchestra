@@ -101,7 +101,7 @@ if (!process.argv.includes("--dry")) {
 /**
  * Laya temperature per (question type x option-count bucket), refitted on our
  * own labelled answers by \`bun run calibrate\` (NLL, golden-section; held-out
- * numbers in docs/lessons-learned.md). Data collected ${date}: the message-
+ * numbers in apps/docs/content/en/drafts/lessons-learned.md). Data collected ${date}: the message-
  * intent eval cases and the benchmark's enum/boolean choices. A bucket that
  * is missing (too little data, or the refit did not lower the held-out ECE) keeps Laya's shipped temperature. Do not edit by hand.
  */

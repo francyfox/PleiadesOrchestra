@@ -77,7 +77,7 @@ test.describe("WebMCP round trip", () => {
 
 		// Registered once, via /v1/widget/tools when the panel opens — not
 		// resent with the message body (that's what caused the 413 this test
-		// would otherwise miss: see docs/laya-autonomous-webmcp.md).
+		// would otherwise miss: see apps/docs/content/en/drafts/laya-autonomous-webmcp.md).
 		const toolsRequests = requests.filter((r) => r.path === "tools");
 		expect(toolsRequests).toHaveLength(1);
 		expect(toolsRequests[0]?.body).toMatchObject({

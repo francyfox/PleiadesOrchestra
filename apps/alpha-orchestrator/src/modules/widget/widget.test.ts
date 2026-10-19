@@ -202,7 +202,7 @@ async function sendToolResult(
 		.map((line) => JSON.parse(line));
 }
 
-/** `POST /v1/widget/tools` — what the widget calls once when its panel opens, not on every message (see docs/laya-autonomous-webmcp.md). */
+/** `POST /v1/widget/tools` — what the widget calls once when its panel opens, not on every message (see apps/docs/content/en/drafts/laya-autonomous-webmcp.md). */
 async function registerTools(
 	ctx: Ctx,
 	token: string,
@@ -771,7 +771,7 @@ describe("widget WebMCP round trip", () => {
 	// "search" (not "addToCart") on purpose: PRECONDITIONS_BY_INTENT.addToCart
 	// requires `itemSelected`, which nothing in this single-tool catalog can
 	// produce — a real "no plan reached the goal" outcome (working as
-	// designed, see docs/laya-autonomous-webmcp.md's "Ограничения"), just not
+	// designed, see apps/docs/content/en/drafts/laya-autonomous-webmcp.md's "Limitations"), just not
 	// what this test is exercising. `search`'s preconditions are empty.
 	const searchTool: WebMcpToolDescriptor = {
 		name: "search_products",

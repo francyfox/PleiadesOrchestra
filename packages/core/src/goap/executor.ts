@@ -33,7 +33,7 @@ export interface RunPlanOptions {
 	onStep?: (step: PlanStep) => void;
 	/** Receives planning/execution events (see `PlanTraceEvent`). Must not throw. */
 	tracer?: PlanTracer;
-	/** Checked before planning and before each action; also passed through to `execute()` as `ctx.signal` for actions that can abort their own work (e.g. a `fetch` call). Aborting stops the run between actions, not mid-`execute()` — see the KILLED state in `docs/goap-actions.md`. */
+	/** Checked before planning and before each action; also passed through to `execute()` as `ctx.signal` for actions that can abort their own work (e.g. a `fetch` call). Aborting stops the run between actions, not mid-`execute()` — see the KILLED state in `apps/docs/content/en/drafts/goap-actions.md`. */
 	signal?: AbortSignal;
 }
 

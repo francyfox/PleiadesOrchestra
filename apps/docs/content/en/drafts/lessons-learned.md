@@ -1,3 +1,7 @@
+---
+title: Lessons learned
+---
+
 # Lessons Learned
 
 Critical items are duplicated in the root `CLAUDE.md`. This file has the full list including less-critical and historical entries.
@@ -10,11 +14,11 @@ Critical items are duplicated in the root `CLAUDE.md`. This file has the full li
 - **`docker run -e VARNAME` only forwards exported vars** — sourcing a plain `KEY=value` `.env` file doesn't export. Use `set -a; source .env; set +a`.
 - **`bun build --compile` doesn't embed drizzle migrations** — copy `drizzle/` into the Docker image; set `DATABASE_MIGRATIONS_DIR`. Verified by running the built image against an empty volume.
 - **Relative DB path in `env_file` moves DB off the volume** — `./data/admin.db` inside the container resolves to the container layer, not the mount. Pin container data paths in compose `environment:`, not in `.env`. Bite: `ADMIN_MIGRATIONS_DIR=./drizzle` in `.env` crashes on start inside container (`Can't find meta/_journal.json`).
-- **`${VAR:?msg}` in `compose.yml` evaluates for ALL services** including inactive profiles. Use `${VAR:-}` for opt-in services and let the app refuse to start instead.
+- **<code>{'${VAR:?msg}'}</code> in `compose.yml` evaluates for ALL services** including inactive profiles. Use <code>{'${VAR:-}'}</code> for opt-in services and let the app refuse to start instead.
 - **`.dockerignore: *.md` breaks Python `pyproject.toml`** if it declares `readme = "README.md"`. Re-include with `!apps/gemini-webapi-mcp/README.md`. Also exclude `**/.venv`, `**/__pycache__`. Pinned `ghcr.io/astral-sh/uv:<x.y.z>-python3.12-*` images are Debian trixie — pair with `python:3.12-slim-trixie`.
 - **`curl --retry N` doesn't resume mid-transfer** — a connection reset during a large download isn't retried, and retry restarts from byte 0. Use `-C - --retry-all-errors --retry 10` for large downloads.
 - **`llama-server` logs everything to stderr** — including INFO lines. Railway (and most log viewers) classify by stream, so everything shows as error. Append `2>&1` in the entrypoint.
-- **`N_GPU_LAYERS=0 docker compose up beta-text` doesn't reach the container** — compose only interpolates host env into `${...}` in `compose.yml`, and `beta-text` takes its env from `env_file`. Use a separate `docker run ... -ngl 0` for CPU comparison.
+- **`N_GPU_LAYERS=0 docker compose up beta-text` doesn't reach the container** — compose only interpolates host env into <code>{'${...}'}</code> in `compose.yml`, and `beta-text` takes its env from `env_file`. Use a separate `docker run ... -ngl 0` for CPU comparison.
 - **GCC 15 needs `-include cstdint`** for CTranslate2/SentencePiece and `CMAKE_POLICY_VERSION_MINIMUM=3.5` for SentencePiece.
 
 ## Bun
@@ -89,7 +93,11 @@ Critical items are duplicated in the root `CLAUDE.md`. This file has the full li
 
 `/v1/widget/*` rejects `Content-Length > WIDGET_MAX_BODY_BYTES` in `onRequest` (before body parsing); chunked bodies carry no length, so the server-wide `HTTP_MAX_BODY_BYTES` (passed through `serve({ maxRequestBodySize })` to `app.listen`) is what stops them. Elysia's `onRequest` is global even inside a prefixed plugin, hence the explicit path check. In tests `new Request(url, { body })` sets no `content-length` header: set it by hand. `tool-results` is checked by `callId` (= id of the run that issued the `tool_call`) and `awaitedTool`, both stored in the WAITING checkpoint; the resume drops `awaitedTool`, so a replay of the same answer is refused.
 
-- **Drizzle `.set()` rejects `sql.placeholder()` directly in prepared updates** — wrap it: ``lastSeenAt: sql`${sql.placeholder("now")}` ``. Prepared statements live in `database/prepared.ts` (cached per `Db`); `touchVisitor` is coalesced to one write per `TOUCH_COALESCE_MS` (60 s) unless the IP changed.
+- **Drizzle `.set()` rejects `sql.placeholder()` directly in prepared updates** — wrap it in a `sql` template, see the snippet below. Prepared statements live in `database/prepared.ts` (cached per `Db`); `touchVisitor` is coalesced to one write per `TOUCH_COALESCE_MS` (60 s) unless the IP changed.
+
+  ```ts
+  lastSeenAt: sql`${sql.placeholder("now")}`
+  ```
 
 ## Persona and delta prompt (2026-10-14)
 
@@ -160,3 +168,8 @@ Critical items are duplicated in the root `CLAUDE.md`. This file has the full li
 - **>= 0.85 on the intent question (Laya alone, the path that fills `intent_examples`):** shipped probabilities 61 of 93 answers, 56 right (92%); calibrated 52, 48 right (92%, in-sample T). Calibration trims coverage, not precision. Wrong ones above 0.85: «cheaper than 3 dollars» -> compare (want filter), «how much is two plus two?» -> compare (0.97, want chat), «I will order in Penny Pantry» -> addToCart (want chooseStore), «previous page» -> navigate (want paginate). At 0.95: 27 answers, 26 right (96%). So ~8% of auto-approved labels would be wrong at 0.85 on this (deliberately hard) set; the default stays 0.85 (the authors' start) but `LAYA_AUTO_APPROVE_CONFIDENCE=0.95` is the safer value until real traffic is measured. Auto-approved rows are marked `approved_by = auto` + `confidence` and an admin can reject/correct them in /intents.
 - **checkout/removeFromCart are never auto-approved** (`NEEDS_THE_WORDS` guard in `learnIntent`, although Laya is never offered them). Routing is unchanged: a confident answer only changes what is stored (and memory is rebuilt), not the turn.
 - The confidence is also on the `classify` call: `llm_calls.confidence` and `llm.confidence` in the telemetry line.
+
+## `docs/` moved into the docs site as English drafts (2026-10-19)
+
+- The design notes, contracts, plans, the audit and this file moved from `docs/` to `apps/docs/content/en/drafts/` (site `/docs/drafts/`), translated to English, so GitHub issues can link a page with an anchor. Images (`cover.png`, `covers/`, `logo.svg`) and the raw traces (`trace/`) stay in `docs/`.
+- **SveltePress compiles Markdown as Svelte**: inline code becomes a template literal with only `\` and backticks escaped, so a dollar sign followed by a brace inside inline code is interpolated and fails the build ("Unexpected token"). HTML entities do not help (remark decodes them back). Write it as a Svelte string expression in a `code` tag, see the compose lessons above. An unknown fence language (`toml`) also fails the build until it is added to `highlighter.languages`.

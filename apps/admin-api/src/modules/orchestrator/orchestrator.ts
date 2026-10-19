@@ -79,7 +79,7 @@ const segment = encodeURIComponent;
 
 /**
  * Server-only client for the orchestrator's `/v1/admin/*` API
- * (docs/admin-api.md). Reads need only the admin key; mutations go through
+ * (apps/docs/content/en/drafts/admin-api.md). Reads need only the admin key; mutations go through
  * `.as(adminId)` so every write carries `X-Admin-Id` for the audit fields.
  */
 export function createOrchestratorClient(config: OrchestratorClientConfig) {

@@ -2,7 +2,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Plugin } from "vite";
 
 /**
- * Dev-only stand-in for the public Widget API (docs/admin-api.md), served by
+ * Dev-only stand-in for the public Widget API (apps/docs/content/en/drafts/admin-api.md), served by
  * the Vite dev server itself (same origin, so no CORS). Used when the dev page
  * has no real `agent-url`. Say a keyword in the chat to pick a scenario:
  *   "steps" — flow lines, then a reply   · "error" — a failed task (`task_failed`)

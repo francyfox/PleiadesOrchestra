@@ -470,7 +470,7 @@ function createParameterChoiceAction(
  * Laya step that picks the value (see `createParameterChoiceAction`).
  *
  * A WebMCP tool call can only execute in the visitor's browser (see
- * docs/laya-autonomous-webmcp.md, "WebMCP vs MCP"), so `execute()` never
+ * apps/docs/content/en/drafts/laya-autonomous-webmcp.md, "WebMCP vs MCP"), so `execute()` never
  * calls anything itself — it either reads a result the browser already
  * reported (`webmcp:<name>:result`, plus the answer text in
  * `webmcp:<name>:text`, written by the orchestrator on resume) or asks the

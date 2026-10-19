@@ -1,3 +1,7 @@
+---
+title: Architecture
+---
+
 # Architecture
 
 Every app and package of the monorepo, one line each. Internals live in each one's own `CLAUDE.md`; this file is the map, linked (not imported) from the root `CLAUDE.md` so it isn't loaded into every session. A new app or package gets a line here and its own `CLAUDE.md`.

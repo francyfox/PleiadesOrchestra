@@ -73,6 +73,46 @@
     <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/api/widget/"/>
   </url>
   <url>
+    <loc>/docs/drafts/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="/docs/drafts/"/>
+  </url>
+  <url>
+    <loc>/docs/drafts/admin-api/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="/docs/drafts/admin-api/"/>
+  </url>
+  <url>
+    <loc>/docs/drafts/architecture/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="/docs/drafts/architecture/"/>
+  </url>
+  <url>
+    <loc>/docs/drafts/audit-2026-10/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="/docs/drafts/audit-2026-10/"/>
+  </url>
+  <url>
+    <loc>/docs/drafts/goap-actions/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="/docs/drafts/goap-actions/"/>
+  </url>
+  <url>
+    <loc>/docs/drafts/intent-packs/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="/docs/drafts/intent-packs/"/>
+  </url>
+  <url>
+    <loc>/docs/drafts/laya-autonomous-webmcp/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="/docs/drafts/laya-autonomous-webmcp/"/>
+  </url>
+  <url>
+    <loc>/docs/drafts/lessons-learned/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="/docs/drafts/lessons-learned/"/>
+  </url>
+  <url>
+    <loc>/docs/drafts/playground/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="/docs/drafts/playground/"/>
+  </url>
+  <url>
+    <loc>/docs/drafts/sessions-and-admin-plan/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="/docs/drafts/sessions-and-admin-plan/"/>
+  </url>
+  <url>
     <loc>/docs/intents/</loc>
     <xhtml:link rel="alternate" hreflang="en" href="/docs/intents/"/>
     <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/intents/"/>

@@ -10,7 +10,7 @@ import {
 } from "drizzle-orm/sqlite-core";
 
 // All timestamps are epoch ms stored as plain integers — the HTTP contract
-// (docs/admin-api.md) speaks epoch ms, so no Date round-trips.
+// (apps/docs/content/en/drafts/admin-api.md) speaks epoch ms, so no Date round-trips.
 
 export const channels = sqliteTable("channels", {
 	id: text("id").primaryKey(),
@@ -256,7 +256,7 @@ export const visitorTokens = sqliteTable("visitor_tokens", {
 
 /**
  * GOAP `WorldState` a thread's plan run stopped short of its goal with —
- * WAITING-style resumption (`docs/laya-autonomous-webmcp.md`): the next
+ * WAITING-style resumption (`apps/docs/content/en/drafts/laya-autonomous-webmcp.md`): the next
  * `/v1/messages` on this thread loads it back instead of starting from a
  * blank state. Cleared once a run actually reaches its goal.
  */

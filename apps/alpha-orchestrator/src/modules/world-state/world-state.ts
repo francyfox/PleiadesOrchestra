@@ -5,7 +5,7 @@ import type { Db } from "../database/database.ts";
 
 /**
  * SQLite-backed `WorldStateStore` — the persistence half of WAITING-style
- * plan resumption (`docs/laya-autonomous-webmcp.md`). One row per thread,
+ * plan resumption (`apps/docs/content/en/drafts/laya-autonomous-webmcp.md`). One row per thread,
  * upserted on `save`, deleted on `clear` or when the thread itself is
  * deleted (FK cascade, same as `messages`/`plan_runs`).
  */

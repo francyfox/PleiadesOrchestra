@@ -81,6 +81,7 @@ export default defineConfig(({ mode }) => ({
 						"bash",
 						"svelte",
 						"yaml",
+						"toml",
 						"diff",
 						"md",
 					],

@@ -18,7 +18,7 @@ const FAKE_WORKER = new URL(
 /**
  * The error a promise rejects with. Not `expect(p).rejects`: under bun test
  * it waits for the promise without servicing worker messages, so a call
- * answered by a worker looks stuck (see docs/lessons-learned.md).
+ * answered by a worker looks stuck (see apps/docs/content/en/drafts/lessons-learned.md).
  */
 async function rejection(promise: Promise<unknown>): Promise<unknown> {
 	try {

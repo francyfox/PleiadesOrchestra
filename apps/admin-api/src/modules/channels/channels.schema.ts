@@ -4,7 +4,7 @@ import { nullable, oneOf } from "../common/common.schema.ts";
 const ACCESS_MODES = ["whitelist", "open"] as const;
 
 /**
- * DTOs of the orchestrator's admin API — docs/admin-api.md is the source of
+ * DTOs of the orchestrator's admin API — apps/docs/content/en/drafts/admin-api.md is the source of
  * truth. They double as this service's response schemas: whatever the
  * orchestrator sends is checked against them before it reaches the panel.
  */

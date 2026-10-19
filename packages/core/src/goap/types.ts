@@ -1,6 +1,6 @@
 /**
  * Flat key-value fact bag — not a graph, not a strict schema. Actions
- * document which keys they read/write; see docs/harness-goap-orchestrator-plan.md.
+ * document which keys they read/write; see apps/docs/content/en/drafts/goap-actions.md.
  */
 export type WorldState = Record<string, boolean | number | string | undefined>;
 
@@ -32,7 +32,7 @@ export interface ActionContext extends BaseContext {
 /**
  * What an action asks for when it needs something only the run's caller can
  * supply — e.g. a WebMCP tool call, which can only execute in the visitor's
- * browser, never on the server (see docs/laya-autonomous-webmcp.md). `kind`
+ * browser, never on the server (see apps/docs/content/en/drafts/laya-autonomous-webmcp.md). `kind`
  * and `payload` are opaque to the executor: it only stops the run and
  * reports this back, the caller decides what to do with it.
  */

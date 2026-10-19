@@ -81,7 +81,7 @@ export interface WidgetApi {
 	 * catalog is several kB on its own, and reclassifying it through Laya on
 	 * every single message was both wasteful and, combined with the size,
 	 * what caused a `413` on the very first message. See
-	 * docs/laya-autonomous-webmcp.md.
+	 * apps/docs/content/en/drafts/laya-autonomous-webmcp.md.
 	 */
 	registerWebMcpTools(
 		visitorToken: string,
@@ -111,7 +111,7 @@ interface ApiOptions {
 }
 
 /**
- * The public Widget API (docs/admin-api.md): the publishable key is sent
+ * The public Widget API (apps/docs/content/en/drafts/admin-api.md): the publishable key is sent
  * only to obtain a visitor token; everything else carries the token. No
  * cookies are ever sent, so the server's Origin allowlist plus the token
  * are the whole trust boundary.
