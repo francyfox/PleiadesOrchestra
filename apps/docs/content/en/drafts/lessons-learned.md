@@ -198,3 +198,10 @@ Critical items are duplicated in the root `CLAUDE.md`. This file has the full li
 - **Out-of-order events** are decided by the payload's `modified_at` (skip older, equal wins), not by arrival order; the manual `channel_id` is outside the overwrite. `billing_webhooks` grows by a row per delivery and is not pruned (a few rows a month at launch; prune by `received_at` if it ever matters).
 - **Spend is an estimate**: today's OpenRouter price applied to past tokens, a model without a price costs 0 (a typo in a paid model name would show as free). Store a price per call (`costUsd`, PO-8) when it matters.
 
+
+## WordPress: showing cart tool writes without a reload (2026-10-19)
+
+- **A Store API write updates nothing on the page by itself**, in either theme kind. Classic: `wc_fragment_refresh` fixes only the header mini cart; the shortcode cart table needs its markup re-fetched, the checkout needs `update_checkout`. Block: the Cart/Checkout blocks refresh on `invalidateResolutionForStore()` or on the `wc-blocks_*_cart` events; the mini cart block of Twenty Twenty-Five loads lazily and `wp.data` is not on the page, so only the events reach it.
+- **The cart page's first `.woocommerce` element is not the cart** (Storefront has several); select it with `:has(.woocommerce-cart-form)`.
+- **WooCommerce 11 creates block Cart/Checkout pages**; for a classic theme `setup.sh` rewrites them to shortcodes, and back (delete + `WC_Install::create_pages()`) when switching to a block theme.
+- **Browser caches `tools.js`** (`?ver=` was constant): the asset version now includes the file mtimes.

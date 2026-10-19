@@ -29,4 +29,9 @@ docker compose -f compose.wp.yml up -d
 
 PHP lint (no PHP on the host): `docker run --rm -v $PWD/apps/wordpress-plugin/pleiades-assistant:/p php:8.3-cli sh -c 'for f in $(find /p -name "*.php"); do php -l $f; done'`.
 
-Not tested yet: a block theme (the default theme in the image decides), caching plugins.
+Theme: `WORDPRESS_THEME=storefront` (classic: cart and checkout pages become `[woocommerce_cart]`/`[woocommerce_checkout]`) or `twentytwentyfive` (block, default: WooCommerce's block pages are recreated); rerun `wordpress-setup` to switch. Both checked in a real browser (header, /cart/, /checkout/ update without reload after every cart tool). Not tested yet: caching plugins.
+
+## Showing cart writes (`refreshCart` in `tools.js`)
+
+- Classic: `wc_fragment_refresh` (mini cart), `update_checkout` (checkout order review), and on the shortcode cart page the `.woocommerce` block is re-fetched and swapped (`wc_fragment_refresh` does not touch the cart table; WooCommerce's own Update button does the same fetch).
+- Block: `wc-blocks_added_to_cart` / `wc-blocks_removed_from_cart` events on `document.body` and `wp.data.dispatch("wc/store/cart").invalidateResolutionForStore()` (each alone refreshes the Cart/Checkout blocks; on pages without them `wp.data` is absent and the events reach the lazily loaded mini cart block).
