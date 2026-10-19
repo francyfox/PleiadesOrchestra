@@ -113,6 +113,10 @@
     <xhtml:link rel="alternate" hreflang="en" href="/docs/drafts/sessions-and-admin-plan/"/>
   </url>
   <url>
+    <loc>/docs/drafts/wordpress-plugin/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="/docs/drafts/wordpress-plugin/"/>
+  </url>
+  <url>
     <loc>/docs/intents/</loc>
     <xhtml:link rel="alternate" hreflang="en" href="/docs/intents/"/>
     <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/intents/"/>

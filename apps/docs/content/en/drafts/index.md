@@ -7,6 +7,7 @@ title: Drafts
 Working notes: design decisions, contracts, plans and audits. English only, not translated, and not product documentation: they describe how the system is built and why, and may lag behind the code. Each page says what is implemented and what is only proposed.
 
 - [Intent packs](/docs/drafts/intent-packs/): design of PO-41, intents per channel and the flat action format.
+- [WordPress plugin plan](/docs/drafts/wordpress-plugin/): going to market: paid models per agent, configured in the admin panel, and a WordPress/WooCommerce plugin.
 - [Architecture](/docs/drafts/architecture/): every app and package of the monorepo, one line each.
 - [Writing a GOAP action](/docs/drafts/goap-actions/): the planner's model and how to add an action.
 - [Laya autopilot for any WebMCP](/docs/drafts/laya-autonomous-webmcp/): how tools become GOAP actions, the browser round trip.
