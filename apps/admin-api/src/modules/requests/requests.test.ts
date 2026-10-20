@@ -16,7 +16,7 @@ useHarness();
 const DETAILS = {
 	request: {
 		id: "r1",
-		userId: "u",
+		visitorId: "u",
 		threadId: "t",
 		prompt: "привет",
 		intent: null,
@@ -80,7 +80,7 @@ describe("requests (proxied and shaped)", () => {
 			items: [
 				{
 					id: "r1",
-					userId: "u",
+					visitorId: "u",
 					threadId: "t",
 					prompt: "привет",
 					intent: null,

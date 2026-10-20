@@ -1,19 +1,13 @@
 import { Elysia, t } from "elysia";
 import type { ActiveRuns } from "../active-runs/active-runs.ts";
 import type { Db } from "../database/database.ts";
-import { oneOf, PageQuery } from "../http/http.ts";
+import {
+	RequestDetails,
+	RequestParams,
+	RequestsPage,
+	RequestsQuery,
+} from "./requests.schema.ts";
 import { getRequest, listRequests } from "./requests.service.ts";
-
-/** Paging plus optional filters (`oneOf`, not `t.UnionEnum`: an omitted field must stay undefined). */
-const RequestsQuery = t.Composite([
-	PageQuery,
-	t.Object({
-		status: t.Optional(
-			oneOf(["running", "waiting", "succeeded", "failed", "abandoned"]),
-		),
-		intent: t.Optional(t.String({ minLength: 1, maxLength: 64 })),
-	}),
-]);
 
 export interface RequestsDeps {
 	db: Db;
@@ -69,16 +63,33 @@ export function requestsRoutes({
 	now,
 	corsOrigins,
 }: RequestsDeps) {
-	return new Elysia({ prefix: "/v1/admin/requests" })
+	return new Elysia({
+		prefix: "/v1/admin/requests",
+		tags: ["Admin: requests"],
+	})
 		.use(adminCors(corsOrigins))
 		.get("/", ({ query }) => listRequests(db, activeRuns, query, now()), {
 			query: RequestsQuery,
+			response: { 200: RequestsPage },
+			detail: {
+				summary: "List requests",
+				description:
+					"One row per user message (a chain of runs), newest first. `page`/`pageSize` page the list (25 per page by default); `status` and `intent` filter it. Callable from allowed admin origins (CORS).",
+			},
 		})
 		.get(
 			"/:id",
 			({ params, status }) =>
 				getRequest(db, activeRuns, params.id, now()) ??
 				status(404, "Not found"),
-			{ params: t.Object({ id: t.String() }) },
+			{
+				params: RequestParams,
+				response: { 200: RequestDetails, 404: t.String() },
+				detail: {
+					summary: "Get a request",
+					description:
+						"The whole chain of one request: runs with trace events, model calls, goal and reply. `id` may be any run of the chain. 404 when the run is unknown.",
+				},
+			},
 		);
 }

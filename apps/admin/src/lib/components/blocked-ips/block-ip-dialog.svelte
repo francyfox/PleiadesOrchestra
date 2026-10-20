@@ -12,7 +12,7 @@
 	/**
 	 * The "+ Add" button of the blocked-IPs page and the dialog with the form.
 	 * Only web channels have anonymous visitors to block by IP. A `defaultIp`
-	 * (the user page links here with `?ip=`) opens the dialog with it filled in.
+	 * (the visitor page links here with `?ip=`) opens the dialog with it filled in.
 	 */
 	let {
 		channels,

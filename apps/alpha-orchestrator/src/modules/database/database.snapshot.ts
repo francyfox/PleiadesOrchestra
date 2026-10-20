@@ -20,7 +20,7 @@ const CLOCK_COLUMNS: Record<string, string> = {
 
 type MasterRow = { type: string; name: string; tbl_name: string; sql: string };
 
-/** User schema objects (tables, indexes, triggers, views) in creation order — dependency-safe. */
+/** Visitor schema objects (tables, indexes, triggers, views) in creation order — dependency-safe. */
 export function schemaObjects(sqlite: Database): MasterRow[] {
 	return sqlite
 		.query<MasterRow, []>(

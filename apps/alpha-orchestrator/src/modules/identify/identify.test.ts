@@ -9,7 +9,7 @@ import {
 	messages,
 	planRuns,
 	threads,
-	users,
+	visitors,
 	visitorTokens,
 } from "../database/database.schema.ts";
 import { testDb } from "../database/database.testing.ts";
@@ -77,9 +77,9 @@ async function newVisitor(ctx: Ctx, channel = ctx.shop.channel) {
 	);
 	expect(response.status).toBe(201);
 	const { visitorToken } = (await response.json()) as { visitorToken: string };
-	const userId = ctx.db.select().from(visitorTokens).all().at(-1)
-		?.userId as string;
-	return { visitorToken, userId };
+	const visitorId = ctx.db.select().from(visitorTokens).all().at(-1)
+		?.visitorId as string;
+	return { visitorToken, visitorId };
 }
 
 function identify(
@@ -100,14 +100,19 @@ function identify(
 	);
 }
 
-/** Adds `count` messages (and one run + usage row) for a user on a fresh thread. */
-function seedHistory(ctx: Ctx, userId: string, count: number, label: string) {
+/** Adds `count` messages (and one run + usage row) for a visitor on a fresh thread. */
+function seedHistory(
+	ctx: Ctx,
+	visitorId: string,
+	count: number,
+	label: string,
+) {
 	const threadId = crypto.randomUUID();
 	ctx.db
 		.insert(threads)
 		.values({
 			id: threadId,
-			userId,
+			visitorId,
 			channelId: ctx.shop.channel.id,
 			externalThreadId: null,
 			createdAt: ctx.clock.now,
@@ -118,7 +123,7 @@ function seedHistory(ctx: Ctx, userId: string, count: number, label: string) {
 		.insert(planRuns)
 		.values({
 			id: runId,
-			userId,
+			visitorId,
 			threadId,
 			goal: {},
 			succeeded: true,
@@ -132,7 +137,7 @@ function seedHistory(ctx: Ctx, userId: string, count: number, label: string) {
 			.insert(messages)
 			.values({
 				threadId,
-				userId,
+				visitorId,
 				role: "user",
 				content: `${label}${i}`,
 				createdAt: ctx.clock.now,
@@ -144,7 +149,7 @@ function seedHistory(ctx: Ctx, userId: string, count: number, label: string) {
 		.insert(llmCalls)
 		.values({
 			at: ctx.clock.now,
-			userId,
+			visitorId,
 			channelId: ctx.shop.channel.id,
 			threadId,
 			planRunId: runId,
@@ -199,7 +204,7 @@ describe("POST /v1/channels/:slug/identify", () => {
 		).toBe(404);
 	});
 
-	test("no identified user yet → the anonymous user is promoted in place", async () => {
+	test("no identified visitor yet → the anonymous visitor is promoted in place", async () => {
 		const ctx = setup();
 		const visitor = await newVisitor(ctx);
 		const response = await identify(ctx, {
@@ -208,20 +213,24 @@ describe("POST /v1/channels/:slug/identify", () => {
 		});
 		expect(response.status).toBe(200);
 		expect(await response.json()).toEqual({
-			userId: visitor.userId,
+			userId: visitor.visitorId,
 			merged: false,
 		});
 		expect(
-			ctx.db.select().from(users).where(eq(users.id, visitor.userId)).get(),
+			ctx.db
+				.select()
+				.from(visitors)
+				.where(eq(visitors.id, visitor.visitorId))
+				.get(),
 		).toMatchObject({ kind: "identified", externalUserId: "acc-1" });
 	});
 
-	test("existing identified user → merge: history (re-trimmed), usage, runs and tokens move; anonymous row is deleted; a block survives", async () => {
+	test("existing identified visitor → merge: history (re-trimmed), usage, runs and tokens move; anonymous row is deleted; a block survives", async () => {
 		const ctx = setup();
 		const visitor = await newVisitor(ctx);
 		const targetId = crypto.randomUUID();
 		ctx.db
-			.insert(users)
+			.insert(visitors)
 			.values({
 				id: targetId,
 				channelId: ctx.shop.channel.id,
@@ -232,16 +241,16 @@ describe("POST /v1/channels/:slug/identify", () => {
 			})
 			.run();
 		seedHistory(ctx, targetId, 8, "old");
-		const anon = seedHistory(ctx, visitor.userId, 4, "new");
+		const anon = seedHistory(ctx, visitor.visitorId, 4, "new");
 		ctx.db
-			.update(users)
+			.update(visitors)
 			.set({
 				blockedAt: 5,
 				blockedReason: "spam",
 				blockedBy: "admin-1",
 				lastIp: "203.0.113.7",
 			})
-			.where(eq(users.id, visitor.userId))
+			.where(eq(visitors.id, visitor.visitorId))
 			.run();
 
 		const response = await identify(ctx, {
@@ -249,15 +258,22 @@ describe("POST /v1/channels/:slug/identify", () => {
 			externalUserId: "acc-1",
 		});
 		expect(response.status).toBe(200);
-		expect(await response.json()).toEqual({ userId: targetId, merged: true });
+		expect(await response.json()).toEqual({
+			userId: targetId,
+			merged: true,
+		});
 
 		expect(
-			ctx.db.select().from(users).where(eq(users.id, visitor.userId)).get(),
+			ctx.db
+				.select()
+				.from(visitors)
+				.where(eq(visitors.id, visitor.visitorId))
+				.get(),
 		).toBeUndefined();
 		const target = ctx.db
 			.select()
-			.from(users)
-			.where(eq(users.id, targetId))
+			.from(visitors)
+			.where(eq(visitors.id, targetId))
 			.get();
 		expect(target).toMatchObject({
 			blockedAt: 5,
@@ -270,7 +286,7 @@ describe("POST /v1/channels/:slug/identify", () => {
 		const kept = ctx.db
 			.select()
 			.from(messages)
-			.where(eq(messages.userId, targetId))
+			.where(eq(messages.visitorId, targetId))
 			.orderBy(messages.id)
 			.all()
 			.map((row) => row.content);
@@ -289,16 +305,16 @@ describe("POST /v1/channels/:slug/identify", () => {
 		]);
 		expect(
 			ctx.db.select().from(threads).where(eq(threads.id, anon.threadId)).get()
-				?.userId,
+				?.visitorId,
 		).toBe(targetId);
 		expect(
 			ctx.db.select().from(planRuns).where(eq(planRuns.id, anon.runId)).get()
-				?.userId,
+				?.visitorId,
 		).toBe(targetId);
 		const usage = ctx.db.select().from(llmCalls).all();
 		expect(usage).toHaveLength(2);
-		expect(usage.every((row) => row.userId === targetId)).toBe(true);
-		expect(ctx.db.select().from(visitorTokens).get()?.userId).toBe(targetId);
+		expect(usage.every((row) => row.visitorId === targetId)).toBe(true);
+		expect(ctx.db.select().from(visitorTokens).get()?.visitorId).toBe(targetId);
 	});
 
 	test("repeating the same identify is idempotent", async () => {

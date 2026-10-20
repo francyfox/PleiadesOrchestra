@@ -1,6 +1,7 @@
 <script lang="ts">
 	import BanIcon from "@lucide/svelte/icons/ban";
 	import KeyRoundIcon from "@lucide/svelte/icons/key-round";
+	import PencilIcon from "@lucide/svelte/icons/pencil";
 	import ShieldCheckIcon from "@lucide/svelte/icons/shield-check";
 	import Trash2Icon from "@lucide/svelte/icons/trash-2";
 	import { useIntlayer } from "svelte-intlayer";
@@ -11,20 +12,22 @@
 	import { useAdminEnhance } from "./use-admin-enhance";
 
 	/**
-	 * Mirrors the server's rules (the server enforces them too): nobody acts on
-	 * the super admin but the super admin; only the super admin deletes; nobody
-	 * bans or deletes themselves.
+	 * Mirrors the server's rules (the server enforces them too): you manage
+	 * your own name, email and token, a super admin manages anyone's; nobody
+	 * bans the super admin; only a super admin deletes; nobody bans or deletes themselves.
 	 */
 	let {
 		admin,
 		currentAdminId,
 		currentAdminIsSuper,
-		onChangePassword,
+		onEdit,
+		onIssued,
 	}: {
 		admin: AdminRow;
 		currentAdminId: string | null;
 		currentAdminIsSuper: boolean;
-		onChangePassword: (admin: AdminRow) => void;
+		onEdit: (admin: AdminRow) => void;
+		onIssued: (email: string, token: string, own: boolean) => void;
 	} = $props();
 
 	const content = useIntlayer("admins");
@@ -37,15 +40,39 @@
 		() => (deleteOpen = false),
 	);
 
+	let rotateOpen = $state(false);
+	const rotate = useAdminEnhance(
+		adminActions.rotateToken,
+		() => (rotateOpen = false),
+		(data) =>
+			onIssued(
+				String(data.email ?? admin.email),
+				String(data.token ?? ""),
+				isSelf,
+			),
+	);
+
 	const isSelf = $derived(admin.id === currentAdminId);
-	const canChangePassword = $derived(!admin.isSuper || currentAdminIsSuper);
+	const canManage = $derived(isSelf || currentAdminIsSuper);
 	const canBan = $derived(!isSelf && !admin.isSuper);
-	const canDelete = $derived(currentAdminIsSuper && !isSelf && !admin.isSuper);
+	const canDelete = $derived(currentAdminIsSuper && !isSelf);
 </script>
 
 <div class="flex justify-end gap-1">
-	{#if canChangePassword}
-		<IconButton icon={KeyRoundIcon} tone="primary" label={$content.changePassword.value} onclick={() => onChangePassword(admin)} />
+	{#if canManage}
+		<IconButton icon={PencilIcon} tone="primary" label={$content.edit.value} onclick={() => onEdit(admin)} />
+		<IconButton icon={KeyRoundIcon} tone="primary" label={$content.rotateToken.value} onclick={() => (rotateOpen = true)} />
+		<ConfirmDialog
+			bind:open={rotateOpen}
+			title={$content.rotateDialog.title({ email: admin.email })}
+			description={$content.rotateDialog.description.value}
+			submitLabel={$content.rotateToken.value}
+			submitted={rotate}
+		>
+			{#snippet fields()}
+				<input type="hidden" name="id" value={admin.id} />
+			{/snippet}
+		</ConfirmDialog>
 	{/if}
 	{#if admin.banned}
 		<form use:unban>

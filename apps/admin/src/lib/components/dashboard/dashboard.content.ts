@@ -19,13 +19,13 @@ const dashboardContent = {
 			en: insert("{{calls}} calls, {{share}} without usage"),
 			kk: insert("{{calls}} шақыру, usage жоқ — {{share}}"),
 		}),
-		users: t({ ru: "Пользователи", en: "Users", kk: "Пайдаланушылар" }),
+		visitors: t({ ru: "Посетители", en: "Visitors", kk: "Келушілер" }),
 		pendingLink: t({
 			ru: insert("ждут белого списка: {{count}}"),
 			en: insert("awaiting whitelist: {{count}}"),
 			kk: insert("ақ тізімді күтуде: {{count}}"),
 		}),
-		usersSummary: t({
+		visitorsSummary: t({
 			ru: insert("заблокировано: {{blocked}} · анонимных: {{anonymous}}"),
 			en: insert("blocked: {{blocked}} · anonymous: {{anonymous}}"),
 			kk: insert("бұғатталған: {{blocked}} · анонимді: {{anonymous}}"),
@@ -35,10 +35,10 @@ const dashboardContent = {
 			en: "Token usage per day (30 days)",
 			kk: "Күн бойынша токен шығыны (30 күн)",
 		}),
-		topUsers: t({
-			ru: "Топ пользователей по расходу",
-			en: "Top users by usage",
-			kk: "Шығын бойынша үздік пайдаланушылар",
+		topVisitors: t({
+			ru: "Топ посетителей по расходу",
+			en: "Top visitors by usage",
+			kk: "Шығын бойынша үздік келушілер",
 		}),
 		byChannel: t({
 			ru: "Расход по каналам",
@@ -68,7 +68,7 @@ const dashboardContent = {
 				en: "Price per 1M (in / out)",
 				kk: "1M үшін баға (кіріс / шығыс)",
 			}),
-			user: t({ ru: "Пользователь", en: "User", kk: "Пайдаланушы" }),
+			visitor: t({ ru: "Посетитель", en: "Visitor", kk: "Келуші" }),
 			channel: t({ ru: "Канал", en: "Channel", kk: "Арна" }),
 			input: t({ ru: "Вход", en: "Input", kk: "Кіріс" }),
 			output: t({ ru: "Выход", en: "Output", kk: "Шығыс" }),

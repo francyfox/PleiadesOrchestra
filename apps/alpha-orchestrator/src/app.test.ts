@@ -17,7 +17,7 @@ import { testDb } from "./modules/database/database.testing.ts";
 import { listIntentExamples } from "./modules/intents/intents.service.ts";
 import { RunBinding } from "./modules/run-binding/run-binding.ts";
 import { resolveThreadId } from "./modules/threads/threads.service.ts";
-import { upsertIdentifiedUser } from "./modules/users/users.service.ts";
+import { upsertIdentifiedVisitor } from "./modules/visitors/visitors.service.ts";
 
 const API_KEY = "test-api-key";
 const MAX_CHUNK_CHARS = 20;
@@ -160,7 +160,7 @@ describe("createApp", () => {
 		expect(response.headers.get("content-encoding")).toBeNull();
 
 		// threadId/userId are now the orchestrator's internal ids (the external
-		// "t1"/"u1" are mapped via the threads/users tables).
+		// "t1"/"u1" are mapped via the threads/visitors tables).
 		expect(receivedMessage).toMatchObject({ chunks: ["hi there"] });
 		expect(receivedMessage?.userId).not.toBe("u1");
 		expect(receivedMessage?.threadId).not.toBe("t1");
@@ -220,7 +220,11 @@ describe("createApp", () => {
 			authedRequest("http://harness.local/v1/messages", {
 				method: "POST",
 				headers: { "content-type": "application/json" },
-				body: JSON.stringify({ threadId: "t1", userId: "u1", text: longText }),
+				body: JSON.stringify({
+					threadId: "t1",
+					userId: "u1",
+					text: longText,
+				}),
 			}),
 		);
 		await readNdjson(response);
@@ -467,14 +471,20 @@ function internalThreadId(db: AppDeps["db"], externalThreadId = "t1") {
 	const channels = new ChannelDirectory(db);
 	const channel = channels.bySlug("cli");
 	if (!channel) throw new Error("cli channel not seeded");
-	const user = upsertIdentifiedUser(
+	const visitor = upsertIdentifiedVisitor(
 		db,
 		channel.id,
 		"u1",
 		undefined,
 		Date.now(),
 	);
-	return resolveThreadId(db, channel.id, user.id, externalThreadId, Date.now());
+	return resolveThreadId(
+		db,
+		channel.id,
+		visitor.id,
+		externalThreadId,
+		Date.now(),
+	);
 }
 
 describe("createApp — GOAP process lifecycle", () => {
@@ -670,7 +680,11 @@ describe("createApp — message intent routing", () => {
 			authedRequest("http://harness.local/v1/messages", {
 				method: "POST",
 				headers: { "content-type": "application/json" },
-				body: JSON.stringify({ threadId: "t1", userId: "u1", text: "привет" }),
+				body: JSON.stringify({
+					threadId: "t1",
+					userId: "u1",
+					text: "привет",
+				}),
 			}),
 		);
 		const events = await readNdjson(response);

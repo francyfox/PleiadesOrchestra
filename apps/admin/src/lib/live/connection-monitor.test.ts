@@ -82,12 +82,12 @@ describe("createConnectionMonitor", () => {
 
 	test("socket and upstream problems are independent", () => {
 		const { monitor, events, elapse } = harness();
-		monitor.report("upstream", "users", true);
+		monitor.report("upstream", "visitors", true);
 		elapse();
 		expect(events).toEqual([["upstream", true]]);
 		monitor.report("socket", "live", true);
 		elapse();
-		monitor.report("upstream", "users", false);
+		monitor.report("upstream", "visitors", false);
 		expect(events).toEqual([
 			["upstream", true],
 			["socket", true],

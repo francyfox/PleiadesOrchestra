@@ -8,6 +8,8 @@ dist
 *.db-wal
 *.db-shm
 /data
+# Holds provider API keys; mounted at runtime, never baked into an image.
+apps/alpha-orchestrator/configs/providers.toml
 **/.venv
 **/__pycache__
 **/.pytest_cache

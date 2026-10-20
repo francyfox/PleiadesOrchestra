@@ -188,7 +188,7 @@ describe("GET /api/live: bad input never closes the socket", () => {
 		send({
 			type: "subscribe",
 			id: "y",
-			topic: "users",
+			topic: "visitors",
 			params: { status: "zzz" },
 		});
 		send({

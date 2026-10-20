@@ -1,38 +1,40 @@
 import { describe, expect, test } from "bun:test";
-import { eq } from "drizzle-orm";
 import { testApp } from "../../app.testing.ts";
-import { schema } from "../database/database.ts";
-import { createAdminDirectory, superAdminId } from "./admins.service.ts";
+import { createAdminDirectory, createStaff } from "./admins.service.ts";
 
 describe("createAdminDirectory", () => {
-	test("knows nothing on a fresh install and is not fooled by asking early", async () => {
-		const { db } = testApp();
-		const directory = createAdminDirectory(db);
-		expect(await directory.hasAdmin()).toBe(false);
-		expect(await directory.superId()).toBeNull();
-	});
-
-	test("finds the first account as super admin and keeps it as more join", async () => {
-		const { db, registerFirst, addAdmin } = testApp();
-		const directory = createAdminDirectory(db);
-		const cookie = await registerFirst();
-		const first = await superAdminId(db);
-		expect(first).not.toBeNull();
-		expect(await directory.hasAdmin()).toBe(true);
-		expect(await directory.superId()).toBe(first);
-
-		await addAdmin(cookie, "second@example.com");
-		expect(await directory.superId()).toBe(first);
-	});
-
-	test("remembers the super admin without asking the database again", async () => {
+	test("knows nothing on a fresh install and notices the first staff account", async () => {
 		const { db, registerFirst } = testApp();
 		const directory = createAdminDirectory(db);
+		expect(await directory.hasAdmin()).toBe(false);
 		await registerFirst();
-		const first = await directory.superId();
-		// Even if the row vanished underneath, the remembered answer stands:
-		// the super admin can't be deleted through the API.
-		await db.delete(schema.user).where(eq(schema.user.id, first as string));
-		expect(await directory.superId()).toBe(first);
+		expect(await directory.hasAdmin()).toBe(true);
+	});
+
+	test("a customer account is not an admin", async () => {
+		const { db, call } = testApp();
+		await call("/api/user/register", {
+			method: "POST",
+			body: { email: "u@example.com", password: "correct-horse-battery" },
+		});
+		expect(await createAdminDirectory(db).hasAdmin()).toBe(false);
+	});
+});
+
+describe("createStaff", () => {
+	test("stores a hash of the token, never the token", async () => {
+		const { auth, db } = testApp();
+		const { id, token } = await createStaff(auth, {
+			name: "A",
+			email: "A@Example.com",
+			level: 100,
+		});
+		const row = await db.query.user.findFirst({
+			where: (u, { eq }) => eq(u.id, id),
+		});
+		expect(row?.email).toBe("a@example.com");
+		expect(row?.tokenHash).toMatch(/^[0-9a-f]{64}$/);
+		expect(row?.tokenHash).not.toBe(token);
+		expect(token).toHaveLength(43);
 	});
 });

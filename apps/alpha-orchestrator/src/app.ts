@@ -26,7 +26,10 @@ import { authorizeRequest } from "./modules/auth/auth.service.ts";
 import { billingRoutes } from "./modules/billing/billing.ts";
 import { blockedIpsRoutes } from "./modules/blocked-ips/blocked-ips.ts";
 import type { ChannelDirectory } from "./modules/channel-directory/channel-directory.ts";
-import { channelsRoutes } from "./modules/channels/channels.ts";
+import {
+	channelsRoutes,
+	ownerChannelsRoutes,
+} from "./modules/channels/channels.ts";
 import type { Db } from "./modules/database/database.ts";
 import { decisionsRoutes } from "./modules/decisions/decisions.ts";
 import { buildActions } from "./modules/goap/goap.service.ts";
@@ -47,7 +50,7 @@ import { statsRoutes } from "./modules/stats/stats.ts";
 import { subscriptionsRoutes } from "./modules/subscriptions/subscriptions.ts";
 import { threadsRoutes } from "./modules/threads/threads.ts";
 import { usageRoutes } from "./modules/usage/usage.ts";
-import { usersRoutes } from "./modules/users/users.ts";
+import { visitorsRoutes } from "./modules/visitors/visitors.ts";
 import {
 	DEFAULT_WIDGET_OPTIONS,
 	type WidgetOptions,
@@ -173,8 +176,62 @@ export function createApp(deps: AppDeps) {
 			// Chrome extension) without a token in hand yet.
 			docs: {
 				title: "alpha-orchestrator",
+				description:
+					"Runs the GOAP planner over small local models. Transports use `HARNESS_API_KEY`, `/v1/admin/*` uses `ADMIN_API_KEY` + `X-Admin-Id`, `/v1/widget/*` a channel's publishable key and visitor token.",
 				path: "/swagger",
 				security: "bearer",
+				tags: [
+					{
+						name: "Transport",
+						description:
+							"Bots and CLIs (`HARNESS_API_KEY`): access check, messages, threads, decisions.",
+					},
+					{
+						name: "Widget",
+						description:
+							"The web chat widget on a site (publishable key, visitor token, `Origin` allowlist) and server-to-server identify.",
+					},
+					{
+						name: "Billing",
+						description: "Polar webhook (only with `POLAR_WEBHOOK_SECRET`).",
+					},
+					{
+						name: "Admin: visitors",
+						description: "Chat visitors: list, whitelist, block, messages.",
+					},
+					{
+						name: "Admin: channels",
+						description: "Channels and their persona (reply prompt).",
+					},
+					{ name: "Admin: blocked IPs" },
+					{
+						name: "Admin: intents",
+						description: "Laya's intent answers waiting for an admin verdict.",
+					},
+					{
+						name: "Admin: requests",
+						description:
+							"Flow requests: GOAP runs with steps, tools and model calls.",
+					},
+					{
+						name: "Admin: usage & stats",
+						description:
+							"Model calls ledger, dashboard numbers, latency percentiles.",
+					},
+					{
+						name: "Admin: subscriptions",
+						description: "Polar subscriptions and their channels.",
+					},
+					{
+						name: "Admin: MCP",
+						description: "WebMCP tool catalogs the sites announced.",
+					},
+					{
+						name: "Admin: agents",
+						description:
+							"Model agents: health, settings, providers file, provider keys.",
+					},
+				],
 			},
 		})
 			.onRequest(
@@ -220,8 +277,9 @@ export function createApp(deps: AppDeps) {
 					: new Elysia(),
 			)
 			// Admin routes
-			.use(usersRoutes({ db, now }))
+			.use(visitorsRoutes({ db, now }))
 			.use(channelsRoutes({ db, directory, now }))
+			.use(ownerChannelsRoutes({ db, directory }))
 			.use(personaRoutes({ db, directory, now }))
 			.use(blockedIpsRoutes({ db, ipHashSalt: deps.ipHashSalt, now }))
 			.use(intentsRoutes({ db, memory: intentMemory, now }))

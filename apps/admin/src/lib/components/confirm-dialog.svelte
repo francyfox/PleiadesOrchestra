@@ -13,6 +13,7 @@
 		submitLabel,
 		submitted,
 		fields,
+		canSubmit = true,
 	}: {
 		open?: boolean;
 		title: string;
@@ -20,6 +21,8 @@
 		submitLabel: string;
 		submitted: Action<HTMLFormElement>;
 		fields?: Snippet;
+		/** False keeps the submit button disabled (e.g. until a typed confirmation matches). */
+		canSubmit?: boolean;
 	} = $props();
 
 	const common = useIntlayer("common");
@@ -35,7 +38,7 @@
 			{@render fields?.()}
 			<Dialog.Footer>
 				<Button variant="ghost" type="button" onclick={() => (open = false)}>{$common.cancel.value}</Button>
-				<Button variant="destructive" type="submit">{submitLabel}</Button>
+				<Button variant="destructive" type="submit" disabled={!canSubmit}>{submitLabel}</Button>
 			</Dialog.Footer>
 		</form>
 	</Dialog.Content>

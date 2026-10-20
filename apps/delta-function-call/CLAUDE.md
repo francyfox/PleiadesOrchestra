@@ -10,4 +10,4 @@ No application code: a `Dockerfile` only. `llama-server` serving Qwen3-1.7B (Q8_
 
 - Compose profile `delta` (`COMPOSE_PROFILES` in the root `.env`). `alpha-orchestrator` has no `depends_on` on it (the model downloads on first start).
 - Local server slots/threads come from `DELTA_PARALLEL` / `DELTA_THREADS` in the root `.env` (defaults 1 / 2); keep `FUNCTION_CALL_MAX_CONCURRENCY` equal to `DELTA_PARALLEL`.
-- External machine: drop `delta` from `COMPOSE_PROFILES` and set `FUNCTION_CALL_BASE_URL` (+ `FUNCTION_CALL_MODEL`). Ollama + Qwen3 thinks by default, so also `FUNCTION_CALL_REASONING_EFFORT=none`. `FUNCTION_CALL_API_KEY` is still required by compose.
+- External machine: drop `delta` from `COMPOSE_PROFILES` and set `FUNCTION_CALL_BASE_URL` (+ `FUNCTION_CALL_MODEL`). Ollama + Qwen3 thinks by default, so its model in `providers.toml` needs `reasoning_effort = "none"` (seeded so on first start). `FUNCTION_CALL_API_KEY` is still required by compose.

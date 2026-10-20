@@ -3,6 +3,7 @@ import { Elysia, t } from "elysia";
 import type { ChannelDirectory } from "../channel-directory/channel-directory.ts";
 import { channels } from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
+import { PersonaView } from "./persona.schema.ts";
 import {
 	buildReplyPrompt,
 	DEFAULT_PERSONA,
@@ -49,11 +50,25 @@ export function personaRoutes({ db, directory, now }: PersonaDeps) {
 		fixed: FIXED_BLOCK,
 	});
 	return (
-		new Elysia({ prefix: "/v1/admin/channels/:id/persona" })
-			.get("/", ({ params, status }) => {
-				if (!exists(params.id)) return status(404, "Not found");
-				return view(getOverrides(db, params.id));
-			})
+		new Elysia({
+			prefix: "/v1/admin/channels/:id/persona",
+			tags: ["Admin: channels"],
+		})
+			.get(
+				"/",
+				({ params, status }) => {
+					if (!exists(params.id)) return status(404, "Not found");
+					return view(getOverrides(db, params.id));
+				},
+				{
+					response: { 200: PersonaView, 404: t.String() },
+					detail: {
+						summary: "Get a channel's persona",
+						description:
+							"The persona in effect, the defaults and the reply prompt built from them.",
+					},
+				},
+			)
 			.put(
 				"/",
 				({ params, body, status }) => {
@@ -62,7 +77,15 @@ export function personaRoutes({ db, directory, now }: PersonaDeps) {
 					directory.invalidate();
 					return view(getOverrides(db, params.id));
 				},
-				{ body: PersonaBody },
+				{
+					body: PersonaBody,
+					response: { 200: PersonaView, 404: t.String() },
+					detail: {
+						summary: "Save a channel's persona",
+						description:
+							"Replaces the stored persona and returns the new view.",
+					},
+				},
 			)
 			// Unsaved form values in, the prompt they would produce out. Writes nothing.
 			.post(
@@ -71,7 +94,15 @@ export function personaRoutes({ db, directory, now }: PersonaDeps) {
 					if (!exists(params.id)) return status(404, "Not found");
 					return view(body);
 				},
-				{ body: PersonaBody },
+				{
+					body: PersonaBody,
+					response: { 200: PersonaView, 404: t.String() },
+					detail: {
+						summary: "Preview a persona prompt",
+						description:
+							"Builds the reply prompt from unsaved form values. Writes nothing.",
+					},
+				},
 			)
 	);
 }

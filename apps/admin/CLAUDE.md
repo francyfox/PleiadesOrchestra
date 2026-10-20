@@ -48,14 +48,26 @@ List pages with item detail have a `[id]` route built on `page-header.svelte` (b
 
 ## Pages
 
+- `/visitors` — chat visitors (formerly `/users`; "users" will mean paying accounts). Table shows the generated `name` (`adjective_animal_xxxxxx`), `displayName` for identified ones and the id with `CopyValue`; `/visitors/[id]` has the same name and a copy-id chip. Components in `lib/components/visitors` and `visitor-detail`, URL table state in `lib/visitors-table-state.ts`, live topics `visitors` / `visitor`.
 - `/flow` — Flow request list (formerly `/goap`). `/flow/[id]` — request detail: `@xyflow/svelte` graph, nodes `prompt → translate → understand → steps → result`, running node counts up client-side. Live topics: `requests` (3 s) / `request` (1 s). Row click opens request (`DataTable` `onRowClick`, `?id=` in URL).
 - `/mcp/[id]` — WebMCP catalog: sites table → functions table with spelled-out parameters (`describeTool`).
 - `/intents` — Intent examples: approve / reject / correct Laya's pending answers. Correction = admin's label, approved immediately, rebuilds channel model.
 - `/performance` — p50/p90/p99 charts per model kind (including Translation tab). `/recommendations` — Lighthouse-style audit (`lib/system/audit.ts`, scores against `IDEAL_MACHINE = 100`), client-side on cached system snapshot.
 - `/faq` — Getting started + Q&A. 300 px fixed-height question list virtualized with `@tanstack/svelte-virtual` (44 px rows, arrows/Home/End). Search: Fuse.js fuzzy from 3 chars, plain substring for 1–2 chars. Code samples via `CodeBlock` → Prism (markup + bash, token colours in `code-block.svelte`).
 - `/plans` — Polar subscriptions (`?status=` filter, plans expiring within 7 days first; channel linked by hand through a `SearchSelect` that submits a hidden form). The channels list has a plan column. The dashboard shows spend (`costUsd`) per day, channel and model; model prices come from OpenRouter via the orchestrator.
-- `/channels` — channel list with **Embed code** dialog (`embed-dialog.svelte`, `lib/embed-snippet.ts`, refuses `sk_` keys).
+- `/agents` — agents with health; the settings dialog only picks a model. `/models` — providers and models of the orchestrator's `providers.toml`: two `DataTable`s with edit/delete, «+ Provider» / «+ Model» dialogs, and the raw file in a lazily loaded CodeMirror 6 modal (keys masked; «Check» / Alt+Shift+L asks `POST /api/providers-toml/check`, errors with a line become lint markers, path-only ones a list; `lib/toml-check.ts`).
+- `/channels` — channel list with **Embed code** dialog (`embed-dialog.svelte`, `lib/embed-snippet.ts`, refuses `sk_` keys). Customers see only their own channels (server-scoped) without plan/owner columns; staff get an Owner column (`lib/owner-label.ts`, names from `GET /api/accounts`, "staff" when `ownerId` is null). The dashboard is the same page for both; a customer gets no visitor links.
+- `/users` (staff) — customer accounts, server-paged `GET /api/accounts` (plain query, not a live topic): ban/unban, delete (`ConfirmDialog`: removes the account and its channels). `submitted` turns a 502/503 without an error code into `upstream_unavailable`.
+- `/settings` (customers only; staff are redirected to `/`) — name, email change (mail link to the new address), inactivity note from `lastActiveAt`, **Danger zone**: delete account, submit enabled when the typed email matches (`lib/confirm-email.ts`: trim + case-insensitive, like the server); success clears the cache and does a full load of `/user/login`.
 - The header meter (`system-meter.svelte`) shows green/yellow/red badges (`lib/system/load-level.ts`: <70 / 70–90 / ≥90, integrated GPU judged by GTT) fed by `/api/system/stream` WebSocket (`use-system-snapshot.svelte.ts`, runed's `IsDocumentVisible`: socket closed while tab hidden).
+
+## Sign-in and levels
+
+The session (`GET /api/session`) carries `admin.level` (0 super admin, 100 admin, 200 user; `lib/auth-redirect.ts` has `isStaff` and mirrors the server's `<= 100`). Routes, all in `routes/(auth)/`: `/login` is the **staff token** form (no password; shows the `admin:create` hint while `setupRequired`), `/user/login`, `/user/register`, `/user/forgot`, `/user/reset?token=` are the customer forms (the verification mail lands on `/user/login?verified=1|0`). The forms share `components/auth/auth-form.svelte.ts` (`useAuthForm`, `authErrorText` for error codes, ru/en/kk in `(auth)/auth.content.ts`).
+
+`resolveAuthRedirect({ pathname, level })` runs in the root `+layout.ts`: anonymous → only the five forms; a signed-in account leaves them for `/`; a customer (200) may open only `/`, `/channels`, `/faq`, `/settings` (`canOpen`; `/settings` is customer-only, staff are sent `/`, also what the sidebar filters its items by) and is sent `/` from anything else. For a customer the header system meter is not mounted, the `(app)` layout prefetches no `/api/system`. A customer's pages subscribe only to the `dashboard` / `channels` live topics (anything else is `forbidden`).
+
+Admins page: «+ Add» takes name + email, the response carries the access token **once** (`token-dialog.svelte`, `CopyValue`); row actions are edit name/email, rotate token (`ConfirmDialog`; rotating your own ends your sessions, so closing the token dialog goes to `/login`), ban, delete. A level badge (super admin / admin) sits next to the name.
 
 ## i18n (Intlayer)
 

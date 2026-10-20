@@ -1,6 +1,6 @@
 import type { Db } from "../database/database.ts";
 import {
-	deleteInactiveAnonymousUsers,
+	deleteInactiveAnonymousVisitors,
 	deleteStaleWorldState,
 	scheduleHourly,
 } from "./retention.service.ts";
@@ -16,7 +16,7 @@ export function startRetentionJobs(db: Db, options: RetentionOptions) {
 	const stops = [
 		scheduleHourly(
 			() =>
-				deleteInactiveAnonymousUsers(
+				deleteInactiveAnonymousVisitors(
 					db,
 					Date.now(),
 					options.anonymousRetentionHours,

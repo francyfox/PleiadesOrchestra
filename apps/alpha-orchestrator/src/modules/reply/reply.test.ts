@@ -12,7 +12,7 @@ import { testDb } from "../database/database.testing.ts";
 import { withEnglishOnly } from "../english-only/english-only.ts";
 import { REPLY_ACTION } from "../goap/goap.service.ts";
 import { listIntentExamples } from "../intents/intents.service.ts";
-import type { UserRow } from "../users/users.types.ts";
+import type { VisitorRow } from "../visitors/visitors.types.ts";
 import {
 	prepareNewMessage,
 	prepareResume,
@@ -203,8 +203,8 @@ describe("prepareNewMessage: «now buy them» after a search", () => {
 			},
 			now: () => 0,
 		} as unknown as ReplyDeps;
-		const user = { id: "u", channelId: "c" } as UserRow;
-		return prepareNewMessage(deps, user, "t1", "run-1", text, {});
+		const visitor = { id: "u", channelId: "c" } as VisitorRow;
+		return prepareNewMessage(deps, visitor, "t1", "run-1", text, {});
 	}
 
 	test("a message that names no product reuses the last found one and skips the search", async () => {
@@ -298,14 +298,14 @@ describe("prepareNewMessage / prepareResume: a message that names a tool's optio
 			now: () => 0,
 		} as unknown as ReplyDeps;
 	}
-	const user = { id: "u", channelId: "c" } as UserRow;
+	const visitor = { id: "u", channelId: "c" } as VisitorRow;
 	// The task part of the goal; the reply step is not in these test catalogs.
 	const TASK = { inCart: true };
 
 	test("plans the named tool alone, with the value as a fact", async () => {
 		const prepared = await prepareNewMessage(
 			await deps(),
-			user,
+			visitor,
 			"t1",
 			"r",
 			"book two seats in IMAX Laser",
@@ -322,7 +322,7 @@ describe("prepareNewMessage / prepareResume: a message that names a tool's optio
 	test("a message that names no option plans the plain tool as before", async () => {
 		const prepared = await prepareNewMessage(
 			await deps(),
-			user,
+			visitor,
 			"t1",
 			"r",
 			"book two seats in 2D",
@@ -337,7 +337,7 @@ describe("prepareNewMessage / prepareResume: a message that names a tool's optio
 		const d = await deps();
 		const first = await prepareNewMessage(
 			d,
-			user,
+			visitor,
 			"t1",
 			"r",
 			"book two seats in IMAX Laser",
@@ -384,7 +384,7 @@ describe("prepareNewMessage: «remove everything» reads the list first", () => 
 			},
 		},
 	];
-	const user = { id: "u", channelId: "c" } as UserRow;
+	const visitor = { id: "u", channelId: "c" } as VisitorRow;
 
 	async function prepare(text: string, english: string, only = tools) {
 		const catalog = pruneUnproducibleFacts(
@@ -402,7 +402,7 @@ describe("prepareNewMessage: «remove everything» reads the list first", () => 
 			intentMemory: { classify: () => undefined },
 			now: () => 0,
 		} as unknown as ReplyDeps;
-		return prepareNewMessage(deps, user, "t1", "r", text, {});
+		return prepareNewMessage(deps, visitor, "t1", "r", text, {});
 	}
 
 	test("a removal that says «all» plans the reading tool, then the removing one", async () => {
@@ -526,11 +526,11 @@ describe("prepareNewMessage: what Laya is sure about is learned on its own", () 
 			},
 			now: () => 0,
 		} as unknown as ReplyDeps;
-		const user = { id: "u", channelId: channel } as UserRow;
+		const visitor = { id: "u", channelId: channel } as VisitorRow;
 		const run = () =>
 			prepareNewMessage(
 				deps,
-				user,
+				visitor,
 				"t1",
 				"r",
 				"put a jacket in the basket",

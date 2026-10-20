@@ -1,35 +1,49 @@
 <script lang="ts">
 	import BanIcon from "@lucide/svelte/icons/ban";
-	import LockOpenIcon from "@lucide/svelte/icons/lock-open";
-	import ShieldBanIcon from "@lucide/svelte/icons/shield-ban";
-	import UserRoundCheckIcon from "@lucide/svelte/icons/user-round-check";
+	import ShieldCheckIcon from "@lucide/svelte/icons/shield-check";
+	import Trash2Icon from "@lucide/svelte/icons/trash-2";
 	import { useIntlayer } from "svelte-intlayer";
-	import type { AdminUser } from "#lib/api-types.js";
+	import { accountActions } from "#lib/actions.js";
+	import type { Customer } from "#lib/api-types.js";
+	import ConfirmDialog from "#lib/components/confirm-dialog.svelte";
 	import IconButton from "#lib/components/icon-button.svelte";
-	import { goto } from "$app/navigation";
-	import { useBulkEnhance } from "./use-bulk-enhance";
+	import { useUserEnhance } from "./use-user-enhance";
 
-	/** Quick actions for one row, sent through the same bulk endpoint. */
-	let { user }: { user: AdminUser } = $props();
+	let { user }: { user: Customer } = $props();
 
-	const content = useIntlayer("user-actions");
-	const submitted = useBulkEnhance();
-	const ip = $derived(user.ip);
+	const content = useIntlayer("users");
+	const ban = useUserEnhance(accountActions.ban);
+	const unban = useUserEnhance(accountActions.unban);
+
+	let deleteOpen = $state(false);
+	const remove = useUserEnhance(
+		accountActions.remove,
+		() => (deleteOpen = false),
+	);
 </script>
 
 <div class="flex justify-end gap-1">
-	<form use:submitted class="flex gap-1">
-		<input type="hidden" name="ids" value={user.id} />
-		{#if user.status === "pending"}
-			<IconButton icon={UserRoundCheckIcon} tone="success" type="submit" name="action" value="whitelist" label={$content.whitelist.value} />
-		{/if}
-		{#if user.status === "blocked"}
-			<IconButton icon={LockOpenIcon} tone="success" type="submit" name="action" value="unblock" label={$content.unblock.value} />
-		{:else}
-			<IconButton icon={BanIcon} tone="warning" type="submit" name="action" value="block" label={$content.block.value} />
-		{/if}
-	</form>
-	{#if ip}
-		<IconButton icon={ShieldBanIcon} tone="danger" label={$content.blockIp.value} onclick={() => goto(`/blocked-ips?ip=${encodeURIComponent(ip)}`)} />
+	{#if user.banned}
+		<form use:unban>
+			<input type="hidden" name="id" value={user.id} />
+			<IconButton icon={ShieldCheckIcon} tone="success" type="submit" label={$content.unban.value} />
+		</form>
+	{:else}
+		<form use:ban>
+			<input type="hidden" name="id" value={user.id} />
+			<IconButton icon={BanIcon} tone="warning" type="submit" label={$content.ban.value} />
+		</form>
 	{/if}
+	<IconButton icon={Trash2Icon} tone="danger" label={$content.remove.value} onclick={() => (deleteOpen = true)} />
+	<ConfirmDialog
+		bind:open={deleteOpen}
+		title={$content.deleteDialog.title({ email: user.email })}
+		description={$content.deleteDialog.description.value}
+		submitLabel={$content.remove.value}
+		submitted={remove}
+	>
+		{#snippet fields()}
+			<input type="hidden" name="id" value={user.id} />
+		{/snippet}
+	</ConfirmDialog>
 </div>

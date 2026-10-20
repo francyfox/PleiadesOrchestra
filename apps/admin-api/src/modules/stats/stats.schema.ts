@@ -2,7 +2,7 @@ import { type Static, t } from "elysia";
 import { UsageTotals } from "../usage/usage.schema.ts";
 
 export const Stats = t.Object({
-	users: t.Object({
+	visitors: t.Object({
 		total: t.Number(),
 		pending: t.Number(),
 		blocked: t.Number(),

@@ -30,7 +30,7 @@ import { sessionFacts } from "../run-stream/run-stream.ts";
 import type { PreparedRun } from "../run-stream/run-stream.types.ts";
 import { normalizeText } from "../text/text.service.ts";
 import { translateAroundLatin } from "../translate/translate.service.ts";
-import type { UserRow } from "../users/users.types.ts";
+import type { VisitorRow } from "../visitors/visitors.types.ts";
 import type { ReplyOptions, ToolOutcome } from "../widget/widget.types.ts";
 import type { ReplyDeps } from "./reply.types.ts";
 
@@ -73,7 +73,7 @@ export function pageFacts(page: string | undefined): WorldState {
  */
 async function initialState(
 	deps: ReplyDeps,
-	user: UserRow,
+	visitor: VisitorRow,
 	threadId: string,
 	planRunId: string,
 	text: string,
@@ -82,7 +82,7 @@ async function initialState(
 	const userMessage = normalizeText.apply(text);
 	const english = await translateMessage(deps, userMessage, {
 		threadId,
-		userId: user.id,
+		userId: visitor.id,
 		planRunId,
 	});
 	const turn: WorldState = {
@@ -94,11 +94,11 @@ async function initialState(
 		// the original. Absent for a message that needed no translation.
 		...(english ? { userMessageEn: english } : {}),
 		// The query for the site's search must be in its catalog's language.
-		catalogLang: deps.catalogLanguage?.(user.channelId) ?? "en",
+		catalogLang: deps.catalogLanguage?.(visitor.channelId) ?? "en",
 		threadId,
-		userId: user.id,
+		userId: visitor.id,
 		// Which channel's persona the reply is written in (`buildActions`).
-		channelId: user.channelId,
+		channelId: visitor.channelId,
 		planRunId,
 		...customerFacts(options.customerContext),
 		...pageFacts(options.page),
@@ -201,7 +201,7 @@ function reportIntent(
 /** Plan inputs for a brand-new user message. */
 export async function prepareNewMessage(
 	deps: ReplyDeps,
-	user: UserRow,
+	visitor: VisitorRow,
 	threadId: string,
 	planRunId: string,
 	text: string,
@@ -209,7 +209,7 @@ export async function prepareNewMessage(
 ): Promise<PreparedRun> {
 	const state = await initialState(
 		deps,
-		user,
+		visitor,
 		threadId,
 		planRunId,
 		text,
@@ -234,7 +234,7 @@ export async function prepareNewMessage(
 			// taken from words; the rest comes from what the site has been taught,
 			// then from Laya.
 			rules: "guarded",
-			memory: (text) => deps.intentMemory?.classify(user.channelId, text),
+			memory: (text) => deps.intentMemory?.classify(visitor.channelId, text),
 		},
 		original,
 		english,
@@ -242,7 +242,7 @@ export async function prepareNewMessage(
 	const intent = verdict.intent;
 	reportIntent(deps, verdict, {
 		threadId,
-		userId: user.id,
+		userId: visitor.id,
 		planRunId,
 		latencyMs: Math.round(performance.now() - startedAt),
 	});
@@ -251,7 +251,7 @@ export async function prepareNewMessage(
 	if (verdict.source === "laya") {
 		try {
 			const approved = learnIntent(deps.db, {
-				channelId: user.channelId,
+				channelId: visitor.channelId,
 				text: english ?? original,
 				intent,
 				planRunId,
@@ -260,7 +260,7 @@ export async function prepareNewMessage(
 				autoApproveAt: deps.layaAutoApproveConfidence,
 			});
 			// The label went straight into the site's memory: rebuild its model.
-			if (approved) deps.intentMemory?.invalidate(user.channelId);
+			if (approved) deps.intentMemory?.invalidate(visitor.channelId);
 		} catch (error) {
 			deps.onError?.(error);
 		}

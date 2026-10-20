@@ -2,14 +2,14 @@ import { describe, expect, test } from "bun:test";
 import {
 	llmCalls,
 	threadWorldState,
-	users,
+	visitors,
 } from "../database/database.schema.ts";
 import { testDb } from "../database/database.testing.ts";
 import { resolveThreadId } from "../threads/threads.service.ts";
-import { upsertIdentifiedUser } from "../users/users.service.ts";
+import { upsertIdentifiedVisitor } from "../visitors/visitors.service.ts";
 import {
 	assertRetentionCoversHistory,
-	deleteInactiveAnonymousUsers,
+	deleteInactiveAnonymousVisitors,
 	deleteStaleWorldState,
 	retentionCutoff,
 } from "./retention.service.ts";
@@ -22,13 +22,13 @@ describe("retentionCutoff", () => {
 	});
 });
 
-describe("deleteInactiveAnonymousUsers", () => {
-	test("deletes only anonymous users inactive longer than the retention; their usage rows survive unlinked", () => {
+describe("deleteInactiveAnonymousVisitors", () => {
+	test("deletes only anonymous visitors inactive longer than the retention; their usage rows survive unlinked", () => {
 		const db = testDb();
 		const now = 100 * HOUR;
 		const anon = (id: string, lastSeenAt: number) =>
 			db
-				.insert(users)
+				.insert(visitors)
 				.values({
 					id,
 					channelId: "ch_cli",
@@ -39,7 +39,7 @@ describe("deleteInactiveAnonymousUsers", () => {
 				.run();
 		anon("stale", now - 25 * HOUR);
 		anon("fresh", now - 1 * HOUR);
-		const identified = upsertIdentifiedUser(
+		const identified = upsertIdentifiedVisitor(
 			db,
 			"ch_cli",
 			"x",
@@ -49,7 +49,7 @@ describe("deleteInactiveAnonymousUsers", () => {
 		db.insert(llmCalls)
 			.values({
 				at: now - 30 * HOUR,
-				userId: "stale",
+				visitorId: "stale",
 				channelId: "ch_cli",
 				kind: "generate",
 				provider: "p",
@@ -60,17 +60,17 @@ describe("deleteInactiveAnonymousUsers", () => {
 			})
 			.run();
 
-		expect(deleteInactiveAnonymousUsers(db, now, 24)).toBe(1);
+		expect(deleteInactiveAnonymousVisitors(db, now, 24)).toBe(1);
 		expect(
 			db
-				.select({ id: users.id })
-				.from(users)
+				.select({ id: visitors.id })
+				.from(visitors)
 				.all()
 				.map((u) => u.id)
 				.sort(),
 		).toEqual(["fresh", identified.id].sort());
 		expect(db.select().from(llmCalls).get()).toMatchObject({
-			userId: null,
+			visitorId: null,
 			channelId: "ch_cli",
 			inputTokens: 5,
 		});
@@ -81,9 +81,9 @@ describe("deleteStaleWorldState", () => {
 	test("deletes only WorldState checkpoints not updated within the retention window", () => {
 		const db = testDb();
 		const now = 100 * HOUR;
-		const user = upsertIdentifiedUser(db, "ch_cli", "u1", undefined, 1);
-		const stale = resolveThreadId(db, "ch_cli", user.id, "stale", 1);
-		const fresh = resolveThreadId(db, "ch_cli", user.id, "fresh", 1);
+		const visitor = upsertIdentifiedVisitor(db, "ch_cli", "u1", undefined, 1);
+		const stale = resolveThreadId(db, "ch_cli", visitor.id, "stale", 1);
+		const fresh = resolveThreadId(db, "ch_cli", visitor.id, "fresh", 1);
 		db.insert(threadWorldState)
 			.values({
 				threadId: stale,
@@ -112,7 +112,7 @@ describe("deleteStaleWorldState", () => {
 	});
 });
 
-test("passes when per-user retention covers the agent's history window", () => {
+test("passes when per-visitor retention covers the agent's history window", () => {
 	expect(() => assertRetentionCoversHistory(10, 10)).not.toThrow();
 });
 

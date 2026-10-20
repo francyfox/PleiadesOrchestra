@@ -149,7 +149,7 @@ export class WidgetGuard {
 
 		const ipHash = this.hashClientIp(ip);
 		if (
-			!isAllowed(channel, found.user) ||
+			!isAllowed(channel, found.row) ||
 			(ipHash && isIpBlocked(db, ipHash, channel.id, now()))
 		) {
 			return emptyResponse(403, origin);

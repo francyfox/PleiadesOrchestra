@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { eq } from "drizzle-orm";
-import { users } from "../database/database.schema.ts";
+import { visitors } from "../database/database.schema.ts";
 import {
 	admin,
 	DAY,
@@ -9,21 +9,21 @@ import {
 	seedLlmCall,
 	setupAdminApp,
 } from "../http/http.testing.ts";
-import { upsertIdentifiedUser } from "../users/users.service.ts";
+import { upsertIdentifiedVisitor } from "../visitors/visitors.service.ts";
 
 describe("admin stats", () => {
-	test("stats counts users by status and usage windows", async () => {
+	test("stats counts visitors by status and usage windows", async () => {
 		const { app, db } = setupAdminApp();
-		upsertIdentifiedUser(db, "ch_telegram", "1", undefined, NOW);
-		const blocked = upsertIdentifiedUser(db, "ch_cli", "2", undefined, NOW);
-		db.update(users)
+		upsertIdentifiedVisitor(db, "ch_telegram", "1", undefined, NOW);
+		const blocked = upsertIdentifiedVisitor(db, "ch_cli", "2", undefined, NOW);
+		db.update(visitors)
 			.set({ blockedAt: NOW })
-			.where(eq(users.id, blocked.id))
+			.where(eq(visitors.id, blocked.id))
 			.run();
 		seedLlmCall(db, null, NOW - 2 * DAY, 3, 3);
 
 		const result = await json(await app.handle(admin("/stats")));
-		expect(result.users).toEqual({
+		expect(result.visitors).toEqual({
 			total: 2,
 			pending: 1,
 			blocked: 1,

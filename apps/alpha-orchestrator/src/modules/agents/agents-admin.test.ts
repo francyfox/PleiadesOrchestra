@@ -56,6 +56,45 @@ describe("admin agents", () => {
 		expect(JSON.stringify(body)).not.toContain("secret");
 	});
 
+	test("answers with the last probe while the next one runs; new specs wait for their own", async () => {
+		let up = true;
+		let hang = false;
+		let baseUrl = "http://a:8080/v1";
+		const app = createApp({
+			agent,
+			decisionAgent,
+			apiKey: "transport-key",
+			adminApiKey: ADMIN_KEY,
+			maxChunkChars: 100,
+			db: testDb(),
+			channels: new ChannelDirectory(testDb()),
+			runs: new RunBinding(),
+			ipHashSalt: "salt",
+			now: () => NOW,
+			agents: {
+				specs: () => [
+					{ id: "x", name: "x", role: "decision", baseUrl, model: null },
+				],
+				fetch: () =>
+					hang
+						? new Promise<Response>(() => {})
+						: Promise.resolve(new Response("", { status: up ? 200 : 503 })),
+			},
+		});
+		const list = async () =>
+			(await json(await app.handle(admin("/agents")))).items;
+
+		expect((await list())[0].status).toBe("up");
+		up = false;
+		expect((await list())[0].status).toBe("up"); // previous probe; this call refreshes
+		expect((await list())[0].status).toBe("down");
+		hang = true;
+		expect((await list())[0].status).toBe("down"); // doesn't wait for a hanging probe
+		hang = false;
+		baseUrl = "http://b:8080/v1";
+		expect((await list())[0].endpoint).toBe("http://b:8080/v1");
+	});
+
 	test("without configured agents the list is empty", async () => {
 		const { app } = setupAdminApp();
 		const body = await json(await app.handle(admin("/agents")));

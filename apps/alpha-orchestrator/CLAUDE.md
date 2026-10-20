@@ -9,7 +9,7 @@ Follows the root "Code style" convention (`src/index.ts` composition root with c
 - `*.instance.ts` singletons (e.g. `translate.instance.ts`) — only `index.ts` and other `*.instance.ts` import them.
 - Test helpers: `database.testing.ts` -> `testDb()`, `http.testing.ts` -> `setupAdminApp()`/`admin()`/`json()`.
 
-Modules: `access`, `active-runs`, `agent-settings`, `agents`, `auth`, `billing`, `blocked-ips`, `channel-directory`, `channels`, `config`, `database`, `decisions`, `english-only`, `goap`, `history`, `http`, `identify`, `messages`, `performance`, `persona`, `plan-runs`, `prices`, `rate-limit`, `reply`, `retention`, `run-binding`, `run-stream`, `security`, `stats`, `streaming`, `subscriptions`, `telegram-whitelist`, `text`, `threads`, `translate`, `usage`, `usage-recorder`, `users`, `visitors`, `widget`, `world-state`.
+Modules: `access`, `active-runs`, `agent-settings`, `agents`, `auth`, `billing`, `blocked-ips`, `channel-directory`, `channels`, `config`, `database`, `decisions`, `english-only`, `goap`, `history`, `http`, `identify`, `messages`, `performance`, `persona`, `plan-runs`, `prices`, `providers`, `rate-limit`, `reply`, `retention`, `run-binding`, `run-stream`, `security`, `stats`, `streaming`, `subscriptions`, `telegram-whitelist`, `text`, `threads`, `translate`, `usage`, `usage-recorder`, `visitors`, `widget`, `world-state`.
 
 ## Commands
 
@@ -31,7 +31,7 @@ Modules: `access`, `active-runs`, `agent-settings`, `agents`, `auth`, `billing`,
 
 **Flow requests (admin `/flow`)** — a *request* = chain of `plan_runs` linked by `plan_runs.root_run_id`. `ActiveRuns` holds in-memory events of runs executing now. The BFF (`modules/requests`, `buildRequestView`) merges DB + registry into `RequestView` nodes: `prompt → translate → understand → steps → result` with per-step time, tool args, tool answers, effects, model calls.
 
-**External model servers**: env picks base URL, model, temperature and concurrency per model — `LLM_*` (beta), `FUNCTION_CALL_*` (delta; `FUNCTION_CALL_REASONING_EFFORT=none` for Ollama + Qwen3), `LAYA_*` (gamma; `LAYA_MODEL`). `probeAgents` tries `/health`, and for text/function-call falls back to `{base}/models` (Ollama has no `/health`). Examples in `.env.example`.
+**External model servers**: env picks base URL, model, temperature and concurrency per model — `LLM_*` (beta), `FUNCTION_CALL_*` (delta), `LAYA_*` (gamma; `LAYA_MODEL`) name the servers; Ollama + Qwen3 needs `reasoning_effort = "none"` on its model in providers.toml. `probeAgents` tries `/health`, and for text/function-call falls back to `{base}/models` (Ollama has no `/health`). Model parameters (temperature, reasoning effort, extra body) and provider keys live in `configs/providers.toml` (`modules/providers`, seeded from the env servers when missing, 0600, git/docker-ignored); `POST /v1/admin/providers-toml/check` runs the save's checks without writing; `configs/providers.schema.json` (editor schema from the zod schema, `bun run providers:schema`, a test fails when stale) is referenced by the file's first line `#:schema`; an agent picks provider + model (`agent_settings`). Contract in `admin-api.md`. `GET /v1/admin/agents` answers with the previous probe of the same specs and refreshes in the background (a down agent took 3 s per page open). Examples in `.env.example`.
 
 **Removal of every item** — `prepareNewMessage` writes `scopeAll` (`scopeFacts`) and binds the catalog (`bindListScope`, also in `prepareResume`): read tool → remover per item (`packages/core` CLAUDE.md). Reply: `replyFromTemplate:removal` (`createRemovalReplyAction`, ru/en/kk, «already empty» from the site's own answer). A `checkout`/`removeFromCart` where no step ran gets an honest «nothing was done» prompt in `replyChunks`, never the bare message.
 
@@ -90,13 +90,15 @@ Known weaknesses: «купить творог» → "buy some cottage", «офо
 
 ## Users, access, channels
 
-`alpha-orchestrator` owns a SQLite DB (`drizzle-orm` + `bun:sqlite`): channels (`accessMode` whitelist/open), chat users (identified or anonymous; anonymous purged after `ANON_RETENTION_HOURS`), last `MESSAGE_RETENTION_PER_USER` (10) messages **per user** (stored but NOT sent to the model — `AGENT_MAX_HISTORY_MESSAGES = 0`; 1B model copies earlier replies after a few exchanges), `llm_calls` ledger (never deleted with messages), GOAP traces (`plan_runs`/`plan_events`).
+`alpha-orchestrator` owns a SQLite DB (`drizzle-orm` + `bun:sqlite`): channels (`accessMode` whitelist/open), chat visitors (table `visitors`, id unchanged, generated `name` = `adjective_animal_xxxxxx` from `visitors/visitor-names.ts`, not unique, backfilled at startup by `backfillVisitorNames`; identified or anonymous; anonymous purged after `ANON_RETENTION_HOURS`), last `MESSAGE_RETENTION_PER_USER` (10) messages **per user** (stored but NOT sent to the model — `AGENT_MAX_HISTORY_MESSAGES = 0`; 1B model copies earlier replies after a few exchanges), `llm_calls` ledger (never deleted with messages), GOAP traces (`plan_runs`/`plan_events`).
 
 Access (block > whitelist) decided by the orchestrator, not transports: bot calls `POST /v1/access` first, stays silent on `allowed: false`; `/v1/messages` returns empty 403 for denied users.
 
+**Channel ownership**: `channels.owner_id` (admin-api account id, NULL = staff-owned, no FK: another database). `GET /v1/admin/channels`, `/stats` and `/usage` take `ownerId` and count only that owner's channels; `POST /v1/admin/channels` accepts it; `DELETE /v1/admin/owners/:ownerId/channels` (`ownerChannelsRoutes`) deletes them with everything that cascades, while `llm_calls`/subscriptions keep their rows with `channel_id` NULL (FK `set null`). The orchestrator does no authorization of its own here; admin-api decides who may pass which `ownerId`.
+
 Admin routes: `/v1/admin/*` under a separate `ADMIN_API_KEY` + `X-Admin-Id`. Widget routes: `/v1/widget/*` (publishable key + `Origin` allowlist + visitor token, in-memory rate limits). `POST /v1/channels/:slug/identify` (server-to-server, links anonymous visitor to site account).
 
-IPs: blocking by salted hash (`blocked_ips.ip_hash`), plaintext `blocked_ips.ip` (null on legacy rows) and `users.last_ip` for admin display. Anonymous users purged with `ANON_RETENTION_HOURS`; blocks expire.
+IPs: blocking by salted hash (`blocked_ips.ip_hash`), plaintext `blocked_ips.ip` (null on legacy rows) and `visitors.last_ip` for admin display. Anonymous visitors purged with `ANON_RETENTION_HOURS`; blocks expire.
 
 Channel lookup is `Map`/`Set` (`channel-directory`, `invalidate()` after admin writes). `FixedWindowLimiter` prunes at most once per window. Widget guard does "last seen" writes only after origin/IP checks pass.
 

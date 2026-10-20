@@ -4,7 +4,7 @@ See root `CLAUDE.md` for monorepo commands, workflow, code style and repo-wide l
 
 ## Overview
 
-Elysia app (`/api/*`, Swagger UI at `/api/docs`, `/health`). Owns admin accounts (better-auth, email+password, own SQLite — never in the orchestrator DB), the orchestrator client (`ADMIN_API_KEY` + `X-Admin-Id` = signed-in admin's id on every mutation), and the host probe (`/proc`, `/sys/class/drm` → `GET /api/system`).
+Elysia app (`/api/*`, Scalar API reference at `/api/docs`, `/health`). Owns accounts (better-auth: staff by access token, customers by email+password, own SQLite — never in the orchestrator DB), the orchestrator client (`ADMIN_API_KEY` + `X-Admin-Id` = signed-in admin's id on every mutation), and the host probe (`/proc`, `/sys/class/drm` → `GET /api/system`).
 
 Wire types are **TypeBox** (`modules/<name>/<name>.schema.ts`, shared bits in `modules/common/common.schema.ts`; account DTOs via `drizzle-typebox`). Zod is only for env. Every response is validated.
 
@@ -20,25 +20,29 @@ Follows the root "Code style" convention. Specific here: `src/app.types.ts` (`Ad
 
 `apps/admin` imports only two paths: `admin-api` (the `App` type from `src/app.ts`) and `admin-api/types` (`src/types.ts`, re-exports from modules) — keep both paths stable.
 
-Modules: `admin-policy`, `admins`, `agents`, `auth`, `blocked-ips`, `channels`, `common`, `config`, `dashboard`, `database`, `live`, `live-hub`, `live-topics`, `mcp`, `orchestrator`, `origin-guard`, `performance`, `plan-runs`, `requests`, `session`, `stats`, `subscriptions`, `system`, `system-feed`, `usage`, `users`.
+Modules: `admin-policy`, `accounts`, `admins`, `agents`, `auth`, `blocked-ips`, `channels`, `common`, `config`, `customers`, `dashboard`, `database`, `live`, `live-hub`, `live-topics`, `mail`, `mcp`, `orchestrator`, `origin-guard`, `performance`, `plan-runs`, `requests`, `session`, `staff-token`, `stats`, `subscriptions`, `system`, `system-feed`, `usage`, `visitors`.
 
-## Accounts and super admin
+## Accounts, levels and sign-in
 
-**Super admin** = earliest-created account (`superAdminId` in `modules/admins/admins.service.ts`, remembered by `createAdminDirectory`). `isSuper` in `/api/session` and `/api/admins`. Only the super can delete admins (`DELETE /api/admins/:id`; codes `not_super`, `self`); nobody can ban the super or change their password (`super_protected`).
+One better-auth `user` table, a number `user.level` (`modules/accounts/accounts.schema.ts`: `LEVEL.super` 0, `admin` 100, `user` 200; `isStaff(level)` = `<= 100`). Extra columns come from `accountFields` (shared by `auth.ts` and `auth-cli.ts`, so `bun run auth:schema` sees them): `level`, `lastActiveAt`, `tokenHash` (`returned: false`), `locale`. `level` is `input: false` — a sign-up body can never choose it; a user is always 200.
 
-With no admin, `GET /api/session` says `setupRequired`; after the first `POST /api/auth/register` public sign-up is closed at the API level. Further admins created by an admin via `POST /api/admins`.
+**Staff** (0/100) have no password. `modules/staff-token/` is a better-auth plugin whose endpoint checks a presented token against every staff `tokenHash` in constant time and creates a normal session; `POST /api/auth/token` (in `session.ts`) wraps it with the per-IP throttle. Create / rotate / edit live in `modules/admins/admins.service.ts` (`createStaff`, `rotateToken` — deletes all the admin's sessions, `editStaff`). The CLI `bun --cwd apps/admin-api run admin:create --email E [--name N] [--level 0|100]` (`admins-cli.ts` + `admins-cli.service.ts`) prints the token once; the first account is level 0; an existing staff email gets a fresh token. It runs on the host (the Docker image has only the compiled server): `ADMIN_DATABASE_PATH=../../data/admin/admin.db bun --cwd apps/admin-api run admin:create ...` with the service's `.env`. The migration `0001_accounts_levels` made every old account staff (earliest = super) and deleted their credential rows, so an existing install runs the CLI once per admin.
 
-better-auth is wrapped, not mounted: explicit `POST /api/auth/login|register|logout` return error **codes** (`weak_credentials`, `registration_closed`, …), never UI text. Business rules in `modules/admin-policy/admin-policy.service.ts`: no self-ban, no banning the last active admin, min password 8.
+**Users** (200): `modules/accounts/accounts.ts` is `/api/user/*` (register, login, verify, forgot, reset, me). Registration needs mail verification (`requireEmailVerification`); a taken email looks like success (better-auth hides it). `/api/user/login` refuses staff emails itself. Mail: `modules/mail/` — `createMailer(config)` over `nodemailer`, logs subject+link without `SMTP_PASS`; tests use `createFakeMailer()` (`app.testing.ts` exposes it as `mailer`; `signedUser()` registers + verifies + signs in a customer). Links use `panelUrl` (`PUBLIC_PANEL_URL`, default `BETTER_AUTH_URL`).
 
-Auth is a macro (`{ admin: true }` in a `.guard`), implemented in `onRequest` — see Elysia auth lesson in root CLAUDE.md.
+**Guards** (`auth.service.ts`, `requireAdmin(auth)` gives both macros): `{ admin: true }` = staff (user → 403 `forbidden`, none → 401); `{ account: true }` = any signed-in account. Super-only checks compare `admin.level === 0` (`deleteRefusal`, `manageRefusal` in `admin-policy`). Both macros and `GET /api/session` go through `currentSession`, which sets `last_active_at` when it is unset or a day old (`needsTouch`). `index.ts` runs `deleteInactiveUsers` (`accounts.service.ts`, 180 days, level 200 only) at start and daily. Both it and the delete routes go through `deleteAccount(ctx, id, actorId)` in the same file: orchestrator channels first (`deleteOwnerChannels`), then the row; a failure keeps the account (logged, retried next run). Extend `deleteAccount` when users own more than an account row.
+
+**Ownership** (the only place that decides who sees what; the orchestrator trusts `ADMIN_API_KEY`): `modules/channels/channels.service.ts` has `ownerScope(account)` (user = own id, staff = `undefined`) and `mayAccessChannel` (a user's channel routes call it first and answer 404 `not_found`). Channel routes and `/dashboard` are `{ account: true }` and scope by `ownerScope`; a client `ownerId` is used only for staff. `/api/live` is `{ account: true }` too: `live.service.ts` `scopeSubscription` lets a user watch only `dashboard` and `channels` and overwrites `params.ownerId` with the session's id (other topics: error `forbidden`); staff pass through. `modules/customers/` is the staff "Users" page (`/api/accounts`: list with `channelsCount`, delete, ban/unban, level 200 targets only). Own settings (`PATCH /api/user/me`, `POST /api/user/me/email` through better-auth `changeEmail`, `DELETE /api/user/me`) live in `accounts.ts` and refuse staff. Elysia validates the body before the macro guard, so `levels.test.ts` (walks `app.routes` with a user session) accepts 403 or 422. Test helper `fakeOrchestrator(respond?)` in `app.testing.ts` records upstream calls (method, path, `X-Admin-Id`, body).
+
+Wrapped, not mounted: better-auth is called through `auth.api`; routes return error **codes** (`weak_credentials`, `invalid_token`, …), never UI text. Business rules in `modules/admin-policy/admin-policy.service.ts`: no self-ban, no banning the last active admin or a super admin, min password 12 (users).
 
 ## Live WebSocket (`/api/live`)
 
 One multiplexed WebSocket per tab. Browser sends `subscribe {id, topic, params}` / `unsubscribe`. Server-side hub (`modules/live-hub/live-hub.ts`, topics in `modules/live-topics/live-topics.ts`) keeps ONE poll timer per `topic+params` group while it has subscribers; sends a snapshot on subscribe and then only when the payload's hash changed.
 
-Intervals: dashboard/users 5 s, user 3 s, channels/blocked-ips/admins/agents 10 s, performance 15 s. `upstream` error reported once per outage.
+Intervals: dashboard/visitors 5 s, visitor 3 s, channels/blocked-ips/admins/agents 10 s, performance 15 s. `upstream` error reported once per outage.
 
-`GET /api/system/stream` — separate WebSocket for the header meter (session cookie at upgrade, its own `Origin` check). `createSystemSampler` parses `/proc/cpuinfo` once, reuses a snapshot younger than 1 s, shares one in-flight read; GPU sysfs files read in parallel. `SYSTEM_STREAM_INTERVAL_MS` default 5000; single timer runs only while ≥1 client subscribed.
+`GET /api/system/stream` — separate WebSocket for the header meter (session cookie at upgrade, its own `Origin` check). `createSystemSampler` parses `/proc/cpuinfo` once, reuses a snapshot younger than 1 s, shares one in-flight read; GPU sysfs files read in parallel. `SYSTEM_STREAM_INTERVAL_MS` default 15000; single timer runs only while ≥1 client subscribed.
 
 Elysia gotcha: Elysia sends a `message` handler's **return value** to the client — never `return ws.send(...)`.
 

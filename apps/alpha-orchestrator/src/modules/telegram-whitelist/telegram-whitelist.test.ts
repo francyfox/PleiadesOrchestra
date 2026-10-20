@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { eq } from "drizzle-orm";
-import { users } from "../database/database.schema.ts";
+import { visitors } from "../database/database.schema.ts";
 import { testDb } from "../database/database.testing.ts";
-import { upsertIdentifiedUser } from "../users/users.service.ts";
+import { upsertIdentifiedVisitor } from "../visitors/visitors.service.ts";
 import {
 	importTelegramWhitelist,
 	parseIds,
@@ -19,18 +19,24 @@ describe("parseIds", () => {
 });
 
 describe("importTelegramWhitelist", () => {
-	test("creates missing users and whitelists existing ones, keeping an earlier whitelistedAt", () => {
+	test("creates missing visitors and whitelists existing ones, keeping an earlier whitelistedAt", () => {
 		const db = testDb();
-		upsertIdentifiedUser(db, "ch_telegram", "1", "Known", 5);
-		const existing = upsertIdentifiedUser(db, "ch_telegram", "2", undefined, 5);
-		db.update(users)
+		upsertIdentifiedVisitor(db, "ch_telegram", "1", "Known", 5);
+		const existing = upsertIdentifiedVisitor(
+			db,
+			"ch_telegram",
+			"2",
+			undefined,
+			5,
+		);
+		db.update(visitors)
 			.set({ whitelistedAt: 3 })
-			.where(eq(users.id, existing.id))
+			.where(eq(visitors.id, existing.id))
 			.run();
 
 		expect(importTelegramWhitelist(db, ["1", "2", "3"], 100)).toBe(3);
 
-		const rows = db.select().from(users).all();
+		const rows = db.select().from(visitors).all();
 		const byExternal = Object.fromEntries(
 			rows.map((r) => [r.externalUserId, r]),
 		);

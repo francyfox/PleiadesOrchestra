@@ -8,8 +8,8 @@ const UserRow = createSelectSchema(user);
 /** The signed-in admin, as the panel needs to know them. */
 export const AdminSelf = t.Composite([
 	t.Pick(UserRow, ["id", "name", "email"]),
-	/** The first account: the only one that may delete admins. */
-	t.Object({ isSuper: t.Boolean() }),
+	/** 0 super admin, 100 admin, 200 user. */
+	t.Object({ level: t.Number(), isSuper: t.Boolean() }),
 ]);
 
 /** One row of the /admins table. Timestamps are epoch ms, like every other DTO. */
@@ -18,6 +18,7 @@ export const AdminAccount = t.Composite([
 	t.Object({
 		banned: t.Boolean(),
 		createdAt: t.Number(),
+		level: t.Number(),
 		isSuper: t.Boolean(),
 	}),
 ]);
@@ -38,15 +39,26 @@ export const Credentials = t.Object({
 	password: t.String(),
 });
 
-export const CreateAdminInput = t.Composite([
-	Credentials,
-	t.Object({ name: t.Optional(t.String()) }),
-]);
+export const CreateAdminInput = t.Object({
+	name: t.String(),
+	email: t.String(),
+});
+
+export const EditAdminInput = t.Object({
+	name: t.String(),
+	email: t.String(),
+});
+
+/** Shown once: only its SHA-256 is stored. */
+export const AdminToken = t.Object({
+	id: t.String(),
+	email: t.String(),
+	token: t.String(),
+});
 
 export const BanInput = t.Object({ reason: t.Optional(t.String()) });
 
-export const SetPasswordInput = t.Object({ password: t.String() });
-
 export type AdminSelf = Static<typeof AdminSelf>;
 export type AdminAccount = Static<typeof AdminAccount>;
+export type AdminToken = Static<typeof AdminToken>;
 export type AdminsPage = Static<typeof AdminsPage>;

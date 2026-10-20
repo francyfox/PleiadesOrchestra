@@ -9,7 +9,6 @@
 	import { issued } from "#lib/components/channels/issued-secret.svelte.js";
 	import { useLiveQuery } from "#lib/live/use-live-query.svelte.js";
 	import { DEFAULT_PAGE_SIZE } from "#lib/pagination.js";
-	import { prefetched } from "#lib/query/prefetch.js";
 	import { queries } from "#lib/query/queries.js";
 
 	let { data } = $props();
@@ -19,7 +18,14 @@
 		pageSize: DEFAULT_PAGE_SIZE,
 	}));
 
-	const subscriptions = createQuery(() => queries.subscriptions());
+	const subscriptions = createQuery(() => ({
+		...queries.subscriptions(),
+		enabled: data.staff,
+	}));
+	const accounts = createQuery(() => ({
+		...queries.allAccounts(),
+		enabled: data.staff,
+	}));
 
 	const content = useIntlayer("channels");
 	let editing = $state<Channel | null>(null);
@@ -43,7 +49,9 @@
 	channels={live.current.items}
 	total={live.current.total}
 	page={data.page}
-	plans={prefetched(subscriptions).items}
+	staff={data.staff}
+	plans={subscriptions.data?.items ?? []}
+	owners={accounts.data?.items ?? []}
 	onEdit={(channel) => (editing = channel)}
 />
 

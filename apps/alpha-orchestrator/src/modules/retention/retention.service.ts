@@ -1,11 +1,11 @@
 import { and, eq, lt } from "drizzle-orm";
-import { threadWorldState, users } from "../database/database.schema.ts";
+import { threadWorldState, visitors } from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
 import { HOUR_MS } from "../http/http.service.ts";
 
 /**
  * History lives only in the messages table, so keeping fewer messages per
- * user than the agent reads per thread would silently shrink the model's
+ * visitor than the agent reads per thread would silently shrink the model's
  * context. Checked once at startup.
  */
 export function assertRetentionCoversHistory(
@@ -25,28 +25,28 @@ export function retentionCutoff(now: number, retentionHours: number): number {
 }
 
 /**
- * Anonymous chat users (widget visitors without an account on the host site)
- * are kept for `retentionHours` of inactivity. Deleting the user cascades to
+ * Anonymous chat visitors (widget visitors without an account on the host site)
+ * are kept for `retentionHours` of inactivity. Deleting the visitor cascades to
  * their threads, messages, visitor tokens and plan traces; `llm_calls` rows
- * stay with `user_id` NULLed so usage totals per channel/day don't change.
+ * stay with `visitor_id` NULLed so usage totals per channel/day don't change.
  */
-export function deleteInactiveAnonymousUsers(
+export function deleteInactiveAnonymousVisitors(
 	db: Db,
 	now: number,
 	retentionHours: number,
 ): number {
 	return (
 		db
-			.delete(users)
+			.delete(visitors)
 			.where(
 				and(
-					eq(users.kind, "anonymous"),
-					lt(users.lastSeenAt, retentionCutoff(now, retentionHours)),
+					eq(visitors.kind, "anonymous"),
+					lt(visitors.lastSeenAt, retentionCutoff(now, retentionHours)),
 				),
 			)
 			// Count via RETURNING: `changes` would also count the FK
 			// `ON DELETE SET NULL` updates on llm_calls.
-			.returning({ id: users.id })
+			.returning({ id: visitors.id })
 			.all().length
 	);
 }
@@ -55,7 +55,7 @@ export function deleteInactiveAnonymousUsers(
  * A plan run that never reached its goal (stuck, replans exhausted, or the
  * visitor never came back) leaves its `WorldState` checkpoint behind, and
  * `SqliteWorldStateStore.save` has no expiry of its own. The FK cascade
- * already clears these for anonymous visitors; this covers identified users,
+ * already clears these for anonymous visitors; this covers identified visitors,
  * whose threads are never deleted by inactivity.
  */
 export function deleteStaleWorldState(

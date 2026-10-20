@@ -6,7 +6,7 @@ title: Admin API contract
 
 The source of truth for developing `apps/alpha-orchestrator` (the server), `apps/admin-api` (a client; also the panel's BFF) and `apps/telegram-bot`/`apps/cli` (clients) in parallel. Design and motivation: [Sessions and admin panel plan](/docs/drafts/sessions-and-admin-plan/). Change the contract, change this page in the same PR.
 
-The `apps/admin` panel does not call this API directly: it is a static SPA that talks to `apps/admin-api` (`/api/*`, Elysia, Swagger UI at `/api/docs`), which calls this API with the `ADMIN_API_KEY` and an `X-Admin-Id` from the administrator's session. The panel ↔ `admin-api` contract is described by TypeBox schemas in `apps/admin-api/src/schemas/` and documented by Swagger; the DTOs below are the same as there.
+The `apps/admin` panel does not call this API directly: it is a static SPA that talks to `apps/admin-api` (`/api/*`, Elysia, Scalar API reference at `/api/docs`), which calls this API with the `ADMIN_API_KEY` and an `X-Admin-Id` from the administrator's session. The panel ↔ `admin-api` contract is described by TypeBox schemas in `apps/admin-api/src/schemas/` and documented by Swagger; the DTOs below are the same as there.
 
 General rules:
 
@@ -19,7 +19,7 @@ General rules:
 
 ### `POST /v1/access`
 
-Registers a channel user (if not there yet), updates `lastSeenAt`/`displayName`, and answers whether they are allowed. The message text is not sent here.
+Registers a channel visitor (if not there yet), updates `lastSeenAt`/`displayName`, and answers whether they are allowed. The message text is not sent here.
 
 ```json
 // request
@@ -106,28 +106,31 @@ interface Channel extends ChannelRef {
   publishableKey: string | null;
   disabledAt: number | null;
   createdAt: number;
+  ownerId: string | null;        // admin-api account id of the owner; null = staff-owned
 }
 ```
 
-### Users
+### Visitors
 
-`GET /v1/admin/users`
+A chat visitor (what used to be called a "user"; "users" are now the paying accounts). `AdminVisitor` carries `id` (opaque, unchanged) and `name` = `adjective_animal_xxxxxx` (generated on first contact, also for identified visitors, who keep the site's `displayName` too; **not unique**, shown next to the id). Routes were renamed `/v1/admin/users*` → `/v1/admin/visitors*`; the old paths answer `404`. The DB table is `visitors` (columns `visitor_id`). The transport and integration wire names `userId` (`/v1/access`, `/v1/messages`, identify) are unchanged.
 
-Query: `channel` (slug), `kind`, `status`, `q` (search by displayName/externalUserId), `sort` = `lastSeenAt` | `createdAt` | `tokens` (`lastSeenAt` by default), `order` = `asc` | `desc` (`desc` by default), `from`/`to` (the period for `usage`), `cursor`, `limit` (1–200, 50 by default).
+`GET /v1/admin/visitors`
+
+Query: `channel` (slug), `kind`, `status`, `q` (search by displayName, generated name or externalUserId), `sort` = `lastSeenAt` | `createdAt` | `tokens` (`lastSeenAt` by default), `order` = `asc` | `desc` (`desc` by default), `from`/`to` (the period for `usage`), `cursor`, `limit` (1–200, 50 by default).
 
 ```json
-{ "items": [AdminUser], "nextCursor": "opaque" | null, "total": 123 }
+{ "items": [AdminVisitor], "nextCursor": "opaque" | null, "total": 123 }
 ```
 
 An invalid query (an unknown enum value and so on) → `422`.
 
-`cursor` is an opaque string; the client passes it back as is. `total` is the number of users matching the filters.
+`cursor` is an opaque string; the client passes it back as is. `total` is the number of visitors matching the filters.
 
-`GET /v1/admin/users/:id` →
+`GET /v1/admin/visitors/:id` →
 
 ```json
 {
-  "user": AdminUser,
+  "visitor": AdminVisitor,
   "messages": [AdminMessage],          // the last ≤10, oldest to newest
   "usageByDay": [{ "day": "2026-09-24", "inputTokens": 0, "outputTokens": 0, "calls": 0, "callsWithoutUsage": 0 }],
   "usageByModel": [{ "model": "vikhr-llama-3.2-1b", "kind": "generate", "inputTokens": 0, "outputTokens": 0, "calls": 0, "callsWithoutUsage": 0, "avgLatencyMs": 0 }]
@@ -138,18 +141,18 @@ An invalid query (an unknown enum value and so on) → `422`.
 
 | Method | Path | Body | Response |
 |---|---|---|---|
-| POST | `/v1/admin/users/:id/whitelist` | — | `{ "user": AdminUser }` |
-| POST | `/v1/admin/users/:id/unwhitelist` | — | `{ "user": AdminUser }` |
-| POST | `/v1/admin/users/:id/block` | `{ "reason": "..." }` (optional) | `{ "user": AdminUser }` |
-| POST | `/v1/admin/users/:id/unblock` | — | `{ "user": AdminUser }` |
-| POST | `/v1/admin/users/bulk` | `{ "ids": [..], "action": "whitelist"\|"unwhitelist"\|"block"\|"unblock", "reason"?: "..." }` | `{ "updated": 3 }` |
-| DELETE | `/v1/admin/users/:id/messages` | — | `204` |
+| POST | `/v1/admin/visitors/:id/whitelist` | — | `{ "visitor": AdminVisitor }` |
+| POST | `/v1/admin/visitors/:id/unwhitelist` | — | `{ "visitor": AdminVisitor }` |
+| POST | `/v1/admin/visitors/:id/block` | `{ "reason": "..." }` (optional) | `{ "visitor": AdminVisitor }` |
+| POST | `/v1/admin/visitors/:id/unblock` | — | `{ "visitor": AdminVisitor }` |
+| POST | `/v1/admin/visitors/bulk` | `{ "ids": [..], "action": "whitelist"\|"unwhitelist"\|"block"\|"unblock", "reason"?: "..." }` | `{ "updated": 3 }` |
+| DELETE | `/v1/admin/visitors/:id/messages` | — | `204` |
 
 An unknown `:id` → `404`.
 
 ### Usage
 
-`GET /v1/admin/usage?groupBy=day|user|channel|model&from&to&channel`
+`GET /v1/admin/usage?groupBy=day|visitor|channel|model&from&to&channel&ownerId`
 
 ```json
 { "rows": [{ "key": "2026-09-24", "label": "2026-09-24", "inputTokens": 0, "outputTokens": 0, "calls": 0, "callsWithoutUsage": 0, "avgLatencyMs": 0,
@@ -158,14 +161,18 @@ An unknown `:id` → `404`.
 
 `costUsd` = tokens × the model's price, summed per row; `null` when the prices could not be fetched (`GET https://openrouter.ai/api/v1/models`, per-token `pricing.prompt`/`completion`, cached a day in memory, a failure is retried after 5 minutes and keeps the previous list). A model with no price (a local one, or unknown to OpenRouter) costs 0. `price` (USD per 1M tokens, `null` = no price) is present on `groupBy=model` rows only. Shortcut: today's price is applied to past tokens.
 
-`key` is a day (`YYYY-MM-DD`, UTC) / user id / channel slug / model. `label` is human-readable (for a user, the displayName or externalUserId; for deleted anonymous users `"(удалён)"` ("deleted") with key `null`). By default `from` = 30 days ago, `to` = now.
+`key` is a day (`YYYY-MM-DD`, UTC) / visitor id / channel slug / model. `label` is human-readable (for a visitor, the displayName, else the generated name; for deleted anonymous visitors `"(удалён)"` ("deleted") with key `null`). By default `from` = 30 days ago, `to` = now.
 
-`GET /v1/admin/stats` →
+`ownerId` (an admin-api account id) counts only calls of the channels that account owns (calls whose channel was deleted have no owner and are left out).
+
+`GET /v1/admin/stats?ownerId` →
 
 ```json
-{ "users": { "total": 0, "pending": 0, "blocked": 0, "anonymous": 0 },
+{ "visitors": { "total": 0, "pending": 0, "blocked": 0, "anonymous": 0 },
   "usage": { "today": UsageTotals, "last7d": UsageTotals, "last30d": UsageTotals } }
 ```
+
+With `ownerId` both the visitor counts and the usage cover only that owner's channels.
 
 ### Subscriptions (Polar, the "Cloud" plan)
 
@@ -216,7 +223,7 @@ One user message = one **request**: the first run plus one more per browser tool
 `GET /v1/admin/requests?page=&pageSize=&status=&intent=` (newest first; 25 without `pageSize`; `status` is one of the values below, `intent` is an exact match on the row's `intent`; with a filter, `total` is the number of matching requests; the status is not a DB column, so with a filter the orchestrator builds the summaries of all requests and cuts the page afterwards) →
 
 ```json
-{ "items": [{ "id": "<id of the first run>", "userId": "", "threadId": "", "prompt": "купи 1 сыр",
+{ "items": [{ "id": "<id of the first run>", "visitorId": "", "threadId": "", "prompt": "купи 1 сыр",
               "intent": "addToCart", "status": "running" | "waiting" | "succeeded" | "failed" | "abandoned",
               "steps": ["choose_store", "search_products"], "runs": 2, "startedAt": 0, "durationMs": 0 }],
   "total": 1 }
@@ -228,7 +235,7 @@ One user message = one **request**: the first run plus one more per browser tool
 
 ```json
 {
-  "request": { "id": "", "userId": "", "threadId": "", "prompt": "", "intent": "addToCart", "status": "succeeded",
+  "request": { "id": "", "visitorId": "", "threadId": "", "prompt": "", "intent": "addToCart", "status": "succeeded",
                "goal": {}, "reply": "the assistant's reply or null", "startedAt": 0, "durationMs": 0 },
   "runs": [{ "id": "", "createdAt": 0, "durationMs": 0, "succeeded": true, "running": false,
              "events": [{ "seq": 0, "type": "planned", "attempt": 0, "action": null, "payload": {}, "at": 0 }] }],
@@ -260,10 +267,14 @@ One entry per channel, its newest catalog version (`firstSeenAt` is when this ve
 
 | Method | Path | Body | Response |
 |---|---|---|---|
-| GET | `/v1/admin/channels?page=&pageSize=` | — | `{ "items": [Channel], "total": 3 }` |
-| POST | `/v1/admin/channels` | `{ "slug", "name", "kind": "web", "accessMode", "allowedOrigins": [], "catalogLanguage"?: "ru" }` | `{ "channel": Channel, "secretKey": "..." }` |
+| GET | `/v1/admin/channels?page=&pageSize=&ownerId=` | — | `{ "items": [Channel], "total": 3 }` (`ownerId` filters, `total` too) |
+| POST | `/v1/admin/channels` | `{ "slug", "name", "kind": "web", "accessMode", "allowedOrigins": [], "catalogLanguage"?: "ru", "ownerId"?: "acc_1" }` | `{ "channel": Channel, "secretKey": "..." }` (no `ownerId` = staff-owned) |
 | PATCH | `/v1/admin/channels/:id` | `{ "name"?, "accessMode"?, "allowedOrigins"?, "catalogLanguage"?, "disabled"?: boolean }` | `{ "channel": Channel }` |
 | POST | `/v1/admin/channels/:id/rotate-keys` | — | `{ "channel": Channel, "secretKey": "..." }` |
+
+| DELETE | `/v1/admin/owners/:ownerId/channels` | — | `{ "deleted": 2 }` |
+
+`DELETE /v1/admin/owners/:ownerId/channels` removes every channel of that account when the account is deleted (admin-api calls it first; if it fails the account is kept). Visitors, messages, threads, runs, visitor tokens, personas, intent examples, blocked IPs and tool catalogs of those channels cascade (foreign keys, `foreign_keys = ON`). `llm_calls` and subscriptions keep their rows with `channel_id` set to `NULL` (`ON DELETE SET NULL`), so spend totals and billing survive; the visitor reference of those calls is cleared too. Idempotent: `deleted: 0` when nothing is left. No new migration was needed for this, only `0020_channel_owner` (`channels.owner_id` text NULL + `channels_owner_idx`). The owner is an id from another database, so there is no foreign key.
 
 `secretKey` is returned only in these two responses; it is stored as a hash. Only `kind: "web"` channels are created through the API; `telegram`/`cli` are created by a migration. `slug` is `^[a-z0-9][a-z0-9-]*$`, up to 64 characters; a taken `slug` → `409`. `rotate-keys` changes both the `publishableKey` and the `secretKey`. Fields left out of a PATCH do not change.
 
@@ -306,47 +317,66 @@ interface Agent {
 
 The list comes from the orchestrator's configuration (`LLM_BASE_URL`/`LLM_MODEL` for the text agent, `LAYA_API_BASE_URL` for the decision agent). On each request the orchestrator calls `GET <base without /v1>/health` in parallel with a 1.5 s timeout and no auth keys; a network error, a timeout or a non-2xx give `down`, and the request itself does not fail.
 
-### Agent settings and provider keys
+### Agent models and providers
 
-Per-agent overrides of the env values (`LLM_*` for `beta-text`, `FUNCTION_CALL_*` for `delta-function-call`, `LAYA_*` for `gamma-decision`). Ids: `beta-text`, `delta-function-call`, `gamma-decision`; an unknown id is `404`. `gamma-decision` can be read but not changed or tested (`400`): Laya stays on its env server.
+Which model an agent uses, and the providers file it is picked from. Ids: `beta-text`, `delta-function-call`, `gamma-decision`; an unknown id is `404`. `gamma-decision` can be read but not changed or tested (`400`): Laya speaks its own protocol and stays on its env server (`LAYA_*`).
 
 | Method | Path | Body | Response |
 |---|---|---|---|
-| GET | `/v1/admin/agents/:id` | — | `AgentSettings` |
-| PATCH | `/v1/admin/agents/:id` | `AgentSettingsPatch` | `AgentSettings` |
+| GET | `/v1/admin/agents/:id` | — | `AgentModel` |
+| PUT | `/v1/admin/agents/:id/model` | `{ "provider": string, "model": string }` | `AgentModel`; `400` if the file has no such model |
 | POST | `/v1/admin/agents/:id/test` | — | `{ "ok": boolean, "answer"?: string, "error"?: string, "latencyMs": number }` |
-| GET | `/v1/admin/provider-keys` | — | `{ "items": [ProviderKey] }` |
-| PUT | `/v1/admin/provider-keys/:name` | `{ "key": string }` | `ProviderKey` (adds or replaces) |
-| DELETE | `/v1/admin/provider-keys/:name` | — | `{ "ok": true }`; agents that picked it fall back to env |
+| GET | `/v1/admin/providers` | — | `{ "items": [Provider] }` |
+| PUT | `/v1/admin/providers/:id` | `{ "name", "baseUrl", "apiKey"? }` | `{ "items": [Provider] }` (adds or changes; no `apiKey` keeps the saved key, `""` removes it) |
+| DELETE | `/v1/admin/providers/:id` | — | `{ "items": [Provider] }` (with its models) |
+| PUT | `/v1/admin/providers/:id/models` | `ProviderModel` | `{ "items": [Provider] }` (adds or changes by `id`) |
+| DELETE | `/v1/admin/providers/:id/models?model=<id>` | — | `{ "items": [Provider] }` |
+| GET | `/v1/admin/providers-toml` | — | `{ "toml": string }` (keys masked) |
+| PUT | `/v1/admin/providers-toml` | `{ "toml": string }` | `{ "toml": string }`; `400` with the reason if it does not parse or fit |
+| POST | `/v1/admin/providers-toml/check` | `{ "toml": string }` | always `200` `{ "errors": { message, line?, path? }[] }`, empty = valid; the save's checks (syntax, schema, masked keys) without writing. `line` (1-based) for syntax errors, `path` (`providers.x.base_url`) for schema errors. admin-api: `POST /api/providers-toml/check` |
+
+Editors (Taplo, Tombi) validate `providers.toml` against `configs/providers.schema.json`, generated from the same schema (`bun run providers:schema`); the file's first line is `#:schema ./providers.schema.json`.
 
 ```ts
-interface AgentSettingsPatch {   // a field left out stays, null clears it (= the env value)
-  source?: "local" | "external" | null;
-  baseUrl?: string | null;       // http(s) URL
-  model?: string | null;
-  providerKey?: string | null;   // name of a provider key; 400 if it does not exist
-  parameters?: {                 // replaced as a whole; null or {} clears
-    temperature?: number;        // 0..2
-    reasoningEffort?: "none" | "low" | "medium" | "high";
-    extraBody?: Record<string, unknown>; // extra request-body fields, e.g. { "provider": { "require_parameters": true } }
-  } | null;
-}
-interface AgentSettings {
+interface AgentModel {
   id: string;
   editable: boolean;             // false for gamma-decision
-  overrides: { source, baseUrl, model, providerKey, parameters };   // as saved, null = not set
-  defaults: { baseUrl, model, temperature, reasoningEffort };       // today's env values (the placeholders)
-  effective: { source, baseUrl, model, provider, temperature, reasoningEffort, extraBody }; // what the agent runs with
-  updatedBy: string | null;      // X-Admin-Id of the last save
+  provider: string | null;       // null = the env server (nothing picked, or the pick is gone from the file)
+  model: string;
+  baseUrl: string | null;        // without login/password/query
+  updatedBy: string | null;      // X-Admin-Id of the last pick
   updatedAt: number | null;
 }
-interface ProviderKey { name: string; mask: string; updatedBy: string; updatedAt: number } // mask = "••••" + last 4 characters
+interface ProviderModel {
+  id: string;                    // as the server expects it: "google/gemini-2.5-flash", "qwen3:1.7b"
+  name: string;
+  temperature?: number;          // 0..2; unset = the server's default
+  reasoningEffort?: "none" | "low" | "medium" | "high";
+  extraBody: Record<string, unknown>; // extra request-body fields, e.g. { "provider": { "require_parameters": true } }
+}
+interface Provider { id: string; name: string; baseUrl: string; apiKey: string; models: ProviderModel[] }
+// apiKey: "••••" + last 4 characters, "$VAR" as written, "" = none — never the key
 ```
 
-- **Effective = override if set, else env.** `source: "local"` ignores `baseUrl`/`model`/`providerKey` (the env server is used); parameters apply either way. The env API key is never sent to a base URL that differs from the env one: such an agent uses the picked provider key, or none.
-- **Keys** are stored AES-GCM encrypted with a key derived from `PROVIDER_KEYS_SECRET` (without it `PUT /provider-keys` is `400`). No route returns a key, base URLs are returned without login/password/query.
-- **No restart:** a save rebuilds the agent; a run already going keeps the one it started with. `GET /v1/admin/agents` (health) and `llm_calls` (`provider` = the picked key's name, `model`) use the effective values. Shortcut: delta can be switched on by a saved URL only if a base URL was in effect at startup.
-- **Test** sends one plain chat completion (`max_tokens` 16) with the effective settings, also for delta (it is not schema-constrained); a failing call is `200` with `ok: false`.
+**`providers.toml`** (`PROVIDERS_CONFIG_PATH`, default `configs/providers.toml`; example in `apps/alpha-orchestrator/configs/providers.example.toml`) follows Crush; there is no standard for this shape (no RFC; Open Agent Spec is a proposal, A2A leaves model choice out):
+
+```toml
+[providers.openrouter]          # id: a-z, 0-9, -
+name = "OpenRouter"
+base_url = "https://openrouter.ai/api/v1"
+api_key = "$OPENROUTER_API_KEY" # the key, "$ENV_VAR", or nothing
+
+[[providers.openrouter.models]]
+id = "qwen/qwen3-30b-a3b-instruct-2507"
+temperature = 0
+reasoning_effort = "none"
+extra_body = { provider = { require_parameters = true } }
+```
+
+- **Model parameters live only here.** Env names each agent's server (`LLM_*`, `FUNCTION_CALL_*`); a missing file is created from those servers on first start (keys as `$LLM_API_KEY`-style references). An agent with no pick uses the file's entry for its env server (same base URL and model), else the bare env server without parameters.
+- **Keys**: the file is written 0600, gitignored and dockerignored; no route returns a key. The editor gets the text with keys masked; a mask saved back unchanged keeps the saved key, any other mask is refused. Saving from a form or the editor rewrites the file (comments are not kept).
+- **No restart:** a pick or a file change rebuilds the agents; a run already going keeps the one it started with. `GET /v1/admin/agents` (health) and `llm_calls` (`provider` = the provider id, `model`) use the model in effect.
+- **Test** sends one plain chat completion (`max_tokens` 16) with the model in effect, also for delta (it is not schema-constrained); a failing call is `200` with `ok: false`.
 
 ## Widget API (public, for the web chat widget on a site)
 
@@ -363,7 +393,7 @@ The visitor token is 32 random bytes (base64url); the DB keeps only its sha256. 
 
 ### `POST /v1/widget/visitors`
 
-No body. Creates an anonymous channel user → `201` `{ "visitorToken": "...", "expiresAt": 0 }`.
+No body. Creates an anonymous channel visitor → `201` `{ "visitorToken": "...", "expiresAt": 0 }`.
 
 | Status | When |
 |---|---|
@@ -494,7 +524,7 @@ Public: no bearer key, the signature is the credential. The route exists only wh
 { "userId": "<our id>", "merged": false }
 ```
 
-- No identified user with this `externalUserId` in the channel → the anonymous user becomes identified (same `userId`), `merged: false`.
+- No identified visitor with this `externalUserId` in the channel → the anonymous visitor becomes identified (same `userId`), `merged: false`.
 - There is one → a merge in one transaction: threads, messages (trimmed again to `MESSAGE_RETENTION_PER_USER`), the usage log, GOAP runs and visitor tokens move to the existing user; a block or whitelisting on either of the two rows is kept; the anonymous row is deleted; the visitor's `last_ip` moves to the existing user. `merged: true`, `userId` is the existing user's.
 - Repeating the same request → `200` with the same `userId`, `merged: false`.
 
@@ -516,3 +546,78 @@ The message intent classifier (`classifyMessageIntentDetailed`, only when the th
 ```
 
 `PATCH /v1/admin/intents/:id` `{ status?, intent? }` → `{ item }` (unknown id → `404`, unknown value → `422`). A new `intent` is the admin's label (`source: admin`) and is `approved` at once; after any decision the channel's model is rebuilt. admin-api: `GET /api/intents`, `PATCH /api/intents/:id`, live topic `intents` (5 s).
+
+## Panel API of `admin-api`: accounts and sign-in
+
+`apps/admin-api` (`/api/*`) is the panel's backend. Its accounts are better-auth users in its own SQLite with a numeric **level**: `0` super admin, `100` admin, `200` user (customer). Staff = level `<= 100`. Errors are codes (`{ "error": "invalid_token" }`), never text. The session is a cookie for both kinds of account.
+
+| Guard | Who | Used by |
+|---|---|---|
+| `{ admin: true }` | staff (level <= 100); a user gets `403 { "error": "forbidden" }`, no session `401 { "error": "unauthorized" }` | every other orchestrator-backed route, `/api/admins`, `/api/accounts*`, `/api/system*` |
+| `{ account: true }` | any signed-in account; routes scope or refuse by `level` themselves | `/api/user/me*`, `/api/channels*` (users: own only), `/api/dashboard`, `/api/live` (users: two topics) |
+| super-only checks | level `0` | `POST /api/admins`, `DELETE /api/admins/:id`, editing / rotating someone else's account (`403 { "error": "not_super" }`) |
+
+`last_active_at` of the account is set on an authenticated request (guarded routes and `GET /api/session`) when it is unset or a day old. A daily job deletes level-200 accounts unseen for 180 days (never-active ones count from creation); staff are never deleted.
+
+### Staff: access token instead of a password
+
+- `POST /api/auth/token` `{ token }` returns `200 { ok: true }` and the session cookie. Wrong, malformed, rotated or customer tokens are all `401 { "error": "invalid_token" }`; a banned admin is `403 { "error": "banned" }`; repeated failures lock the client IP for the lockout window (`429 { "error": "too_many_attempts", "retryAfter" }`, `Retry-After`).
+- The token is 32 random bytes in base64url (43 characters), shown once on create / rotate. Only its SHA-256 hex is stored (`user.token_hash`), compared in constant time.
+- `bun --cwd apps/admin-api run admin:create --email you@example.com [--name X] [--level 0|100]` creates a staff account and prints its token. The first account is a super admin unless `--level` says otherwise; for an existing staff email it issues a new token (the way into an install that predates tokens).
+- `GET /api/session` returns `{ setupRequired, admin: { id, name, email, level, isSuper } | null }`. `admin` is the signed-in account, staff or user; `setupRequired` is true while no staff account exists. `POST /api/auth/logout` ends the session. The old `POST /api/auth/login|register` and `POST /api/admins/:id/password` are gone.
+
+### Admins (`/api/admins`, staff)
+
+| Route | Body | Response |
+|---|---|---|
+| `GET /api/admins?page&pageSize` | | `{ admins: [{ id, name, email, banned, banReason, createdAt, level, isSuper }], total }` (staff only) |
+| `POST /api/admins` (super) | `{ name, email }` | `{ id, email, token }`; `invalid_email` 400, `email_taken` 409 |
+| `PATCH /api/admins/:id` (self or super) | `{ name, email }` | `{ id }`; `not_super` 403, `not_found` 404, `invalid_email` 400, `email_taken` 409 |
+| `POST /api/admins/:id/token` (self or super) | | `{ id, email, token }`; the old token stops and every session of that admin is deleted (yours too when rotating your own) |
+| `POST /api/admins/:id/ban` / `unban` | `{ reason? }` | `{ id }`; `self`, `last_admin`, `super_protected` |
+| `DELETE /api/admins/:id` (super) | | `{ id }`; `not_super` 403, `self` 400 |
+
+Email is contact data, not a login. Staff and customers share one email namespace.
+
+### Users (customers, level 200)
+
+- `POST /api/user/register` `{ email, password, name?, locale? ("ru"|"en"|"kk") }` returns `{ ok: true }` and mails a verification link (`<PUBLIC_PANEL_URL>/api/user/verify?token=...`). `400 { "error": "weak_credentials", "min": 12 }`. A taken email also answers `{ ok: true }` and changes nothing (better-auth hides which emails exist). Throttled per IP (`429`).
+- `GET /api/user/verify?token=` redirects (302) to `<PUBLIC_PANEL_URL>/user/login?verified=1` (`0` for a bad or expired token).
+- `POST /api/user/login` `{ email, password }` returns `{ ok: true }` and the cookie; `400 invalid_credentials` / `missing_credentials`, `403 email_not_verified` (the mail is sent again), `429` like the old password login. Staff accounts always get `invalid_credentials`.
+- `POST /api/user/forgot` `{ email }` always returns `{ ok: true }` for a well-formed email (a mail with `<PUBLIC_PANEL_URL>/user/reset?token=...` only for an existing customer).
+- `POST /api/user/reset` `{ token, password }` returns `{ ok: true }`, every session of the account is deleted; `400 invalid_token` (unknown, used or expired; tokens live one hour), `400 weak_password` with `min`.
+- `GET /api/user/me` returns `{ id, name, email, level, lastActiveAt }` for any signed-in account (`lastActiveAt` is epoch ms or `null`; the panel shows the 180-day inactivity note from it).
+- `PATCH /api/user/me` `{ name }` returns the new `Me`. `400 invalid_name` (blank after trim).
+- `POST /api/user/me/email` `{ email }` returns `{ ok: true }` and mails a verification link (`<PUBLIC_PANEL_URL>/api/user/verify?token=...`, ru/en text) to the NEW address; the account's email changes only after the link is opened (the 302 goes to `/user/login?verified=1`, the old email stops working then). `400 invalid_email`, `400 same_email`, `429` (shares the per-IP registration budget). A taken address also answers `{ ok: true }`, sends nothing and changes nothing (no probing of registered emails).
+- `DELETE /api/user/me` `{ confirmEmail }` (must equal the account email, trimmed, case-insensitive; else `400 { "error": "confirm_mismatch" }`) returns `{ ok: true }`: the channels (orchestrator) are deleted first, then the account and its sessions. If the orchestrator cannot delete the channels: `502`/`503 { message }` and the account is kept.
+- The three self-service routes above are for users only; a staff session gets `403 { "error": "forbidden" }`.
+
+### Ownership: channels, dashboard, live
+
+A user (level 200) sees and edits only channels with `ownerId = their account id`. admin-api is the only place that decides this; the orchestrator trusts `ADMIN_API_KEY` and takes `ownerId` as a field.
+
+| Route | User | Staff |
+|---|---|---|
+| `GET /api/channels?page&pageSize&ownerId` | always `ownerId` = own id (the query value is ignored) | all; `ownerId` filters |
+| `POST /api/channels` `{ slug, name, accessMode?, allowedOrigins?, catalogLanguage?, ownerId? }` | owner = own id (body `ownerId` ignored) | `ownerId` optional (left out = staff-owned) |
+| `PATCH /api/channels/:id`, `POST /api/channels/:id/rotate-keys`, `GET\|PUT /api/channels/:id/persona`, `POST /api/channels/:id/persona/preview` | `404 { "error": "not_found" }` when the channel is not theirs (or does not exist; never 403, no probing), nothing reaches the orchestrator | any channel |
+| `GET /api/dashboard?ownerId` | numbers of own channels (stats, usage by day / visitor / channel / model) | everything; `ownerId` narrows |
+
+`Channel` has `ownerId: string | null`. The embed snippet is built by the panel from the channel's `publishableKey`; there is no embed route in admin-api. Every other route (visitors, requests, mcp, agents, models, blocked IPs, intents, subscriptions, performance, system, admins, accounts) stays staff-only: a user gets `403 { "error": "forbidden" }` (a test walks the whole route table).
+
+**`/api/live` for a user.** The upgrade is open to any signed-in account. A user may subscribe only to `dashboard` and `channels`; any other topic answers `{ type: "error", id, code: "forbidden" }` (new `LiveErrorCode`, the socket stays open). For those two, the server sets `params.ownerId` to the session's account id, overwriting whatever the browser sent, so a user can never read another owner's data; the pushed `data` is the body of `GET /api/dashboard` / `GET /api/channels`. Staff may pass `ownerId` in the `dashboard` / `channels` params to filter.
+
+### Staff: customers (`/api/accounts`)
+
+The staff "Users" page. All routes `{ admin: true }`; an id that is not a customer (staff or unknown) is `404 { "error": "not_found" }`.
+
+| Route | Response |
+|---|---|
+| `GET /api/accounts?page&pageSize` | `{ items: [{ id, name, email, emailVerified, createdAt, lastActiveAt, banned, channelsCount }], total }`, oldest first; `lastActiveAt` epoch ms or `null`; `channelsCount` from the orchestrator's channel list (shortcut: one unpaged list grouped in memory) |
+| `DELETE /api/accounts/:id` | `{ id }`; channels first, then the account and sessions; `502`/`503` leaves the account untouched |
+| `POST /api/accounts/:id/ban`, `POST /api/accounts/:id/unban` | `{ id }`; ban drops their sessions and refuses sign-in; their channels keep running |
+
+The inactivity job (`deleteInactiveUsers`, 180 days, daily) and both delete routes share `deleteAccount` in `accounts.service.ts`: the owner's channels are deleted in the orchestrator first (`X-Admin-Id` = the actor, `system:inactivity` for the job); if that call fails the account is kept, the error is logged and the next daily run retries.
+
+Mail goes through SMTP (`nodemailer`; `SMTP_HOST` `smtp.gmail.com`, `SMTP_PORT` `465`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` `info@shalotts.site`). Without `SMTP_PASS` the subject and link are only logged. Texts are ru or en by the account's `locale` (other or missing: en).
+

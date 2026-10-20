@@ -13,7 +13,7 @@ export const Dashboard = t.Object({
 			costUsd: nullable(t.Number()),
 		}),
 	),
-	topUsers: t.Array(UsageRow),
+	topVisitors: t.Array(UsageRow),
 	byChannel: t.Array(UsageRow),
 	byModel: t.Array(UsageRow),
 });

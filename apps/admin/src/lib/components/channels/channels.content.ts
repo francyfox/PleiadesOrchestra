@@ -21,7 +21,9 @@ const channelsContent = {
 			}),
 			created: t({ ru: "Создан", en: "Created", kk: "Құрылған" }),
 			plan: t({ ru: "Тариф", en: "Plan", kk: "Тариф" }),
+			owner: t({ ru: "Владелец", en: "Owner", kk: "Иесі" }),
 		},
+		staffOwner: t({ ru: "staff", en: "staff", kk: "staff" }),
 		planUntil: t({
 			ru: insert("{{plan}} · до {{date}}"),
 			en: insert("{{plan}} · until {{date}}"),

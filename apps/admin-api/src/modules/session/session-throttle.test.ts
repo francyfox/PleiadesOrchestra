@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { PASSWORD, testApp } from "../../app.testing.ts";
+import { createStaff } from "../admins/admins.service.ts";
 
 const EMAIL = "root@example.com";
 
@@ -10,7 +11,7 @@ function login(
 	email = EMAIL,
 ) {
 	return t.app.handle(
-		new Request("http://localhost/api/auth/login", {
+		new Request("http://localhost/api/user/login", {
 			method: "POST",
 			headers: {
 				"content-type": "application/json",
@@ -22,12 +23,60 @@ function login(
 	);
 }
 
+const tokenLogin = (
+	t: ReturnType<typeof testApp>,
+	token: string,
+	ip = "9.9.9.9",
+) =>
+	t.app.handle(
+		new Request("http://localhost/api/auth/token", {
+			method: "POST",
+			headers: {
+				"content-type": "application/json",
+				origin: "http://localhost:3002",
+				"x-forwarded-for": ip,
+			},
+			body: JSON.stringify({ token }),
+		}),
+	);
+
+describe("token brute-force protection", () => {
+	test("repeated wrong tokens lock the IP (429), even for the right token", async () => {
+		const t = testApp({ loginLimits: { maxFailuresPerAccount: 3 } });
+		const { token } = await createStaff(t.auth, {
+			name: "R",
+			email: "r@example.com",
+			level: 0,
+		});
+		const wrong = Buffer.alloc(32, 1).toString("base64url");
+		for (let i = 0; i < 3; i++)
+			expect((await tokenLogin(t, wrong)).status).toBe(401);
+		const locked = await tokenLogin(t, token);
+		expect(locked.status).toBe(429);
+		expect(Number(locked.headers.get("retry-after"))).toBeGreaterThan(0);
+	});
+
+	test("a success resets the budget", async () => {
+		const t = testApp({ loginLimits: { maxFailuresPerAccount: 3 } });
+		const { token } = await createStaff(t.auth, {
+			name: "R",
+			email: "r@example.com",
+			level: 0,
+		});
+		const wrong = Buffer.alloc(32, 1).toString("base64url");
+		for (let i = 0; i < 2; i++) await tokenLogin(t, wrong);
+		expect((await tokenLogin(t, token)).status).toBe(200);
+		for (let i = 0; i < 2; i++) await tokenLogin(t, wrong);
+		expect((await tokenLogin(t, token)).status).toBe(200);
+	});
+});
+
 describe("login brute-force protection", () => {
 	test("locks the account with 429 + Retry-After; a spoofed X-Forwarded-For doesn't help", async () => {
 		const t = testApp({
 			loginLimits: { maxFailuresPerAccount: 3 },
 		});
-		await t.registerFirst();
+		await t.signedUser(EMAIL);
 
 		for (let i = 0; i < 3; i++) {
 			const bad = await login(t, "wrong-password-1", {
@@ -47,7 +96,7 @@ describe("login brute-force protection", () => {
 		const t = testApp({
 			loginLimits: { maxFailuresPerIp: 2, maxFailuresPerAccount: 100 },
 		});
-		await t.registerFirst();
+		await t.signedUser(EMAIL);
 
 		for (let i = 0; i < 2; i++) {
 			await login(
@@ -71,7 +120,7 @@ describe("login brute-force protection", () => {
 			clientIp: { source: "xff-rightmost", hops: 1 },
 			loginLimits: { maxFailuresPerIp: 2, maxFailuresPerAccount: 100 },
 		});
-		await t.registerFirst();
+		await t.signedUser(EMAIL);
 
 		for (const head of ["1.1.1.1", "2.2.2.2"]) {
 			await login(t, "wrong-password-1", {
@@ -90,7 +139,7 @@ describe("login brute-force protection", () => {
 
 	test("a successful login still works under budget and the session stores the trusted IP", async () => {
 		const t = testApp({ clientIp: { source: "xff-rightmost", hops: 1 } });
-		await t.registerFirst();
+		await t.signedUser(EMAIL);
 		const response = await login(t, PASSWORD, {
 			"x-forwarded-for": "6.6.6.6, 8.8.8.8",
 		});
@@ -104,7 +153,7 @@ describe("login brute-force protection", () => {
 	test("registration attempts are budgeted per IP", async () => {
 		const t = testApp({ loginLimits: { maxRegistrationsPerIpPerHour: 2 } });
 		const attempt = () =>
-			t.call("/api/auth/register", {
+			t.call("/api/user/register", {
 				method: "POST",
 				body: { email: "a@x.io", password: "short" },
 			});

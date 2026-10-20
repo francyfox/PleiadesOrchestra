@@ -29,7 +29,7 @@ export const RequestsQuery = t.Composite([
 /** One row of the requests table: a user message and what became of it. */
 export const RequestSummary = t.Object({
 	id: t.String(),
-	userId: t.String(),
+	visitorId: t.String(),
 	threadId: t.String(),
 	prompt: nullable(t.String()),
 	intent: nullable(t.String()),
@@ -73,7 +73,7 @@ export const UpstreamLlmCall = t.Object({
 export const UpstreamRequestDetails = t.Object({
 	request: t.Object({
 		id: t.String(),
-		userId: t.String(),
+		visitorId: t.String(),
 		threadId: t.String(),
 		prompt: nullable(t.String()),
 		intent: nullable(t.String()),

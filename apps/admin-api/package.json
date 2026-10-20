@@ -16,6 +16,7 @@
 		"lint": "biome check .",
 		"db:generate": "drizzle-kit generate",
 		"db:snapshot": "bun scripts/db-snapshot.ts",
+		"admin:create": "bun src/modules/admins/admins-cli.ts",
 		"auth:schema": "bunx --bun @better-auth/cli generate --config src/modules/auth/auth-cli.ts --output src/modules/database/database.auth-schema.ts -y"
 	},
 	"dependencies": {
@@ -26,10 +27,12 @@
 		"drizzle-orm": "catalog:",
 		"drizzle-typebox": "catalog:",
 		"elysia": "catalog:",
+		"nodemailer": "catalog:",
 		"zod": "catalog:"
 	},
 	"devDependencies": {
 		"@types/bun": "catalog:",
+		"@types/nodemailer": "catalog:",
 		"drizzle-kit": "catalog:",
 		"typescript": "catalog:"
 	}

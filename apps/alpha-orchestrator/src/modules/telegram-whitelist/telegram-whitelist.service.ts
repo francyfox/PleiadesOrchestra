@@ -1,7 +1,7 @@
 import { and, eq, isNull } from "drizzle-orm";
-import { users } from "../database/database.schema.ts";
+import { visitors } from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
-import { upsertIdentifiedUser } from "../users/users.service.ts";
+import { upsertIdentifiedVisitor } from "../visitors/visitors.service.ts";
 
 const TELEGRAM_CHANNEL_ID = "ch_telegram";
 /** Stored in `whitelistedBy` so imported entries are distinguishable from admin clicks. */
@@ -25,7 +25,7 @@ export function parseIds(raw: string): string[] {
 
 /**
  * One-off migration of the old env whitelist into the DB: upserts each id as
- * an identified user of the `telegram` channel and whitelists it (an existing
+ * an identified visitor of the `telegram` channel and whitelists it (an existing
  * earlier whitelisting is kept). Returns the number of ids processed.
  */
 export function importTelegramWhitelist(
@@ -35,16 +35,16 @@ export function importTelegramWhitelist(
 ): number {
 	db.$client.transaction(() => {
 		for (const id of ids) {
-			const user = upsertIdentifiedUser(
+			const visitor = upsertIdentifiedVisitor(
 				db,
 				TELEGRAM_CHANNEL_ID,
 				id,
 				undefined,
 				now,
 			);
-			db.update(users)
+			db.update(visitors)
 				.set({ whitelistedAt: now, whitelistedBy: IMPORT_MARKER })
-				.where(and(eq(users.id, user.id), isNull(users.whitelistedAt)))
+				.where(and(eq(visitors.id, visitor.id), isNull(visitors.whitelistedAt)))
 				.run();
 		}
 	})();

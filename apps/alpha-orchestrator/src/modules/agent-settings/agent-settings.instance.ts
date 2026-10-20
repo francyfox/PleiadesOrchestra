@@ -1,24 +1,25 @@
 import { config } from "../config/config.service.ts";
 import { db } from "../database/database.instance.ts";
+import {
+	createProvidersConfig,
+	seedProviders,
+} from "../providers/providers.service.ts";
 import { createAgentSettings } from "./agent-settings.service.ts";
 
-// Env stays the default of every field; the admin panel's overrides sit on top.
+// Env names each agent's server; the model parameters live in providers.toml
+// (seeded from these servers on first start, then edited in the admin panel).
 export const agentSettings = createAgentSettings({
 	db,
-	secret: config.PROVIDER_KEYS_SECRET,
-	defaults: {
+	env: {
 		"beta-text": {
 			baseUrl: config.LLM_BASE_URL,
 			apiKey: config.LLM_API_KEY,
 			model: config.LLM_MODEL,
-			temperature: config.LLM_TEMPERATURE,
 		},
 		"delta-function-call": {
 			baseUrl: config.FUNCTION_CALL_BASE_URL ?? "",
 			apiKey: config.FUNCTION_CALL_API_KEY,
 			model: config.FUNCTION_CALL_MODEL,
-			temperature: config.FUNCTION_CALL_TEMPERATURE,
-			reasoningEffort: config.FUNCTION_CALL_REASONING_EFFORT,
 		},
 		"gamma-decision": {
 			baseUrl: config.LAYA_API_BASE_URL,
@@ -26,6 +27,34 @@ export const agentSettings = createAgentSettings({
 			model: config.LAYA_MODEL,
 		},
 	},
+	providers: await createProvidersConfig({
+		path: config.PROVIDERS_CONFIG_PATH,
+		seed: () =>
+			seedProviders([
+				{
+					id: "local-text",
+					baseUrl: config.LLM_BASE_URL,
+					apiKeyVar: "LLM_API_KEY",
+					model: {
+						id: config.LLM_MODEL,
+						name: config.LLM_MODEL,
+						temperature: 0.3,
+						extraBody: {},
+					},
+				},
+				{
+					id: "local-function-call",
+					baseUrl: config.FUNCTION_CALL_BASE_URL ?? "",
+					apiKeyVar: "FUNCTION_CALL_API_KEY",
+					// Arguments must be reproducible; `none` keeps Qwen3 on Ollama from "thinking" ~1000 tokens into `{}`.
+					model: {
+						id: config.FUNCTION_CALL_MODEL,
+						name: config.FUNCTION_CALL_MODEL,
+						temperature: 0,
+						reasoningEffort: "none",
+						extraBody: {},
+					},
+				},
+			]),
+	}),
 });
-
-await agentSettings.refresh();

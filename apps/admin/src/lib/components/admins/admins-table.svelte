@@ -20,13 +20,15 @@
 		currentAdminId,
 		currentAdminIsSuper,
 		pagination,
-		onChangePassword,
+		onEdit,
+		onIssued,
 	}: {
 		admins: AdminRow[];
 		currentAdminId: string | null;
 		currentAdminIsSuper: boolean;
 		pagination: ServerPagination;
-		onChangePassword: (admin: AdminRow) => void;
+		onEdit: (admin: AdminRow) => void;
+		onIssued: (email: string, token: string, own: boolean) => void;
 	} = $props();
 
 	const content = useIntlayer("admins");
@@ -57,7 +59,8 @@
 						admin: ctx.row.original,
 						currentAdminId,
 						currentAdminIsSuper,
-						onChangePassword,
+						onEdit,
+						onIssued,
 					}),
 			}),
 		]),
@@ -69,10 +72,12 @@
 
 {#snippet nameCell(admin: AdminRow)}
 	{admin.name}
-	{#if admin.isSuper}
+	{#if admin.level === 0}
 		<Badge variant="secondary" class="ml-1" title={$content.superAdminHint.value}>
 			<CrownIcon />{$content.superAdmin.value}
 		</Badge>
+	{:else}
+		<Badge variant="outline" class="ml-1">{$content.admin.value}</Badge>
 	{/if}
 {/snippet}
 

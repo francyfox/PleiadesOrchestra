@@ -1,4 +1,7 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { createApp } from "../../app.ts";
 import { ChannelDirectory } from "../channel-directory/channel-directory.ts";
 import { testDb } from "../database/database.testing.ts";
@@ -9,26 +12,20 @@ import {
 	json,
 	NOW,
 } from "../http/http.testing.ts";
+import { createProvidersConfig } from "../providers/providers.service.ts";
 import { RunBinding } from "../run-binding/run-binding.ts";
-import {
-	createAgentSettings,
-	decryptSecret,
-	encryptSecret,
-} from "./agent-settings.service.ts";
+import { createAgentSettings } from "./agent-settings.service.ts";
 
-const SECRET = "test-secret-of-sixteen+";
-const DEFAULTS = {
+const ENV = {
 	"beta-text": {
 		baseUrl: "http://beta-text:8080/v1",
 		apiKey: "env-key",
 		model: "vikhr",
-		temperature: 0.3,
 	},
 	"delta-function-call": {
 		baseUrl: "http://delta:8282/v1",
 		apiKey: "",
 		model: "qwen3-1.7b",
-		temperature: 0,
 	},
 	"gamma-decision": {
 		baseUrl: "http://laya:8090",
@@ -37,12 +34,33 @@ const DEFAULTS = {
 	},
 };
 
+// The env server of beta-text is in the file (as seeded), with its temperature.
+const SEED = `
+[providers.local-text]
+base_url = "http://beta-text:8080/v1"
+api_key = "$LLM_API_KEY"
+models = [{ id = "vikhr", temperature = 0.3 }]
+`;
+
+let dir = "";
+afterEach(async () => {
+	if (dir) await rm(dir, { recursive: true });
+	dir = "";
+});
+
 async function setup(fetchImpl?: typeof fetch) {
+	dir = await mkdtemp(join(tmpdir(), "agent-settings-"));
+	const path = join(dir, "providers.toml");
+	await Bun.write(path, SEED);
 	const db = testDb();
 	const agentSettings = createAgentSettings({
 		db,
-		secret: SECRET,
-		defaults: DEFAULTS,
+		env: ENV,
+		providers: await createProvidersConfig({
+			path,
+			seed: () => [],
+			env: { LLM_API_KEY: "env-key" },
+		}),
 		now: () => NOW,
 		fetch: fetchImpl,
 	});
@@ -59,110 +77,157 @@ async function setup(fetchImpl?: typeof fetch) {
 		now: () => NOW,
 		agentSettings,
 	});
-	await agentSettings.refresh();
-	return { app, agentSettings };
+	const call = (path: string, method = "GET", body?: unknown) =>
+		app.handle(admin(path, { method, body }));
+	return { app, agentSettings, call, path };
 }
 
 describe("agent settings", () => {
-	test("without an override the env values are in effect", async () => {
+	test("without a pick an agent uses its env server, with the file's parameters when the file has that server", async () => {
 		const { agentSettings } = await setup();
-		expect(agentSettings.effective("beta-text")).toMatchObject({
+		expect(agentSettings.effective("beta-text")).toEqual({
+			provider: "local-text",
 			baseUrl: "http://beta-text:8080/v1",
 			apiKey: "env-key",
 			model: "vikhr",
 			temperature: 0.3,
+			reasoningEffort: undefined,
+			extraBody: {},
+		});
+		expect(agentSettings.effective("delta-function-call")).toEqual({
+			...ENV["delta-function-call"],
+			extraBody: {},
 		});
 	});
 
-	test("a saved override wins, a cleared field falls back to env, and onChange fires", async () => {
-		const { app, agentSettings } = await setup();
-		let changes = 0;
-		agentSettings.onChange(() => changes++);
-		const patch = (body: unknown) =>
-			app.handle(admin("/agents/beta-text", { method: "PATCH", body }));
-		await json(
-			await patch({
-				source: "external",
-				baseUrl: "https://openrouter.ai/api/v1",
-				model: "google/gemini-2.5-flash",
-				parameters: { temperature: 0.7, extraBody: { provider: { x: 1 } } },
-			}),
+	test("a picked model brings its provider, key and parameters; the agent is rebuilt; deleting the model falls back to env", async () => {
+		const { agentSettings, call } = await setup();
+		const builds: string[] = [];
+		agentSettings.track(() =>
+			builds.push(agentSettings.effective("delta-function-call").model),
 		);
-		expect(agentSettings.effective("beta-text")).toMatchObject({
+		await call("/providers/openrouter", "PUT", {
+			name: "OpenRouter",
 			baseUrl: "https://openrouter.ai/api/v1",
-			model: "google/gemini-2.5-flash",
-			temperature: 0.7,
-			extraBody: { provider: { x: 1 } },
-			// env key must not travel to another host
-			apiKey: "",
-		});
-		await json(await patch({ model: null, parameters: null }));
-		expect(agentSettings.effective("beta-text")).toMatchObject({
-			model: "vikhr",
-			temperature: 0.3,
-			baseUrl: "https://openrouter.ai/api/v1",
-		});
-		expect(changes).toBe(2);
-	});
-
-	test("a picked provider key is used, and no response ever carries it in clear", async () => {
-		const { app, agentSettings } = await setup();
-		await json(
-			await app.handle(
-				admin("/provider-keys/openrouter", {
-					method: "PUT",
-					body: { key: "sk-or-v1-supersecret1234" },
-				}),
-			),
-		);
-		const patched = await json(
-			await app.handle(
-				admin("/agents/delta-function-call", {
-					method: "PATCH",
-					body: {
-						source: "external",
-						baseUrl: "https://openrouter.ai/api/v1",
-						providerKey: "openrouter",
-					},
-				}),
-			),
-		);
-		const seen = [
-			JSON.stringify(patched),
-			JSON.stringify(
-				await json(await app.handle(admin("/agents/delta-function-call"))),
-			),
-			JSON.stringify(await json(await app.handle(admin("/provider-keys")))),
-		];
-		for (const body of seen) expect(body).not.toContain("supersecret");
-		expect(seen[2]).toContain("1234");
-		expect(agentSettings.effective("delta-function-call")).toMatchObject({
 			apiKey: "sk-or-v1-supersecret1234",
-			provider: "openrouter",
 		});
-	});
-
-	test("encryption round-trips and the ciphertext hides the key", async () => {
-		const sealed = await encryptSecret(SECRET, "sk-abc");
-		expect(sealed).not.toContain("sk-abc");
-		expect(await decryptSecret(SECRET, sealed)).toBe("sk-abc");
-		expect(sealed).not.toBe(await encryptSecret(SECRET, "sk-abc"));
-	});
-
-	test("gamma-decision cannot be switched to an external server", async () => {
-		const { app } = await setup();
-		const response = await app.handle(
-			admin("/agents/gamma-decision", {
-				method: "PATCH",
-				body: { baseUrl: "https://example.com/v1" },
+		await call("/providers/openrouter/models", "PUT", {
+			id: "qwen/qwen3-30b",
+			name: "Qwen3 30B",
+			temperature: 0,
+			reasoningEffort: "none",
+			extraBody: { provider: { require_parameters: true } },
+		});
+		const picked = await json(
+			await call("/agents/delta-function-call/model", "PUT", {
+				provider: "openrouter",
+				model: "qwen/qwen3-30b",
 			}),
 		);
-		expect(response.status).toBe(400);
+		expect(picked).toMatchObject({
+			provider: "openrouter",
+			model: "qwen/qwen3-30b",
+			baseUrl: "https://openrouter.ai/api/v1",
+			updatedBy: expect.any(String),
+		});
+		expect(agentSettings.effective("delta-function-call")).toEqual({
+			provider: "openrouter",
+			baseUrl: "https://openrouter.ai/api/v1",
+			apiKey: "sk-or-v1-supersecret1234",
+			model: "qwen/qwen3-30b",
+			temperature: 0,
+			reasoningEffort: "none",
+			extraBody: { provider: { require_parameters: true } },
+		});
+		expect(builds.at(-1)).toBe("qwen/qwen3-30b");
+
+		await call("/providers/openrouter/models?model=qwen%2Fqwen3-30b", "DELETE");
+		expect(agentSettings.effective("delta-function-call").baseUrl).toBe(
+			"http://delta:8282/v1",
+		);
+	});
+
+	test("bad picks are refused", async () => {
+		const { call } = await setup();
+		const pick = (id: string, body: unknown) =>
+			call(`/agents/${id}/model`, "PUT", body);
+		expect(
+			(await pick("beta-text", { provider: "nope", model: "x" })).status,
+		).toBe(400);
+		expect(
+			(await pick("gamma-decision", { provider: "local-text", model: "vikhr" }))
+				.status,
+		).toBe(400);
+		expect((await pick("nope", { provider: "a", model: "b" })).status).toBe(
+			404,
+		);
+	});
+
+	test("no response carries a key; the file editor masks it and a masked key saved back keeps it", async () => {
+		const { call, path } = await setup();
+		await call("/providers/openrouter", "PUT", {
+			name: "OpenRouter",
+			baseUrl: "https://openrouter.ai/api/v1",
+			apiKey: "sk-or-v1-supersecret1234",
+		});
+		const list = await json(await call("/providers"));
+		const text = await json(await call("/providers-toml"));
+		for (const body of [list, text])
+			expect(JSON.stringify(body)).not.toContain("supersecret");
+		expect(list.items[1]).toMatchObject({
+			id: "openrouter",
+			apiKey: "••••1234",
+		});
+		expect(list.items[0].apiKey).toBe("$LLM_API_KEY");
+
+		const saved = await call("/providers-toml", "PUT", {
+			toml: text.toml.replace('name = "OpenRouter"', 'name = "OR"'),
+		});
+		expect(saved.status).toBe(200);
+		const file = await Bun.file(path).text();
+		expect(file).toContain("sk-or-v1-supersecret1234");
+		expect(file).toContain('name = "OR"');
+		expect(
+			(await call("/providers-toml", "PUT", { toml: "[providers.x" })).status,
+		).toBe(400);
+	});
+
+	test("providers-toml/check reports every problem, never writes and never returns a key", async () => {
+		const { call, path } = await setup();
+		await call("/providers/openrouter", "PUT", {
+			name: "OpenRouter",
+			baseUrl: "https://openrouter.ai/api/v1",
+			apiKey: "sk-or-v1-supersecret1234",
+		});
+		const before = await Bun.file(path).text();
+		const check = async (toml: string) =>
+			json(await call("/providers-toml/check", "POST", { toml }));
+		expect(await check("")).toEqual({ errors: [] });
+		expect(
+			await check((await json(await call("/providers-toml"))).toml),
+		).toEqual({
+			errors: [],
+		});
+		expect(await check("\n\n[providers.x")).toEqual({
+			errors: [expect.objectContaining({ line: 3 })],
+		});
+		const bad = await check(
+			'[providers.x]\nbase_url = "ftp://x"\napi_key = "••••9999"\n[providers.openrouter]\nbase_url = "http://o/v1"\napi_key = "••••9999"\n',
+		);
+		expect(bad.errors.map((e: { path: string }) => e.path)).toEqual([
+			"providers.x.base_url",
+		]);
+		const forged = await check(
+			'[providers.openrouter]\nbase_url = "http://o/v1"\napi_key = "••••9999"\n',
+		);
+		expect(forged.errors[0].path).toBe("providers.openrouter.api_key");
+		expect(JSON.stringify([bad, forged])).not.toContain("supersecret");
+		expect(await Bun.file(path).text()).toBe(before);
 	});
 
 	test("test endpoint calls the effective server and reports answer and latency", async () => {
 		let seen: { url: string; auth: string | null; body: string } | undefined;
-		const { app } = await setup((async (url: string, init: RequestInit) => {
+		const { call } = await setup((async (url: string, init: RequestInit) => {
 			seen = {
 				url,
 				auth: new Headers(init.headers).get("authorization"),
@@ -170,13 +235,8 @@ describe("agent settings", () => {
 			};
 			return Response.json({ choices: [{ message: { content: "OK" } }] });
 		}) as unknown as typeof fetch);
-		const result = await json(
-			await app.handle(
-				admin("/agents/beta-text/test", { method: "POST", body: {} }),
-			),
-		);
+		const result = await json(await call("/agents/beta-text/test", "POST", {}));
 		expect(result).toMatchObject({ ok: true, answer: "OK" });
-		expect(result.latencyMs).toBeGreaterThanOrEqual(0);
 		expect(seen?.url).toBe("http://beta-text:8080/v1/chat/completions");
 		expect(seen?.auth).toBe("Bearer env-key");
 		expect(JSON.parse(seen?.body ?? "{}")).toMatchObject({

@@ -9,7 +9,7 @@ Shared Elysia setup used by `alpha-orchestrator`, `admin-api`, `gamma-decision` 
 ## Surface (`src/index.ts`)
 
 - `createObservability(service, env)` (`app.ts`) -> `{ service, logger, monitoring }`; env shape `observabilityEnv` (`env.ts`: `LOG_LEVEL`, `SENTRY_*`) is spread into each app's `buildConfig`.
-- `createKitApp({ observability, docs? })` — request logging (`request-log.ts`, `x-request-id`), Sentry plugin (`sentry.ts`), `GET /health`, optional Swagger (`docs.ts`). Apps add auth hooks and routes on top.
+- `createKitApp({ observability, docs? })` — request logging (`request-log.ts`, `x-request-id`), Sentry plugin (`sentry.ts`), `GET /health`, optional API docs (`docs.ts`). Apps add auth hooks and routes on top.
 - `onRequestGuard(logger, check)` / `hasBearer` (`guard.ts`) — auth belongs in `onRequest` (root lesson). A request rejected in `onRequest` skips the other hooks.
 - `serve(app, { port, observability, onShutdown })` / `handleProcessLifecycle` (`serve.ts`) — graceful shutdown.
 - `retryFetch` (`retry.ts`) — outbound fetch with backoff (used by `admin-api`'s orchestrator client).

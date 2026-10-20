@@ -13,10 +13,10 @@ import type {
 import type { Stats } from "../stats/stats.schema.ts";
 import type { UsageRow } from "../usage/usage.schema.ts";
 import type {
-	UserDetails,
-	UsersPage,
-	UsersQuery,
-} from "../users/users.schema.ts";
+	VisitorDetails,
+	VisitorsPage,
+	VisitorsQuery,
+} from "../visitors/visitors.schema.ts";
 
 /** `page`/`pageSize` as the paged REST lists take them (no `pageSize` = everything). */
 export interface PageParams {
@@ -33,7 +33,7 @@ export interface DashboardData {
 		outputTokens: number;
 		costUsd: number | null;
 	}[];
-	topUsers: UsageRow[];
+	topVisitors: UsageRow[];
 	byChannel: UsageRow[];
 	byModel: UsageRow[];
 }
@@ -44,10 +44,13 @@ export interface DashboardData {
  * so a pushed snapshot can replace the loaded data one to one.
  */
 export interface LiveTopics {
-	dashboard: { params: Record<string, never>; data: DashboardData };
-	users: { params: UsersQuery; data: UsersPage };
-	user: { params: { id: string }; data: UserDetails };
-	channels: { params: PageParams; data: { items: Channel[]; total: number } };
+	dashboard: { params: { ownerId?: string }; data: DashboardData };
+	visitors: { params: VisitorsQuery; data: VisitorsPage };
+	visitor: { params: { id: string }; data: VisitorDetails };
+	channels: {
+		params: PageParams & { ownerId?: string };
+		data: { items: Channel[]; total: number };
+	};
 	intents: { params: IntentsQuery; data: IntentsPage };
 	"blocked-ips": {
 		params: PageParams;
@@ -74,7 +77,11 @@ export type LiveClientMessage =
 	| { type: "unsubscribe"; id: string };
 
 /** Why a subscription can't deliver data; the browser keeps its last data and may retry. */
-export type LiveErrorCode = "unknown_topic" | "invalid_params" | "upstream";
+export type LiveErrorCode =
+	| "unknown_topic"
+	| "invalid_params"
+	| "forbidden"
+	| "upstream";
 
 /** Messages the server sends. `data` arrives once on subscribe, then only when it changed. */
 export type LiveServerMessage =

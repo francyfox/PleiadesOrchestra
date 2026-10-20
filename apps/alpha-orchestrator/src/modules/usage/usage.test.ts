@@ -8,21 +8,29 @@ import {
 	seedLlmCall,
 	setupAdminApp,
 } from "../http/http.testing.ts";
-import { upsertIdentifiedUser } from "../users/users.service.ts";
+import { upsertIdentifiedVisitor } from "../visitors/visitors.service.ts";
 import { usageRows } from "./usage.service.ts";
 
 describe("admin usage", () => {
-	test("groupBy user labels deleted users; groupBy day buckets by UTC day", async () => {
+	test("groupBy visitor labels deleted visitors; groupBy day buckets by UTC day", async () => {
 		const { app, db } = setupAdminApp();
-		const user = upsertIdentifiedUser(db, "ch_telegram", "1", "Ivan", NOW);
-		seedLlmCall(db, user.id, NOW - DAY, 10, 1);
+		const visitor = upsertIdentifiedVisitor(
+			db,
+			"ch_telegram",
+			"1",
+			"Ivan",
+			NOW,
+		);
+		seedLlmCall(db, visitor.id, NOW - DAY, 10, 1);
 		seedLlmCall(db, null, NOW, 5, null);
 
-		const byUser = await json(await app.handle(admin("/usage?groupBy=user")));
-		expect(byUser.rows).toEqual(
+		const byVisitor = await json(
+			await app.handle(admin("/usage?groupBy=visitor")),
+		);
+		expect(byVisitor.rows).toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({
-					key: user.id,
+					key: visitor.id,
 					label: "Ivan",
 					inputTokens: 10,
 				}),

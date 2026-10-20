@@ -1,10 +1,14 @@
 import { retryFetch } from "@repo/elysia-kit";
 import type {
 	Agent,
-	AgentSettingsPatch,
+	AgentPick,
 	AgentSettingsView,
 	AgentTestResult,
-	ProviderKey,
+	Provider,
+	ProviderInput,
+	ProviderModel,
+	ProvidersCheck,
+	ProvidersText,
 } from "../agents/agents.schema.ts";
 import type {
 	BlockedIp,
@@ -38,12 +42,12 @@ import type {
 } from "../subscriptions/subscriptions.schema.ts";
 import type { UsageGroupBy, UsageRow } from "../usage/usage.schema.ts";
 import type {
-	AdminUser,
 	BulkAction,
-	UserDetails,
-	UsersPage,
-	UsersQuery,
-} from "../users/users.schema.ts";
+	Visitor,
+	VisitorDetails,
+	VisitorsPage,
+	VisitorsQuery,
+} from "../visitors/visitors.schema.ts";
 
 export class OrchestratorError extends Error {
 	override name = "OrchestratorError";
@@ -64,6 +68,8 @@ export interface NewChannel {
 	allowedOrigins: string[];
 	/** Left out = the orchestrator's default, English. */
 	catalogLanguage?: string;
+	/** Account that owns the channel; left out = staff-owned. */
+	ownerId?: string;
 }
 
 export interface OrchestratorClientConfig {
@@ -136,18 +142,23 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 	}
 
 	const reads = {
-		listUsers: (query: UsersQuery) =>
-			request<UsersPage>("GET", `/v1/admin/users${toSearch({ ...query })}`),
-		getUser: (id: string) =>
-			request<UserDetails>("GET", `/v1/admin/users/${segment(id)}`),
+		listVisitors: (query: VisitorsQuery) =>
+			request<VisitorsPage>(
+				"GET",
+				`/v1/admin/visitors${toSearch({ ...query })}`,
+			),
+		getVisitor: (id: string) =>
+			request<VisitorDetails>("GET", `/v1/admin/visitors/${segment(id)}`),
 		usage: (query: {
 			groupBy: UsageGroupBy;
 			from?: number;
 			to?: number;
 			channel?: string;
+			ownerId?: string;
 		}) =>
 			request<{ rows: UsageRow[] }>("GET", `/v1/admin/usage${toSearch(query)}`),
-		stats: () => request<Stats>("GET", "/v1/admin/stats"),
+		stats: (ownerId?: string) =>
+			request<Stats>("GET", `/v1/admin/stats${toSearch({ ownerId })}`),
 		performance: (query: { from?: number; to?: number } = {}) =>
 			request<PerformanceReport>(
 				"GET",
@@ -164,7 +175,7 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 				`/v1/admin/requests/${segment(id)}`,
 			),
 		listMcp: () => request<UpstreamMcpSites>("GET", "/v1/admin/mcp"),
-		listChannels: (query: PageQuery = {}) =>
+		listChannels: (query: PageQuery & { ownerId?: string } = {}) =>
 			request<{ items: Channel[]; total: number }>(
 				"GET",
 				`/v1/admin/channels${toSearch({ ...query })}`,
@@ -189,35 +200,37 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 				"GET",
 				`/v1/admin/subscriptions${toSearch({ status })}`,
 			),
-		listProviderKeys: () =>
-			request<{ items: ProviderKey[] }>("GET", "/v1/admin/provider-keys"),
+		listProviders: () =>
+			request<{ items: Provider[] }>("GET", "/v1/admin/providers"),
+		getProvidersText: () =>
+			request<ProvidersText>("GET", "/v1/admin/providers-toml"),
 	};
 
 	function writes(adminId: string) {
 		const write = <T>(method: string, path: string, body?: unknown) =>
 			request<T>(method, path, { body, adminId });
-		const userAction = (id: string, action: string, body?: unknown) =>
-			write<{ user: AdminUser }>(
+		const visitorAction = (id: string, action: string, body?: unknown) =>
+			write<{ visitor: Visitor }>(
 				"POST",
-				`/v1/admin/users/${segment(id)}/${action}`,
+				`/v1/admin/visitors/${segment(id)}/${action}`,
 				body,
 			);
 
 		return {
 			...reads,
-			whitelistUser: (id: string) => userAction(id, "whitelist"),
-			unwhitelistUser: (id: string) => userAction(id, "unwhitelist"),
-			blockUser: (id: string, reason?: string) =>
-				userAction(id, "block", reason ? { reason } : {}),
-			unblockUser: (id: string) => userAction(id, "unblock"),
-			bulkUsers: (ids: string[], action: BulkAction, reason?: string) =>
+			whitelistVisitor: (id: string) => visitorAction(id, "whitelist"),
+			unwhitelistVisitor: (id: string) => visitorAction(id, "unwhitelist"),
+			blockVisitor: (id: string, reason?: string) =>
+				visitorAction(id, "block", reason ? { reason } : {}),
+			unblockVisitor: (id: string) => visitorAction(id, "unblock"),
+			bulkVisitors: (ids: string[], action: BulkAction, reason?: string) =>
 				write<{ updated: number }>(
 					"POST",
-					"/v1/admin/users/bulk",
+					"/v1/admin/visitors/bulk",
 					reason ? { ids, action, reason } : { ids, action },
 				),
-			deleteUserMessages: (id: string) =>
-				write<void>("DELETE", `/v1/admin/users/${segment(id)}/messages`),
+			deleteVisitorMessages: (id: string) =>
+				write<void>("DELETE", `/v1/admin/visitors/${segment(id)}/messages`),
 			createChannel: (input: NewChannel) =>
 				write<{ channel: Channel; secretKey: string }>(
 					"POST",
@@ -242,11 +255,11 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 					`/v1/admin/channels/${segment(channelId)}/persona/preview`,
 					persona,
 				),
-			patchAgentSettings: (id: string, patch: AgentSettingsPatch) =>
+			pickAgentModel: (id: string, pick: AgentPick) =>
 				write<AgentSettingsView>(
-					"PATCH",
-					`/v1/admin/agents/${segment(id)}`,
-					patch,
+					"PUT",
+					`/v1/admin/agents/${segment(id)}/model`,
+					pick,
 				),
 			testAgent: (id: string) =>
 				write<AgentTestResult>(
@@ -254,20 +267,46 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 					`/v1/admin/agents/${segment(id)}/test`,
 					{},
 				),
-			saveProviderKey: (name: string, key: string) =>
-				write<ProviderKey>("PUT", `/v1/admin/provider-keys/${segment(name)}`, {
-					key,
-				}),
-			deleteProviderKey: (name: string) =>
-				write<{ ok: true }>(
-					"DELETE",
-					`/v1/admin/provider-keys/${segment(name)}`,
+			saveProvider: (id: string, input: ProviderInput) =>
+				write<{ items: Provider[] }>(
+					"PUT",
+					`/v1/admin/providers/${segment(id)}`,
+					input,
 				),
+			deleteProvider: (id: string) =>
+				write<{ items: Provider[] }>(
+					"DELETE",
+					`/v1/admin/providers/${segment(id)}`,
+				),
+			saveModel: (providerId: string, model: ProviderModel) =>
+				write<{ items: Provider[] }>(
+					"PUT",
+					`/v1/admin/providers/${segment(providerId)}/models`,
+					model,
+				),
+			deleteModel: (providerId: string, modelId: string) =>
+				write<{ items: Provider[] }>(
+					"DELETE",
+					`/v1/admin/providers/${segment(providerId)}/models${toSearch({ model: modelId })}`,
+				),
+			/** Writes nothing, but it is a POST: the orchestrator wants X-Admin-Id on every non-GET admin call. */
+			checkProvidersText: (toml: string) =>
+				write<ProvidersCheck>("POST", "/v1/admin/providers-toml/check", {
+					toml,
+				}),
+			saveProvidersText: (toml: string) =>
+				write<ProvidersText>("PUT", "/v1/admin/providers-toml", { toml }),
 			linkSubscriptionChannel: (id: string, channelId: string | null) =>
 				write<Subscription>(
 					"PUT",
 					`/v1/admin/subscriptions/${segment(id)}/channel`,
 					{ channelId },
+				),
+			/** Removes every channel of an account with its data; `llm_calls` stay with the channel cleared. */
+			deleteOwnerChannels: (ownerId: string) =>
+				write<{ deleted: number }>(
+					"DELETE",
+					`/v1/admin/owners/${segment(ownerId)}/channels`,
 				),
 			rotateChannelKeys: (id: string) =>
 				write<{ channel: Channel; secretKey: string }>(

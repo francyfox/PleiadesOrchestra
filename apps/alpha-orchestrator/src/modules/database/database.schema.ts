@@ -12,37 +12,46 @@ import {
 // All timestamps are epoch ms stored as plain integers — the HTTP contract
 // (apps/docs/content/en/drafts/admin-api.md) speaks epoch ms, so no Date round-trips.
 
-export const channels = sqliteTable("channels", {
-	id: text("id").primaryKey(),
-	slug: text("slug").notNull().unique(),
-	kind: text("kind", { enum: ["telegram", "cli", "web"] }).notNull(),
-	name: text("name").notNull(),
-	accessMode: text("access_mode", { enum: ["whitelist", "open"] }).notNull(),
-	publishableKey: text("publishable_key").unique(),
-	secretKeyHash: text("secret_key_hash"),
-	allowedOrigins: text("allowed_origins", { mode: "json" })
-		.$type<string[]>()
-		.notNull()
-		.default([]),
-	disabledAt: integer("disabled_at"),
-	createdAt: integer("created_at").notNull(),
-	// Language the site's catalog is written in (ISO 639-1, `ru`, `en-GB`…): the
-	// search query sent to the site's tools must be in it, whatever the shopper typed.
-	catalogLanguage: text("catalog_language").notNull().default("en"),
-});
+export const channels = sqliteTable(
+	"channels",
+	{
+		id: text("id").primaryKey(),
+		slug: text("slug").notNull().unique(),
+		kind: text("kind", { enum: ["telegram", "cli", "web"] }).notNull(),
+		name: text("name").notNull(),
+		accessMode: text("access_mode", { enum: ["whitelist", "open"] }).notNull(),
+		publishableKey: text("publishable_key").unique(),
+		secretKeyHash: text("secret_key_hash"),
+		allowedOrigins: text("allowed_origins", { mode: "json" })
+			.$type<string[]>()
+			.notNull()
+			.default([]),
+		disabledAt: integer("disabled_at"),
+		createdAt: integer("created_at").notNull(),
+		// Language the site's catalog is written in (ISO 639-1, `ru`, `en-GB`…): the
+		// search query sent to the site's tools must be in it, whatever the shopper typed.
+		catalogLanguage: text("catalog_language").notNull().default("en"),
+		// admin-api account id of the owner (another database, so no FK); NULL = staff-owned.
+		ownerId: text("owner_id"),
+	},
+	(table) => [index("channels_owner_idx").on(table.ownerId)],
+);
 
-export const users = sqliteTable(
-	"users",
+export const visitors = sqliteTable(
+	"visitors",
 	{
 		id: text("id").primaryKey(),
 		channelId: text("channel_id")
 			.notNull()
 			.references(() => channels.id, { onDelete: "cascade" }),
-		// NULL for anonymous users — SQLite treats NULLs as distinct in a
-		// unique index, so any number of anonymous users per channel is fine.
+		// NULL for anonymous visitors — SQLite treats NULLs as distinct in a
+		// unique index, so any number of anonymous visitors per channel is fine.
 		externalUserId: text("external_user_id"),
 		kind: text("kind", { enum: ["identified", "anonymous"] }).notNull(),
 		displayName: text("display_name"),
+		// `adjective_animal_xxxxxx`; not unique. The "" default only lets the
+		// migration add the column — rows get a name at insert or on startup backfill.
+		name: text("name").notNull().default(""),
 		createdAt: integer("created_at").notNull(),
 		lastSeenAt: integer("last_seen_at").notNull(),
 		// Plaintext client IP of the last widget request, for the admin view /
@@ -56,12 +65,12 @@ export const users = sqliteTable(
 		blockedBy: text("blocked_by"),
 	},
 	(table) => [
-		uniqueIndex("users_channel_external_uq").on(
+		uniqueIndex("visitors_channel_external_uq").on(
 			table.channelId,
 			table.externalUserId,
 		),
-		index("users_last_seen_idx").on(table.lastSeenAt),
-		index("users_kind_last_seen_idx").on(table.kind, table.lastSeenAt),
+		index("visitors_last_seen_idx").on(table.lastSeenAt),
+		index("visitors_kind_last_seen_idx").on(table.kind, table.lastSeenAt),
 	],
 );
 
@@ -69,9 +78,9 @@ export const threads = sqliteTable(
 	"threads",
 	{
 		id: text("id").primaryKey(),
-		userId: text("user_id")
+		visitorId: text("visitor_id")
 			.notNull()
-			.references(() => users.id, { onDelete: "cascade" }),
+			.references(() => visitors.id, { onDelete: "cascade" }),
 		channelId: text("channel_id")
 			.notNull()
 			.references(() => channels.id, { onDelete: "cascade" }),
@@ -79,9 +88,9 @@ export const threads = sqliteTable(
 		createdAt: integer("created_at").notNull(),
 	},
 	(table) => [
-		uniqueIndex("threads_channel_user_external_uq").on(
+		uniqueIndex("threads_channel_visitor_external_uq").on(
 			table.channelId,
-			table.userId,
+			table.visitorId,
 			table.externalThreadId,
 		),
 		index("threads_external_idx").on(table.externalThreadId),
@@ -99,9 +108,9 @@ export const planRuns = sqliteTable(
 	"plan_runs",
 	{
 		id: text("id").primaryKey(),
-		userId: text("user_id")
+		visitorId: text("visitor_id")
 			.notNull()
-			.references(() => users.id, { onDelete: "cascade" }),
+			.references(() => visitors.id, { onDelete: "cascade" }),
 		threadId: text("thread_id")
 			.notNull()
 			.references(() => threads.id, { onDelete: "cascade" }),
@@ -123,7 +132,7 @@ export const planRuns = sqliteTable(
 		steps: text("steps", { mode: "json" }).$type<StoredStep[]>(),
 	},
 	(table) => [
-		index("plan_runs_user_idx").on(table.userId, table.createdAt),
+		index("plan_runs_visitor_idx").on(table.visitorId, table.createdAt),
 		index("plan_runs_root_idx").on(table.rootRunId),
 	],
 );
@@ -182,9 +191,9 @@ export const messages = sqliteTable(
 		threadId: text("thread_id")
 			.notNull()
 			.references(() => threads.id, { onDelete: "cascade" }),
-		userId: text("user_id")
+		visitorId: text("visitor_id")
 			.notNull()
-			.references(() => users.id, { onDelete: "cascade" }),
+			.references(() => visitors.id, { onDelete: "cascade" }),
 		role: text("role", { enum: ["user", "assistant"] }).notNull(),
 		content: text("content").notNull(),
 		createdAt: integer("created_at").notNull(),
@@ -194,7 +203,7 @@ export const messages = sqliteTable(
 		),
 	},
 	(table) => [
-		index("messages_user_idx").on(table.userId, table.id),
+		index("messages_visitor_idx").on(table.visitorId, table.id),
 		index("messages_thread_idx").on(table.threadId, table.id),
 	],
 );
@@ -204,9 +213,9 @@ export const llmCalls = sqliteTable(
 	{
 		id: integer("id").primaryKey({ autoIncrement: true }),
 		at: integer("at").notNull(),
-		// Kept (with NULLed references) when users/threads/runs are deleted —
+		// Kept (with NULLed references) when visitors/threads/runs are deleted —
 		// usage stats per channel/day must not change after cleanup.
-		userId: text("user_id").references(() => users.id, {
+		visitorId: text("visitor_id").references(() => visitors.id, {
 			onDelete: "set null",
 		}),
 		channelId: text("channel_id").references(() => channels.id, {
@@ -234,7 +243,7 @@ export const llmCalls = sqliteTable(
 		confidence: real("confidence"),
 	},
 	(table) => [
-		index("llm_calls_user_at_idx").on(table.userId, table.at),
+		index("llm_calls_visitor_at_idx").on(table.visitorId, table.at),
 		index("llm_calls_channel_at_idx").on(table.channelId, table.at),
 		index("llm_calls_run_idx").on(table.planRunId),
 		index("llm_calls_at_idx").on(table.at),
@@ -243,9 +252,9 @@ export const llmCalls = sqliteTable(
 
 export const visitorTokens = sqliteTable("visitor_tokens", {
 	tokenHash: text("token_hash").primaryKey(),
-	userId: text("user_id")
+	visitorId: text("visitor_id")
 		.notNull()
-		.references(() => users.id, { onDelete: "cascade" }),
+		.references(() => visitors.id, { onDelete: "cascade" }),
 	channelId: text("channel_id")
 		.notNull()
 		.references(() => channels.id, { onDelete: "cascade" }),
@@ -359,27 +368,12 @@ export const channelPersona = sqliteTable("channel_persona", {
 	updatedAt: integer("updated_at").notNull(),
 });
 
-/** One API key per provider ("openrouter"), entered once and picked by agents. AES-GCM, see agent-settings.service.ts. */
-export const providerKeys = sqliteTable("provider_keys", {
-	name: text("name").primaryKey(),
-	encryptedKey: text("encrypted_key").notNull(),
-	updatedBy: text("updated_by").notNull(),
-	updatedAt: integer("updated_at").notNull(),
-});
-
-/** Admin overrides of an agent's model settings; a NULL column = "the env value". */
+/** The model an admin picked for an agent from providers.toml; no row = the env server. */
 export const agentSettings = sqliteTable("agent_settings", {
 	agentId: text("agent_id").primaryKey(),
-	source: text("source", { enum: ["local", "external"] }),
-	baseUrl: text("base_url"),
+	/** A provider id from `providers.toml`; NULL or one no longer in the file = the env server. */
+	provider: text("provider"),
 	model: text("model"),
-	providerKey: text("provider_key").references(() => providerKeys.name, {
-		onDelete: "set null",
-	}),
-	parameters: text("parameters", { mode: "json" })
-		.$type<Record<string, unknown>>()
-		.notNull()
-		.default({}),
 	updatedBy: text("updated_by").notNull(),
 	updatedAt: integer("updated_at").notNull(),
 });
@@ -420,7 +414,7 @@ export const billingWebhooks = sqliteTable("billing_webhooks", {
 export const schema = {
 	channels,
 	channelPersona,
-	users,
+	visitors,
 	threads,
 	planRuns,
 	planEvents,
@@ -430,7 +424,6 @@ export const schema = {
 	blockedIps,
 	intentExamples,
 	threadWorldState,
-	providerKeys,
 	agentSettings,
 	subscriptions,
 	billingWebhooks,

@@ -72,7 +72,13 @@ export async function submitted<T>(
 			if (Number(failure.status) === 401) {
 				window.location.assign("/login");
 			}
-			return { ok: false, data: failureData(failure.value) };
+			const data = failureData(failure.value);
+			// The orchestrator is down or refusing: give the UI one code to localize (the raw `message` stays as fallback).
+			const status = Number(failure.status);
+			if (data.error === undefined && (status === 502 || status === 503)) {
+				data.error = "upstream_unavailable";
+			}
+			return { ok: false, data };
 		}
 		return { ok: true, data: bodyOf(data) };
 	} catch {

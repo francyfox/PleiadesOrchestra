@@ -29,6 +29,15 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			// The URL the admin panel is opened at (the origin browsers see, i.e.
 			// the one that proxies /api here).
 			BETTER_AUTH_URL: z.url().default("http://localhost:3002"),
+			// Origin the links in mails and redirects point at; defaults to BETTER_AUTH_URL.
+			PUBLIC_PANEL_URL: z.url().optional(),
+			// Mail for customer accounts (verification, password reset). Without
+			// SMTP_PASS nothing is sent: the subject and link are logged instead.
+			SMTP_HOST: z.string().min(1).default("smtp.gmail.com"),
+			SMTP_PORT: z.coerce.number().int().positive().default(465),
+			SMTP_USER: z.string().optional(),
+			SMTP_PASS: z.string().optional(),
+			SMTP_FROM: z.string().min(1).default("info@shalotts.site"),
 			// Origins allowed to make state-changing requests. `localhost` and
 			// `127.0.0.1` are different origins to a browser, so both are listed.
 			ADMIN_TRUSTED_ORIGINS: list.default([
@@ -54,7 +63,11 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			LOGIN_LOCKOUT_MINUTES: z.coerce.number().int().positive().default(15),
 
 			// How often /api/system/stream pushes a host snapshot to open panels.
-			SYSTEM_STREAM_INTERVAL_MS: z.coerce.number().int().min(250).default(5000),
+			SYSTEM_STREAM_INTERVAL_MS: z.coerce
+				.number()
+				.int()
+				.min(250)
+				.default(15000),
 
 			// This service's own SQLite — admin accounts only, no chat data.
 			ADMIN_DATABASE_PATH: z.string().min(1).default("./data/admin.db"),

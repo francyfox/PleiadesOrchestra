@@ -72,7 +72,7 @@ function call(
 	db.insert(llmCalls)
 		.values({
 			at,
-			userId: null,
+			visitorId: null,
 			channelId: "ch_telegram",
 			kind,
 			provider: kind === "decision" ? "laya" : "albedo",

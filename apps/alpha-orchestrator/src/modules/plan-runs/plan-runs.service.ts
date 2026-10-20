@@ -7,7 +7,7 @@ import {
 } from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
 
-/** World state carries user/model text — the full text already lives in `messages`, traces keep a preview. */
+/** World state carries visitor/model text — the full text already lives in `messages`, traces keep a preview. */
 export const TRACE_STRING_LIMIT = 500;
 
 export function truncateStrings(value: unknown, limit: number): unknown {
@@ -55,7 +55,7 @@ export function startPlanRun(
 	db: Db,
 	run: {
 		id: string;
-		userId: string;
+		visitorId: string;
 		threadId: string;
 		goal: Record<string, unknown>;
 		createdAt: number;

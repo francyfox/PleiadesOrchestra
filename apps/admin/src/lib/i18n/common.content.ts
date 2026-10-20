@@ -60,7 +60,7 @@ const commonContent = {
 			}),
 			blocked: t({ ru: "заблокирован", en: "blocked", kk: "бұғатталған" }),
 		},
-		userKind: {
+		visitorKind: {
 			identified: t({ ru: "известный", en: "identified", kk: "танылған" }),
 			anonymous: t({ ru: "анонимный", en: "anonymous", kk: "анонимді" }),
 		},

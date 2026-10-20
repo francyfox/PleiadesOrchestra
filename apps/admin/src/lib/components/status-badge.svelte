@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
-	import type { UserStatus } from "#lib/api-types.js";
+	import type { VisitorStatus } from "#lib/api-types.js";
 	import { Badge } from "#lib/components/ui/badge/index.js";
 
-	let { status }: { status: UserStatus } = $props();
+	let { status }: { status: VisitorStatus } = $props();
 
 	const common = useIntlayer("common");
 

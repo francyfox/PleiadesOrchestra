@@ -29,10 +29,13 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 
 	const target = resolveAuthRedirect({
 		pathname: url.pathname,
-		hasAdmin: !session.setupRequired,
-		isLoggedIn: session.admin !== null,
+		level: session.admin?.level ?? null,
 	});
 	if (target) redirect(303, target);
 
-	return { locale: resolveBrowserLocale(), admin: session.admin };
+	return {
+		locale: resolveBrowserLocale(),
+		admin: session.admin,
+		setupRequired: session.setupRequired,
+	};
 };

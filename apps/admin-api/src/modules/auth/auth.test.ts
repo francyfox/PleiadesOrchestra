@@ -1,92 +1,41 @@
-import { beforeEach, describe, expect, test } from "bun:test";
-import { join } from "node:path";
-import { countAdmins } from "../admins/admins.service.ts";
-import { type AdminDb, openAdminDb } from "../database/database.ts";
-import { createAuth } from "./auth.ts";
+import { describe, expect, test } from "bun:test";
+import { testApp } from "../../app.testing.ts";
+import { countAdmins, createStaff } from "../admins/admins.service.ts";
 
-const MIGRATIONS = join(import.meta.dir, "../../../drizzle");
-const BASE_URL = "http://localhost:3002";
+const PASSWORD = "correct-horse-battery";
 
-let db: AdminDb;
-let auth: ReturnType<typeof createAuth>;
-
-beforeEach(() => {
-	db = openAdminDb(":memory:", MIGRATIONS);
-	auth = createAuth({
-		db,
-		secret: "test-secret-test-secret-test-secret",
-		baseURL: BASE_URL,
+function signUp(auth: ReturnType<typeof testApp>["auth"], extra = {}) {
+	return auth.api.signUpEmail({
+		body: { email: "u@example.com", password: PASSWORD, name: "U", ...extra },
 	});
-});
-
-function signUp(email: string, password = "correct-horse-battery") {
-	return auth.handler(
-		new Request(`${BASE_URL}/api/auth/sign-up/email`, {
-			method: "POST",
-			headers: { "content-type": "application/json", origin: BASE_URL },
-			body: JSON.stringify({ email, password, name: email }),
-		}),
-	);
 }
 
-function sessionHeaders(response: Response): Headers {
-	const cookie = response.headers
-		.getSetCookie()
-		.map((value) => value.split(";")[0])
-		.join("; ");
-	return new Headers({ cookie });
-}
-
-describe("admin registration", () => {
-	test("the first sign-up creates an admin and signs it in", async () => {
-		const response = await signUp("first@example.com");
-
-		expect(response.status).toBe(200);
-		const session = await auth.api.getSession({
-			headers: sessionHeaders(response),
-		});
-		expect(session?.user.email).toBe("first@example.com");
-		expect(session?.user.role).toBe("admin");
+describe("account levels", () => {
+	test("a sign-up is a customer: level 200, role user, not staff", async () => {
+		const { auth, db } = testApp();
+		const { user } = await signUp(auth);
+		const row = await db.query.user.findFirst();
+		expect(row?.id).toBe(user.id);
+		expect(row?.level).toBe(200);
+		expect(row?.role).toBe("user");
+		expect(await countAdmins(db)).toBe(0);
 	});
 
-	test("once an admin exists, a direct POST to /sign-up/email is forbidden", async () => {
-		await signUp("first@example.com");
-
-		const response = await signUp("intruder@example.com");
-
-		expect(response.status).toBe(403);
-		expect(await countAdmins(db)).toBe(1);
+	test("a sign-up body cannot choose the level", async () => {
+		const { auth, db } = testApp();
+		// `level` is not an input field: it is refused or ignored, never honoured.
+		await signUp(auth, { level: 0 }).catch(() => {});
+		const rows = await db.query.user.findMany();
+		expect(rows.every((row) => row.level === 200)).toBe(true);
+		expect(await countAdmins(db)).toBe(0);
 	});
 
-	test("a signed-in admin can still create further admins server-side", async () => {
-		const first = await signUp("first@example.com");
-
-		const { user } = await auth.api.createUser({
-			headers: sessionHeaders(first),
-			body: {
-				email: "second@example.com",
-				password: "another-long-password",
-				name: "Second",
-				role: "admin",
-			},
-		});
-
-		expect(user.role).toBe("admin");
-		expect(await countAdmins(db)).toBe(2);
-	});
-
-	test("accounts created without an explicit role are still admins", async () => {
-		const first = await signUp("first@example.com");
-
-		const { user } = await auth.api.createUser({
-			headers: sessionHeaders(first),
-			body: {
-				email: "third@example.com",
-				password: "another-long-password",
-				name: "Third",
-			},
-		});
-
-		expect(user.role).toBe("admin");
+	test("staff get role admin and a verified email", async () => {
+		const { auth, db } = testApp();
+		await createStaff(auth, { name: "S", email: "s@example.com", level: 0 });
+		const row = await db.query.user.findFirst();
+		expect(row?.level).toBe(0);
+		expect(row?.role).toBe("admin");
+		expect(row?.emailVerified).toBe(true);
 	});
 });

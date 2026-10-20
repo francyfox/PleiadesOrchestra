@@ -4,8 +4,8 @@ export interface BanCheck {
 	targetBanned: boolean;
 	/** Admins that are currently not banned, target included. */
 	activeAdmins: number;
-	/** The super admin (the first account); omit where no super exists to protect. */
-	superId?: string;
+	/** The target is a super admin (level 0). */
+	targetIsSuper?: boolean;
 }
 
 export type BanRefusal = "self" | "last_admin" | "super_protected";
@@ -21,44 +21,46 @@ export function banRefusal({
 	targetId,
 	targetBanned,
 	activeAdmins,
-	superId,
+	targetIsSuper,
 }: BanCheck): BanRefusal | null {
 	if (targetBanned) return null;
 	if (actorId === targetId) return "self";
-	if (targetId === superId) return "super_protected";
+	if (targetIsSuper) return "super_protected";
 	if (activeAdmins <= 1) return "last_admin";
 	return null;
 }
 
-/** Shortest password the panel accepts for an admin account. */
+/** Shortest password the panel accepts (users; staff sign in with a token). */
 export const MIN_PASSWORD = 12;
 
 export interface AccountCheck {
 	actorId: string;
+	/** Level of the signed-in staff account; 0 = super admin. */
+	actorLevel: number;
 	targetId: string;
-	superId: string;
 }
 
 export type DeleteRefusal = "not_super" | "self";
 
-/** Only the super admin deletes accounts, and never their own. */
+/** Only a super admin deletes accounts, and never their own. */
 export function deleteRefusal({
 	actorId,
+	actorLevel,
 	targetId,
-	superId,
 }: AccountCheck): DeleteRefusal | null {
-	if (actorId !== superId) return "not_super";
+	if (actorLevel !== 0) return "not_super";
 	if (targetId === actorId) return "self";
 	return null;
 }
 
-export type PasswordRefusal = "super_protected";
-
-/** The super admin's password is theirs alone to change. */
-export function passwordRefusal({
+/** Editing a staff account or rotating its token: your own, or anyone's if you are a super admin. */
+export function manageRefusal({
 	actorId,
+	actorLevel,
 	targetId,
-	superId,
-}: AccountCheck): PasswordRefusal | null {
-	return targetId === superId && actorId !== superId ? "super_protected" : null;
+}: AccountCheck): "not_super" | null {
+	return actorLevel === 0 || actorId === targetId ? null : "not_super";
 }
+
+/** Deliberately loose: one `@` and no spaces; the mail bouncing is the real check. */
+export const isEmail = (value: string) => /^[^\s@]+@[^\s@]+$/.test(value);

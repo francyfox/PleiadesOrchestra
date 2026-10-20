@@ -3,14 +3,14 @@ import { eq } from "drizzle-orm";
 import { threads } from "../database/database.schema.ts";
 import { testDb } from "../database/database.testing.ts";
 import { resolveThreadId } from "../threads/threads.service.ts";
-import { upsertIdentifiedUser } from "../users/users.service.ts";
+import { upsertIdentifiedVisitor } from "../visitors/visitors.service.ts";
 import { SqliteWorldStateStore } from "./world-state.ts";
 
 function setup() {
 	const db = testDb();
-	const user = upsertIdentifiedUser(db, "ch_cli", "u1", undefined, 1);
-	const threadA = resolveThreadId(db, "ch_cli", user.id, "a", 1);
-	const threadB = resolveThreadId(db, "ch_cli", user.id, "b", 1);
+	const visitor = upsertIdentifiedVisitor(db, "ch_cli", "u1", undefined, 1);
+	const threadA = resolveThreadId(db, "ch_cli", visitor.id, "a", 1);
+	const threadB = resolveThreadId(db, "ch_cli", visitor.id, "b", 1);
 	const store = new SqliteWorldStateStore(db, () => 100);
 	return { db, threadA, threadB, store };
 }

@@ -1,9 +1,10 @@
 import { and, eq, gt, sql } from "drizzle-orm";
-import { users, visitorTokens } from "../database/database.schema.ts";
+import { visitors, visitorTokens } from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
 import { prepared } from "../database/prepared.ts";
 import { randomToken, sha256Hex } from "../security/security.service.ts";
-import type { UserRow } from "../users/users.types.ts";
+import { generateVisitorName } from "./visitor-names.ts";
+import type { VisitorAction, VisitorRow } from "./visitors.types.ts";
 
 /** Only the sha256 of a visitor token is stored — a DB leak doesn't hand out sessions. */
 export function hashVisitorToken(token: string): string {
@@ -11,7 +12,7 @@ export function hashVisitorToken(token: string): string {
 }
 
 /**
- * New anonymous user + visitor token for a widget with no session of its own.
+ * New anonymous visitor + visitor token for a widget with no session of its own.
  * 32 random bytes are unguessable, so no HMAC signature is needed, and the
  * stored hash makes the token revocable.
  */
@@ -21,17 +22,18 @@ export function createVisitor(
 	now: number,
 	ttlMs: number,
 	ip: string | null = null,
-): { visitorToken: string; expiresAt: number; userId: string } {
+): { visitorToken: string; expiresAt: number; visitorId: string } {
 	const visitorToken = randomToken("", 32);
-	const userId = crypto.randomUUID();
+	const visitorId = crypto.randomUUID();
 	const expiresAt = now + ttlMs;
 	db.$client.transaction(() => {
-		db.insert(users)
+		db.insert(visitors)
 			.values({
-				id: userId,
+				id: visitorId,
 				channelId,
 				externalUserId: null,
 				kind: "anonymous",
+				name: generateVisitorName(),
 				createdAt: now,
 				lastSeenAt: now,
 				lastIp: ip,
@@ -40,7 +42,7 @@ export function createVisitor(
 		db.insert(visitorTokens)
 			.values({
 				tokenHash: hashVisitorToken(visitorToken),
-				userId,
+				visitorId,
 				channelId,
 				createdAt: now,
 				lastUsedAt: now,
@@ -48,11 +50,11 @@ export function createVisitor(
 			})
 			.run();
 	})();
-	return { visitorToken, expiresAt, userId };
+	return { visitorToken, expiresAt, visitorId };
 }
 
 export interface Visitor {
-	user: UserRow;
+	row: VisitorRow;
 	channelId: string;
 	tokenHash: string;
 }
@@ -66,9 +68,9 @@ export function findVisitor(
 	const tokenHash = hashVisitorToken(token);
 	const row = prepared(db, "findVisitor", () =>
 		db
-			.select({ user: users, channelId: visitorTokens.channelId })
+			.select({ row: visitors, channelId: visitorTokens.channelId })
 			.from(visitorTokens)
-			.innerJoin(users, eq(users.id, visitorTokens.userId))
+			.innerJoin(visitors, eq(visitors.id, visitorTokens.visitorId))
 			.where(
 				and(
 					eq(visitorTokens.tokenHash, sql.placeholder("tokenHash")),
@@ -89,9 +91,9 @@ export function findVisitor(
 export const TOUCH_COALESCE_MS = 60_000;
 
 /**
- * Marks the visitor as active: slides the token's expiry, bumps the user's
+ * Marks the visitor as active: slides the token's expiry, bumps the visitor's
  * `lastSeenAt` (what the anonymous cleanup looks at) and records the client
- * IP when known. Coalesced: if the user was seen less than
+ * IP when known. Coalesced: if the visitor was seen less than
  * `TOUCH_COALESCE_MS` ago and the IP is unchanged, nothing is written.
  * Returns the visitor as it is after the call.
  */
@@ -102,8 +104,8 @@ export function touchVisitor(
 	ttlMs: number,
 	ip: string | null,
 ): Visitor {
-	const recent = now - visitor.user.lastSeenAt < TOUCH_COALESCE_MS;
-	const sameIp = !ip || ip === visitor.user.lastIp;
+	const recent = now - visitor.row.lastSeenAt < TOUCH_COALESCE_MS;
+	const sameIp = !ip || ip === visitor.row.lastIp;
 	if (recent && sameIp) return visitor;
 	const touchToken = prepared(db, "touchVisitor.token", () =>
 		db
@@ -115,14 +117,14 @@ export function touchVisitor(
 			.where(eq(visitorTokens.tokenHash, sql.placeholder("tokenHash")))
 			.prepare(),
 	);
-	const touchUser = prepared(db, "touchVisitor.user", () =>
+	const touchVisitor = prepared(db, "touchVisitor.visitor", () =>
 		db
-			.update(users)
+			.update(visitors)
 			.set({
 				lastSeenAt: sql`${sql.placeholder("now")}`,
-				lastIp: sql`coalesce(${sql.placeholder("ip")}, ${users.lastIp})`,
+				lastIp: sql`coalesce(${sql.placeholder("ip")}, ${visitors.lastIp})`,
 			})
-			.where(eq(users.id, sql.placeholder("userId")))
+			.where(eq(visitors.id, sql.placeholder("visitorId")))
 			.prepare(),
 	);
 	db.$client.transaction(() => {
@@ -131,14 +133,99 @@ export function touchVisitor(
 			expiresAt: now + ttlMs,
 			tokenHash: visitor.tokenHash,
 		});
-		touchUser.run({ now, ip, userId: visitor.user.id });
+		touchVisitor.run({ now, ip, visitorId: visitor.row.id });
 	})();
 	return {
 		...visitor,
-		user: {
-			...visitor.user,
+		row: {
+			...visitor.row,
 			lastSeenAt: now,
-			lastIp: ip ?? visitor.user.lastIp,
+			lastIp: ip ?? visitor.row.lastIp,
 		},
 	};
+}
+
+/**
+ * Registers an identified visitor on first contact, otherwise bumps
+ * `lastSeenAt` (and `displayName` when one is sent). One statement that
+ * returns the fresh row, so block/whitelist status is always current
+ * without a separate cache for it.
+ */
+export function upsertIdentifiedVisitor(
+	db: Db,
+	channelId: string,
+	externalUserId: string,
+	displayName: string | undefined,
+	now: number,
+): VisitorRow {
+	return db
+		.insert(visitors)
+		.values({
+			id: crypto.randomUUID(),
+			channelId,
+			externalUserId,
+			kind: "identified",
+			displayName: displayName ?? null,
+			name: generateVisitorName(),
+			createdAt: now,
+			lastSeenAt: now,
+		})
+		.onConflictDoUpdate({
+			target: [visitors.channelId, visitors.externalUserId],
+			set: {
+				lastSeenAt: now,
+				displayName: displayName ? displayName : sql`${visitors.displayName}`,
+			},
+		})
+		.returning()
+		.get();
+}
+
+const ACTION_SET_SQL: Record<VisitorAction, string> = {
+	whitelist: "whitelisted_at = $now, whitelisted_by = $admin",
+	unwhitelist: "whitelisted_at = NULL, whitelisted_by = NULL",
+	block: "blocked_at = $now, blocked_by = $admin, blocked_reason = $reason",
+	unblock: "blocked_at = NULL, blocked_by = NULL, blocked_reason = NULL",
+};
+
+/** Applies an admin action to visitors; returns how many existing visitors were updated. */
+export function applyVisitorAction(
+	db: Db,
+	ids: string[],
+	action: VisitorAction,
+	adminId: string,
+	now: number,
+	reason?: string,
+): number {
+	if (ids.length === 0) return 0;
+	const idBinds = Object.fromEntries(ids.map((id, i) => [`id${i}`, id]));
+	const idList = Object.keys(idBinds)
+		.map((key) => `$${key}`)
+		.join(",");
+	return db.$client
+		.query<{ id: string }, Record<string, string | number | null>>(
+			`UPDATE visitors SET ${ACTION_SET_SQL[action]} WHERE id IN (${idList}) RETURNING id`,
+		)
+		.all({ ...idBinds, now, admin: adminId, reason: reason ?? null }).length;
+}
+
+/** "Erase messages": the user's messages and their GOAP traces. Usage rows stay. */
+export function deleteVisitorMessages(db: Db, id: string): void {
+	const sqlite = db.$client;
+	sqlite.transaction(() => {
+		sqlite.query("DELETE FROM messages WHERE visitor_id = ?").run(id);
+		sqlite.query("DELETE FROM plan_runs WHERE visitor_id = ?").run(id);
+	})();
+}
+
+/** Startup backfill: gives every visitor created before `name` existed one. Returns how many. */
+export function backfillVisitorNames(db: Db): number {
+	const rows = db.$client
+		.query<{ id: string }, []>("SELECT id FROM visitors WHERE name = ''")
+		.all();
+	const set = db.$client.query("UPDATE visitors SET name = ? WHERE id = ?");
+	db.$client.transaction(() => {
+		for (const { id } of rows) set.run(generateVisitorName(), id);
+	})();
+	return rows.length;
 }

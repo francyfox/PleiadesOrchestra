@@ -4,7 +4,7 @@ import { llmCalls } from "../database/database.schema.ts";
 import { testDb } from "../database/database.testing.ts";
 import { RunBinding } from "../run-binding/run-binding.ts";
 import { resolveThreadId } from "../threads/threads.service.ts";
-import { upsertIdentifiedUser } from "../users/users.service.ts";
+import { upsertIdentifiedVisitor } from "../visitors/visitors.service.ts";
 import { SqliteUsageRecorder } from "./usage-recorder.ts";
 
 function call(overrides: Partial<LlmCallRecord>): LlmCallRecord {
@@ -24,28 +24,34 @@ function call(overrides: Partial<LlmCallRecord>): LlmCallRecord {
 }
 
 describe("SqliteUsageRecorder", () => {
-	test("buffers until flush, then writes every call with the user's channel", () => {
+	test("buffers until flush, then writes every call with the visitor's channel", () => {
 		const db = testDb();
-		const user = upsertIdentifiedUser(db, "ch_telegram", "42", undefined, 1);
-		const thread = resolveThreadId(db, "ch_telegram", user.id, "chat", 1);
+		const visitor = upsertIdentifiedVisitor(
+			db,
+			"ch_telegram",
+			"42",
+			undefined,
+			1,
+		);
+		const thread = resolveThreadId(db, "ch_telegram", visitor.id, "chat", 1);
 		const recorder = new SqliteUsageRecorder(db, new RunBinding());
 
 		recorder.record(
 			call({
-				userId: user.id,
+				userId: visitor.id,
 				threadId: thread,
 				kind: "ingest",
 				actionName: "generateReply",
 			}),
 		);
-		recorder.record(call({ userId: user.id, threadId: thread }));
+		recorder.record(call({ userId: visitor.id, threadId: thread }));
 		expect(db.select().from(llmCalls).all()).toHaveLength(0);
 
 		recorder.flush();
 		const rows = db.select().from(llmCalls).all();
 		expect(rows).toHaveLength(2);
 		expect(rows[0]).toMatchObject({
-			userId: user.id,
+			visitorId: visitor.id,
 			channelId: "ch_telegram",
 			threadId: thread,
 			kind: "ingest",
@@ -76,7 +82,7 @@ describe("SqliteUsageRecorder", () => {
 		});
 	});
 
-	test("references to unknown users/threads/runs are stored as NULL instead of failing the flush", () => {
+	test("references to unknown visitors/threads/runs are stored as NULL instead of failing the flush", () => {
 		const db = testDb();
 		const recorder = new SqliteUsageRecorder(db, new RunBinding());
 		recorder.record(
@@ -84,7 +90,7 @@ describe("SqliteUsageRecorder", () => {
 		);
 		recorder.flush();
 		expect(db.select().from(llmCalls).get()).toMatchObject({
-			userId: null,
+			visitorId: null,
 			channelId: null,
 			threadId: null,
 			planRunId: null,

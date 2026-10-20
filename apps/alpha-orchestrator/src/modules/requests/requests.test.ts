@@ -10,15 +10,15 @@ import {
 	startPlanRun,
 } from "../plan-runs/plan-runs.service.ts";
 import { resolveThreadId } from "../threads/threads.service.ts";
-import { upsertIdentifiedUser } from "../users/users.service.ts";
+import { upsertIdentifiedVisitor } from "../visitors/visitors.service.ts";
 import { getRequest, listRequests } from "./requests.service.ts";
 
 const T0 = 1_000_000;
 
 function setup() {
 	const db = testDb();
-	const user = upsertIdentifiedUser(db, "ch_cli", "1", undefined, 1);
-	const threadId = resolveThreadId(db, "ch_cli", user.id, "t", 1);
+	const visitor = upsertIdentifiedVisitor(db, "ch_cli", "1", undefined, 1);
+	const threadId = resolveThreadId(db, "ch_cli", visitor.id, "t", 1);
 	const active = new ActiveRuns();
 
 	const run = (
@@ -28,7 +28,7 @@ function setup() {
 	) => {
 		startPlanRun(db, {
 			id,
-			userId: user.id,
+			visitorId: visitor.id,
 			threadId,
 			goal: { replied: true },
 			createdAt,
@@ -43,7 +43,7 @@ function setup() {
 		events: PlanTraceEvent[],
 	) => finishPlanRun(db, id, { succeeded, durationMs, events });
 
-	return { db, user, threadId, active, run, finish };
+	return { db, visitor, threadId, active, run, finish };
 }
 
 const planned = (
@@ -254,7 +254,7 @@ describe("getRequest", () => {
 			.insert(messages)
 			.values({
 				threadId: s.threadId,
-				userId: s.user.id,
+				visitorId: s.visitor.id,
 				role: "assistant",
 				content: "Добавил Brie в корзину",
 				createdAt: T0 + 4_500,
@@ -265,7 +265,7 @@ describe("getRequest", () => {
 			.insert(llmCalls)
 			.values({
 				at: T0 + 4_400,
-				userId: s.user.id,
+				visitorId: s.visitor.id,
 				threadId: s.threadId,
 				planRunId: "r2",
 				actionName: "generateReply",
@@ -346,11 +346,11 @@ describe("getRequest", () => {
 describe("admin routes", () => {
 	test("GET /requests lists, GET /requests/:id opens one, an unknown id is 404", async () => {
 		const { app, db } = setupAdminApp();
-		const user = upsertIdentifiedUser(db, "ch_cli", "1", undefined, 1);
-		const threadId = resolveThreadId(db, "ch_cli", user.id, "t", 1);
+		const visitor = upsertIdentifiedVisitor(db, "ch_cli", "1", undefined, 1);
+		const threadId = resolveThreadId(db, "ch_cli", visitor.id, "t", 1);
 		startPlanRun(db, {
 			id: "r",
-			userId: user.id,
+			visitorId: visitor.id,
 			threadId,
 			goal: {},
 			createdAt: 1,

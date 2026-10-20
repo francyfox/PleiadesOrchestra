@@ -1,6 +1,6 @@
 import type { WebMcpToolDescriptor } from "@repo/core";
 import type { ClientIpSource } from "@repo/elysia-kit";
-import type { UserRow } from "../users/users.types.ts";
+import type { VisitorRow } from "../visitors/visitors.types.ts";
 
 export type CustomerContext = Record<string, string | number | boolean>;
 
@@ -40,9 +40,9 @@ export interface WidgetOptions {
 	clientIpSource: ClientIpSource;
 	/** `xff-rightmost` only: trusted proxies appending to `X-Forwarded-For`. */
 	trustedProxyHops: number;
-	/** Sliding visitor-token lifetime — same as the anonymous-user retention. */
+	/** Sliding visitor-token lifetime — same as the anonymous-visitor retention. */
 	tokenTtlHours: number;
-	/** Messages kept per user; re-applied after an identify merge. */
+	/** Messages kept per visitor; re-applied after an identify merge. */
 	retentionPerUser: number;
 }
 
@@ -87,9 +87,9 @@ export interface ToolOutcome {
 
 /** What the widget needs from the reply machinery (see `modules/reply`). */
 export interface WidgetReply {
-	/** Runs the GOAP reply for an already-authorized user/thread (shared with /v1/messages). */
+	/** Runs the GOAP reply for an already-authorized visitor/thread (shared with /v1/messages). */
 	startReply(
-		user: UserRow,
+		visitor: VisitorRow,
 		threadId: string,
 		text: string,
 		options?: ReplyOptions,
@@ -99,7 +99,7 @@ export interface WidgetReply {
 	 * run the browser-side WebMCP tool and has its outcome.
 	 */
 	resumeReply(
-		user: UserRow,
+		visitor: VisitorRow,
 		threadId: string,
 		toolResult: ToolOutcome,
 		signal?: AbortSignal,

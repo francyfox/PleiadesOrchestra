@@ -1,87 +1,85 @@
 import { describe, expect, test } from "bun:test";
-import { resolveAuthRedirect } from "./auth-redirect";
+import { canOpen, resolveAuthRedirect } from "./auth-redirect";
+
+const redirect = (pathname: string, level: number | null) =>
+	resolveAuthRedirect({ pathname, level });
 
 describe("resolveAuthRedirect", () => {
-	test("with no admin yet, every page goes to /register", () => {
-		for (const pathname of ["/", "/users", "/login", "/admins"]) {
-			expect(
-				resolveAuthRedirect({ pathname, hasAdmin: false, isLoggedIn: false }),
-			).toBe("/register");
+	test("anonymous visitors can open the staff and customer sign-in forms", () => {
+		for (const pathname of [
+			"/login",
+			"/user/login",
+			"/user/register",
+			"/user/forgot",
+			"/user/reset",
+		]) {
+			expect(redirect(pathname, null)).toBeNull();
 		}
 	});
 
-	test("with no admin yet, /register itself is served", () => {
-		expect(
-			resolveAuthRedirect({
-				pathname: "/register",
-				hasAdmin: false,
-				isLoggedIn: false,
-			}),
-		).toBeNull();
-	});
-
-	test("once an admin exists, /register is closed and sends to /login", () => {
-		expect(
-			resolveAuthRedirect({
-				pathname: "/register",
-				hasAdmin: true,
-				isLoggedIn: false,
-			}),
-		).toBe("/login");
-	});
-
-	test("a logged-in admin visiting /register or /login goes home", () => {
-		for (const pathname of ["/register", "/login"]) {
-			expect(
-				resolveAuthRedirect({ pathname, hasAdmin: true, isLoggedIn: true }),
-			).toBe("/");
+	test("anonymous visitors of everything else go to /login", () => {
+		for (const pathname of [
+			"/",
+			"/visitors/42",
+			"/admins",
+			"/user",
+			"/user/me",
+			"/register",
+		]) {
+			expect(redirect(pathname, null)).toBe("/login");
 		}
 	});
 
-	test("anonymous visitors of protected pages go to /login", () => {
-		expect(
-			resolveAuthRedirect({
-				pathname: "/users/42",
-				hasAdmin: true,
-				isLoggedIn: false,
-			}),
-		).toBe("/login");
+	test("a signed-in account leaves the sign-in forms for /", () => {
+		for (const level of [0, 100, 200]) {
+			for (const pathname of [
+				"/login",
+				"/user/login",
+				"/user/register",
+				"/user/reset",
+			]) {
+				expect(redirect(pathname, level)).toBe("/");
+			}
+		}
 	});
 
-	test("anonymous visitors can open /login", () => {
-		expect(
-			resolveAuthRedirect({
-				pathname: "/login",
-				hasAdmin: true,
-				isLoggedIn: false,
-			}),
-		).toBeNull();
+	test("staff reach every page", () => {
+		for (const level of [0, 100]) {
+			for (const pathname of ["/", "/visitors", "/admins", "/models", "/faq"]) {
+				expect(redirect(pathname, level)).toBeNull();
+			}
+		}
 	});
 
-	test("logged-in admins reach protected pages", () => {
-		expect(
-			resolveAuthRedirect({
-				pathname: "/users",
-				hasAdmin: true,
-				isLoggedIn: true,
-			}),
-		).toBeNull();
+	test("staff cannot open the customer-only /settings", () => {
+		for (const level of [0, 100]) {
+			expect(redirect("/settings", level)).toBe("/");
+		}
+	});
+
+	test("a customer reaches Dashboard, Channels, FAQ and Settings only; staff pages go to /", () => {
+		for (const pathname of ["/", "/channels", "/faq", "/settings"]) {
+			expect(redirect(pathname, 200)).toBeNull();
+		}
+		for (const pathname of [
+			"/admins",
+			"/visitors",
+			"/agents",
+			"/models",
+			"/system",
+			"/users",
+			"/channelsx",
+		]) {
+			expect(redirect(pathname, 200)).toBe("/");
+		}
+	});
+
+	test("the boundary: level 100 is staff, 101 is not", () => {
+		expect(canOpen(100, "/admins")).toBe(true);
+		expect(canOpen(101, "/admins")).toBe(false);
 	});
 
 	test("better-auth's own API is never redirected", () => {
-		expect(
-			resolveAuthRedirect({
-				pathname: "/api/auth/sign-up/email",
-				hasAdmin: false,
-				isLoggedIn: false,
-			}),
-		).toBeNull();
-		expect(
-			resolveAuthRedirect({
-				pathname: "/api/auth/sign-in/email",
-				hasAdmin: true,
-				isLoggedIn: false,
-			}),
-		).toBeNull();
+		expect(redirect("/api/auth/token", null)).toBeNull();
 	});
 });

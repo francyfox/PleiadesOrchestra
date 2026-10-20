@@ -4,6 +4,7 @@
  * schemas the routes validate with, so panel and API can't drift apart.
  */
 
+export type { Me } from "./modules/accounts/accounts.schema.ts";
 export type {
 	AdminAccount,
 	AdminSelf,
@@ -12,11 +13,11 @@ export type {
 export type {
 	Agent,
 	AgentRole,
-	AgentSettingsPatch,
 	AgentSettingsView,
 	AgentStatus,
 	AgentTestResult,
-	ProviderKey,
+	Provider,
+	ProviderModel,
 } from "./modules/agents/agents.schema.ts";
 export type {
 	BlockedIp,
@@ -38,6 +39,10 @@ export type {
 	PageQuery,
 	WorldState,
 } from "./modules/common/common.schema.ts";
+export type {
+	Customer,
+	CustomersPage,
+} from "./modules/customers/customers.schema.ts";
 export type {
 	IntentExample,
 	IntentsPage,
@@ -99,13 +104,13 @@ export type {
 } from "./modules/usage/usage.schema.ts";
 export type {
 	AdminMessage,
-	AdminUser,
 	BulkAction,
 	SortOrder,
-	UserDetails,
-	UserKind,
-	UserStatus,
-	UsersPage,
-	UsersQuery,
-	UsersSort,
-} from "./modules/users/users.schema.ts";
+	Visitor,
+	VisitorDetails,
+	VisitorKind,
+	VisitorStatus,
+	VisitorsPage,
+	VisitorsQuery,
+	VisitorsSort,
+} from "./modules/visitors/visitors.schema.ts";

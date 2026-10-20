@@ -11,16 +11,14 @@ services:
       # Each model runs locally in compose (default: the compose-network URL of its
       # service) or on another machine: drop its profile from COMPOSE_PROFILES
       # (beta / gamma / delta) and set its *_BASE_URL in the root .env. Empty
-      # model/temperature/concurrency/effort = the app default (the orchestrator
-      # treats empty strings as unset). apps/alpha-orchestrator/.env(.example)
+      # model/concurrency = the app default (the orchestrator treats empty
+      # strings as unset). Model parameters (temperature, reasoning effort) live
+      # in apps/alpha-orchestrator/configs/providers.toml, seeded from these servers. apps/alpha-orchestrator/.env(.example)
       # defaults to localhost ports, for running it standalone outside compose.
       # Each *_MAX_CONCURRENCY should match the parallel slots of the server it
       # talks to (beta: PARALLEL, delta: DELTA_PARALLEL, gamma: its own threads).
-      # LLM_TEMPERATURE is also read by beta-text's llama-server (--temp, via its
-      # env_file), so passing it here keeps client and server consistent.
       LLM_BASE_URL: ${LLM_BASE_URL:-http://beta-text:8080/v1}
       LLM_MODEL: ${LLM_MODEL:-}
-      LLM_TEMPERATURE: ${LLM_TEMPERATURE:-}
       LLM_MAX_CONCURRENCY: ${LLM_MAX_CONCURRENCY:-}
       LLM_API_KEY: ${LLM_API_KEY:?set LLM_API_KEY in .env (same value as beta-text)}
       LAYA_API_BASE_URL: ${LAYA_API_BASE_URL:-http://gamma-decision:8080}
@@ -43,17 +41,18 @@ services:
       CLIENT_IP_SOURCE: cf-connecting-ip
       # Tool-call arguments are written by delta-function-call (no depends_on — the
       # model downloads on first start), local or external, see above. Same key as
-      # the delta service below. FUNCTION_CALL_REASONING_EFFORT=none for Ollama + Qwen3.
+      # the delta service below.
       FUNCTION_CALL_BASE_URL: ${FUNCTION_CALL_BASE_URL:-http://delta-function-call:8080/v1}
       FUNCTION_CALL_MODEL: ${FUNCTION_CALL_MODEL:-}
-      FUNCTION_CALL_TEMPERATURE: ${FUNCTION_CALL_TEMPERATURE:-}
-      FUNCTION_CALL_REASONING_EFFORT: ${FUNCTION_CALL_REASONING_EFFORT:-}
       FUNCTION_CALL_MAX_CONCURRENCY: ${FUNCTION_CALL_MAX_CONCURRENCY:-}
       FUNCTION_CALL_API_KEY: ${FUNCTION_CALL_API_KEY:?set FUNCTION_CALL_API_KEY in .env (same value as delta-function-call)}
     # SQLite on the host, not in a Docker volume: visible, easy to back up,
     # survives `docker compose down -v`. ./data is gitignored.
     volumes:
       - ./data/alpha-orchestrator:/data
+      # providers.toml (keys inside: gitignored, dockerignored, 0600); the
+      # directory, not the file, so it can be created on first start.
+      - ./apps/alpha-orchestrator/configs:/configs
       # The Opus-MT translation model downloads here on first start.
       - alpha-orchestrator-models:/models
     # Loopback only: the orchestrator also serves /v1/admin/*. Public traffic goes

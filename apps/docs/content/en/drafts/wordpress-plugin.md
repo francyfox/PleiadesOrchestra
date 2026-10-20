@@ -27,7 +27,7 @@ The admin panel already lists the agents with their status (`GET /v1/admin/agent
 - **Parameters**: temperature, reasoning effort, extra request-body fields. For delta on OpenRouter that means `provider: { require_parameters: true }`, so requests only go to providers that honour `response_format`.
 - **Test**: one call with the effective settings, showing the answer and the latency.
 
-**Defaults come from env.** Today's variables stay the source of the defaults: `LLM_BASE_URL`/`LLM_API_KEY`/`LLM_MODEL` for beta-text, `FUNCTION_CALL_*` for delta, `LAYA_*` for gamma. A field left empty in the admin panel means "the env value", the page shows it as such, and "Reset to env" clears the override. A fresh install works with env alone, as now.
+**Defaults come from env.** Today's variables stay the source of the defaults: `LLM_BASE_URL`/`LLM_API_KEY`/`LLM_MODEL` for beta-text, `FUNCTION_CALL_*` for delta, `LAYA_*` for gamma. A field left empty in the admin panel means "the env value" and the page shows it as such; emptying a field clears its override. A fresh install works with env alone, as now.
 
 How it is built:
 
@@ -35,7 +35,7 @@ How it is built:
 - **API**: `GET`/`PATCH /v1/admin/agents/:id` in the orchestrator (`ADMIN_API_KEY` + `X-Admin-Id`, like the other admin routes), proxied by admin-api; the contract goes into [Admin API](/docs/drafts/admin-api/).
 - **No restart**: agents are built from the effective settings at startup and rebuilt when an admin saves (one process, the same invalidate pattern as `ChannelDirectory`). A run already going keeps the agent it started with.
 - **Health and accounting**: the `/health` check and `llm_calls` (`provider`, `model`) use the effective settings, so the admin panel shows which model really answered.
-- Settings are per agent for the whole instance. Per-channel overrides are PO-15.
+- Settings are per agent for the whole instance; there are no per-channel model overrides.
 
 ### Guard
 
@@ -170,7 +170,6 @@ Status 2026-10-19: phase 3 is implemented (webhook, `subscriptions`, Plans tab, 
 |---|---|
 | PO-12 (WooCommerce plugin, approval gates, handoff) | The plugin part is this plan; approval gates and handoff stay after launch. |
 | PO-8 (ModelRouter, cloud fallback for delta) | For launch: per-agent model settings in the admin panel with env defaults. Fallbacks, budgets and the LLM-backed Laya adapter after. |
-| PO-15 (agent profiles per channel) | The per-agent settings are the instance-wide layer; per-channel overrides on top of them stay in PO-15. |
 | PO-41 (intent packs) | Still needed for non-shop sites; plugin channels use the built-in shop intents. |
 | PO-14, PO-23 (catalog compilation and classification) | Not needed for plugin channels: the plugin ships intents and annotations for its tools. |
 | PO-11 (quickstart) | The hosted orchestrator for plugin users comes first; the self-host quickstart after. |

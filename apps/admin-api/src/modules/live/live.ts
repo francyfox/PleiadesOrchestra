@@ -2,6 +2,7 @@ import { Elysia } from "elysia";
 import type { RouteDeps } from "../../app.types.ts";
 import { requireAdmin } from "../auth/auth.service.ts";
 import { isForeignOrigin } from "../origin-guard/origin-guard.service.ts";
+import { scopeSubscription } from "./live.service.ts";
 import type { LiveErrorCode, LiveServerMessage } from "./live.types.ts";
 
 /** Subscriptions one socket may hold: a page needs a handful, so this only stops runaways. */
@@ -37,12 +38,18 @@ const validId = (value: unknown): value is string =>
  * closes the socket.
  */
 export function liveRoutes({ auth, liveHub, trustedOrigins }: RouteDeps) {
-	/** Per socket: subscription id → its unsubscribe. */
-	const sockets = new Map<string, Map<string, () => void>>();
+	/** Per socket: who is signed in, and subscription id → its unsubscribe. */
+	const sockets = new Map<
+		string,
+		{
+			account: { id: string; level: number };
+			subscriptions: Map<string, () => void>;
+		}
+	>();
 
 	return new Elysia({ name: "admin-api.live", tags: ["live"] })
 		.use(requireAdmin(auth))
-		.guard({ admin: true }, (app) =>
+		.guard({ account: true }, (app) =>
 			app
 				.onBeforeHandle(({ request }) => {
 					if (isForeignOrigin(request, trustedOrigins)) {
@@ -54,11 +61,16 @@ export function liveRoutes({ auth, liveHub, trustedOrigins }: RouteDeps) {
 				})
 				.ws("/live", {
 					open(ws) {
-						sockets.set(ws.id, new Map());
+						const { id, level } = ws.data.account;
+						sockets.set(ws.id, {
+							account: { id, level },
+							subscriptions: new Map(),
+						});
 					},
 					message(ws, raw) {
-						const subscriptions = sockets.get(ws.id);
-						if (!subscriptions) return;
+						const socket = sockets.get(ws.id);
+						if (!socket) return;
+						const { subscriptions, account } = socket;
 						// Elysia sends a `message` handler's return value to the client too: keep every path void.
 						const send = (message: LiveServerMessage): void => {
 							ws.send(message);
@@ -91,9 +103,15 @@ export function liveRoutes({ auth, liveHub, trustedOrigins }: RouteDeps) {
 							return refuse(id, "invalid_params");
 						}
 
-						const result = liveHub.subscribe(
+						const scoped = scopeSubscription(
+							account,
 							message.topic,
 							message.params,
+						);
+						if (!scoped.ok) return refuse(id, scoped.code);
+						const result = liveHub.subscribe(
+							message.topic,
+							scoped.params,
 							(event) =>
 								event.type === "data"
 									? send({ type: "data", id, data: event.data })
@@ -103,7 +121,9 @@ export function liveRoutes({ auth, liveHub, trustedOrigins }: RouteDeps) {
 						subscriptions.set(id, result.unsubscribe);
 					},
 					close(ws) {
-						for (const unsubscribe of sockets.get(ws.id)?.values() ?? []) {
+						for (const unsubscribe of sockets
+							.get(ws.id)
+							?.subscriptions.values() ?? []) {
 							unsubscribe();
 						}
 						sockets.delete(ws.id);
@@ -111,7 +131,7 @@ export function liveRoutes({ auth, liveHub, trustedOrigins }: RouteDeps) {
 					detail: {
 						summary: "Live page data (WebSocket, one per browser tab)",
 						description:
-							"Client sends `{type:'subscribe', id, topic, params}` / `{type:'unsubscribe', id}`; topics: dashboard, users, user, channels, blocked-ips, admins, agents, performance (see `live/protocol.ts`). The server answers `{type:'data', id, data}` — the body of the matching REST endpoint — once on subscribe and then only when it changed, or `{type:'error', id, code}` (`unknown_topic`, `invalid_params`, `upstream` once per outage). A source is polled only while somebody watches it. Needs the session cookie; a foreign `Origin` is refused (403).",
+							"Client sends `{type:'subscribe', id, topic, params}` / `{type:'unsubscribe', id}`; topics: dashboard, visitors, visitor, channels, blocked-ips, intents, admins, agents, performance, requests, request, mcp. A user session (level 200) may watch only `dashboard` and `channels`, always scoped to their own channels (`ownerId` is set from the session whatever the browser sends); other topics answer `forbidden`. The server answers `{type:'data', id, data}` — the body of the matching REST endpoint — once on subscribe and then only when it changed, or `{type:'error', id, code}` (`unknown_topic`, `invalid_params`, `upstream` once per outage). A source is polled only while somebody watches it. Needs the session cookie; a foreign `Origin` is refused (403).",
 					},
 				}),
 		);

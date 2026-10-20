@@ -1,11 +1,13 @@
 import { type BetterAuthPlugin, betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { APIError, createAuthMiddleware } from "better-auth/api";
 import { admin } from "better-auth/plugins";
+import { accountFields, isStaff } from "../accounts/accounts.schema.ts";
 import { MIN_PASSWORD } from "../admin-policy/admin-policy.service.ts";
-import { countAdmins } from "../admins/admins.service.ts";
 import { TRUSTED_IP_HEADER } from "../client-ip/client-ip.service.ts";
 import { type AdminDb, schema } from "../database/database.ts";
+import { buildMail } from "../mail/mail.service.ts";
+import type { Mailer } from "../mail/mail.types.ts";
+import { staffToken } from "../staff-token/staff-token.ts";
 
 export interface AuthOptions {
 	db: AdminDb;
@@ -13,20 +15,24 @@ export interface AuthOptions {
 	baseURL: string;
 	/** Origins better-auth accepts besides `baseURL` (e.g. the 127.0.0.1 alias of localhost). */
 	trustedOrigins?: string[];
+	mailer: Mailer;
+	/** Origin the panel is opened at; the links in mails point there. */
+	panelUrl: string;
 	extraPlugins?: BetterAuthPlugin[];
 }
 
 /**
- * better-auth for admin accounts. Only one role exists in this database:
- * every account is an admin (chat users live in the orchestrator, not here).
- * Public sign-up only works while no account exists — it bootstraps the
- * first admin; afterwards admins are created by admins via `createUser`.
+ * better-auth for all accounts: staff (level 0/100, sign in with an access
+ * token, no password) and users (level 200, email + password, verified by
+ * mail). Sessions are the same for both; `level` decides what they may call.
  */
 export function createAuth({
 	db,
 	secret,
 	baseURL,
 	trustedOrigins,
+	mailer,
+	panelUrl,
 	extraPlugins = [],
 }: AuthOptions) {
 	return betterAuth({
@@ -35,34 +41,60 @@ export function createAuth({
 		trustedOrigins,
 		telemetry: { enabled: false },
 		database: drizzleAdapter(db, { provider: "sqlite", schema }),
+		user: {
+			additionalFields: accountFields,
+			// The new address gets the verification link; the email changes only once it is opened.
+			changeEmail: { enabled: true },
+		},
 		emailAndPassword: {
 			enabled: true,
-			autoSignIn: true,
 			minPasswordLength: MIN_PASSWORD,
+			requireEmailVerification: true,
+			revokeSessionsOnPasswordReset: true,
+			sendResetPassword: async ({ user, token }) => {
+				// Staff have no password to reset.
+				if (isStaff((user as { level?: number }).level ?? 200)) return;
+				void mailer.send(
+					buildMail(
+						"reset",
+						user.email,
+						`${panelUrl}/user/reset?token=${token}`,
+						(user as { locale?: string | null }).locale,
+					),
+				);
+			},
+		},
+		emailVerification: {
+			sendOnSignUp: true,
+			sendVerificationEmail: async ({ user, token }) => {
+				void mailer.send(
+					buildMail(
+						"verify",
+						user.email,
+						`${panelUrl}/api/user/verify?token=${token}`,
+						(user as { locale?: string | null }).locale,
+					),
+				);
+			},
 		},
 		// better-auth would otherwise trust a client-sent X-Forwarded-For for
 		// session.ipAddress. Routes overwrite this header with the IP resolved
 		// from CLIENT_IP_SOURCE (see client-ip.service.ts); nothing else is read.
 		advanced: { ipAddress: { ipAddressHeaders: [TRUSTED_IP_HEADER] } },
-		hooks: {
-			// Closed at the API level, not just the /register page — otherwise a
-			// direct POST would still create accounts.
-			before: createAuthMiddleware(async (ctx) => {
-				if (ctx.path === "/sign-up/email" && (await countAdmins(db)) > 0) {
-					throw new APIError("FORBIDDEN", {
-						message: "Registration is closed",
-					});
-				}
-			}),
-		},
 		databaseHooks: {
 			user: {
 				create: {
-					before: async (user) => ({ data: { ...user, role: "admin" } }),
+					// The admin plugin's `role` only gates its ban/session endpoints: staff are "admin".
+					before: async (user) => {
+						const level = (user as { level?: number }).level ?? 200;
+						return {
+							data: { ...user, role: isStaff(level) ? "admin" : "user" },
+						};
+					},
 				},
 			},
 		},
-		plugins: [admin(), ...extraPlugins],
+		plugins: [admin(), staffToken(), ...extraPlugins],
 	});
 }
 

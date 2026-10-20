@@ -18,7 +18,7 @@ import {
 	channels,
 	mcpCatalogs,
 	planRuns,
-	users,
+	visitors,
 	visitorTokens,
 } from "../database/database.schema.ts";
 import { testDb } from "../database/database.testing.ts";
@@ -240,10 +240,14 @@ function sendMessage(
 	);
 }
 
-function visitorUser(ctx: Ctx) {
+function visitorRow(ctx: Ctx) {
 	const row = ctx.db.select().from(visitorTokens).get();
 	if (!row) throw new Error("no visitor");
-	return ctx.db.select().from(users).where(eq(users.id, row.userId)).get();
+	return ctx.db
+		.select()
+		.from(visitors)
+		.where(eq(visitors.id, row.visitorId))
+		.get();
 }
 
 describe("CORS preflight", () => {
@@ -273,7 +277,7 @@ describe("CORS preflight", () => {
 });
 
 describe("POST /v1/widget/visitors", () => {
-	test("creates an anonymous user and returns a token; only its hash is stored", async () => {
+	test("creates an anonymous visitor and returns a token; only its hash is stored", async () => {
 		const ctx = setup();
 		const response = await ctx.app.handle(
 			widgetRequest("/v1/widget/visitors", {
@@ -292,7 +296,7 @@ describe("POST /v1/widget/visitors", () => {
 		const stored = ctx.db.select().from(visitorTokens).all();
 		expect(stored).toHaveLength(1);
 		expect(stored[0]?.tokenHash).not.toBe(body.visitorToken);
-		expect(visitorUser(ctx)).toMatchObject({
+		expect(visitorRow(ctx)).toMatchObject({
 			kind: "anonymous",
 			externalUserId: null,
 			channelId: ctx.shop.channel.id,
@@ -316,7 +320,7 @@ describe("POST /v1/widget/visitors", () => {
 			}),
 		);
 		expect(response.status).toBe(403);
-		expect(ctx.db.select().from(users).all()).toHaveLength(0);
+		expect(ctx.db.select().from(visitors).all()).toHaveLength(0);
 	});
 
 	test("missing Origin → 403", async () => {
@@ -435,7 +439,7 @@ describe("widget threads and messages", () => {
 
 		expect(ctx.calls).toHaveLength(1);
 		expect(ctx.calls[0]?.threadId).toBe(threadId);
-		expect(ctx.calls[0]?.userId).toBe(visitorUser(ctx)?.id as string);
+		expect(ctx.calls[0]?.userId).toBe(visitorRow(ctx)?.id as string);
 
 		const history = await ctx.app.handle(
 			widgetRequest(`/v1/widget/threads/${threadId}/messages`, {
@@ -542,13 +546,13 @@ describe("widget threads and messages", () => {
 	test("the client IP is stored on the visitor (plaintext, for admins) and follows the visitor", async () => {
 		const ctx = setup();
 		const token = await newVisitor(ctx, "203.0.113.7");
-		expect(visitorUser(ctx)?.lastIp).toBe("203.0.113.7");
+		expect(visitorRow(ctx)?.lastIp).toBe("203.0.113.7");
 
 		const response = await ctx.app.handle(
 			widgetRequest("/v1/widget/threads", { token, ip: "198.51.100.9" }),
 		);
 		expect(response.status).toBe(201);
-		expect(visitorUser(ctx)?.lastIp).toBe("198.51.100.9");
+		expect(visitorRow(ctx)?.lastIp).toBe("198.51.100.9");
 	});
 
 	test("using the token slides its expiry and bumps lastSeenAt", async () => {
@@ -558,7 +562,7 @@ describe("widget threads and messages", () => {
 		await newThread(ctx, token);
 		const row = ctx.db.select().from(visitorTokens).get();
 		expect(row?.expiresAt).toBe(ctx.clock.now + 24 * HOUR_MS);
-		expect(visitorUser(ctx)?.lastSeenAt).toBe(ctx.clock.now);
+		expect(visitorRow(ctx)?.lastSeenAt).toBe(ctx.clock.now);
 
 		// 20h later is past the original expiry, but within the slid one.
 		ctx.clock.now += 20 * HOUR_MS;
@@ -582,9 +586,9 @@ describe("widget threads and messages", () => {
 		const token = await newVisitor(ctx);
 		const threadId = await newThread(ctx, token);
 		ctx.db
-			.update(users)
+			.update(visitors)
 			.set({ blockedAt: 1 })
-			.where(eq(users.id, visitorUser(ctx)?.id as string))
+			.where(eq(visitors.id, visitorRow(ctx)?.id as string))
 			.run();
 
 		const response = await sendMessage(ctx, token, threadId);

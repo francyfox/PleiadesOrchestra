@@ -7,11 +7,13 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { admin } from "better-auth/plugins";
 import { drizzle } from "drizzle-orm/bun-sqlite";
+import { accountFields } from "../accounts/accounts.schema.ts";
 
 export const auth = betterAuth({
 	database: drizzleAdapter(drizzle(new Database(":memory:")), {
 		provider: "sqlite",
 	}),
+	user: { additionalFields: accountFields },
 	emailAndPassword: { enabled: true },
 	plugins: [admin()],
 });

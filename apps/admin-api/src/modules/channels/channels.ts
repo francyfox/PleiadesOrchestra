@@ -1,40 +1,67 @@
 import { Elysia, t } from "elysia";
 import type { RouteDeps } from "../../app.types.ts";
 import { requireAdmin } from "../auth/auth.service.ts";
-import { ApiError, PageQuery } from "../common/common.schema.ts";
+import { ApiError } from "../common/common.schema.ts";
 import { IdParams, Upstream } from "../orchestrator/orchestrator.schema.ts";
 import { orchestratorErrors } from "../orchestrator/orchestrator.service.ts";
 import {
 	Channel,
+	ChannelsQuery,
 	ChannelWithSecret,
 	CreateChannelInput,
 	Persona,
 	PersonaView,
 	UpdateChannelInput,
 } from "./channels.schema.ts";
-import { isValidLanguage, isValidSlug } from "./channels.service.ts";
+import {
+	isValidLanguage,
+	isValidSlug,
+	mayAccessChannel,
+	ownerScope,
+} from "./channels.service.ts";
 
+/** `Upstream` plus the 404 of a channel that is not yours; spelled out so `status(404, …)` type-checks. */
+const OwnedUpstream = {
+	401: ApiError,
+	404: ApiError,
+	502: ApiError,
+	503: ApiError,
+};
+
+/**
+ * Channels. Staff see and edit all; a user (level 200) only their own: the
+ * owner is forced from the session on lists and creates, and any route on a
+ * channel that is not theirs answers 404 `not_found` (never 403: no probing for ids).
+ */
 export function channelsRoutes({ auth, orchestrator }: RouteDeps) {
 	return new Elysia({ name: "admin-api.channels", tags: ["orchestrator"] })
 		.use(orchestratorErrors)
 		.use(requireAdmin(auth))
-		.guard({ admin: true }, (app) =>
+		.guard({ account: true }, (app) =>
 			app
-				.get("/channels", ({ query }) => orchestrator.listChannels(query), {
-					query: PageQuery,
-					response: {
-						200: t.Object({ items: t.Array(Channel), total: t.Number() }),
-						...Upstream,
+				.get(
+					"/channels",
+					({ query, account }) =>
+						orchestrator.listChannels({
+							...query,
+							ownerId: ownerScope(account) ?? query.ownerId,
+						}),
+					{
+						query: ChannelsQuery,
+						response: {
+							200: t.Object({ items: t.Array(Channel), total: t.Number() }),
+							...Upstream,
+						},
+						detail: {
+							summary: "List channels",
+							description:
+								"Without `pageSize` every channel is returned; `total` is always the full count. A user gets only their own channels; staff may filter with `ownerId`.",
+						},
 					},
-					detail: {
-						summary: "List channels",
-						description:
-							"Without `pageSize` every channel is returned; `total` is always the full count.",
-					},
-				})
+				)
 				.post(
 					"/channels",
-					async ({ body, admin, status }) => {
+					async ({ body, account, status }) => {
 						const slug = body.slug.trim();
 						const name = body.name.trim();
 						if (!isValidSlug(slug) || !name) {
@@ -46,7 +73,8 @@ export function channelsRoutes({ auth, orchestrator }: RouteDeps) {
 						) {
 							return status(400, { error: "invalid_language" });
 						}
-						return orchestrator.as(admin.id).createChannel({
+						const ownerId = ownerScope(account) ?? body.ownerId;
+						return orchestrator.as(account.id).createChannel({
 							slug,
 							name,
 							kind: "web",
@@ -56,6 +84,7 @@ export function channelsRoutes({ auth, orchestrator }: RouteDeps) {
 							...(body.catalogLanguage
 								? { catalogLanguage: body.catalogLanguage }
 								: {}),
+							...(ownerId ? { ownerId } : {}),
 						});
 					},
 					{
@@ -63,20 +92,24 @@ export function channelsRoutes({ auth, orchestrator }: RouteDeps) {
 						response: { 200: ChannelWithSecret, 400: ApiError, ...Upstream },
 						detail: {
 							summary: "Create a web-widget channel",
-							description: "The secret key is returned once and never again.",
+							description:
+								"The secret key is returned once and never again. A user's channel is owned by them; staff may set `ownerId` (left out = staff-owned).",
 						},
 					},
 				)
 				.patch(
 					"/channels/:id",
-					({ params, body, admin, status }) => {
+					async ({ params, body, account, status }) => {
+						if (!(await mayAccessChannel(orchestrator, account, params.id))) {
+							return status(404, { error: "not_found" });
+						}
 						if (
 							body.catalogLanguage !== undefined &&
 							!isValidLanguage(body.catalogLanguage)
 						) {
 							return status(400, { error: "invalid_language" });
 						}
-						return orchestrator.as(admin.id).updateChannel(params.id, {
+						return orchestrator.as(account.id).updateChannel(params.id, {
 							...body,
 							name: body.name?.trim() || undefined,
 						});
@@ -87,27 +120,35 @@ export function channelsRoutes({ auth, orchestrator }: RouteDeps) {
 						response: {
 							200: t.Object({ channel: Channel }),
 							400: ApiError,
-							...Upstream,
+							...OwnedUpstream,
 						},
 						detail: { summary: "Update / enable / disable a channel" },
 					},
 				)
 				.get(
 					"/channels/:id/persona",
-					({ params }) => orchestrator.getPersona(params.id),
+					async ({ params, account, status }) => {
+						if (!(await mayAccessChannel(orchestrator, account, params.id))) {
+							return status(404, { error: "not_found" });
+						}
+						return orchestrator.getPersona(params.id);
+					},
 					{
 						params: IdParams,
-						response: { 200: PersonaView, ...Upstream },
+						response: { 200: PersonaView, ...OwnedUpstream },
 						detail: { summary: "A channel's persona (name, tone, limits)" },
 					},
 				)
 				.put(
 					"/channels/:id/persona",
-					({ params, body, admin, status }) => {
+					async ({ params, body, account, status }) => {
+						if (!(await mayAccessChannel(orchestrator, account, params.id))) {
+							return status(404, { error: "not_found" });
+						}
 						if (body.defaultLang && !isValidLanguage(body.defaultLang)) {
 							return status(400, { error: "invalid_language" });
 						}
-						return orchestrator.as(admin.id).savePersona(params.id, body);
+						return orchestrator.as(account.id).savePersona(params.id, body);
 					},
 					{
 						params: IdParams,
@@ -115,23 +156,30 @@ export function channelsRoutes({ auth, orchestrator }: RouteDeps) {
 						response: {
 							200: PersonaView,
 							400: ApiError,
-							...Upstream,
+							...OwnedUpstream,
 						},
 						detail: { summary: "Replace a channel's persona" },
 					},
 				)
 				.post(
 					"/channels/:id/persona/preview",
-					({ params, body, admin, status }) => {
+					async ({ params, body, account, status }) => {
+						if (!(await mayAccessChannel(orchestrator, account, params.id))) {
+							return status(404, { error: "not_found" });
+						}
 						if (body.defaultLang && !isValidLanguage(body.defaultLang)) {
 							return status(400, { error: "invalid_language" });
 						}
-						return orchestrator.as(admin.id).previewPersona(params.id, body);
+						return orchestrator.as(account.id).previewPersona(params.id, body);
 					},
 					{
 						params: IdParams,
 						body: Persona,
-						response: { 200: PersonaView, 400: ApiError, ...Upstream },
+						response: {
+							200: PersonaView,
+							400: ApiError,
+							...OwnedUpstream,
+						},
 						detail: {
 							summary: "The prompt unsaved persona values would produce",
 						},
@@ -139,11 +187,15 @@ export function channelsRoutes({ auth, orchestrator }: RouteDeps) {
 				)
 				.post(
 					"/channels/:id/rotate-keys",
-					({ params, admin }) =>
-						orchestrator.as(admin.id).rotateChannelKeys(params.id),
+					async ({ params, account, status }) => {
+						if (!(await mayAccessChannel(orchestrator, account, params.id))) {
+							return status(404, { error: "not_found" });
+						}
+						return orchestrator.as(account.id).rotateChannelKeys(params.id);
+					},
 					{
 						params: IdParams,
-						response: { 200: ChannelWithSecret, ...Upstream },
+						response: { 200: ChannelWithSecret, ...OwnedUpstream },
 						detail: { summary: "Rotate a channel's keys" },
 					},
 				),

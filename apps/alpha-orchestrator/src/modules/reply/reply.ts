@@ -10,7 +10,7 @@ import { hashTools } from "../mcp/mcp.service.ts";
 import { startPlanRun } from "../plan-runs/plan-runs.service.ts";
 import { streamPlanRun } from "../run-stream/run-stream.ts";
 import type { PreparedRun } from "../run-stream/run-stream.types.ts";
-import type { UserRow } from "../users/users.types.ts";
+import type { VisitorRow } from "../visitors/visitors.types.ts";
 import type {
 	ReplyOptions,
 	ToolOutcome,
@@ -29,31 +29,38 @@ export class ReplyService implements WidgetReply {
 
 	constructor(private readonly deps: ReplyDeps) {}
 
-	/** Starts the GOAP reply for an already-authorized user and internal thread. */
+	/** Starts the GOAP reply for an already-authorized visitor and internal thread. */
 	startReply(
-		user: UserRow,
+		visitor: VisitorRow,
 		threadId: string,
 		text: string,
 		options: ReplyOptions = {},
 	): ReadableStream<Uint8Array> {
 		return this.openStream(
-			user,
+			visitor,
 			threadId,
 			options.signal,
 			(planRunId) =>
-				prepareNewMessage(this.deps, user, threadId, planRunId, text, options),
+				prepareNewMessage(
+					this.deps,
+					visitor,
+					threadId,
+					planRunId,
+					text,
+					options,
+				),
 			text,
 		);
 	}
 
 	/** Resumes a run that stopped on a WebMCP tool call, once the browser has run the tool. */
 	resumeReply(
-		user: UserRow,
+		visitor: VisitorRow,
 		threadId: string,
 		toolResult: ToolOutcome,
 		signal?: AbortSignal,
 	): ReadableStream<Uint8Array> {
-		return this.openStream(user, threadId, signal, (planRunId) =>
+		return this.openStream(visitor, threadId, signal, (planRunId) =>
 			prepareResume(this.deps, threadId, planRunId, toolResult),
 		);
 	}
@@ -125,7 +132,7 @@ export class ReplyService implements WidgetReply {
 	 * `state.planRunId` to link usage records to the run.
 	 */
 	private openStream(
-		user: UserRow,
+		visitor: VisitorRow,
 		threadId: string,
 		signal: AbortSignal | undefined,
 		prepare: (planRunId: string) => Promise<PreparedRun>,
@@ -135,7 +142,7 @@ export class ReplyService implements WidgetReply {
 		const planRunId = crypto.randomUUID();
 		startPlanRun(deps.db, {
 			id: planRunId,
-			userId: user.id,
+			visitorId: visitor.id,
 			threadId,
 			// Best-effort base goal for the trace row; the goal the run really uses
 			// (extended by classification, or the one a resumed run was pursuing)

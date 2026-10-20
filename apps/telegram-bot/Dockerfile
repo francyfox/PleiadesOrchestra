@@ -2,12 +2,12 @@
 # Built with the monorepo root as build context. `turbo prune` cuts out just this
 # app and the workspaces it depends on (with a matching lockfile), so no
 # Dockerfile lists workspaces by hand — a new workspace needs no change here.
-FROM oven/bun:1-alpine AS prune
+FROM oven/bun:1.4.3-alpine AS prune
 WORKDIR /app
 COPY . .
 RUN bunx turbo@2.10.9 prune telegram-bot --docker
 
-FROM oven/bun:1-alpine AS install
+FROM oven/bun:1.4.3-alpine AS install
 WORKDIR /app
 # Only package.json files + the pruned lockfile: this layer (and the install)
 # stays cached until a dependency actually changes.

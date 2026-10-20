@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
 	call,
-	cookieOf,
 	PASSWORD,
 	signedIn,
 	useHarness,
@@ -15,63 +14,46 @@ describe("session and auth", () => {
 		expect(await response.json()).toEqual({ setupRequired: true, admin: null });
 	});
 
-	test("register creates the first admin, signs them in and closes setup", async () => {
+	test("a token sign-in opens a staff session with its level and closes setup", async () => {
 		const cookie = await signedIn();
 		const session = await (await call("/api/session", { cookie })).json();
 		expect(session.setupRequired).toBe(false);
 		expect(session.admin).toMatchObject({
 			email: "first@example.com",
 			name: "First",
+			level: 0,
+			isSuper: true,
 		});
 	});
 
-	test("registration is closed once an admin exists", async () => {
+	test("the password endpoints of the old staff login are gone", async () => {
+		for (const path of ["/api/auth/login", "/api/auth/register"]) {
+			const response = await call(path, {
+				method: "POST",
+				body: { email: "a@example.com", password: PASSWORD },
+			});
+			expect(response.status).toBe(404);
+		}
+	});
+
+	test("wrong, malformed and empty tokens are all invalid_token (401)", async () => {
 		await signedIn();
-		const response = await call("/api/auth/register", {
-			method: "POST",
-			body: { email: "intruder@example.com", password: PASSWORD },
-		});
-		expect(response.status).toBe(403);
-		expect(await response.json()).toEqual({ error: "registration_closed" });
-	});
-
-	test("register rejects a short password with the minimum", async () => {
-		const response = await call("/api/auth/register", {
-			method: "POST",
-			body: { email: "a@example.com", password: "short" },
-		});
-		expect(response.status).toBe(400);
-		expect(await response.json()).toEqual({
-			error: "weak_credentials",
-			min: 12,
-		});
-	});
-
-	test("login: missing fields, wrong password, then success with a session cookie", async () => {
-		await signedIn();
-
-		const missing = await call("/api/auth/login", {
-			method: "POST",
-			body: { email: "", password: "" },
-		});
-		expect(await missing.json()).toEqual({ error: "missing_credentials" });
-
-		const wrong = await call("/api/auth/login", {
-			method: "POST",
-			body: { email: "first@example.com", password: "nope-nope-nope" },
-		});
-		expect(wrong.status).toBe(400);
-		expect(await wrong.json()).toEqual({ error: "invalid_credentials" });
-
-		const ok = await call("/api/auth/login", {
-			method: "POST",
-			body: { email: "first@example.com", password: PASSWORD },
-		});
-		expect(ok.status).toBe(200);
-		const session = await (
-			await call("/api/session", { cookie: cookieOf(ok) })
-		).json();
-		expect(session.admin?.email).toBe("first@example.com");
+		const unknown = Buffer.alloc(32, 7).toString("base64url");
+		for (const token of [
+			unknown,
+			"short",
+			"",
+			"!".repeat(43),
+			`${unknown} x`,
+		]) {
+			const response = await call("/api/auth/token", {
+				method: "POST",
+				body: { token },
+			});
+			expect(response.status).toBe(401);
+			expect(await response.json()).toEqual({ error: "invalid_token" });
+			expect(response.headers.getSetCookie()).toHaveLength(0);
+		}
 	});
 
 	test("logout invalidates the session", async () => {
@@ -84,8 +66,9 @@ describe("session and auth", () => {
 	});
 
 	test("guarded routes answer 401 without a session", async () => {
-		expect((await call("/api/users")).status).toBe(401);
+		expect((await call("/api/channels")).status).toBe(401);
 		expect((await call("/api/system")).status).toBe(401);
 		expect((await call("/api/admins")).status).toBe(401);
+		expect((await call("/api/user/me")).status).toBe(401);
 	});
 });

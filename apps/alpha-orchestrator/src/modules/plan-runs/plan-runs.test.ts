@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { planEvents, planRuns } from "../database/database.schema.ts";
 import { testDb } from "../database/database.testing.ts";
 import { resolveThreadId } from "../threads/threads.service.ts";
-import { upsertIdentifiedUser } from "../users/users.service.ts";
+import { upsertIdentifiedVisitor } from "../visitors/visitors.service.ts";
 import {
 	finishPlanRun,
 	joinRequest,
@@ -73,11 +73,11 @@ describe("toEventRow", () => {
 describe("startPlanRun / finishPlanRun", () => {
 	test("creates the run up front and completes it with its events in one go", () => {
 		const db = testDb();
-		const user = upsertIdentifiedUser(db, "ch_cli", "u", undefined, 1);
-		const thread = resolveThreadId(db, "ch_cli", user.id, "t", 1);
+		const visitor = upsertIdentifiedVisitor(db, "ch_cli", "u", undefined, 1);
+		const thread = resolveThreadId(db, "ch_cli", visitor.id, "t", 1);
 		startPlanRun(db, {
 			id: "r1",
-			userId: user.id,
+			visitorId: visitor.id,
 			threadId: thread,
 			goal: { replied: true },
 			createdAt: 5,
@@ -125,11 +125,11 @@ describe("startPlanRun / finishPlanRun", () => {
 
 	test("without trace events, attempts falls back to 1", () => {
 		const db = testDb();
-		const user = upsertIdentifiedUser(db, "ch_cli", "u", undefined, 1);
-		const thread = resolveThreadId(db, "ch_cli", user.id, "t", 1);
+		const visitor = upsertIdentifiedVisitor(db, "ch_cli", "u", undefined, 1);
+		const thread = resolveThreadId(db, "ch_cli", visitor.id, "t", 1);
 		startPlanRun(db, {
 			id: "r1",
-			userId: user.id,
+			visitorId: visitor.id,
 			threadId: thread,
 			goal: {},
 			createdAt: 5,
@@ -142,11 +142,11 @@ describe("startPlanRun / finishPlanRun", () => {
 describe("finishPlanRun with a long trace", () => {
 	test("stores every event, in order, even when it needs several INSERT batches", () => {
 		const db = testDb();
-		const user = upsertIdentifiedUser(db, "ch_cli", "u", undefined, 1);
-		const thread = resolveThreadId(db, "ch_cli", user.id, "t", 1);
+		const visitor = upsertIdentifiedVisitor(db, "ch_cli", "u", undefined, 1);
+		const thread = resolveThreadId(db, "ch_cli", visitor.id, "t", 1);
 		startPlanRun(db, {
 			id: "long",
-			userId: user.id,
+			visitorId: visitor.id,
 			threadId: thread,
 			goal: {},
 			createdAt: 1,
@@ -172,12 +172,12 @@ describe("finishPlanRun with a long trace", () => {
 describe("a request is a chain of runs", () => {
 	function setup() {
 		const db = testDb();
-		const user = upsertIdentifiedUser(db, "ch_cli", "1", undefined, 1);
-		const thread = resolveThreadId(db, "ch_cli", user.id, "t", 1);
+		const visitor = upsertIdentifiedVisitor(db, "ch_cli", "1", undefined, 1);
+		const thread = resolveThreadId(db, "ch_cli", visitor.id, "t", 1);
 		const start = (id: string, prompt?: string) =>
 			startPlanRun(db, {
 				id,
-				userId: user.id,
+				visitorId: visitor.id,
 				threadId: thread,
 				goal: {},
 				createdAt: 1,

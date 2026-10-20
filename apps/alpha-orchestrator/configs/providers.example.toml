@@ -1,0 +1,32 @@
+#:schema ./providers.schema.json
+# Providers, models and the parameters each model is called with.
+# The real file (providers.toml) is created from the env servers on first start
+# and edited on the admin panel's Models tab; it holds keys, so it is gitignored,
+# dockerignored and written 0600. Saving from the panel drops comments.
+# api_key: the key, "$ENV_VAR" to read it from the environment, or nothing.
+
+[providers.openrouter]
+name = "OpenRouter"
+base_url = "https://openrouter.ai/api/v1"
+type = "openai-compat"
+api_key = "$OPENROUTER_API_KEY"
+
+[[providers.openrouter.models]]
+id = "qwen/qwen3-30b-a3b-instruct-2507"
+name = "Qwen3 30B A3B 2507"
+temperature = 0
+extra_body = { provider = { require_parameters = true } }
+
+[[providers.openrouter.models]]
+id = "google/gemini-2.5-flash"
+name = "Gemini 2.5 Flash"
+temperature = 0.3
+
+# [providers.ollama]
+# name = "Ollama"
+# base_url = "http://192.168.1.10:11434/v1"
+#
+# [[providers.ollama.models]]
+# id = "qwen3:1.7b"
+# temperature = 0
+# reasoning_effort = "none"   # Qwen3 on Ollama "thinks" into {} otherwise

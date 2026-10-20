@@ -4,24 +4,24 @@ import { messages, planRuns } from "../database/database.schema.ts";
 import { testDb } from "../database/database.testing.ts";
 import { RunBinding } from "../run-binding/run-binding.ts";
 import { resolveThreadId } from "../threads/threads.service.ts";
-import { upsertIdentifiedUser } from "../users/users.service.ts";
+import { upsertIdentifiedVisitor } from "../visitors/visitors.service.ts";
 import { SqliteHistoryStore } from "./history.ts";
 
 function setup(retention = 10) {
 	const db = testDb();
-	const user = upsertIdentifiedUser(db, "ch_cli", "u1", undefined, 1);
-	const threadA = resolveThreadId(db, "ch_cli", user.id, "a", 1);
-	const threadB = resolveThreadId(db, "ch_cli", user.id, "b", 1);
+	const visitor = upsertIdentifiedVisitor(db, "ch_cli", "u1", undefined, 1);
+	const threadA = resolveThreadId(db, "ch_cli", visitor.id, "a", 1);
+	const threadB = resolveThreadId(db, "ch_cli", visitor.id, "b", 1);
 	const runs = new RunBinding();
 	const store = new SqliteHistoryStore(db, retention, runs, () => 100);
-	return { db, user, threadA, threadB, runs, store };
+	return { db, visitor, threadA, threadB, runs, store };
 }
 
 describe("SqliteHistoryStore", () => {
 	test("returns the thread's most recent messages, oldest first, capped by limit", async () => {
-		const { user, threadA, store } = setup();
+		const { visitor, threadA, store } = setup();
 		for (let i = 0; i < 3; i++) {
-			await store.append({ threadId: threadA, userId: user.id }, [
+			await store.append({ threadId: threadA, userId: visitor.id }, [
 				{ role: "user", content: `q${i}` },
 				{ role: "assistant", content: `a${i}` },
 			]);
@@ -33,29 +33,29 @@ describe("SqliteHistoryStore", () => {
 		]);
 	});
 
-	test("keeps only the last N messages per user, across all of the user's threads", async () => {
-		const { db, user, threadA, threadB, store } = setup(4);
-		await store.append({ threadId: threadA, userId: user.id }, [
+	test("keeps only the last N messages per visitor, across all of the visitor's threads", async () => {
+		const { db, visitor, threadA, threadB, store } = setup(4);
+		await store.append({ threadId: threadA, userId: visitor.id }, [
 			{ role: "user", content: "a-q" },
 			{ role: "assistant", content: "a-a" },
 		]);
-		await store.append({ threadId: threadB, userId: user.id }, [
+		await store.append({ threadId: threadB, userId: visitor.id }, [
 			{ role: "user", content: "b-q1" },
 			{ role: "assistant", content: "b-a1" },
 			{ role: "user", content: "b-q2" },
 			{ role: "assistant", content: "b-a2" },
 		]);
-		// Per-user retention: activity in thread b evicts thread a's context.
+		// Per-visitor retention: activity in thread b evicts thread a's context.
 		expect(await store.get(threadA, 10)).toEqual([]);
 		expect(db.select().from(messages).all()).toHaveLength(4);
 	});
 
 	test("reset deletes only that thread's messages", async () => {
-		const { user, threadA, threadB, store } = setup();
-		await store.append({ threadId: threadA, userId: user.id }, [
+		const { visitor, threadA, threadB, store } = setup();
+		await store.append({ threadId: threadA, userId: visitor.id }, [
 			{ role: "user", content: "a" },
 		]);
-		await store.append({ threadId: threadB, userId: user.id }, [
+		await store.append({ threadId: threadB, userId: visitor.id }, [
 			{ role: "user", content: "b" },
 		]);
 		await store.reset(threadA);
@@ -64,11 +64,11 @@ describe("SqliteHistoryStore", () => {
 	});
 
 	test("links messages to the plan run bound to the thread when ctx has none", async () => {
-		const { db, user, threadA, runs, store } = setup();
+		const { db, visitor, threadA, runs, store } = setup();
 		db.insert(planRuns)
 			.values({
 				id: "run1",
-				userId: user.id,
+				visitorId: visitor.id,
 				threadId: threadA,
 				goal: {},
 				succeeded: false,
@@ -78,7 +78,7 @@ describe("SqliteHistoryStore", () => {
 			})
 			.run();
 		runs.bind(threadA, "run1");
-		await store.append({ threadId: threadA, userId: user.id }, [
+		await store.append({ threadId: threadA, userId: visitor.id }, [
 			{ role: "user", content: "q" },
 		]);
 		expect(
@@ -88,11 +88,11 @@ describe("SqliteHistoryStore", () => {
 	});
 
 	test("deletes plan runs whose messages were all evicted by retention", async () => {
-		const { db, user, threadA, store } = setup(2);
+		const { db, visitor, threadA, store } = setup(2);
 		db.insert(planRuns)
 			.values({
 				id: "old",
-				userId: user.id,
+				visitorId: visitor.id,
 				threadId: threadA,
 				goal: {},
 				succeeded: true,
@@ -102,13 +102,13 @@ describe("SqliteHistoryStore", () => {
 			})
 			.run();
 		await store.append(
-			{ threadId: threadA, userId: user.id, planRunId: "old" },
+			{ threadId: threadA, userId: visitor.id, planRunId: "old" },
 			[
 				{ role: "user", content: "q1" },
 				{ role: "assistant", content: "a1" },
 			],
 		);
-		await store.append({ threadId: threadA, userId: user.id }, [
+		await store.append({ threadId: threadA, userId: visitor.id }, [
 			{ role: "user", content: "q2" },
 			{ role: "assistant", content: "a2" },
 		]);
@@ -116,13 +116,13 @@ describe("SqliteHistoryStore", () => {
 	});
 
 	test("keeps the runs of a request that waited on the browser for as long as its answer survives, then drops them together", async () => {
-		const { db, user, threadA, store } = setup(2);
+		const { db, visitor, threadA, store } = setup(2);
 		const run = (id: string, rootRunId: string, createdAt: number) =>
 			db
 				.insert(planRuns)
 				.values({
 					id,
-					userId: user.id,
+					visitorId: visitor.id,
 					threadId: threadA,
 					goal: {},
 					succeeded: true,
@@ -137,7 +137,7 @@ describe("SqliteHistoryStore", () => {
 		run("waited", "waited", 10);
 		run("answered", "waited", 20);
 		await store.append(
-			{ threadId: threadA, userId: user.id, planRunId: "answered" },
+			{ threadId: threadA, userId: visitor.id, planRunId: "answered" },
 			[
 				{ role: "user", content: "q1" },
 				{ role: "assistant", content: "a1" },
@@ -153,23 +153,23 @@ describe("SqliteHistoryStore", () => {
 		expect(ids()).toEqual(["answered", "waited"]);
 
 		// Two newer messages push the old answer out: the whole request goes.
-		await store.append({ threadId: threadA, userId: user.id }, [
+		await store.append({ threadId: threadA, userId: visitor.id }, [
 			{ role: "user", content: "q2" },
 			{ role: "assistant", content: "a2" },
 		]);
 		expect(ids()).toEqual([]);
 	});
 
-	test("keeps a user's still-running plan runs when another run's messages trigger trimming", async () => {
-		// Several messages from one user processed at once (e.g. Telegram
+	test("keeps a visitor's still-running plan runs when another run's messages trigger trimming", async () => {
+		// Several messages from one visitor processed at once (e.g. Telegram
 		// redelivering a backlog): every run row exists before any of them
 		// appends messages. The first append must not delete the others.
-		const { db, user, threadA, store } = setup();
+		const { db, visitor, threadA, store } = setup();
 		for (const id of ["first", "second"]) {
 			db.insert(planRuns)
 				.values({
 					id,
-					userId: user.id,
+					visitorId: visitor.id,
 					threadId: threadA,
 					goal: {},
 					succeeded: false,
@@ -180,7 +180,7 @@ describe("SqliteHistoryStore", () => {
 				.run();
 		}
 		await store.append(
-			{ threadId: threadA, userId: user.id, planRunId: "first" },
+			{ threadId: threadA, userId: visitor.id, planRunId: "first" },
 			[
 				{ role: "user", content: "q1" },
 				{ role: "assistant", content: "a1" },
@@ -188,7 +188,7 @@ describe("SqliteHistoryStore", () => {
 		);
 
 		await store.append(
-			{ threadId: threadA, userId: user.id, planRunId: "second" },
+			{ threadId: threadA, userId: visitor.id, planRunId: "second" },
 			[
 				{ role: "user", content: "q2" },
 				{ role: "assistant", content: "a2" },

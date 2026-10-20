@@ -6,14 +6,14 @@ import type { RunBinding } from "../run-binding/run-binding.ts";
 import {
 	type ModelMessage,
 	textOf,
-	trimUserHistory,
+	trimVisitorHistory,
 } from "./history.service.ts";
 
 /**
  * Conversation history in SQLite. The same table is both the model's
  * context (last N messages of a thread) and what the admin panel shows —
  * there's no separate in-memory copy. Only the last `retentionPerUser`
- * messages per *user* (across all their threads) are kept.
+ * messages per *visitor* (across all their threads) are kept.
  */
 export class SqliteHistoryStore implements HistoryStore {
 	constructor(
@@ -48,7 +48,7 @@ export class SqliteHistoryStore implements HistoryStore {
 					.insert(messages)
 					.values({
 						threadId: ctx.threadId,
-						userId: ctx.userId,
+						visitorId: ctx.userId,
 						role: message.role,
 						content: textOf(message),
 						createdAt,
@@ -57,7 +57,7 @@ export class SqliteHistoryStore implements HistoryStore {
 					.run();
 			}
 
-			trimUserHistory(this.db, ctx.userId, this.retentionPerUser);
+			trimVisitorHistory(this.db, ctx.userId, this.retentionPerUser);
 		})();
 	}
 

@@ -3,6 +3,7 @@ import type { ChannelDirectory } from "../channel-directory/channel-directory.ts
 import type { ChannelRow } from "../channels/channels.types.ts";
 import type { Db } from "../database/database.ts";
 import { matchesHash } from "../security/security.service.ts";
+import { IdentifyBody, IdentifyResult } from "./identify.schema.ts";
 import { identifyVisitor } from "./identify.service.ts";
 
 export interface IdentifyDeps {
@@ -35,7 +36,7 @@ export function identifyRoutes({
 	retentionPerUser,
 	now,
 }: IdentifyDeps) {
-	return new Elysia().post(
+	return new Elysia({ tags: ["Widget"] }).post(
 		"/v1/channels/:slug/identify",
 		({ request, params, body }) => {
 			const channel = directory.bySlug(params.slug);
@@ -52,13 +53,21 @@ export function identifyRoutes({
 			});
 			if (result.status === "unknown_visitor") return empty(404);
 			if (result.status === "conflict") return empty(409);
-			return { userId: result.userId, merged: result.merged };
+			return { userId: result.visitorId, merged: result.merged };
 		},
 		{
-			body: t.Object({
-				visitorToken: t.String(),
-				externalUserId: t.String({ minLength: 1 }),
-			}),
+			body: IdentifyBody,
+			response: {
+				200: IdentifyResult,
+				401: t.Void(),
+				404: t.Void(),
+				409: t.Void(),
+			},
+			detail: {
+				summary: "Link a widget visitor to a site account",
+				description:
+					"Server-to-server call from the host site's backend; send `Authorization: Bearer <channel secret key>`. 401 bad or missing key, 404 unknown channel or visitor token, 409 token already bound to a different account. Errors have empty bodies.",
+			},
 		},
 	);
 }

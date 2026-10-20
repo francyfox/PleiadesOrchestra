@@ -1,7 +1,11 @@
-import { TOOL_INTENTS } from "@repo/core";
 import { Elysia, t } from "elysia";
 import type { Db } from "../database/database.ts";
-import { oneOf, PageQuery } from "../http/http.ts";
+import {
+	IntentResult,
+	IntentsPage,
+	IntentsQuery,
+	IntentVerdictBody,
+} from "./intents.schema.ts";
 import {
 	type IntentMemory,
 	judgeIntentExample,
@@ -14,8 +18,6 @@ export interface IntentsDeps {
 	now: () => number;
 }
 
-const INTENTS = ["chat", ...TOOL_INTENTS] as const;
-
 /**
  * Admin routes for the learned intent examples: the list a person judges, and
  * the verdict (approve, reject or correct). A verdict changes what the site's
@@ -23,15 +25,15 @@ const INTENTS = ["chat", ...TOOL_INTENTS] as const;
  * the app's `onRequest` guard.
  */
 export function intentsRoutes({ db, memory, now }: IntentsDeps) {
-	return new Elysia({ prefix: "/v1/admin/intents" })
+	return new Elysia({ prefix: "/v1/admin/intents", tags: ["Admin: intents"] })
 		.get("/", ({ query }) => listIntentExamples(db, query), {
-			query: t.Composite([
-				PageQuery,
-				t.Object({
-					status: t.Optional(oneOf(["pending", "approved", "rejected"])),
-					channelId: t.Optional(t.String({ minLength: 1 })),
-				}),
-			]),
+			query: IntentsQuery,
+			response: { 200: IntentsPage },
+			detail: {
+				summary: "List learned intent examples",
+				description:
+					"Newest activity first; filter by `status` and `channelId`.",
+			},
 		})
 		.patch(
 			"/:id",
@@ -43,10 +45,13 @@ export function intentsRoutes({ db, memory, now }: IntentsDeps) {
 			},
 			{
 				params: t.Object({ id: t.String() }),
-				body: t.Object({
-					status: t.Optional(oneOf(["pending", "approved", "rejected"])),
-					intent: t.Optional(oneOf(INTENTS)),
-				}),
+				body: IntentVerdictBody,
+				response: { 200: IntentResult, 404: t.String() },
+				detail: {
+					summary: "Judge an intent example",
+					description:
+						"Approve, reject or correct the intent (a correction approves it). Rebuilds the channel's classifier.",
+				},
 			},
 		);
 }

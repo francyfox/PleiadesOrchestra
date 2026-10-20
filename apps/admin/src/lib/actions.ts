@@ -2,6 +2,7 @@ import type { AccessMode, BulkAction } from "#lib/api-types.js";
 import { api } from "./api/client";
 import { type ActionResult, submitted } from "./api/result";
 import { REQUEST_INTENTS } from "./flow-filters";
+import { providerModelFromForm } from "./provider-model-form";
 import { queryClient } from "./query/client";
 
 /**
@@ -14,6 +15,7 @@ import { queryClient } from "./query/client";
 const text = (form: FormData, name: string) =>
 	String(form.get(name) ?? "").trim();
 
+const LOCALES = ["ru", "en", "kk"] as const;
 const BULK_ACTIONS: readonly BulkAction[] = [
 	"whitelist",
 	"unwhitelist",
@@ -72,24 +74,37 @@ async function startsSession(result: Promise<ActionResult>) {
 }
 
 export const authActions = {
-	login: (form: FormData) =>
+	/** Staff: the access token from the super admin. */
+	tokenLogin: (form: FormData) =>
+		startsSession(
+			submitted(api().auth.token.post({ token: text(form, "token") })),
+		),
+	userLogin: (form: FormData) =>
 		startsSession(
 			submitted(
-				api().auth.login.post({
+				api().user.login.post({
 					email: text(form, "email"),
 					password: String(form.get("password") ?? ""),
 				}),
 			),
 		),
-	register: (form: FormData) =>
-		startsSession(
-			submitted(
-				api().auth.register.post({
-					name: text(form, "name") || undefined,
-					email: text(form, "email"),
-					password: String(form.get("password") ?? ""),
-				}),
-			),
+	userRegister: (form: FormData) =>
+		submitted(
+			api().user.register.post({
+				name: text(form, "name") || undefined,
+				email: text(form, "email"),
+				password: String(form.get("password") ?? ""),
+				locale: LOCALES.find((locale) => locale === form.get("locale")),
+			}),
+		),
+	forgot: (form: FormData) =>
+		submitted(api().user.forgot.post({ email: text(form, "email") })),
+	reset: (form: FormData) =>
+		submitted(
+			api().user.reset.post({
+				token: text(form, "token"),
+				password: String(form.get("password") ?? ""),
+			}),
 		),
 	logout: () => submitted(api().auth.logout.post()),
 };
@@ -98,10 +113,21 @@ export const adminActions = {
 	create: (form: FormData) =>
 		submitted(
 			api().admins.post({
-				name: text(form, "name") || undefined,
+				name: text(form, "name"),
 				email: text(form, "email"),
-				password: String(form.get("password") ?? ""),
 			}),
+		),
+	edit: (form: FormData) =>
+		submitted(
+			api()
+				.admins({ id: text(form, "id") })
+				.patch({ name: text(form, "name"), email: text(form, "email") }),
+		),
+	rotateToken: (form: FormData) =>
+		submitted(
+			api()
+				.admins({ id: text(form, "id") })
+				.token.post(),
 		),
 	ban: (form: FormData) =>
 		submitted(
@@ -115,12 +141,6 @@ export const adminActions = {
 				.admins({ id: text(form, "id") })
 				.unban.post(),
 		),
-	setPassword: (form: FormData) =>
-		submitted(
-			api()
-				.admins({ id: text(form, "id") })
-				.password.post({ password: String(form.get("password") ?? "") }),
-		),
 	remove: (form: FormData) =>
 		submitted(
 			api()
@@ -129,7 +149,42 @@ export const adminActions = {
 		),
 };
 
-export const userActions = {
+/** The signed-in customer's own account (`/api/user/me*`). */
+export const meActions = {
+	rename: (form: FormData) =>
+		submitted(api().user.me.patch({ name: text(form, "name") })),
+	changeEmail: (form: FormData) =>
+		submitted(api().user.me.email.post({ email: text(form, "email") })),
+	/** The server re-checks `confirmEmail`; the sessions die with the account, so there is no sign-out call. */
+	remove: (form: FormData) =>
+		submitted(
+			api().user.me.delete({ confirmEmail: text(form, "confirmEmail") }),
+		),
+};
+
+/** Staff managing customer accounts (`/api/accounts`). */
+export const accountActions = {
+	ban: (form: FormData) =>
+		submitted(
+			api()
+				.accounts({ id: text(form, "id") })
+				.ban.post(),
+		),
+	unban: (form: FormData) =>
+		submitted(
+			api()
+				.accounts({ id: text(form, "id") })
+				.unban.post(),
+		),
+	remove: (form: FormData) =>
+		submitted(
+			api()
+				.accounts({ id: text(form, "id") })
+				.delete(),
+		),
+};
+
+export const visitorActions = {
 	/** The bulk bar and the per-row buttons post the same fields: `ids[]`, `action`, `reason`. */
 	bulk: (form: FormData) => {
 		const action = BULK_ACTIONS.find(
@@ -138,25 +193,25 @@ export const userActions = {
 		const ids = form.getAll("ids").map(String).filter(Boolean);
 		if (!action) return Promise.resolve<ActionResult>({ ok: false, data: {} });
 		return submitted(
-			api().users.bulk.post({
+			api().visitors.bulk.post({
 				ids,
 				action,
 				reason: text(form, "reason") || undefined,
 			}),
 		);
 	},
-	whitelist: (id: string) => submitted(api().users({ id }).whitelist.post()),
+	whitelist: (id: string) => submitted(api().visitors({ id }).whitelist.post()),
 	unwhitelist: (id: string) =>
-		submitted(api().users({ id }).unwhitelist.post()),
+		submitted(api().visitors({ id }).unwhitelist.post()),
 	block: (id: string, form: FormData) =>
 		submitted(
 			api()
-				.users({ id })
+				.visitors({ id })
 				.block.post({ reason: text(form, "reason") || undefined }),
 		),
-	unblock: (id: string) => submitted(api().users({ id }).unblock.post()),
+	unblock: (id: string) => submitted(api().visitors({ id }).unblock.post()),
 	deleteMessages: (id: string) =>
-		submitted(api().users({ id }).messages.delete()),
+		submitted(api().visitors({ id }).messages.delete()),
 };
 
 const INTENT_STATUSES = ["pending", "approved", "rejected"] as const;
@@ -252,73 +307,19 @@ export const blockedIpActions = {
 		),
 };
 
-const REASONING_EFFORTS = ["none", "low", "medium", "high"] as const;
-
-/** Reads the settings form into the PATCH body; a blank field is `null` = "the env value". */
-function settingsPatch(form: FormData) {
-	const extra = text(form, "extraBody");
-	let extraBody: Record<string, unknown> | undefined;
-	if (extra) {
-		try {
-			const parsed: unknown = JSON.parse(extra);
-			if (
-				parsed === null ||
-				typeof parsed !== "object" ||
-				Array.isArray(parsed)
-			)
-				return null;
-			extraBody = parsed as Record<string, unknown>;
-		} catch {
-			return null;
-		}
-	}
-	const temperature = text(form, "temperature");
-	const reasoningEffort = REASONING_EFFORTS.find(
-		(effort) => effort === form.get("reasoningEffort"),
-	);
-	return {
-		source:
-			form.get("source") === "external"
-				? ("external" as const)
-				: ("local" as const),
-		baseUrl: text(form, "baseUrl") || null,
-		model: text(form, "model") || null,
-		providerKey: text(form, "providerKey") || null,
-		parameters: {
-			temperature: temperature ? Number(temperature) : undefined,
-			reasoningEffort,
-			extraBody,
-		},
-	};
-}
+const invalidJson = () =>
+	Promise.resolve<ActionResult>({ ok: false, data: { error: "invalid_json" } });
 
 export const agentActions = {
+	/** `model` = "<provider>\t<model id>" (a model id may hold "/" or ":"). */
 	save: (form: FormData) => {
-		const patch = settingsPatch(form);
-		if (!patch)
-			return Promise.resolve<ActionResult>({
-				ok: false,
-				data: { error: "invalid_json" },
-			});
+		const [provider = "", model = ""] = text(form, "model").split("\t");
 		return submitted(
 			api()
 				.agents({ id: text(form, "id") })
-				.patch(patch),
+				.model.put({ provider, model }),
 		);
 	},
-	/** Clears every override: the env values apply again. */
-	reset: (form: FormData) =>
-		submitted(
-			api()
-				.agents({ id: text(form, "id") })
-				.patch({
-					source: null,
-					baseUrl: null,
-					model: null,
-					providerKey: null,
-					parameters: null,
-				}),
-		),
 	/** The call itself can fail with a 200 (`ok: false`); that is a failure for the panel too. */
 	test: async (form: FormData) => {
 		const result = await submitted(
@@ -335,18 +336,45 @@ export const agentActions = {
 	},
 };
 
-export const providerKeyActions = {
-	save: (form: FormData) =>
-		submitted(
+/** providers.toml through its forms and its editor. */
+export const providerActions = {
+	/** An empty key field keeps the saved key. */
+	save: (form: FormData) => {
+		const apiKey = text(form, "apiKey");
+		return submitted(
 			api()
-				["provider-keys"]({ name: text(form, "name") })
-				.put({ key: text(form, "key") }),
-		),
+				.providers({ id: text(form, "id") })
+				.put({
+					name: text(form, "name"),
+					baseUrl: text(form, "baseUrl"),
+					...(apiKey ? { apiKey } : {}),
+				}),
+		);
+	},
 	remove: (form: FormData) =>
 		submitted(
 			api()
-				["provider-keys"]({ name: text(form, "name") })
+				.providers({ id: text(form, "id") })
 				.delete(),
+		),
+	saveModel: (form: FormData) => {
+		const model = providerModelFromForm(form);
+		if (!model) return invalidJson();
+		return submitted(
+			api()
+				.providers({ id: text(form, "provider") })
+				.models.put(model),
+		);
+	},
+	removeModel: (form: FormData) =>
+		submitted(
+			api()
+				.providers({ id: text(form, "provider") })
+				.models.delete({}, { query: { model: text(form, "model") } }),
+		),
+	saveToml: (form: FormData) =>
+		submitted(
+			api()["providers-toml"].put({ toml: String(form.get("toml") ?? "") }),
 		),
 };
 

@@ -4,6 +4,13 @@
 	"license": "AGPL-3.0-only",
 	"author": "Danil Golota",
 	"devDependencies": {
+		"@codemirror/commands": "catalog:",
+		"@codemirror/language": "catalog:",
+		"@codemirror/legacy-modes": "catalog:",
+		"@codemirror/lint": "catalog:",
+		"@codemirror/state": "catalog:",
+		"@codemirror/view": "catalog:",
+		"@lezer/highlight": "catalog:",
 		"@elysiajs/eden": "^1.4.9",
 		"@fontsource-variable/exo-2": "^5.3.0",
 		"@fontsource-variable/fira-code": "^5.3.0",

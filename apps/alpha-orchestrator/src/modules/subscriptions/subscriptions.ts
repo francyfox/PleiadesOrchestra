@@ -1,10 +1,15 @@
 import { Elysia, t } from "elysia";
 import type { Db } from "../database/database.ts";
-import { oneOf } from "../http/http.ts";
+import {
+	LinkChannelBody,
+	Subscription,
+	SubscriptionList,
+	SubscriptionParams,
+	SubscriptionsQuery,
+} from "./subscriptions.schema.ts";
 import {
 	linkChannel,
 	listSubscriptions,
-	PLAN_STATUSES,
 	UnknownChannelError,
 } from "./subscriptions.service.ts";
 
@@ -21,7 +26,10 @@ export function subscriptionsRoutes({
 	now,
 	polarBaseUrl,
 }: SubscriptionsDeps) {
-	return new Elysia({ prefix: "/v1/admin/subscriptions" })
+	return new Elysia({
+		prefix: "/v1/admin/subscriptions",
+		tags: ["Admin: subscriptions"],
+	})
 		.get(
 			"/",
 			({ query }) => ({
@@ -31,7 +39,15 @@ export function subscriptionsRoutes({
 					polarBaseUrl,
 				}),
 			}),
-			{ query: t.Object({ status: t.Optional(oneOf(PLAN_STATUSES)) }) },
+			{
+				query: SubscriptionsQuery,
+				response: { 200: SubscriptionList },
+				detail: {
+					summary: "List subscriptions",
+					description:
+						"Polar subscriptions: plans expiring within 7 days first, then by expiry, ended ones last. `status` filters.",
+				},
+			},
 		)
 		.put(
 			"/:id/channel",
@@ -47,6 +63,15 @@ export function subscriptionsRoutes({
 					throw error;
 				}
 			},
-			{ body: t.Object({ channelId: t.Nullable(t.String()) }) },
+			{
+				params: SubscriptionParams,
+				body: LinkChannelBody,
+				response: { 200: Subscription, 400: t.String(), 404: t.String() },
+				detail: {
+					summary: "Link a subscription to a channel",
+					description:
+						"`channelId: null` unlinks. 404: no such subscription; 400: unknown channel.",
+				},
+			},
 		);
 }

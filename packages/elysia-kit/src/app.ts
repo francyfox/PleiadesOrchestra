@@ -30,13 +30,13 @@ export function createObservability(
 
 export interface KitAppOptions {
 	observability: Observability;
-	/** Serve Swagger UI at `docs.path` (default `/swagger`). */
+	/** Serve the Scalar API reference at `docs.path` (default `/swagger`). */
 	docs?: DocsOptions;
 }
 
 /**
  * The Elysia app every service starts from: request logging, error
- * monitoring, `GET /health` and (optionally) Swagger. Add auth hooks and
+ * monitoring, `GET /health` and (optionally) API docs. Add auth hooks and
  * routes on top; anything registered after this sees the shared plugins.
  */
 export function createKitApp({

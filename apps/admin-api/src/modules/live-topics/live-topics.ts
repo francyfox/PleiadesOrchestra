@@ -15,13 +15,13 @@ import {
 	fetchRequests,
 	fetchRequestView,
 } from "../requests/requests.service.ts";
-import { UsersQuery } from "../users/users.schema.ts";
+import { VisitorsQuery } from "../visitors/visitors.schema.ts";
 
 /** How often the hub re-reads each topic while a page watches it. */
 export const LIVE_INTERVALS_MS: Record<LiveTopic, number> = {
 	dashboard: 5000,
-	users: 5000,
-	user: 3000,
+	visitors: 5000,
+	visitor: 3000,
 	channels: 10000,
 	"blocked-ips": 10000,
 	intents: 5000,
@@ -44,7 +44,11 @@ const strictly = (schema: TObject) => (params: unknown) =>
 	Value.Check(schema, params);
 
 const NoParams = t.Object({});
-const UserParams = t.Object({ id: t.String({ minLength: 1 }) });
+const IdParams = t.Object({ id: t.String({ minLength: 1 }) });
+const OwnerParams = t.Object({
+	ownerId: t.Optional(t.String({ minLength: 1 })),
+});
+const ChannelsParams = t.Composite([PageQuery, OwnerParams]);
 const PerformanceParams = t.Object({ from: t.Optional(t.Number()) });
 
 /**
@@ -64,22 +68,23 @@ export function createLiveTopics(
 	return {
 		dashboard: {
 			intervalMs: every("dashboard"),
-			validate: strictly(NoParams),
-			fetch: () => fetchDashboard(ctx),
+			validate: strictly(OwnerParams),
+			fetch: (params) =>
+				fetchDashboard(ctx, (params as { ownerId?: string }).ownerId),
 		},
-		users: {
-			intervalMs: every("users"),
-			validate: strictly(UsersQuery),
-			fetch: (params) => orchestrator.listUsers(params as never),
+		visitors: {
+			intervalMs: every("visitors"),
+			validate: strictly(VisitorsQuery),
+			fetch: (params) => orchestrator.listVisitors(params as never),
 		},
-		user: {
-			intervalMs: every("user"),
-			validate: strictly(UserParams),
-			fetch: (params) => orchestrator.getUser((params as { id: string }).id),
+		visitor: {
+			intervalMs: every("visitor"),
+			validate: strictly(IdParams),
+			fetch: (params) => orchestrator.getVisitor((params as { id: string }).id),
 		},
 		channels: {
 			intervalMs: every("channels"),
-			validate: strictly(PageQuery),
+			validate: strictly(ChannelsParams),
 			fetch: (params) => orchestrator.listChannels(params as never),
 		},
 		intents: {
@@ -119,7 +124,7 @@ export function createLiveTopics(
 		},
 		request: {
 			intervalMs: every("request"),
-			validate: strictly(UserParams),
+			validate: strictly(IdParams),
 			fetch: (params) => fetchRequestView(ctx, (params as { id: string }).id),
 		},
 	};

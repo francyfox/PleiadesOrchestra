@@ -56,7 +56,7 @@ const details = (
 ): UpstreamRequestDetails => ({
 	request: {
 		id: "r1",
-		userId: "u",
+		visitorId: "u",
 		threadId: "t",
 		prompt: "order a blue jacket size M",
 		intent: "addToCart",

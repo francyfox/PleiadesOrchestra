@@ -38,30 +38,30 @@ describe("createOrchestratorClient", () => {
 			fetch: f.fetch,
 		});
 
-		await client.listUsers({ status: "pending", q: "", limit: 20 });
+		await client.listVisitors({ status: "pending", q: "", limit: 20 });
 
 		const call = f.calls[0];
 		expect(call?.method).toBe("GET");
 		expect(call?.url).toBe(
-			"http://orch:3000/v1/admin/users?status=pending&limit=20",
+			"http://orch:3000/v1/admin/visitors?status=pending&limit=20",
 		);
 		expect(call?.headers.get("authorization")).toBe("Bearer secret");
 		expect(call?.headers.has("x-admin-id")).toBe(false);
 	});
 
 	test("mutations carry X-Admin-Id and a JSON body", async () => {
-		const f = fakeFetch(() => json({ user: { id: "u1" } }));
+		const f = fakeFetch(() => json({ visitor: { id: "u1" } }));
 		const client = createOrchestratorClient({
 			baseUrl: "http://orch:3000",
 			apiKey: "secret",
 			fetch: f.fetch,
 		}).as("admin-7");
 
-		await client.blockUser("u/1", "spam");
+		await client.blockVisitor("u/1", "spam");
 
 		const call = f.calls[0];
 		expect(call?.method).toBe("POST");
-		expect(call?.url).toBe("http://orch:3000/v1/admin/users/u%2F1/block");
+		expect(call?.url).toBe("http://orch:3000/v1/admin/visitors/u%2F1/block");
 		expect(call?.headers.get("x-admin-id")).toBe("admin-7");
 		expect(call?.headers.get("content-type")).toBe("application/json");
 		expect(call?.body).toEqual({ reason: "spam" });
@@ -75,7 +75,7 @@ describe("createOrchestratorClient", () => {
 			fetch: f.fetch,
 		}).as("a1");
 
-		const result = await client.bulkUsers(["a", "b"], "whitelist");
+		const result = await client.bulkVisitors(["a", "b"], "whitelist");
 
 		expect(result).toEqual({ updated: 2 });
 		expect(f.calls[0]?.body).toEqual({ ids: ["a", "b"], action: "whitelist" });
@@ -89,7 +89,7 @@ describe("createOrchestratorClient", () => {
 			fetch: f.fetch,
 		}).as("a1");
 
-		await expect(client.deleteUserMessages("u1")).resolves.toBeUndefined();
+		await expect(client.deleteVisitorMessages("u1")).resolves.toBeUndefined();
 		expect(f.calls[0]?.method).toBe("DELETE");
 	});
 
@@ -101,7 +101,7 @@ describe("createOrchestratorClient", () => {
 			fetch: f.fetch,
 		});
 
-		const error = await client.getUser("missing").catch((e: unknown) => e);
+		const error = await client.getVisitor("missing").catch((e: unknown) => e);
 		expect(error).toMatchObject({ name: "OrchestratorError", status: 404 });
 	});
 

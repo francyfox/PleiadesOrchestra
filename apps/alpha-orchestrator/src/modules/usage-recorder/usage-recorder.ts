@@ -32,9 +32,9 @@ export class SqliteUsageRecorder implements UsageRecorder {
 		// exist (or was deleted meanwhile) becomes NULL rather than failing
 		// the whole batch on a foreign key.
 		const insert = sqlite.query(
-			`INSERT INTO llm_calls (at, user_id, channel_id, thread_id, plan_run_id, action_name,
+			`INSERT INTO llm_calls (at, visitor_id, channel_id, thread_id, plan_run_id, action_name,
 				kind, provider, model, input_tokens, output_tokens, latency_ms, ok, error, confidence)
-			VALUES (?1, (SELECT id FROM users WHERE id = ?2), (SELECT channel_id FROM users WHERE id = ?2),
+			VALUES (?1, (SELECT id FROM visitors WHERE id = ?2), (SELECT channel_id FROM visitors WHERE id = ?2),
 				(SELECT id FROM threads WHERE id = ?3), (SELECT id FROM plan_runs WHERE id = ?4), ?5,
 				?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)`,
 		);

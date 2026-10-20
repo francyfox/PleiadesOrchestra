@@ -1,5 +1,6 @@
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 import type { Db } from "../database/database.ts";
+import { PolarWebhookResult } from "./billing.schema.ts";
 import {
 	applyWebhook,
 	InvalidPayloadError,
@@ -19,7 +20,7 @@ export interface BillingDeps {
  * the credential. `parse: "text"` keeps the raw body, which is what was signed.
  */
 export function billingRoutes({ db, webhookSecret, now, log }: BillingDeps) {
-	return new Elysia({ prefix: "/v1/billing" }).post(
+	return new Elysia({ prefix: "/v1/billing", tags: ["Billing"] }).post(
 		"/polar",
 		({ body, request, status }) => {
 			const rawBody = typeof body === "string" ? body : "";
@@ -55,6 +56,14 @@ export function billingRoutes({ db, webhookSecret, now, log }: BillingDeps) {
 				throw error;
 			}
 		},
-		{ parse: "text" },
+		{
+			parse: "text",
+			response: { 200: PolarWebhookResult, 400: t.String(), 401: t.String() },
+			detail: {
+				summary: "Receive a Polar webhook",
+				description:
+					"Public; the Standard Webhooks signature (`webhook-id`, `webhook-timestamp`, `webhook-signature` headers) is the credential. 401 invalid signature, 400 invalid JSON or payload. `duplicate: true` when the webhook id was already handled.",
+			},
+		},
 	);
 }

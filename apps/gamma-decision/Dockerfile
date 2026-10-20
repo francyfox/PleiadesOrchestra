@@ -7,12 +7,12 @@
 # Built with the monorepo root as build context. `turbo prune` cuts out just this
 # app and the workspaces it depends on (with a matching lockfile), so no
 # Dockerfile lists workspaces by hand — a new workspace needs no change here.
-FROM oven/bun:1 AS prune
+FROM oven/bun:1.4.3 AS prune
 WORKDIR /app
 COPY . .
 RUN bunx turbo@2.10.9 prune gamma-decision --docker
 
-FROM oven/bun:1 AS install
+FROM oven/bun:1.4.3 AS install
 WORKDIR /app
 # Only package.json files + the pruned lockfile: this layer (and the install)
 # stays cached until a dependency actually changes.
@@ -25,7 +25,7 @@ COPY --from=prune /app/out/full/ .
 WORKDIR /app/apps/gamma-decision
 RUN bun x tsc --noEmit
 
-FROM oven/bun:1
+FROM oven/bun:1.4.3
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app/apps/gamma-decision
 COPY --from=build /app/node_modules /app/node_modules

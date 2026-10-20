@@ -20,8 +20,6 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			LLM_BASE_URL: z.url(),
 			LLM_API_KEY: z.string().min(1),
 			LLM_MODEL: z.string().default("vikhr-llama-3.2-1b"),
-			// Unset = nothing is sent and the server's own default applies.
-			LLM_TEMPERATURE: z.coerce.number().min(0).max(2).optional(),
 
 			// gamma-decision — typed-decision sidecar (see apps/gamma-decision), reached
 			// the same way as beta-text: its own base URL + shared bearer secret.
@@ -38,14 +36,6 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			// llama-server serves one model and ignores the name (it is for the usage
 			// ledger); Ollama needs the real tag, e.g. `qwen3:1.7b-q8_0`.
 			FUNCTION_CALL_MODEL: z.string().default("qwen3-1.7b"),
-			// Arguments must be reproducible, hence 0.
-			FUNCTION_CALL_TEMPERATURE: z.coerce.number().min(0).max(2).default(0),
-			// Ollama + Qwen3 needs `none`: otherwise the model "thinks" ~1000 tokens
-			// and returns `{}`. Unset = nothing is sent (core always turns thinking
-			// off for llama-server via chat_template_kwargs).
-			FUNCTION_CALL_REASONING_EFFORT: z
-				.enum(["none", "low", "medium", "high"])
-				.optional(),
 
 			// Translating a message to English as it comes in (Opus-MT through
 			// CTranslate2, called over bun:ffi — see native/ and the Dockerfile).
@@ -70,7 +60,7 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			// overflowing the model's context in one shot.
 			HARNESS_MAX_CHUNK_CHARS: z.coerce.number().default(1200),
 
-			// SQLite file (users, history, usage, GOAP traces). Its directory is
+			// SQLite file (visitors, history, usage, GOAP traces). Its directory is
 			// created on startup; in compose it lives on the `alpha-orchestrator-data` volume.
 			DATABASE_PATH: z.string().min(1).default("./data/orchestrator.db"),
 			// Where the drizzle SQL migrations are read from at startup. Unset =
@@ -82,10 +72,12 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			// a leaked transport key must not be able to read every chat.
 			ADMIN_API_KEY: z.string().min(1),
 
-			// Encrypts the provider API keys the admin panel stores (AES-GCM, key =
-			// SHA-256 of this). Unset = provider keys cannot be saved (agents keep
-			// the env keys). Losing or changing it makes stored keys unreadable.
-			PROVIDER_KEYS_SECRET: z.string().min(16).optional(),
+			// Providers, models and their parameters (Crush-like TOML with keys,
+			// edited in the admin panel). Created from the env servers when missing.
+			PROVIDERS_CONFIG_PATH: z
+				.string()
+				.min(1)
+				.default("./configs/providers.toml"),
 
 			// Signing secret of the Polar webhook endpoint (`whsec_...` or Polar's
 			// plain secret). Unset = POST /v1/billing/polar does not exist.
@@ -101,7 +93,7 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			// Example: https://shalotts.site,http://localhost:5173
 			ADMIN_CORS_ORIGINS: z.string().default("https://shalotts.site"),
 
-			// Messages kept per user, across all their threads. Must be ≥ the
+			// Messages kept per visitor, across all their threads. Must be ≥ the
 			// agent's history window (checked at startup).
 			MESSAGE_RETENTION_PER_USER: z.coerce
 				.number()
@@ -110,15 +102,15 @@ export function buildConfig(env: Record<string, string | undefined>) {
 				.default(10),
 
 			// Salt for hashing IPs: blocks match by hash. The plaintext IP is kept
-			// separately (users.last_ip, blocked_ips.ip) for the admin view only.
+			// separately (visitors.last_ip, blocked_ips.ip) for the admin view only.
 			IP_HASH_SALT: z.string().min(1),
 
-			// Anonymous chat users inactive longer than this are deleted.
+			// Anonymous chat visitors inactive longer than this are deleted.
 			ANON_RETENTION_HOURS: z.coerce.number().positive().default(24),
 
 			// A thread's persisted GOAP WorldState (see SqliteWorldStateStore) not
 			// updated for this long is deleted — covers stuck/abandoned plan runs
-			// belonging to *identified* users, who aren't cleared by
+			// belonging to *identified* visitors, who aren't cleared by
 			// ANON_RETENTION_HOURS. Same default: no reason for it to outlive an
 			// anonymous visitor's own retention window.
 			WORLD_STATE_RETENTION_HOURS: z.coerce.number().positive().default(24),

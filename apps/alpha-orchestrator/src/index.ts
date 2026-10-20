@@ -20,9 +20,11 @@ import { startRetentionJobs } from "./modules/retention/retention.ts";
 import { runs } from "./modules/run-binding/run-binding.instance.ts";
 import { loadTranslator } from "./modules/translate/translate.instance.ts";
 import { usageRecorder } from "./modules/usage-recorder/usage-recorder.instance.ts";
+import { backfillVisitorNames } from "./modules/visitors/visitors.service.ts";
 import { SqliteWorldStateStore } from "./modules/world-state/world-state.ts";
 
 // Migrations already ran when database.instance.ts opened the database.
+backfillVisitorNames(db);
 assertRetentionCoversHistory(
 	config.MESSAGE_RETENTION_PER_USER,
 	AGENT_MAX_HISTORY_MESSAGES,

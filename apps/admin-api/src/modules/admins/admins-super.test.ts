@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import { PASSWORD, testApp } from "../../app.testing.ts";
+import { testApp } from "../../app.testing.ts";
 
 let t: ReturnType<typeof testApp>;
 let rootCookie: string;
 let rootId: string;
-let peer: { id: string; cookie: string };
-let other: { id: string; cookie: string };
+let peer: { id: string; token: string; cookie: string };
+let other: { id: string; token: string; cookie: string };
 
 beforeEach(async () => {
 	t = testApp();
@@ -20,9 +20,13 @@ beforeEach(async () => {
 
 const del = (id: string, cookie: string) =>
 	t.call(`/api/admins/${id}`, { method: "DELETE", cookie });
+const patch = (id: string, cookie: string, body: unknown) =>
+	t.call(`/api/admins/${id}`, { method: "PATCH", cookie, body });
+const rotate = (id: string, cookie: string) =>
+	t.call(`/api/admins/${id}/token`, { method: "POST", cookie });
 
 describe("super admin", () => {
-	test("the first account is super, in the list and in the session", async () => {
+	test("level 0 is super in the list and in the session; level 100 is not", async () => {
 		const { admins, total } = await (
 			await t.call("/api/admins", { cookie: rootCookie })
 		).json();
@@ -35,11 +39,11 @@ describe("super admin", () => {
 		const own = await (
 			await t.call("/api/session", { cookie: rootCookie })
 		).json();
-		expect(own.admin.isSuper).toBe(true);
+		expect(own.admin).toMatchObject({ isSuper: true, level: 0 });
 		const theirs = await (
 			await t.call("/api/session", { cookie: peer.cookie })
 		).json();
-		expect(theirs.admin.isSuper).toBe(false);
+		expect(theirs.admin).toMatchObject({ isSuper: false, level: 100 });
 	});
 
 	test("the super admin deletes another admin, who is gone afterwards", async () => {
@@ -55,18 +59,38 @@ describe("super admin", () => {
 			(await (await t.call("/api/session", { cookie: peer.cookie })).json())
 				.admin,
 		).toBeNull();
+		expect(
+			(
+				await t.call("/api/auth/token", {
+					method: "POST",
+					body: { token: peer.token },
+				})
+			).status,
+		).toBe(401);
 	});
 
-	test("a regular admin can't delete anyone, the super admin included", async () => {
+	test("a level-100 admin can't delete, create or rotate/edit others, the super admin included", async () => {
 		for (const target of [rootId, other.id]) {
-			const response = await del(target, peer.cookie);
-			expect(response.status).toBe(403);
-			expect(await response.json()).toEqual({ error: "not_super" });
+			for (const response of [
+				await del(target, peer.cookie),
+				await patch(target, peer.cookie, { name: "x", email: "x@example.com" }),
+				await rotate(target, peer.cookie),
+			]) {
+				expect(response.status).toBe(403);
+				expect(await response.json()).toEqual({ error: "not_super" });
+			}
 		}
-		expect(
-			(await (await t.call("/api/admins", { cookie: rootCookie })).json())
-				.total,
-		).toBe(3);
+		const created = await t.call("/api/admins", {
+			method: "POST",
+			cookie: peer.cookie,
+			body: { email: "new@example.com", name: "New" },
+		});
+		expect(created.status).toBe(403);
+		expect(await created.json()).toEqual({ error: "not_super" });
+		const { total } = await (
+			await t.call("/api/admins", { cookie: rootCookie })
+		).json();
+		expect(total).toBe(3);
 	});
 
 	test("the super admin can't delete themselves; unknown ids are 404", async () => {
@@ -84,33 +108,6 @@ describe("super admin", () => {
 		).toBe(401);
 	});
 
-	test("only the super admin can change the super admin's password", async () => {
-		const path = `/api/admins/${rootId}/password`;
-		const denied = await t.call(path, {
-			method: "POST",
-			cookie: peer.cookie,
-			body: { password: "another-long-password" },
-		});
-		expect(denied.status).toBe(403);
-		expect(await denied.json()).toEqual({ error: "super_protected" });
-
-		const own = await t.call(path, {
-			method: "POST",
-			cookie: rootCookie,
-			body: { password: "another-long-password" },
-		});
-		expect(own.status).toBe(200);
-	});
-
-	test("regular admins can still change each other's passwords", async () => {
-		const response = await t.call(`/api/admins/${other.id}/password`, {
-			method: "POST",
-			cookie: peer.cookie,
-			body: { password: "another-long-password" },
-		});
-		expect(response.status).toBe(200);
-	});
-
 	test("nobody else can ban the super admin", async () => {
 		const response = await t.call(`/api/admins/${rootId}/ban`, {
 			method: "POST",
@@ -122,11 +119,121 @@ describe("super admin", () => {
 	});
 });
 
+describe("staff tokens", () => {
+	test("create returns the token once; the list never shows it or its hash", async () => {
+		const created = await t.call("/api/admins", {
+			method: "POST",
+			cookie: rootCookie,
+			body: { email: "New@Example.com", name: "New" },
+		});
+		const { id, token } = await created.json();
+		expect(token).toHaveLength(43);
+		const text = await (
+			await t.call("/api/admins", { cookie: rootCookie })
+		).text();
+		expect(text).not.toContain(token);
+		expect(text).not.toContain("tokenHash");
+		expect(text).toContain('"new@example.com"');
+		expect(await t.signInWith(token)).toContain("session_token");
+		expect(id).toBeString();
+	});
+
+	test("a taken email is 409 email_taken (staff or customer)", async () => {
+		await t.signedUser("customer@example.com");
+		for (const email of ["peer@example.com", "customer@example.com"]) {
+			const response = await t.call("/api/admins", {
+				method: "POST",
+				cookie: rootCookie,
+				body: { email, name: "X" },
+			});
+			expect(response.status).toBe(409);
+			expect(await response.json()).toEqual({ error: "email_taken" });
+		}
+	});
+
+	test("rotating: the old token stops, the sessions are dropped, the new token works", async () => {
+		const response = await rotate(peer.id, rootCookie);
+		expect(response.status).toBe(200);
+		const { token } = await response.json();
+		expect(token).not.toBe(peer.token);
+
+		expect(
+			(await (await t.call("/api/session", { cookie: peer.cookie })).json())
+				.admin,
+		).toBeNull();
+		const old = await t.call("/api/auth/token", {
+			method: "POST",
+			body: { token: peer.token },
+		});
+		expect(old.status).toBe(401);
+		expect(await t.signInWith(token)).toContain("session_token");
+	});
+
+	test("an admin rotates their own token and edits their own name and email", async () => {
+		const edit = await patch(peer.id, peer.cookie, {
+			name: "Peer P",
+			email: "peer2@example.com",
+		});
+		expect(edit.status).toBe(200);
+		const { admins } = await (
+			await t.call("/api/admins", { cookie: rootCookie })
+		).json();
+		expect(admins[1]).toMatchObject({
+			name: "Peer P",
+			email: "peer2@example.com",
+		});
+
+		const own = await rotate(peer.id, peer.cookie);
+		expect(own.status).toBe(200);
+		expect(
+			(
+				await t.call("/api/auth/token", {
+					method: "POST",
+					body: { token: peer.token },
+				})
+			).status,
+		).toBe(401);
+	});
+
+	test("editing validates the email and refuses one another account holds", async () => {
+		const invalid = await patch(peer.id, rootCookie, {
+			name: "P",
+			email: "nope",
+		});
+		expect(await invalid.json()).toEqual({ error: "invalid_email" });
+		const taken = await patch(peer.id, rootCookie, {
+			name: "P",
+			email: "other@example.com",
+		});
+		expect(taken.status).toBe(409);
+		const same = await patch(peer.id, rootCookie, {
+			name: "P2",
+			email: "peer@example.com",
+		});
+		expect(same.status).toBe(200);
+		expect(
+			(await patch("nope", rootCookie, { name: "x", email: "x@example.com" }))
+				.status,
+		).toBe(404);
+		expect((await rotate("nope", rootCookie)).status).toBe(404);
+	});
+
+	test("customers are not reachable through the admin routes", async () => {
+		await t.signedUser("customer@example.com");
+		const customer = await t.db.query.user.findFirst({
+			where: (u, { eq }) => eq(u.email, "customer@example.com"),
+		});
+		expect((await rotate(customer?.id ?? "", rootCookie)).status).toBe(404);
+		expect((await del(customer?.id ?? "", rootCookie)).status).toBe(404);
+	});
+});
+
 describe("admin list pagination", () => {
 	const list = async (query: string) =>
 		(await t.call(`/api/admins${query}`, { cookie: rootCookie })).json();
 
-	test("pages are ordered oldest first and total counts every account", async () => {
+	test("pages are ordered oldest first and total counts every admin", async () => {
+		await t.signedUser("customer@example.com");
 		const first = await list("?page=1&pageSize=2");
 		expect(first.total).toBe(3);
 		expect(first.admins.map((a: { email: string }) => a.email)).toEqual([
@@ -151,17 +258,4 @@ describe("admin list pagination", () => {
 		});
 		expect(response.status).toBe(422);
 	});
-});
-
-test("passwords stay valid for login after a super-protected refusal", async () => {
-	await t.call(`/api/admins/${rootId}/password`, {
-		method: "POST",
-		cookie: peer.cookie,
-		body: { password: "another-long-password" },
-	});
-	const login = await t.call("/api/auth/login", {
-		method: "POST",
-		body: { email: "root@example.com", password: PASSWORD },
-	});
-	expect(login.status).toBe(200);
 });

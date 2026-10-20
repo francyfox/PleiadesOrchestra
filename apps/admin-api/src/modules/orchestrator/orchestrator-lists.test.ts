@@ -2,8 +2,10 @@ import { beforeEach, describe, expect, test } from "bun:test";
 import { join } from "node:path";
 import { createObservability } from "@repo/elysia-kit";
 import { type AdminApiDeps, createApp } from "../../app.ts";
+import { createStaff } from "../admins/admins.service.ts";
 import { createAuth } from "../auth/auth.ts";
 import { openAdminDb } from "../database/database.ts";
+import { createFakeMailer } from "../mail/mail.testing.ts";
 import { createOrchestratorClient } from "./orchestrator.ts";
 
 const MIGRATIONS = join(import.meta.dir, "../../../drizzle");
@@ -30,6 +32,7 @@ const CHANNEL = {
 	publishableKey: "pk",
 	disabledAt: null,
 	createdAt: 1,
+	ownerId: null,
 };
 const BLOCK = {
 	id: "b1",
@@ -54,18 +57,22 @@ const AGENT = {
 let upstream: Upstream[];
 let respond: (req: Upstream) => Response;
 let app: ReturnType<typeof createApp>;
+let auth: ReturnType<typeof createAuth>;
 
 beforeEach(() => {
 	upstream = [];
 	respond = () => json({});
 	const db = openAdminDb(":memory:", MIGRATIONS);
+	auth = createAuth({
+		db,
+		secret: "test-secret-test-secret-test-secret",
+		baseURL: ORIGIN,
+		mailer: createFakeMailer(),
+		panelUrl: ORIGIN,
+	});
 	const deps: AdminApiDeps = {
 		observability: createObservability("admin-api", { LOG_LEVEL: "silent" }),
-		auth: createAuth({
-			db,
-			secret: "test-secret-test-secret-test-secret",
-			baseURL: ORIGIN,
-		}),
+		auth,
 		db,
 		orchestrator: createOrchestratorClient({
 			baseUrl: "http://orchestrator",
@@ -85,15 +92,16 @@ beforeEach(() => {
 });
 
 async function signedIn() {
+	const { token } = await createStaff(auth, {
+		name: "First",
+		email: "first@example.com",
+		level: 0,
+	});
 	const response = await app.handle(
-		new Request("http://localhost/api/auth/register", {
+		new Request("http://localhost/api/auth/token", {
 			method: "POST",
 			headers: { "content-type": "application/json", origin: ORIGIN },
-			body: JSON.stringify({
-				email: "first@example.com",
-				password: "correct-horse-battery",
-				name: "First",
-			}),
+			body: JSON.stringify({ token }),
 		}),
 	);
 	expect(response.status).toBe(200);

@@ -8,12 +8,16 @@
 	import { useAdminEnhance } from "./use-admin-enhance";
 
 	/** The "+ Add" button of the admins page and the dialog with the new-account form. */
+	let { onIssued }: { onIssued: (email: string, token: string) => void } =
+		$props();
+
 	const content = useIntlayer("admins");
 	const common = useIntlayer("common");
 
 	let open = $state(false);
-	const submitted = useAdminEnhance(adminActions.create, undefined, () => {
+	const submitted = useAdminEnhance(adminActions.create, undefined, (data) => {
 		open = false;
+		onIssued(String(data.email ?? ""), String(data.token ?? ""));
 	});
 </script>
 
@@ -31,15 +35,6 @@
 		<form use:submitted class="grid gap-3">
 			<FormField id="new-name" name="name" label={$content.columns.name.value} />
 			<FormField id="new-email" name="email" label={$content.columns.email.value} type="email" required />
-			<FormField
-				id="new-password"
-				name="password"
-				label={$content.create.tempPassword.value}
-				type="password"
-				minlength={8}
-				autocomplete="new-password"
-				required
-			/>
 			<Dialog.Footer>
 				<Button variant="ghost" type="button" onclick={() => (open = false)}>{$common.cancel.value}</Button>
 				<Button type="submit">{$common.create.value}</Button>

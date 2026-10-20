@@ -1,11 +1,13 @@
 import { createKitApp, onRequestGuard } from "@repo/elysia-kit";
 import { Elysia } from "elysia";
 import type { AdminApiDeps, RouteDeps } from "./app.types.ts";
+import { accountsRoutes } from "./modules/accounts/accounts.ts";
 import { createAdminDirectory } from "./modules/admins/admins.service.ts";
 import { adminsRoutes } from "./modules/admins/admins.ts";
 import { agentsRoutes } from "./modules/agents/agents.ts";
 import { blockedIpsRoutes } from "./modules/blocked-ips/blocked-ips.ts";
 import { channelsRoutes } from "./modules/channels/channels.ts";
+import { customersRoutes } from "./modules/customers/customers.ts";
 import { dashboardRoutes } from "./modules/dashboard/dashboard.ts";
 import { intentsRoutes } from "./modules/intents/intents.ts";
 import { liveRoutes } from "./modules/live/live.ts";
@@ -20,7 +22,7 @@ import { sessionRoutes } from "./modules/session/session.ts";
 import { subscriptionsRoutes } from "./modules/subscriptions/subscriptions.ts";
 import { systemRoutes } from "./modules/system/system.ts";
 import { createSystemFeed } from "./modules/system-feed/system-feed.ts";
-import { usersRoutes } from "./modules/users/users.ts";
+import { visitorsRoutes } from "./modules/visitors/visitors.ts";
 
 export type { AdminApiDeps, RouteDeps } from "./app.types.ts";
 
@@ -30,12 +32,13 @@ function resolveDeps(input: AdminApiDeps): RouteDeps {
 	const admins = createAdminDirectory(input.db);
 	return {
 		now,
+		panelUrl: input.trustedOrigins[0] ?? "",
 		admins,
 		clientIp: { source: "socket", hops: 1 },
 		loginThrottle: createLoginThrottle(input.loginLimits, now),
 		systemFeed: createSystemFeed({
 			snapshot: input.systemSnapshot,
-			intervalMs: input.systemStreamIntervalMs ?? 5000,
+			intervalMs: input.systemStreamIntervalMs ?? 15000,
 		}),
 		liveHub: createLiveHub({
 			topics: createLiveTopics(
@@ -50,7 +53,7 @@ function resolveDeps(input: AdminApiDeps): RouteDeps {
 /**
  * Builds the Elysia app from its controllers. Kept apart from index.ts so
  * tests can call `app.handle(request)` against an in-memory database and a
- * fake orchestrator. Everything is under `/api`; Swagger UI is at `/api/docs`.
+ * fake orchestrator. Everything is under `/api`; the Scalar API reference is at `/api/docs`.
  */
 export function createApp(input: AdminApiDeps) {
 	const deps = resolveDeps(input);
@@ -74,12 +77,14 @@ export function createApp(input: AdminApiDeps) {
 		.use(
 			new Elysia({ prefix: "/api" })
 				.use(sessionRoutes(deps))
+				.use(accountsRoutes(deps))
 				.use(adminsRoutes(deps))
+				.use(customersRoutes(deps))
 				.use(dashboardRoutes(deps))
 				.use(performanceRoutes(deps))
 				.use(requestsRoutes(deps))
 				.use(mcpRoutes(deps))
-				.use(usersRoutes(deps))
+				.use(visitorsRoutes(deps))
 				.use(agentsRoutes(deps))
 				.use(channelsRoutes(deps))
 				.use(blockedIpsRoutes(deps))

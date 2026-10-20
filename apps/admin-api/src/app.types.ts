@@ -19,8 +19,10 @@ export interface AdminApiDeps {
 	orchestrator: OrchestratorClient;
 	/** Origins the panel is served from; other origins can't make state-changing requests. */
 	trustedOrigins: string[];
+	/** Origin the panel is opened at; links in mails and redirects use it (default: the first trusted origin). */
+	panelUrl?: string;
 	systemSnapshot: () => Promise<SystemSnapshot>;
-	/** Push interval of `/api/system/stream` (default 5000). */
+	/** Push interval of `/api/system/stream` (default 15000). */
 	systemStreamIntervalMs?: number;
 	/** Overrides of how often `/api/live` re-reads a topic (defaults in live-topics.ts); for tests. */
 	liveIntervalsMs?: Partial<Record<LiveTopic, number>>;
@@ -33,6 +35,7 @@ export interface AdminApiDeps {
 
 /** `AdminApiDeps` with the defaults filled in — what the route plugins receive. */
 export type RouteDeps = AdminApiDeps & {
+	panelUrl: string;
 	now: () => number;
 	admins: AdminDirectory;
 	systemFeed: SystemFeed;

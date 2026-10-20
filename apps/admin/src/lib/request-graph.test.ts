@@ -37,7 +37,7 @@ const view = (
 ): RequestView => ({
 	request: {
 		id: "r",
-		userId: "u",
+		visitorId: "u",
 		threadId: "t",
 		prompt: "p",
 		intent: null,

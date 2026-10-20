@@ -275,7 +275,7 @@ function failedTool(state: WorldState): string | undefined {
 
 /**
  * What the reply model is given. Normally the user's message. After a task it
- * is what happened, so the reply tells the user the outcome instead of
+ * is what happened, so the reply tells the visitor the outcome instead of
  * answering the request as if nothing had been done: an item put in a cart,
  * what a search found, or that a step failed. (The message alone made the
  * model say it "can't find apples" right after the site had listed them.)

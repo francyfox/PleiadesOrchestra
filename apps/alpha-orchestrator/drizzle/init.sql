@@ -30,13 +30,13 @@ CREATE TABLE `channels` (
 	`allowed_origins` text DEFAULT '[]' NOT NULL,
 	`disabled_at` integer,
 	`created_at` integer NOT NULL
-, `catalog_language` text DEFAULT 'en' NOT NULL);
+, `catalog_language` text DEFAULT 'en' NOT NULL, `owner_id` text);
 CREATE UNIQUE INDEX `channels_slug_unique` ON `channels` (`slug`);
 CREATE UNIQUE INDEX `channels_publishable_key_unique` ON `channels` (`publishable_key`);
 CREATE TABLE `llm_calls` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`at` integer NOT NULL,
-	`user_id` text,
+	"visitor_id" text,
 	`channel_id` text,
 	`thread_id` text,
 	`plan_run_id` text,
@@ -49,28 +49,26 @@ CREATE TABLE `llm_calls` (
 	`latency_ms` integer NOT NULL,
 	`ok` integer NOT NULL,
 	`error` text, `confidence` real,
-	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE set null,
+	FOREIGN KEY ("visitor_id") REFERENCES "visitors"(`id`) ON UPDATE no action ON DELETE set null,
 	FOREIGN KEY (`channel_id`) REFERENCES `channels`(`id`) ON UPDATE no action ON DELETE set null,
 	FOREIGN KEY (`thread_id`) REFERENCES `threads`(`id`) ON UPDATE no action ON DELETE set null,
 	FOREIGN KEY (`plan_run_id`) REFERENCES `plan_runs`(`id`) ON UPDATE no action ON DELETE set null
 );
-CREATE INDEX `llm_calls_user_at_idx` ON `llm_calls` (`user_id`,`at`);
 CREATE INDEX `llm_calls_channel_at_idx` ON `llm_calls` (`channel_id`,`at`);
 CREATE INDEX `llm_calls_run_idx` ON `llm_calls` (`plan_run_id`);
 CREATE INDEX `llm_calls_at_idx` ON `llm_calls` (`at`);
 CREATE TABLE `messages` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`thread_id` text NOT NULL,
-	`user_id` text NOT NULL,
+	"visitor_id" text NOT NULL,
 	`role` text NOT NULL,
 	`content` text NOT NULL,
 	`created_at` integer NOT NULL,
 	`plan_run_id` text,
 	FOREIGN KEY (`thread_id`) REFERENCES `threads`(`id`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY ("visitor_id") REFERENCES "visitors"(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`plan_run_id`) REFERENCES `plan_runs`(`id`) ON UPDATE no action ON DELETE set null
 );
-CREATE INDEX `messages_user_idx` ON `messages` (`user_id`,`id`);
 CREATE INDEX `messages_thread_idx` ON `messages` (`thread_id`,`id`);
 CREATE TABLE `plan_events` (
 	`run_id` text NOT NULL,
@@ -85,29 +83,27 @@ CREATE TABLE `plan_events` (
 );
 CREATE TABLE `plan_runs` (
 	`id` text PRIMARY KEY NOT NULL,
-	`user_id` text NOT NULL,
+	"visitor_id" text NOT NULL,
 	`thread_id` text NOT NULL,
 	`goal` text NOT NULL,
 	`succeeded` integer NOT NULL,
 	`attempts` integer NOT NULL,
 	`duration_ms` integer NOT NULL,
 	`created_at` integer NOT NULL, `root_run_id` text, `prompt` text, `steps` text,
-	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY ("visitor_id") REFERENCES "visitors"(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`thread_id`) REFERENCES `threads`(`id`) ON UPDATE no action ON DELETE cascade
 );
-CREATE INDEX `plan_runs_user_idx` ON `plan_runs` (`user_id`,`created_at`);
 CREATE TABLE `threads` (
 	`id` text PRIMARY KEY NOT NULL,
-	`user_id` text NOT NULL,
+	"visitor_id" text NOT NULL,
 	`channel_id` text NOT NULL,
 	`external_thread_id` text,
 	`created_at` integer NOT NULL,
-	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY ("visitor_id") REFERENCES "visitors"(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`channel_id`) REFERENCES `channels`(`id`) ON UPDATE no action ON DELETE cascade
 );
-CREATE UNIQUE INDEX `threads_channel_user_external_uq` ON `threads` (`channel_id`,`user_id`,`external_thread_id`);
 CREATE INDEX `threads_external_idx` ON `threads` (`external_thread_id`);
-CREATE TABLE `users` (
+CREATE TABLE "visitors" (
 	`id` text PRIMARY KEY NOT NULL,
 	`channel_id` text NOT NULL,
 	`external_user_id` text,
@@ -119,20 +115,17 @@ CREATE TABLE `users` (
 	`whitelisted_by` text,
 	`blocked_at` integer,
 	`blocked_reason` text,
-	`blocked_by` text, `last_ip` text,
+	`blocked_by` text, `last_ip` text, `name` text DEFAULT '' NOT NULL,
 	FOREIGN KEY (`channel_id`) REFERENCES `channels`(`id`) ON UPDATE no action ON DELETE cascade
 );
-CREATE UNIQUE INDEX `users_channel_external_uq` ON `users` (`channel_id`,`external_user_id`);
-CREATE INDEX `users_last_seen_idx` ON `users` (`last_seen_at`);
-CREATE INDEX `users_kind_last_seen_idx` ON `users` (`kind`,`last_seen_at`);
 CREATE TABLE `visitor_tokens` (
 	`token_hash` text PRIMARY KEY NOT NULL,
-	`user_id` text NOT NULL,
+	"visitor_id" text NOT NULL,
 	`channel_id` text NOT NULL,
 	`created_at` integer NOT NULL,
 	`last_used_at` integer NOT NULL,
 	`expires_at` integer NOT NULL,
-	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY ("visitor_id") REFERENCES "visitors"(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`channel_id`) REFERENCES `channels`(`id`) ON UPDATE no action ON DELETE cascade
 );
 CREATE TABLE `thread_world_state` (
@@ -182,23 +175,6 @@ CREATE TABLE `channel_persona` (
 	`updated_at` integer NOT NULL, `instructions` text DEFAULT '' NOT NULL,
 	FOREIGN KEY (`channel_id`) REFERENCES `channels`(`id`) ON UPDATE no action ON DELETE cascade
 );
-CREATE TABLE `agent_settings` (
-	`agent_id` text PRIMARY KEY NOT NULL,
-	`source` text,
-	`base_url` text,
-	`model` text,
-	`provider_key` text,
-	`parameters` text DEFAULT '{}' NOT NULL,
-	`updated_by` text NOT NULL,
-	`updated_at` integer NOT NULL,
-	FOREIGN KEY (`provider_key`) REFERENCES `provider_keys`(`name`) ON UPDATE no action ON DELETE set null
-);
-CREATE TABLE `provider_keys` (
-	`name` text PRIMARY KEY NOT NULL,
-	`encrypted_key` text NOT NULL,
-	`updated_by` text NOT NULL,
-	`updated_at` integer NOT NULL
-);
 CREATE TABLE `billing_webhooks` (
 	`id` text PRIMARY KEY NOT NULL,
 	`type` text NOT NULL,
@@ -221,6 +197,20 @@ CREATE TABLE `subscriptions` (
 	`updated_at` integer NOT NULL,
 	FOREIGN KEY (`channel_id`) REFERENCES `channels`(`id`) ON UPDATE no action ON DELETE set null
 );
+CREATE TABLE "agent_settings" (
+	`agent_id` text PRIMARY KEY NOT NULL,
+	`model` text,
+	`updated_by` text NOT NULL,
+	`updated_at` integer NOT NULL
+, `provider` text);
+CREATE UNIQUE INDEX `visitors_channel_external_uq` ON `visitors` (`channel_id`,`external_user_id`);
+CREATE INDEX `visitors_last_seen_idx` ON `visitors` (`last_seen_at`);
+CREATE INDEX `visitors_kind_last_seen_idx` ON `visitors` (`kind`,`last_seen_at`);
+CREATE INDEX `llm_calls_visitor_at_idx` ON `llm_calls` (`visitor_id`,`at`);
+CREATE INDEX `messages_visitor_idx` ON `messages` (`visitor_id`,`id`);
+CREATE INDEX `plan_runs_visitor_idx` ON `plan_runs` (`visitor_id`,`created_at`);
+CREATE UNIQUE INDEX `threads_channel_visitor_external_uq` ON `threads` (`channel_id`,`visitor_id`,`external_thread_id`);
+CREATE INDEX `channels_owner_idx` ON `channels` (`owner_id`);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'bdcb798cc72df040fe7ab496925f0e8c88132b905ac04cc8813006debb64f096', 1790244167287);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '18fd9f1b24512d674e4f6017463dec4418b32e8c7e134ed0e5b62399ac042d07', 1790244167777);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'ad4ae2f758bf5af433c6ae25117ef6dd2e3c7f7e7209d36c91ffb2a3f5bd24cf', 1790251963003);
@@ -237,6 +227,11 @@ INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '4
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '6c4e5151567f806becb8e1ec5d7c0f17c95da9eb9ccce15423fa368848512993', 1792067635675);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'baafd4f141151a7bee8035dc9de67409daf1f4113b5dff5b9765d56dd7c9b46e', 1792416591678);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '6eb757b5d29868e175799e0dd02e48c71d3f3b6f3992bdd5d6f546b564b42455', 1792417145450);
-INSERT INTO "channels" ("id", "slug", "kind", "name", "access_mode", "publishable_key", "secret_key_hash", "allowed_origins", "disabled_at", "created_at", "catalog_language") VALUES ('ch_telegram', 'telegram', 'telegram', 'Telegram', 'whitelist', NULL, NULL, '[]', NULL, CAST(strftime('%s', 'now') AS INTEGER) * 1000, 'en');
-INSERT INTO "channels" ("id", "slug", "kind", "name", "access_mode", "publishable_key", "secret_key_hash", "allowed_origins", "disabled_at", "created_at", "catalog_language") VALUES ('ch_cli', 'cli', 'cli', 'CLI', 'open', NULL, NULL, '[]', NULL, CAST(strftime('%s', 'now') AS INTEGER) * 1000, 'en');
+INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'af48c9222fff7c74615a0010b5631edd5697305740a6ff88e97293e565de3f40', 1792475142518);
+INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '49f0a0c6118340683975c240d93066deb6d7fc5625df19e23691221be7e0c53b', 1792475143039);
+INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '2e1e3951261ddfaf5a5f28f637b994da1edce286f601e0b390d9a8491453e9bc', 1792477534180);
+INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'a57c22bfc049d04bfae0dbff53a41dee9259181e53636b895316dad53c2fcfca', 1792487367347);
+INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '6a89ddd783b8155e61bd7d78539cb7e0f3fa1ad8148922445e7b64f3a7c45ed0', 1792490643768);
+INSERT INTO "channels" ("id", "slug", "kind", "name", "access_mode", "publishable_key", "secret_key_hash", "allowed_origins", "disabled_at", "created_at", "catalog_language", "owner_id") VALUES ('ch_telegram', 'telegram', 'telegram', 'Telegram', 'whitelist', NULL, NULL, '[]', NULL, CAST(strftime('%s', 'now') AS INTEGER) * 1000, 'en', NULL);
+INSERT INTO "channels" ("id", "slug", "kind", "name", "access_mode", "publishable_key", "secret_key_hash", "allowed_origins", "disabled_at", "created_at", "catalog_language", "owner_id") VALUES ('ch_cli', 'cli', 'cli', 'CLI', 'open', NULL, NULL, '[]', NULL, CAST(strftime('%s', 'now') AS INTEGER) * 1000, 'en', NULL);
 COMMIT;

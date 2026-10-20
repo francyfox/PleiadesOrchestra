@@ -170,9 +170,9 @@ const faqContent = {
 					kk: "Арнаны неге жоюға болмайды?",
 				}),
 				a: t({
-					ru: "Каналы только отключают, но не удаляют: так сохраняются их пользователи, история и статистика расхода. Отключённый канал отклоняет новые запросы; включить его можно в любой момент. Чтобы отрезать утёкший ключ, используйте «Новые ключи» — старые перестают работать сразу.",
-					en: "Channels are only disabled, never deleted: that keeps their users, history and usage statistics. A disabled channel refuses new requests; you can enable it again at any time. To cut off a leaked key, use “New keys” — the old ones stop working at once.",
-					kk: "Арналар тек өшіріледі, жойылмайды: сонда олардың пайдаланушылары, тарихы және шығын статистикасы сақталады. Өшірілген арна жаңа сұраныстарды қабылдамайды; оны кез келген уақытта қосуға болады. Ағып кеткен кілтті кесу үшін «Жаңа кілттер» түймесін пайдаланыңыз — ескілері бірден жұмыс істемейді.",
+					ru: "Каналы только отключают, но не удаляют: так сохраняются их посетители, история и статистика расхода. Отключённый канал отклоняет новые запросы; включить его можно в любой момент. Чтобы отрезать утёкший ключ, используйте «Новые ключи» — старые перестают работать сразу.",
+					en: "Channels are only disabled, never deleted: that keeps their visitors, history and usage statistics. A disabled channel refuses new requests; you can enable it again at any time. To cut off a leaked key, use “New keys” — the old ones stop working at once.",
+					kk: "Арналар тек өшіріледі, жойылмайды: сонда олардың келушілері, тарихы және шығын статистикасы сақталады. Өшірілген арна жаңа сұраныстарды қабылдамайды; оны кез келген уақытта қосуға болады. Ағып кеткен кілтті кесу үшін «Жаңа кілттер» түймесін пайдаланыңыз — ескілері бірден жұмыс істемейді.",
 				}),
 			},
 			access: {
@@ -182,9 +182,9 @@ const faqContent = {
 					kk: "«Ақ тізім» мен «Ашық» қолжетімділіктің айырмашылығы неде?",
 				}),
 				a: t({
-					ru: "В открытом канале писать может любой, кто до него дотянулся (посетители веб-виджета анонимны). В канале с белым списком — только пользователи, которых вы допустили на странице «Пользователи»; остальным в ответ тишина, и модель не вызывается. Заблокированный пользователь получает отказ в обоих режимах.",
-					en: "In an open channel anyone who reaches it can chat (web widget visitors are anonymous). In a whitelist channel only users you have allowed on the Users page can; everyone else gets silence and the model is never called. A blocked user is refused in both modes.",
-					kk: "Ашық арнада оған жеткен кез келген адам жаза алады (веб-виджет келушілері анонимді). Ақ тізімді арнада тек «Пайдаланушылар» бетінде рұқсат берген пайдаланушылар жаза алады; қалғандарына үнсіздік, модель шақырылмайды. Бұғатталған пайдаланушыға екі режимде де бас тартылады.",
+					ru: "В открытом канале писать может любой, кто до него дотянулся (посетители веб-виджета анонимны). В канале с белым списком — только посетители, которых вы допустили на странице «Посетители»; остальным в ответ тишина, и модель не вызывается. Заблокированный посетитель получает отказ в обоих режимах.",
+					en: "In an open channel anyone who reaches it can chat (web widget visitors are anonymous). In a whitelist channel only visitors you have allowed on the Visitors page can; everyone else gets silence and the model is never called. A blocked visitor is refused in both modes.",
+					kk: "Ашық арнада оған жеткен кез келген адам жаза алады (веб-виджет келушілері анонимді). Ақ тізімді арнада тек «Келушілер» бетінде рұқсат берген келушілер жаза алады; қалғандарына үнсіздік, модель шақырылмайды. Бұғатталған пайдаланушыға екі режимде де бас тартылады.",
 				}),
 			},
 			ipBlocks: {
@@ -194,9 +194,9 @@ const faqContent = {
 					kk: "IP бойынша бұғаттау қалай жұмыс істейді?",
 				}),
 				a: t({
-					ru: "Блокировка сверяется по солёному хешу IP, поэтому работает и для анонимных посетителей; сам IP хранится только чтобы вы его видели и могли открыть whois. У каждой блокировки есть срок, потому что адреса бывают общими (офисы, мобильные сети). Заблокировать IP можно прямо из строки пользователя на странице «Пользователи». Анонимные посетители и их IP удаляются после суток неактивности.",
-					en: "A block matches by a salted hash of the IP, so it works for anonymous visitors; the plain IP is stored only so you can see it and open a whois lookup. Every block has an expiry, because addresses are shared (offices, mobile networks). You can block an IP straight from a user's row on the Users page. Anonymous visitors and their IP are deleted after a day of inactivity.",
-					kk: "Бұғаттау IP-дің тұздалған хеші бойынша салыстырылады, сондықтан анонимді келушілерге де жұмыс істейді; IP-дің өзі оны көру және whois ашу үшін ғана сақталады. Әр бұғаттаудың мерзімі бар, себебі мекенжайлар ортақ болады (кеңселер, мобильді желілер). IP-ді «Пайдаланушылар» бетіндегі пайдаланушы жолынан тікелей бұғаттауға болады. Анонимді келушілер мен олардың IP-і бір тәулік белсенділіксіз болғаннан кейін жойылады.",
+					ru: "Блокировка сверяется по солёному хешу IP, поэтому работает и для анонимных посетителей; сам IP хранится только чтобы вы его видели и могли открыть whois. У каждой блокировки есть срок, потому что адреса бывают общими (офисы, мобильные сети). Заблокировать IP можно прямо из строки посетителя на странице «Посетители». Анонимные посетители и их IP удаляются после суток неактивности.",
+					en: "A block matches by a salted hash of the IP, so it works for anonymous visitors; the plain IP is stored only so you can see it and open a whois lookup. Every block has an expiry, because addresses are shared (offices, mobile networks). You can block an IP straight from a visitor's row on the Visitors page. Anonymous visitors and their IP are deleted after a day of inactivity.",
+					kk: "Бұғаттау IP-дің тұздалған хеші бойынша салыстырылады, сондықтан анонимді келушілерге де жұмыс істейді; IP-дің өзі оны көру және whois ашу үшін ғана сақталады. Әр бұғаттаудың мерзімі бар, себебі мекенжайлар ортақ болады (кеңселер, мобильді желілер). IP-ді «Келушілер» бетіндегі пайдаланушы жолынан тікелей бұғаттауға болады. Анонимді келушілер мен олардың IP-і бір тәулік белсенділіксіз болғаннан кейін жойылады.",
 				}),
 			},
 			superAdmin: {

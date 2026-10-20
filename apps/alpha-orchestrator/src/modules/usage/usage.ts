@@ -1,8 +1,8 @@
-import { Elysia, t } from "elysia";
+import { Elysia } from "elysia";
 import type { Db } from "../database/database.ts";
 import { DAY_MS } from "../http/http.service.ts";
-import { oneOf } from "../http/http.ts";
 import type { PriceBook } from "../prices/prices.service.ts";
+import { UsageQuery, UsageReport } from "./usage.schema.ts";
 import { usageRows } from "./usage.service.ts";
 
 export interface UsageDeps {
@@ -12,9 +12,12 @@ export interface UsageDeps {
 	prices?: PriceBook;
 }
 
-/** Admin route: token usage (and spend, when prices are known) grouped by day, user, channel or model. */
+/** Admin route: token usage (and spend, when prices are known) grouped by day, visitor, channel or model. */
 export function usageRoutes({ db, now, prices }: UsageDeps) {
-	return new Elysia({ prefix: "/v1/admin/usage" }).get(
+	return new Elysia({
+		prefix: "/v1/admin/usage",
+		tags: ["Admin: usage & stats"],
+	}).get(
 		"/",
 		async ({ query }) => {
 			const current = now();
@@ -26,16 +29,18 @@ export function usageRoutes({ db, now, prices }: UsageDeps) {
 					query.to ?? current,
 					query.channel,
 					await prices?.get(),
+					query.ownerId,
 				),
 			};
 		},
 		{
-			query: t.Object({
-				groupBy: oneOf(["day", "user", "channel", "model"]),
-				from: t.Optional(t.Numeric()),
-				to: t.Optional(t.Numeric()),
-				channel: t.Optional(t.String()),
-			}),
+			query: UsageQuery,
+			response: { 200: UsageReport },
+			detail: {
+				summary: "Get token usage",
+				description:
+					"Tokens, calls and (when prices are known) spend grouped by `groupBy`. `from`/`to` are epoch ms and default to the last 30 days; `channel` is a channel slug.",
+			},
 		},
 	);
 }

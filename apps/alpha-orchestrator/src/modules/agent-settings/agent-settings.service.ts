@@ -1,91 +1,67 @@
 import { eq } from "drizzle-orm";
 import { publicEndpoint } from "../agents/agents.service.ts";
-import { agentSettings, providerKeys } from "../database/database.schema.ts";
+import { agentSettings } from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
+import {
+	maskKey,
+	type Provider,
+	type ProviderModel,
+	type ProvidersConfig,
+	ProvidersConfigError,
+	removeModel,
+	removeProvider,
+	upsertModel,
+	upsertProvider,
+} from "../providers/providers.service.ts";
 import {
 	AGENT_IDS,
 	type AgentId,
-	type AgentParameters,
 	EDITABLE_AGENT_IDS,
 	type EffectiveSettings,
-	type EnvDefaults,
+	type EnvServer,
 } from "./agent-settings.types.ts";
 
 type Row = typeof agentSettings.$inferSelect;
 
-/** Bad input for a settings write (unknown key name, gamma, no secret): the route answers 400. */
+/** Bad input for a settings write (unknown model, gamma): the route answers 400. */
 export class AgentSettingsError extends Error {}
 
-// --- encryption: AES-GCM, key = SHA-256 of PROVIDER_KEYS_SECRET --------------
-
-async function aesKey(secret: string): Promise<CryptoKey> {
-	const hash = await crypto.subtle.digest(
-		"SHA-256",
-		new TextEncoder().encode(secret),
-	);
-	return crypto.subtle.importKey("raw", hash, "AES-GCM", false, [
-		"encrypt",
-		"decrypt",
-	]);
-}
-
-/** `base64(iv ‖ ciphertext)`; a fresh random IV every time. */
-export async function encryptSecret(
-	secret: string,
-	plain: string,
-): Promise<string> {
-	const iv = crypto.getRandomValues(new Uint8Array(12));
-	const sealed = await crypto.subtle.encrypt(
-		{ name: "AES-GCM", iv },
-		await aesKey(secret),
-		new TextEncoder().encode(plain),
-	);
-	return Buffer.concat([iv, new Uint8Array(sealed)]).toString("base64");
-}
-
-export async function decryptSecret(
-	secret: string,
-	sealed: string,
-): Promise<string> {
-	const bytes = Buffer.from(sealed, "base64");
-	const plain = await crypto.subtle.decrypt(
-		{ name: "AES-GCM", iv: bytes.subarray(0, 12) },
-		await aesKey(secret),
-		bytes.subarray(12),
-	);
-	return new TextDecoder().decode(plain);
-}
-
-/** All the admin panel ever shows of a key. */
-export function maskKey(plain: string): string {
-	return `••••${plain.slice(-4)}`;
-}
-
-// --- effective settings -----------------------------------------------------
-
 /**
- * The override where one is set, else the env value. `source: local` means
- * "the env server": the URL, model and key overrides are ignored (parameters
- * still apply). The env key is never sent to a URL the admin changed.
+ * The picked model of `providers.toml` with its parameters. With no pick (or
+ * one gone from the file) the file's entry for the env server (same base URL
+ * and model, as seeded on first start), else the bare env server. The env key
+ * never leaves for another host: a provider brings its own key or none.
  */
 export function buildEffective(
-	defaults: EnvDefaults,
+	env: EnvServer,
 	row: Row | undefined,
-	providerKey?: { name: string; plain: string },
+	providers: Provider[],
+	resolveKey: (raw: string) => string,
 ): EffectiveSettings {
-	const external = row?.source !== "local";
-	const baseUrl = (external && row?.baseUrl) || defaults.baseUrl;
-	const parameters = (row?.parameters ?? {}) as AgentParameters;
-	const key = external ? providerKey : undefined;
+	const find = (providerOk: (p: Provider) => boolean, modelId: string) => {
+		const provider = providers.find(
+			(p) => providerOk(p) && p.models.some((m) => m.id === modelId),
+		);
+		return (
+			provider && {
+				provider,
+				model: provider.models.find((m) => m.id === modelId),
+			}
+		);
+	};
+	const hit =
+		find((p) => p.id === row?.provider, row?.model ?? "") ??
+		find((p) => p.baseUrl === env.baseUrl, env.model);
+	if (!hit?.model) return { ...env, extraBody: {} };
+	const { provider, model } = hit;
 	return {
-		source: row?.source ?? "local",
-		baseUrl,
-		apiKey: key?.plain ?? (baseUrl === defaults.baseUrl ? defaults.apiKey : ""),
-		model: (external && row?.model) || defaults.model,
-		provider: key?.name,
-		temperature: parameters.temperature ?? defaults.temperature,
-		reasoningEffort: parameters.reasoningEffort ?? defaults.reasoningEffort,
-		extraBody: parameters.extraBody ?? {},
+		provider: provider.id,
+		baseUrl: provider.baseUrl,
+		apiKey: resolveKey(provider.apiKey),
+		model: model.id,
+		temperature: model.temperature,
+		reasoningEffort: model.reasoningEffort,
+		extraBody: model.extraBody,
 	};
 }
 
@@ -101,33 +77,23 @@ export function providerOptionsOf(settings: EffectiveSettings) {
 	return Object.keys(options).length ? (options as any) : undefined;
 }
 
-// --- store + runtime --------------------------------------------------------
-
 export interface AgentSettingsDeps {
 	db: Db;
-	/** `PROVIDER_KEYS_SECRET`; without it provider keys cannot be stored. */
-	secret?: string;
-	defaults: Record<AgentId, EnvDefaults>;
+	/** What each agent calls before a model is picked (LLM_*, FUNCTION_CALL_*, LAYA_*). */
+	env: Record<AgentId, EnvServer>;
+	/** `configs/providers.toml`: the providers and models to pick from. */
+	providers: ProvidersConfig;
 	now?: () => number;
 	fetch?: typeof fetch;
 }
 
-export interface SettingsPatch {
-	source?: "local" | "external" | null;
-	baseUrl?: string | null;
-	model?: string | null;
-	providerKey?: string | null;
-	parameters?: AgentParameters | null;
-}
-
 /**
- * Per-agent settings in the DB over the env defaults. There is one process:
- * `effective()` answers from a cache that `refresh()` rebuilds (WebCrypto
- * decrypts asynchronously), and a save calls the `onChange` listeners so the
- * agents are rebuilt without a restart.
+ * Which model each agent uses (DB) over the providers file. There is one
+ * process: `effective()` answers from a cache that `refresh()` rebuilds, and a
+ * save calls the listeners so the agents are rebuilt without a restart.
  */
 export function createAgentSettings(deps: AgentSettingsDeps) {
-	const { db, secret, defaults } = deps;
+	const { db, env, providers } = deps;
 	const now = deps.now ?? Date.now;
 	const cache = new Map<AgentId, EffectiveSettings>();
 	const listeners: Array<() => void> = [];
@@ -135,26 +101,27 @@ export function createAgentSettings(deps: AgentSettingsDeps) {
 	const row = (id: AgentId) =>
 		db.select().from(agentSettings).where(eq(agentSettings.agentId, id)).get();
 
-	async function resolve(id: AgentId): Promise<EffectiveSettings> {
-		const saved = row(id);
-		let key: { name: string; plain: string } | undefined;
-		if (saved?.providerKey && secret) {
-			const stored = db
-				.select()
-				.from(providerKeys)
-				.where(eq(providerKeys.name, saved.providerKey))
-				.get();
-			if (stored)
-				key = {
-					name: stored.name,
-					plain: await decryptSecret(secret, stored.encryptedKey),
-				};
-		}
-		return buildEffective(defaults[id], saved, key);
+	function refresh() {
+		for (const id of AGENT_IDS)
+			cache.set(
+				id,
+				buildEffective(
+					env[id],
+					row(id),
+					providers.providers(),
+					providers.resolveKey,
+				),
+			);
 	}
 
-	async function refresh() {
-		for (const id of AGENT_IDS) cache.set(id, await resolve(id));
+	function changed() {
+		refresh();
+		for (const listener of listeners) listener();
+	}
+
+	async function editProviders(edit: (current: Provider[]) => Provider[]) {
+		await providers.update(edit);
+		changed();
 	}
 
 	function assertEditable(id: AgentId) {
@@ -162,16 +129,14 @@ export function createAgentSettings(deps: AgentSettingsDeps) {
 			throw new AgentSettingsError(`${id} stays on its env server`);
 	}
 
+	refresh();
+
 	return {
-		refresh,
-		/** Settings the agent is built from; call `refresh()` once at startup. */
+		/** Settings the agent is built from. */
 		effective(id: AgentId): EffectiveSettings {
 			const settings = cache.get(id);
 			if (!settings) throw new Error("agent settings not loaded");
 			return settings;
-		},
-		onChange(listener: () => void) {
-			listeners.push(listener);
 		},
 		/** Builds a thing from the settings now and again after every save; a run in progress keeps the one it got. */
 		track<T>(build: () => T): () => T {
@@ -181,122 +146,68 @@ export function createAgentSettings(deps: AgentSettingsDeps) {
 			});
 			return () => current;
 		},
-		/** What the admin panel needs: the overrides, the env defaults (as placeholders) and what is in effect. No keys. */
+		/** The pick and what is in effect. No keys. */
 		view(id: AgentId) {
 			const saved = row(id);
-			const effective = this.effective(id);
-			const clean = (url: string | null | undefined) =>
-				url ? publicEndpoint(url) : null;
+			const s = this.effective(id);
 			return {
 				id,
 				editable: EDITABLE_AGENT_IDS.includes(id),
-				overrides: {
-					source: saved?.source ?? null,
-					baseUrl: clean(saved?.baseUrl),
-					model: saved?.model ?? null,
-					providerKey: saved?.providerKey ?? null,
-					parameters: (saved?.parameters ?? {}) as AgentParameters,
-				},
-				defaults: {
-					baseUrl: clean(defaults[id].baseUrl),
-					model: defaults[id].model,
-					temperature: defaults[id].temperature ?? null,
-					reasoningEffort: defaults[id].reasoningEffort ?? null,
-				},
-				effective: {
-					source: effective.source,
-					baseUrl: clean(effective.baseUrl),
-					model: effective.model,
-					provider: effective.provider ?? null,
-					temperature: effective.temperature ?? null,
-					reasoningEffort: effective.reasoningEffort ?? null,
-					extraBody: effective.extraBody,
-				},
+				provider: s.provider ?? null,
+				model: s.model,
+				baseUrl: s.baseUrl ? publicEndpoint(s.baseUrl) : null,
 				updatedBy: saved?.updatedBy ?? null,
 				updatedAt: saved?.updatedAt ?? null,
 			};
 		},
-		/** A field left out stays, `null` clears it (= the env value). */
-		async patch(id: AgentId, patch: SettingsPatch, adminId: string) {
+		/** Picks a model of the providers file for the agent. */
+		pick(
+			id: AgentId,
+			pick: { provider: string; model: string },
+			adminId: string,
+		) {
 			assertEditable(id);
-			const saved = row(id);
-			const keep = <T>(
-				patched: T | null | undefined,
-				old: T | null | undefined,
-			) => (patched === undefined ? (old ?? null) : patched);
-			const next = {
-				source: keep(patch.source, saved?.source),
-				baseUrl: keep(patch.baseUrl, saved?.baseUrl),
-				model: keep(patch.model, saved?.model),
-				providerKey: keep(patch.providerKey, saved?.providerKey),
-				parameters: keep(patch.parameters, saved?.parameters) ?? {},
-			};
-			if (next.baseUrl && !/^https?:\/\//.test(next.baseUrl))
-				throw new AgentSettingsError("baseUrl must be an http(s) URL");
-			if (
-				next.providerKey &&
-				!db
-					.select()
-					.from(providerKeys)
-					.where(eq(providerKeys.name, next.providerKey))
-					.get()
-			)
-				throw new AgentSettingsError(`no provider key "${next.providerKey}"`);
-			const values = { ...next, updatedBy: adminId, updatedAt: now() };
+			const exists = providers
+				.providers()
+				.find((p) => p.id === pick.provider)
+				?.models.some((m) => m.id === pick.model);
+			if (!exists)
+				throw new AgentSettingsError(
+					`no model "${pick.model}" at provider "${pick.provider}"`,
+				);
+			const values = { ...pick, updatedBy: adminId, updatedAt: now() };
 			db.insert(agentSettings)
 				.values({ agentId: id, ...values })
 				.onConflictDoUpdate({ target: agentSettings.agentId, set: values })
 				.run();
-			await refresh();
-			for (const listener of listeners) listener();
+			changed();
 		},
-		listKeys() {
-			return Promise.all(
-				db
-					.select()
-					.from(providerKeys)
-					.all()
-					.map(async (stored) => ({
-						name: stored.name,
-						mask: maskKey(
-							secret ? await decryptSecret(secret, stored.encryptedKey) : "",
-						),
-						updatedBy: stored.updatedBy,
-						updatedAt: stored.updatedAt,
-					})),
-			);
+		/** The providers for the Models tab: keys masked. */
+		providersView() {
+			return providers.providers().map((p) => ({
+				...p,
+				apiKey: maskKey(p.apiKey),
+			}));
 		},
-		async putKey(name: string, key: string, adminId: string) {
-			if (!secret)
-				throw new AgentSettingsError("PROVIDER_KEYS_SECRET is not set");
-			const values = {
-				encryptedKey: await encryptSecret(secret, key),
-				updatedBy: adminId,
-				updatedAt: now(),
-			};
-			db.insert(providerKeys)
-				.values({ name, ...values })
-				.onConflictDoUpdate({ target: providerKeys.name, set: values })
-				.run();
-			await refresh();
-			for (const listener of listeners) listener();
-			return {
-				name,
-				mask: maskKey(key),
-				updatedBy: adminId,
-				updatedAt: values.updatedAt,
-			};
+		providersText: () => providers.text(),
+		checkProvidersText: (toml: string) => providers.check(toml),
+		/** Replaces the file from edited text (validated; masked keys stay as saved). */
+		async saveProvidersText(toml: string) {
+			await providers.save(toml);
+			changed();
 		},
-		async deleteKey(name: string) {
-			const gone = db
-				.delete(providerKeys)
-				.where(eq(providerKeys.name, name))
-				.returning()
-				.all();
-			await refresh();
-			for (const listener of listeners) listener();
-			return gone.length > 0;
-		},
+		upsertProvider: (input: Parameters<typeof upsertProvider>[1]) =>
+			editProviders((current) => upsertProvider(current, input)),
+		deleteProvider: (id: string) =>
+			editProviders((current) => {
+				if (!current.some((p) => p.id === id))
+					throw new ProvidersConfigError(`no provider "${id}"`);
+				return removeProvider(current, id);
+			}),
+		upsertModel: (providerId: string, model: ProviderModel) =>
+			editProviders((current) => upsertModel(current, providerId, model)),
+		deleteModel: (providerId: string, modelId: string) =>
+			editProviders((current) => removeModel(current, providerId, modelId)),
 		/** One plain chat call with the settings in effect (not schema-constrained, even for delta): the answer and the latency. */
 		async test(id: AgentId) {
 			assertEditable(id);

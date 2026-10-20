@@ -16,7 +16,7 @@ import { productRequestPrompt } from "./agents.service.ts";
  * Messages of a thread the model sees as context: none. The 1B model copies
  * its own earlier replies (after a few canned "How can I help?" answers in the
  * context it answers nothing else), so it works on the current message only.
- * The exchange is still stored (admin panel, ledger) — per-user retention
+ * The exchange is still stored (admin panel, ledger) — per-visitor retention
  * must cover this window (checked in index.ts).
  */
 export const AGENT_MAX_HISTORY_MESSAGES = 0;

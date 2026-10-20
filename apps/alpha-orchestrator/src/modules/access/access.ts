@@ -1,7 +1,8 @@
 import { Elysia, t } from "elysia";
 import type { ChannelDirectory } from "../channel-directory/channel-directory.ts";
 import type { Db } from "../database/database.ts";
-import { upsertIdentifiedUser } from "../users/users.service.ts";
+import { upsertIdentifiedVisitor } from "../visitors/visitors.service.ts";
+import { AccessBody, AccessResult } from "./access.schema.ts";
 import { isAllowed } from "./access.service.ts";
 
 export interface AccessDeps {
@@ -12,26 +13,28 @@ export interface AccessDeps {
 
 /** `POST /v1/access` — transports ask whether a sender may talk to the bot (they stay silent if not). */
 export function accessRoutes({ db, directory, now }: AccessDeps) {
-	return new Elysia().post(
+	return new Elysia({ tags: ["Transport"] }).post(
 		"/v1/access",
 		({ body, status }) => {
 			const channel = directory.bySlug(body.channel);
 			if (!channel) return status(404, "Unknown channel");
-			const user = upsertIdentifiedUser(
+			const visitor = upsertIdentifiedVisitor(
 				db,
 				channel.id,
 				body.externalUserId,
 				body.displayName,
 				now(),
 			);
-			return { allowed: isAllowed(channel, user), userId: user.id };
+			return { allowed: isAllowed(channel, visitor), userId: visitor.id };
 		},
 		{
-			body: t.Object({
-				channel: t.String(),
-				externalUserId: t.String(),
-				displayName: t.Optional(t.String()),
-			}),
+			body: AccessBody,
+			response: { 200: AccessResult, 404: t.String() },
+			detail: {
+				summary: "Check sender access",
+				description:
+					"Transports ask whether a sender may talk to the bot; they stay silent when `allowed` is false. 404 for an unknown channel slug.",
+			},
 		},
 	);
 }

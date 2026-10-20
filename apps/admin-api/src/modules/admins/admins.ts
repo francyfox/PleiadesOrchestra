@@ -1,25 +1,31 @@
 import { APIError } from "better-auth/api";
 import { Elysia, t } from "elysia";
 import type { RouteDeps } from "../../app.types.ts";
+import { LEVEL } from "../accounts/accounts.schema.ts";
 import {
 	banRefusal,
 	deleteRefusal,
-	MIN_PASSWORD,
-	passwordRefusal,
+	isEmail,
+	manageRefusal,
 } from "../admin-policy/admin-policy.service.ts";
 import { requireAdmin } from "../auth/auth.service.ts";
 import { ApiError } from "../common/common.schema.ts";
 import {
 	AdminsPage,
 	AdminsQuery,
+	AdminToken,
 	BanInput,
 	CreateAdminInput,
-	SetPasswordInput,
+	EditAdminInput,
 } from "./admins.schema.ts";
 import {
+	AccountError,
 	countActiveAdmins,
+	createStaff,
+	editStaff,
 	fetchAdminsPage,
 	findAdmin,
+	rotateToken,
 } from "./admins.service.ts";
 
 const Params = t.Object({ id: t.String() });
@@ -30,7 +36,7 @@ const refusalStatus = (code: string) =>
 	code === "not_super" || code === "super_protected" ? 403 : 400;
 
 /** Admin accounts (better-auth's admin plugin). Every route needs an admin session. */
-export function adminsRoutes({ auth, db, admins }: RouteDeps) {
+export function adminsRoutes({ auth, db }: RouteDeps) {
 	/** better-auth failures keep their own message; 5xx collapse to 500. */
 	const fromAuthError = (cause: unknown) => {
 		if (cause instanceof APIError) {
@@ -54,7 +60,7 @@ export function adminsRoutes({ auth, db, admins }: RouteDeps) {
 		.use(requireAdmin(auth))
 		.guard({ admin: true }, (app) =>
 			app
-				.get("/", ({ query }) => fetchAdminsPage({ db, admins }, query), {
+				.get("/", ({ query }) => fetchAdminsPage({ db }, query), {
 					query: AdminsQuery,
 					response: AdminsPage,
 					detail: {
@@ -65,41 +71,111 @@ export function adminsRoutes({ auth, db, admins }: RouteDeps) {
 				})
 				.post(
 					"/",
-					async ({ body, request, status }) => {
-						const email = body.email.trim();
-						if (!email || body.password.length < MIN_PASSWORD) {
-							return status(400, {
-								error: "weak_credentials",
-								min: MIN_PASSWORD,
-							});
+					async ({ body, admin, status }) => {
+						if (admin.level !== LEVEL.super) {
+							return status(403, { error: "not_super" });
+						}
+						if (!isEmail(body.email.trim())) {
+							return status(400, { error: "invalid_email" });
 						}
 						try {
-							// Bypasses the closed public sign-up; requires an admin session.
-							const { user } = await auth.api.createUser({
-								headers: request.headers,
-								body: {
-									email,
-									name: body.name?.trim() || email,
-									password: body.password,
-									role: "admin",
-								},
-							});
-							return { id: user.id };
+							return await createStaff(auth, { ...body, level: LEVEL.admin });
 						} catch (cause) {
-							const { code, body: error } = fromAuthError(cause);
-							return status(code, error);
+							if (cause instanceof AccountError) {
+								return status(409, { error: cause.code });
+							}
+							throw cause;
 						}
 					},
 					{
 						body: CreateAdminInput,
 						response: {
+							200: AdminToken,
+							400: ApiError,
+							401: ApiError,
+							403: ApiError,
+							409: ApiError,
+						},
+						detail: {
+							summary: "Create an admin account",
+							description:
+								"Super admin only (`not_super`, 403). Returns the access token once; only its hash is stored. Staff have no password.",
+						},
+					},
+				)
+				.patch(
+					"/:id",
+					async ({ params, body, admin, status }) => {
+						const refusal = manageRefusal({
+							actorId: admin.id,
+							actorLevel: admin.level,
+							targetId: params.id,
+						});
+						if (refusal) return status(403, { error: refusal });
+						if (!(await findAdmin(db, params.id))) {
+							return status(404, { error: "not_found" });
+						}
+						if (!isEmail(body.email.trim())) {
+							return status(400, { error: "invalid_email" });
+						}
+						try {
+							await editStaff(auth, params.id, body);
+							return { id: params.id };
+						} catch (cause) {
+							if (cause instanceof AccountError) {
+								return status(409, { error: cause.code });
+							}
+							throw cause;
+						}
+					},
+					{
+						params: Params,
+						body: EditAdminInput,
+						response: {
 							200: Ok,
 							400: ApiError,
 							401: ApiError,
 							403: ApiError,
-							500: ApiError,
+							404: ApiError,
+							409: ApiError,
 						},
-						detail: { summary: "Create an admin account" },
+						detail: {
+							summary: "Edit an admin's name and email",
+							description:
+								"Your own account, or anyone's as a super admin (`not_super`, 403). Email is contact data, not a login.",
+						},
+					},
+				)
+				.post(
+					"/:id/token",
+					async ({ params, admin, status }) => {
+						const refusal = manageRefusal({
+							actorId: admin.id,
+							actorLevel: admin.level,
+							targetId: params.id,
+						});
+						if (refusal) return status(403, { error: refusal });
+						const target = await findAdmin(db, params.id);
+						if (!target) return status(404, { error: "not_found" });
+						return {
+							id: params.id,
+							email: target.email,
+							token: await rotateToken(auth, params.id),
+						};
+					},
+					{
+						params: Params,
+						response: {
+							200: AdminToken,
+							401: ApiError,
+							403: ApiError,
+							404: ApiError,
+						},
+						detail: {
+							summary: "Rotate an admin's access token",
+							description:
+								"Your own token, or anyone's as a super admin. The old token stops at once and every session of that account is dropped (yours too, when rotating your own). The new token is shown once.",
+						},
 					},
 				)
 				.post(
@@ -112,7 +188,7 @@ export function adminsRoutes({ auth, db, admins }: RouteDeps) {
 							targetId: params.id,
 							targetBanned: target.banned === true,
 							activeAdmins: await countActiveAdmins(db),
-							superId: (await admins.superId()) ?? undefined,
+							targetIsSuper: target.level === LEVEL.super,
 						});
 						if (refusal) {
 							return status(refusalStatus(refusal), { error: refusal });
@@ -175,62 +251,16 @@ export function adminsRoutes({ auth, db, admins }: RouteDeps) {
 						detail: { summary: "Unban an admin" },
 					},
 				)
-				.post(
-					"/:id/password",
-					async ({ params, body, admin, request, status }) => {
-						if (body.password.length < MIN_PASSWORD) {
-							return status(400, { error: "weak_password", min: MIN_PASSWORD });
-						}
-						const superId = await admins.superId();
-						const refusal =
-							superId &&
-							passwordRefusal({
-								actorId: admin.id,
-								targetId: params.id,
-								superId,
-							});
-						if (refusal) return status(403, { error: refusal });
-						try {
-							await auth.api.setUserPassword({
-								headers: request.headers,
-								body: { userId: params.id, newPassword: body.password },
-							});
-							return { id: params.id };
-						} catch (cause) {
-							const { code, body: error } = fromAuthError(cause);
-							return status(code, error);
-						}
-					},
-					{
-						params: Params,
-						body: SetPasswordInput,
-						response: {
-							200: Ok,
-							400: ApiError,
-							401: ApiError,
-							403: ApiError,
-							500: ApiError,
-						},
-						detail: {
-							summary: "Set an admin's password",
-							description:
-								"The super admin's password can only be changed by the super admin (`super_protected`, 403).",
-						},
-					},
-				)
 				.delete(
 					"/:id",
 					async ({ params, admin, request, status }) => {
 						const target = await findAdmin(db, params.id);
 						if (!target) return status(404, { error: "not_found" });
-						const superId = await admins.superId();
-						const refusal = superId
-							? deleteRefusal({
-									actorId: admin.id,
-									targetId: params.id,
-									superId,
-								})
-							: null;
+						const refusal = deleteRefusal({
+							actorId: admin.id,
+							actorLevel: admin.level,
+							targetId: params.id,
+						});
 						if (refusal) {
 							return status(refusalStatus(refusal), { error: refusal });
 						}

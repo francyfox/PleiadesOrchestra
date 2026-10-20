@@ -34,14 +34,14 @@ describe("bindLiveTopic", () => {
 	test("a pushed snapshot lands in the cache under the topic's key", () => {
 		const client = new QueryClient();
 		const { source, subscriptions } = fakeLive();
-		bindLiveTopic({ client, live: source, report: () => {} }, "users", {
+		bindLiveTopic({ client, live: source, report: () => {} }, "visitors", {
 			limit: 10,
 		});
 
 		subscriptions[0]?.handlers.onData({ items: [1], total: 1 });
 
 		expect(
-			client.getQueryData<unknown>(topicKey("users", { limit: 10 })),
+			client.getQueryData<unknown>(topicKey("visitors", { limit: 10 })),
 		).toEqual({
 			items: [1],
 			total: 1,

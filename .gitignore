@@ -36,3 +36,9 @@ sh.err.*
 
 # Benchmark runs (machine-specific; regenerate with `bun --cwd apps/<name> start --output results/…`)
 /apps/benchmark/results/
+
+# Instance config edited in the admin panel (the example is tracked)
+/apps/alpha-orchestrator/configs/providers.toml
+
+# Intlayer cache when a command runs from the repo root
+/.intlayer/

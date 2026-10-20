@@ -1,7 +1,7 @@
 import { type Static, t } from "elysia";
 import { CallKind, nullable } from "../common/common.schema.ts";
 
-export const UsageGroupBy = t.UnionEnum(["day", "user", "channel", "model"]);
+export const UsageGroupBy = t.UnionEnum(["day", "visitor", "channel", "model"]);
 
 export const UsageTotals = t.Object({
 	inputTokens: t.Number(),

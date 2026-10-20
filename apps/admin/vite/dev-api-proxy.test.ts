@@ -47,7 +47,7 @@ test("forwards method, path, query and body, and returns status, body and every 
 	});
 	const dev = await proxyTo(upstream);
 
-	const response = await fetch(`${dev}/api/users?limit=5`, {
+	const response = await fetch(`${dev}/api/visitors?limit=5`, {
 		method: "POST",
 		headers: { "content-type": "application/json", cookie: "sid=xyz" },
 		body: JSON.stringify({ hello: "world" }),
@@ -61,7 +61,7 @@ test("forwards method, path, query and body, and returns status, body and every 
 	]);
 	expect(seen).toEqual({
 		method: "POST",
-		url: "/api/users?limit=5",
+		url: "/api/visitors?limit=5",
 		cookie: "sid=xyz",
 		body: '{"hello":"world"}',
 	});
@@ -69,7 +69,7 @@ test("forwards method, path, query and body, and returns status, body and every 
 
 test("passes non-/api requests on to the next middleware", async () => {
 	const dev = await proxyTo("http://127.0.0.1:1");
-	const response = await fetch(`${dev}/users`);
+	const response = await fetch(`${dev}/visitors`);
 	expect(response.status).toBe(404);
 	expect(await response.text()).toBe("next");
 });

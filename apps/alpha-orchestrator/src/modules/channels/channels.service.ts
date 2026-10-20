@@ -1,4 +1,4 @@
-import { asc, count, eq } from "drizzle-orm";
+import { asc, count, eq, type SQL } from "drizzle-orm";
 import { channels } from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
 import { limitOffset, type PageParams } from "../http/http.service.ts";
@@ -20,6 +20,7 @@ export function toChannel(row: ChannelRow) {
 		publishableKey: row.publishableKey,
 		disabledAt: row.disabledAt,
 		createdAt: row.createdAt,
+		ownerId: row.ownerId,
 	};
 }
 
@@ -37,11 +38,18 @@ function newKeyPair() {
 	};
 }
 
-export function listChannels(db: Db, paging: PageParams = {}) {
+export function listChannels(
+	db: Db,
+	paging: PageParams & { ownerId?: string } = {},
+) {
 	const { limit, offset } = limitOffset(paging);
+	const where: SQL | undefined = paging.ownerId
+		? eq(channels.ownerId, paging.ownerId)
+		: undefined;
 	const query = db
 		.select()
 		.from(channels)
+		.where(where)
 		.orderBy(asc(channels.createdAt), asc(channels.id));
 	const rows =
 		limit === undefined
@@ -50,7 +58,8 @@ export function listChannels(db: Db, paging: PageParams = {}) {
 					.limit(limit)
 					.offset(offset ?? 0)
 					.all();
-	const total = db.select({ value: count() }).from(channels).get()?.value ?? 0;
+	const total =
+		db.select({ value: count() }).from(channels).where(where).get()?.value ?? 0;
 	return { items: rows.map(toChannel), total };
 }
 
@@ -61,6 +70,8 @@ export interface NewWebChannel {
 	allowedOrigins: string[];
 	/** Defaults to `en`. */
 	catalogLanguage?: string;
+	/** admin-api account id; left out = staff-owned. */
+	ownerId?: string;
 }
 
 /** Only web channels are created at runtime; telegram/cli come from the seed migration. */
@@ -86,6 +97,7 @@ export function createWebChannel(db: Db, input: NewWebChannel, now: number) {
 			publishableKey,
 			secretKeyHash,
 			createdAt: now,
+			ownerId: input.ownerId ?? null,
 		})
 		.returning()
 		.get();
@@ -144,4 +156,17 @@ export function rotateChannelKeys(db: Db, id: string) {
 		.returning()
 		.get();
 	return { channel: toChannel(row), secretKey };
+}
+
+/**
+ * Deletes every channel of an owner; visitors, messages, threads, runs… go with
+ * them (FK cascade). `llm_calls` and subscriptions keep their rows with the
+ * channel reference set to NULL (FK `set null`), so spend totals survive.
+ */
+export function deleteOwnerChannels(db: Db, ownerId: string) {
+	return db
+		.delete(channels)
+		.where(eq(channels.ownerId, ownerId))
+		.returning({ id: channels.id })
+		.all().length;
 }

@@ -3,7 +3,7 @@ import { costUsd, type Prices } from "../prices/prices.service.ts";
 import { dayOf, usageColumnsWhere } from "./usage.sql.ts";
 import type { UsageTotals } from "./usage.types.ts";
 
-export type UsageGroupBy = "day" | "user" | "channel" | "model";
+export type UsageGroupBy = "day" | "visitor" | "channel" | "model";
 
 /** What each grouping selects: the group key, its display label, and any join it needs. */
 const GROUPS: Record<
@@ -11,12 +11,12 @@ const GROUPS: Record<
 	{ key: string; label: string; join: string }
 > = {
 	day: { key: dayOf("l.at"), label: dayOf("l.at"), join: "" },
-	user: {
-		key: "l.user_id",
-		// Deleted (e.g. cleaned-up anonymous) users have user_id NULL.
+	visitor: {
+		key: "l.visitor_id",
+		// Deleted (e.g. cleaned-up anonymous) visitors have visitor_id NULL.
 		label:
-			"CASE WHEN l.user_id IS NULL THEN '(удалён)' ELSE COALESCE(u.display_name, u.external_user_id, u.id) END",
-		join: "LEFT JOIN users u ON u.id = l.user_id",
+			"CASE WHEN l.visitor_id IS NULL THEN '(удалён)' ELSE COALESCE(u.display_name, NULLIF(u.name, ''), u.id) END",
+		join: "LEFT JOIN visitors u ON u.id = l.visitor_id",
 	},
 	channel: {
 		key: "c.slug",
@@ -32,10 +32,15 @@ interface UsageRowBase extends UsageTotals {
 	avgLatencyMs: number;
 }
 
-const channelFilterOf = (channel?: string) =>
-	channel
-		? "AND l.channel_id = (SELECT id FROM channels WHERE slug = $channel)"
-		: "";
+/** `channel` = a slug; `ownerId` = only calls of that account's channels (calls of deleted channels have no owner). */
+const filterOf = (channel?: string, ownerId?: string) =>
+	`${channel ? "AND l.channel_id = (SELECT id FROM channels WHERE slug = $channel)" : ""}
+	${ownerId ? "AND l.channel_id IN (SELECT id FROM channels WHERE owner_id = $ownerId)" : ""}`;
+
+const bindsOf = (channel?: string, ownerId?: string) => ({
+	...(channel ? { channel } : {}),
+	...(ownerId ? { ownerId } : {}),
+});
 
 /**
  * Spend per group key: tokens × the model's price. `null` without prices (the
@@ -50,6 +55,7 @@ function spendByKey(
 	to: number,
 	channel: string | undefined,
 	prices: Prices,
+	ownerId?: string,
 ) {
 	const group = GROUPS[groupBy];
 	const perModel = db.$client
@@ -61,10 +67,10 @@ function spendByKey(
 				COALESCE(SUM(l.input_tokens), 0) AS input,
 				COALESCE(SUM(l.output_tokens), 0) AS output
 			FROM llm_calls l ${group.join}
-			WHERE l.at >= $from AND l.at <= $to ${channelFilterOf(channel)}
+			WHERE l.at >= $from AND l.at <= $to ${filterOf(channel, ownerId)}
 			GROUP BY 1, 2`,
 		)
-		.all({ from, to, ...(channel ? { channel } : {}) });
+		.all({ from, to, ...bindsOf(channel, ownerId) });
 	const spend = new Map<string | null, number>();
 	for (const row of perModel) {
 		spend.set(
@@ -76,7 +82,7 @@ function spendByKey(
 	return spend;
 }
 
-/** Usage grouped by day, user, channel or model; `prices` adds `costUsd` (and a per-1M `price` on model rows). */
+/** Usage grouped by day, visitor, channel or model; `prices` adds `costUsd` (and a per-1M `price` on model rows). */
 export function usageRows(
 	db: Db,
 	groupBy: UsageGroupBy,
@@ -84,9 +90,10 @@ export function usageRows(
 	to: number,
 	channel?: string,
 	prices?: Prices | null,
+	ownerId?: string,
 ) {
 	const group = GROUPS[groupBy];
-	const channelFilter = channelFilterOf(channel);
+	const channelFilter = filterOf(channel, ownerId);
 
 	const rows = db.$client
 		.query<UsageRowBase, Record<string, string | number>>(
@@ -100,9 +107,9 @@ export function usageRows(
 			WHERE l.at >= $from AND l.at <= $to ${channelFilter}
 			GROUP BY 1 ORDER BY 1`,
 		)
-		.all({ from, to, ...(channel ? { channel } : {}) });
+		.all({ from, to, ...bindsOf(channel, ownerId) });
 	const spend = prices
-		? spendByKey(db, groupBy, from, to, channel, prices)
+		? spendByKey(db, groupBy, from, to, channel, prices, ownerId)
 		: undefined;
 	return rows.map((row) => {
 		const price =
@@ -129,7 +136,11 @@ export function usageRows(
  * newest part of `llm_calls` (the windows overlap, so separate queries would
  * scan the same rows several times).
  */
-export function usageSinceEach(db: Db, sinces: number[]): UsageTotals[] {
+export function usageSinceEach(
+	db: Db,
+	sinces: number[],
+	ownerId?: string,
+): UsageTotals[] {
 	if (sinces.length === 0) return [];
 	const columns = sinces
 		.map((_, i) => usageColumnsWhere(`w${i}`, `at >= $since${i}`))
@@ -138,10 +149,14 @@ export function usageSinceEach(db: Db, sinces: number[]): UsageTotals[] {
 		sinces.map((since, i) => [`since${i}`, since]),
 	);
 	const row = db.$client
-		.query<Record<string, number>, Record<string, number>>(
-			`SELECT ${columns} FROM llm_calls WHERE at >= $oldest`,
+		.query<Record<string, number>, Record<string, number | string>>(
+			`SELECT ${columns} FROM llm_calls WHERE at >= $oldest ${ownerId ? "AND channel_id IN (SELECT id FROM channels WHERE owner_id = $ownerId)" : ""}`,
 		)
-		.get({ ...binds, oldest: Math.min(...sinces) });
+		.get({
+			...binds,
+			oldest: Math.min(...sinces),
+			...(ownerId ? { ownerId } : {}),
+		});
 
 	return sinces.map((_, i) => ({
 		inputTokens: row?.[`w${i}InputTokens`] ?? 0,

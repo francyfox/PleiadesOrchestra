@@ -12,7 +12,7 @@ import {
 	llmCalls,
 	messages,
 	planRuns,
-	users,
+	visitors,
 } from "../database/database.schema.ts";
 import { testDb } from "../database/database.testing.ts";
 import type { Db } from "../database/database.ts";
@@ -94,7 +94,7 @@ function post(path: string, body: unknown, key = API_KEY): Request {
 }
 
 describe("POST /v1/access", () => {
-	test("registers an unknown telegram user as pending (not allowed) and keeps their display name", async () => {
+	test("registers an unknown telegram visitor as pending (not allowed) and keeps their display name", async () => {
 		const { app, db } = setup();
 		const response = await app.handle(
 			post("/v1/access", {
@@ -110,7 +110,7 @@ describe("POST /v1/access", () => {
 		};
 		expect(body.allowed).toBe(false);
 		expect(
-			db.select().from(users).where(eq(users.id, body.userId)).get(),
+			db.select().from(visitors).where(eq(visitors.id, body.userId)).get(),
 		).toMatchObject({
 			externalUserId: "42",
 			displayName: "Ivan",
@@ -118,16 +118,16 @@ describe("POST /v1/access", () => {
 		});
 	});
 
-	test("allows a whitelisted user; repeated calls reuse the same user", async () => {
+	test("allows a whitelisted visitor; repeated calls reuse the same visitor", async () => {
 		const { app, db } = setup();
 		const first = (await (
 			await app.handle(
 				post("/v1/access", { channel: "telegram", externalUserId: "42" }),
 			)
 		).json()) as { userId: string };
-		db.update(users)
+		db.update(visitors)
 			.set({ whitelistedAt: 1 })
-			.where(eq(users.id, first.userId))
+			.where(eq(visitors.id, first.userId))
 			.run();
 
 		const second = (await (
@@ -156,7 +156,7 @@ describe("POST /v1/access", () => {
 });
 
 describe("POST /v1/messages access control", () => {
-	test("a pending telegram user gets an empty 403 and the model is never called", async () => {
+	test("a pending telegram visitor gets an empty 403 and the model is never called", async () => {
 		const { app, calls } = setup();
 		const response = await app.handle(
 			post("/v1/messages", {
@@ -171,12 +171,12 @@ describe("POST /v1/messages access control", () => {
 		expect(calls).toHaveLength(0);
 	});
 
-	test("a blocked user on an open channel gets 403", async () => {
+	test("a blocked visitor on an open channel gets 403", async () => {
 		const { app, db, calls } = setup();
 		await app.handle(
 			post("/v1/access", { channel: "cli", externalUserId: "u" }),
 		);
-		db.update(users).set({ blockedAt: 1 }).run();
+		db.update(visitors).set({ blockedAt: 1 }).run();
 		const response = await app.handle(
 			post("/v1/messages", { threadId: "t", userId: "u", text: "hi" }),
 		);
@@ -235,7 +235,7 @@ describe("POST /v1/messages persistence", () => {
 			).text();
 		}
 		expect(db.select().from(messages).all()).toHaveLength(4);
-		// Same user and thread reused, not re-created per message.
-		expect(db.select().from(users).all()).toHaveLength(1);
+		// Same visitor and thread reused, not re-created per message.
+		expect(db.select().from(visitors).all()).toHaveLength(1);
 	});
 });

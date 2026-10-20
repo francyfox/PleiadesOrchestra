@@ -10,11 +10,16 @@
 	import DataTable from "#lib/components/data-table.svelte";
 	import { useFormat } from "#lib/i18n/use-format.js";
 
-	/** Usage rows grouped by user, channel or model; user rows link to the user card, model rows show the price. */
+	/** Usage rows grouped by visitor, channel or model; visitor rows link to the visitor card, model rows show the price. */
 	let {
 		rows,
 		groupBy,
-	}: { rows: UsageRow[]; groupBy: "user" | "channel" | "model" } = $props();
+		staff,
+	}: {
+		rows: UsageRow[];
+		groupBy: "visitor" | "channel" | "model";
+		staff: boolean;
+	} = $props();
 
 	const content = useIntlayer("dashboard");
 	const format = useFormat();
@@ -75,8 +80,8 @@
 </script>
 
 {#snippet labelCell(row: UsageRow)}
-	{#if groupBy === "user" && row.key && row.label !== row.key}
-		<a class="underline-offset-4 hover:underline" href={`/users/${encodeURIComponent(row.key)}`}>{row.label}</a>
+	{#if staff && groupBy === "visitor" && row.key && row.label !== row.key}
+		<a class="underline-offset-4 hover:underline" href={`/visitors/${encodeURIComponent(row.key)}`}>{row.label}</a>
 	{:else}
 		{row.label}
 	{/if}

@@ -63,7 +63,7 @@ export async function json<T = any>(response: Response): Promise<T> {
 
 export function seedLlmCall(
 	db: Db,
-	userId: string | null,
+	visitorId: string | null,
 	at: number,
 	input: number | null,
 	output: number | null,
@@ -71,7 +71,7 @@ export function seedLlmCall(
 	db.insert(llmCalls)
 		.values({
 			at,
-			userId,
+			visitorId,
 			channelId: "ch_telegram",
 			kind: "generate",
 			provider: "albedo",

@@ -14,12 +14,12 @@ COPY apps/alpha-orchestrator/native /src/native
 ARG NATIVE_JOBS=4
 RUN PREFIX=/opt/translator JOBS=$NATIVE_JOBS nice -n 19 /src/native/build.sh
 
-FROM oven/bun:1-alpine AS prune
+FROM oven/bun:1.4.3-alpine AS prune
 WORKDIR /app
 COPY . .
 RUN bunx turbo@2.10.9 prune alpha-orchestrator --docker
 
-FROM oven/bun:1-alpine AS install
+FROM oven/bun:1.4.3-alpine AS install
 WORKDIR /app
 # Only package.json files + the pruned lockfile: this layer (and the install)
 # stays cached until a dependency actually changes.
@@ -47,6 +47,8 @@ ENV DATABASE_MIGRATIONS_DIR=/app/drizzle
 # The SQLite file lives on a volume (compose: alpha-orchestrator-data).
 ENV DATABASE_PATH=/data/orchestrator.db
 VOLUME /data
+# providers.toml, rewritten by the admin panel (compose binds the repo's configs/).
+ENV PROVIDERS_CONFIG_PATH=/configs/providers.toml
 # Messages are translated to English as they come in (Opus-MT, ~40 ms). The
 # model (~150 MB) downloads into this volume on first start; clear
 # TRANSLATE_LIB_PATH to run without translation.

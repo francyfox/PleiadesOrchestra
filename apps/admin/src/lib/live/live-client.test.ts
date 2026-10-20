@@ -107,14 +107,14 @@ describe("createLiveClient", () => {
 
 	test("the first subscription opens one socket; subscribe messages go out once it is open", () => {
 		const { client, sockets } = harness();
-		client.subscribe("users", { limit: 10 }, handlers());
+		client.subscribe("visitors", { limit: 10 }, handlers());
 		client.subscribe("agents", {}, handlers());
 		expect(sockets).toHaveLength(1);
 		expect(sockets[0]?.sent).toEqual([]);
 		sockets[0]?.open();
 		const sent = subscribes(sockets[0] as FakeSocket);
 		expect(sent.map((m) => [m.topic, m.params])).toEqual([
-			["users", { limit: 10 }],
+			["visitors", { limit: 10 }],
 			["agents", {}],
 		]);
 		expect(new Set(sent.map((m) => m.id)).size).toBe(2);
@@ -122,18 +122,18 @@ describe("createLiveClient", () => {
 
 	test("a subscription made while the socket is open is sent at once", () => {
 		const { client, sockets } = harness();
-		client.subscribe("users", {}, handlers());
+		client.subscribe("visitors", {}, handlers());
 		sockets[0]?.open();
 		client.subscribe("agents", {}, handlers());
 		expect(subscribes(sockets[0] as FakeSocket).map((m) => m.topic)).toEqual([
-			"users",
+			"visitors",
 			"agents",
 		]);
 	});
 
 	test("a hidden tab holds no socket; becoming visible opens it", () => {
 		const { client, sockets, setVisible } = harness(false);
-		client.subscribe("users", {}, handlers());
+		client.subscribe("visitors", {}, handlers());
 		expect(sockets).toHaveLength(0);
 		setVisible(true);
 		expect(sockets).toHaveLength(1);
@@ -141,7 +141,7 @@ describe("createLiveClient", () => {
 
 	test("hiding the tab closes the socket, showing it reopens and asks for the same subscriptions again", () => {
 		const { client, sockets, setVisible } = harness();
-		client.subscribe("users", { limit: 20 }, handlers());
+		client.subscribe("visitors", { limit: 20 }, handlers());
 		sockets[0]?.open();
 		const firstId = subscribes(sockets[0] as FakeSocket)[0]?.id;
 		setVisible(false);
@@ -154,7 +154,7 @@ describe("createLiveClient", () => {
 			{
 				type: "subscribe",
 				id: firstId as string,
-				topic: "users",
+				topic: "visitors",
 				params: { limit: 20 },
 			},
 		]);
@@ -162,7 +162,7 @@ describe("createLiveClient", () => {
 
 	test("hiding the tab does not trigger a reconnect timer", () => {
 		const { client, sockets, timers, setVisible } = harness();
-		client.subscribe("users", {}, handlers());
+		client.subscribe("visitors", {}, handlers());
 		sockets[0]?.open();
 		setVisible(false);
 		sockets[0]?.drop();
@@ -173,7 +173,7 @@ describe("createLiveClient", () => {
 		const { client, sockets } = harness();
 		const a = handlers();
 		const b = handlers();
-		client.subscribe("users", {}, a);
+		client.subscribe("visitors", {}, a);
 		client.subscribe("agents", {}, b);
 		sockets[0]?.open();
 		const [idA, idB] = subscribes(sockets[0] as FakeSocket).map((m) => m.id);
@@ -189,7 +189,7 @@ describe("createLiveClient", () => {
 	test("garbage and unknown ids are ignored", () => {
 		const { client, sockets } = harness();
 		const h = handlers();
-		client.subscribe("users", {}, h);
+		client.subscribe("visitors", {}, h);
 		sockets[0]?.open();
 		sockets[0]?.receive("not json");
 		sockets[0]?.receive({ type: "data", id: "nope", data: 1 });
@@ -200,7 +200,7 @@ describe("createLiveClient", () => {
 	test("unsubscribing tells the server and stops routing; the last one closes the socket", () => {
 		const { client, sockets } = harness();
 		const a = handlers();
-		const off = client.subscribe("users", {}, a);
+		const off = client.subscribe("visitors", {}, a);
 		client.subscribe("agents", {}, handlers());
 		sockets[0]?.open();
 		const idA = subscribes(sockets[0] as FakeSocket)[0]?.id;
@@ -213,7 +213,7 @@ describe("createLiveClient", () => {
 
 	test("with no subscriptions left the socket is closed", () => {
 		const { client, sockets } = harness();
-		const off = client.subscribe("users", {}, handlers());
+		const off = client.subscribe("visitors", {}, handlers());
 		sockets[0]?.open();
 		off();
 		expect(sockets[0]?.closed).toBe(true);
@@ -221,7 +221,7 @@ describe("createLiveClient", () => {
 
 	test("unsubscribing twice is harmless", () => {
 		const { client, sockets } = harness();
-		const off = client.subscribe("users", {}, handlers());
+		const off = client.subscribe("visitors", {}, handlers());
 		sockets[0]?.open();
 		off();
 		off();
@@ -234,7 +234,7 @@ describe("createLiveClient", () => {
 
 	test("an unexpected close reconnects after the first backoff step and re-subscribes", () => {
 		const { client, sockets, timers, fire } = harness();
-		client.subscribe("users", {}, handlers());
+		client.subscribe("visitors", {}, handlers());
 		sockets[0]?.open();
 		sockets[0]?.drop();
 		expect([...timers.values()].map((t) => t.ms)).toEqual([100]);
@@ -246,7 +246,7 @@ describe("createLiveClient", () => {
 
 	test("backoff grows across failures, is capped, and resets after a socket opened", () => {
 		const { client, sockets, timers, fire } = harness();
-		client.subscribe("users", {}, handlers());
+		client.subscribe("visitors", {}, handlers());
 		const delays: number[] = [];
 		for (let i = 0; i < 3; i++) {
 			sockets.at(-1)?.drop();
@@ -261,7 +261,7 @@ describe("createLiveClient", () => {
 
 	test("no reconnect timer when nobody is subscribed any more", () => {
 		const { client, sockets, timers } = harness();
-		const off = client.subscribe("users", {}, handlers());
+		const off = client.subscribe("visitors", {}, handlers());
 		sockets[0]?.open();
 		sockets[0]?.drop();
 		expect(timers.size).toBe(1);
@@ -272,7 +272,7 @@ describe("createLiveClient", () => {
 	test("stop closes the socket and forgets every subscription", () => {
 		const { client, sockets, timers } = harness();
 		const h = handlers();
-		client.subscribe("users", {}, h);
+		client.subscribe("visitors", {}, h);
 		sockets[0]?.open();
 		client.stop();
 		expect(sockets[0]?.closed).toBe(true);
@@ -282,7 +282,7 @@ describe("createLiveClient", () => {
 	test("a snapshot from a socket that was already replaced is dropped", () => {
 		const { client, sockets, setVisible } = harness();
 		const h = handlers();
-		client.subscribe("users", {}, h);
+		client.subscribe("visitors", {}, h);
 		sockets[0]?.open();
 		const id = subscribes(sockets[0] as FakeSocket)[0]?.id;
 		setVisible(false);

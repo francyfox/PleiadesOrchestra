@@ -8,21 +8,21 @@ const byTokens = (
 ) => b.inputTokens + b.outputTokens - (a.inputTokens + a.outputTokens);
 
 /**
- * `GET /api/dashboard`: stats plus 30 days of usage by day, top-10 users and
- * channels. The REST endpoint and the live topic both call this, so a pushed
+ * `GET /api/dashboard`: stats plus 30 days of usage by day, top-10 visitors and
+ * channels (of one owner when `ownerId` is given). The REST endpoint and the live topic both call this, so a pushed
  * snapshot is always identical to what `GET` would return.
  */
-export async function fetchDashboard({
-	orchestrator,
-	now,
-}: Pick<FetchContext, "orchestrator" | "now">): Promise<DashboardData> {
+export async function fetchDashboard(
+	{ orchestrator, now }: Pick<FetchContext, "orchestrator" | "now">,
+	ownerId?: string,
+): Promise<DashboardData> {
 	const from = now() - 30 * DAY_MS;
-	const [stats, byDay, byUser, byChannel, byModel] = await Promise.all([
-		orchestrator.stats(),
-		orchestrator.usage({ groupBy: "day", from }),
-		orchestrator.usage({ groupBy: "user", from }),
-		orchestrator.usage({ groupBy: "channel", from }),
-		orchestrator.usage({ groupBy: "model", from }),
+	const [stats, byDay, byVisitor, byChannel, byModel] = await Promise.all([
+		orchestrator.stats(ownerId),
+		orchestrator.usage({ groupBy: "day", from, ownerId }),
+		orchestrator.usage({ groupBy: "visitor", from, ownerId }),
+		orchestrator.usage({ groupBy: "channel", from, ownerId }),
+		orchestrator.usage({ groupBy: "model", from, ownerId }),
 	]);
 	return {
 		stats,
@@ -32,7 +32,7 @@ export async function fetchDashboard({
 			outputTokens: row.outputTokens,
 			costUsd: row.costUsd,
 		})),
-		topUsers: [...byUser.rows].sort(byTokens).slice(0, 10),
+		topVisitors: [...byVisitor.rows].sort(byTokens).slice(0, 10),
 		byChannel: [...byChannel.rows].sort(byTokens),
 		byModel: [...byModel.rows].sort(byTokens),
 	};

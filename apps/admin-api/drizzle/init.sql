@@ -52,7 +52,7 @@ CREATE TABLE `user` (
 	`banned` integer DEFAULT false,
 	`ban_reason` text,
 	`ban_expires` integer
-);
+, `level` integer DEFAULT 200 NOT NULL, `last_active_at` integer, `token_hash` text, `locale` text);
 CREATE UNIQUE INDEX `user_email_unique` ON `user` (`email`);
 CREATE TABLE `verification` (
 	`id` text PRIMARY KEY NOT NULL,
@@ -64,4 +64,5 @@ CREATE TABLE `verification` (
 );
 CREATE INDEX `verification_identifier_idx` ON `verification` (`identifier`);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'bd34583cbc4715aeffe1812674c8c5a2db0410527eb539ff8ea64694bf6cda06', 1790244509625);
+INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '462cdeb893cc79ca966d6c0ec4fa9e4f6ccb81b009d5c056a84970466ccad430', 1792487364567);
 COMMIT;

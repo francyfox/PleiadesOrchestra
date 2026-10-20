@@ -2,7 +2,8 @@ import { describe, expect, test } from "bun:test";
 import {
 	banRefusal,
 	deleteRefusal,
-	passwordRefusal,
+	isEmail,
+	manageRefusal,
 } from "./admin-policy.service.ts";
 
 describe("banRefusal", () => {
@@ -52,21 +53,23 @@ describe("banRefusal", () => {
 });
 
 describe("banRefusal with a super admin", () => {
-	const base = {
-		actorId: "a",
-		targetBanned: false,
-		activeAdmins: 3,
-		superId: "root",
-	};
+	const base = { actorId: "a", targetBanned: false, activeAdmins: 3 };
 
-	test("nobody else can ban the super admin", () => {
-		expect(banRefusal({ ...base, targetId: "root" })).toBe("super_protected");
+	test("nobody else can ban a super admin", () => {
+		expect(banRefusal({ ...base, targetId: "root", targetIsSuper: true })).toBe(
+			"super_protected",
+		);
 	});
 
-	test("the super admin banning themselves is a plain self-ban", () => {
-		expect(banRefusal({ ...base, actorId: "root", targetId: "root" })).toBe(
-			"self",
-		);
+	test("a super admin banning themselves is a plain self-ban", () => {
+		expect(
+			banRefusal({
+				...base,
+				actorId: "root",
+				targetId: "root",
+				targetIsSuper: true,
+			}),
+		).toBe("self");
 	});
 
 	test("banning a regular admin is unaffected", () => {
@@ -75,47 +78,50 @@ describe("banRefusal with a super admin", () => {
 });
 
 describe("deleteRefusal", () => {
-	test("the super admin may delete another admin", () => {
+	test("a super admin may delete another admin", () => {
 		expect(
-			deleteRefusal({ actorId: "root", targetId: "b", superId: "root" }),
+			deleteRefusal({ actorId: "root", actorLevel: 0, targetId: "b" }),
 		).toBeNull();
 	});
 
-	test("a regular admin may not delete anyone, not even a peer", () => {
+	test("a regular admin may not delete anyone, not even a peer or a super", () => {
 		expect(
-			deleteRefusal({ actorId: "a", targetId: "b", superId: "root" }),
+			deleteRefusal({ actorId: "a", actorLevel: 100, targetId: "b" }),
+		).toBe("not_super");
+		expect(
+			deleteRefusal({ actorId: "a", actorLevel: 100, targetId: "root" }),
 		).toBe("not_super");
 	});
 
-	test("a regular admin may not delete the super admin", () => {
+	test("a super admin may not delete themselves", () => {
 		expect(
-			deleteRefusal({ actorId: "a", targetId: "root", superId: "root" }),
-		).toBe("not_super");
-	});
-
-	test("the super admin may not delete themselves", () => {
-		expect(
-			deleteRefusal({ actorId: "root", targetId: "root", superId: "root" }),
+			deleteRefusal({ actorId: "root", actorLevel: 0, targetId: "root" }),
 		).toBe("self");
 	});
 });
 
-describe("passwordRefusal", () => {
-	test("only the super admin may change the super admin's password", () => {
+describe("manageRefusal", () => {
+	test("anyone manages their own account", () => {
 		expect(
-			passwordRefusal({ actorId: "a", targetId: "root", superId: "root" }),
-		).toBe("super_protected");
-		expect(
-			passwordRefusal({ actorId: "root", targetId: "root", superId: "root" }),
+			manageRefusal({ actorId: "a", actorLevel: 100, targetId: "a" }),
 		).toBeNull();
 	});
 
-	test("regular targets stay open to every admin", () => {
+	test("only a super admin manages someone else", () => {
 		expect(
-			passwordRefusal({ actorId: "a", targetId: "b", superId: "root" }),
-		).toBeNull();
+			manageRefusal({ actorId: "a", actorLevel: 100, targetId: "b" }),
+		).toBe("not_super");
 		expect(
-			passwordRefusal({ actorId: "a", targetId: "a", superId: "root" }),
+			manageRefusal({ actorId: "root", actorLevel: 0, targetId: "b" }),
 		).toBeNull();
+	});
+});
+
+describe("isEmail", () => {
+	test("accepts one @ with text on both sides, rejects the rest", () => {
+		expect(isEmail("a@b.co")).toBe(true);
+		for (const bad of ["", "a", "a@", "@b.co", "a b@c.d", "a@@b.c"]) {
+			expect(isEmail(bad)).toBe(false);
+		}
 	});
 });

@@ -1,28 +1,54 @@
+/** Account levels (admin-api `accounts.schema.ts`): staff = 0 super admin, 100 admin; customers are 200. */
+export const STAFF_MAX_LEVEL = 100;
+
+export const isStaff = (level: number) => level <= STAFF_MAX_LEVEL;
+
+/** Pages an anonymous visitor may open: the staff token form and the customer forms. */
+const PUBLIC_PAGES = [
+	"/login",
+	"/user/login",
+	"/user/register",
+	"/user/forgot",
+	"/user/reset",
+];
+
+/** The only pages a customer (level 200) may open; staff open everything else. */
+const USER_PAGES = ["/", "/channels", "/faq", "/settings"];
+
+/** Customer-only pages (own account settings): staff have no customer account to edit. */
+const USER_ONLY_PAGES = ["/settings"];
+
+const under = (pathname: string, page: string) =>
+	page === "/"
+		? pathname === "/"
+		: pathname === page || pathname.startsWith(`${page}/`);
+
+/** Whether an account of this level may open `pathname`. */
+export const canOpen = (level: number, pathname: string) =>
+	isStaff(level)
+		? !USER_ONLY_PAGES.some((page) => under(pathname, page))
+		: USER_PAGES.some((page) => under(pathname, page));
+
 export interface AuthRedirectInput {
 	pathname: string;
-	/** At least one admin account exists — public registration is closed. */
-	hasAdmin: boolean;
-	isLoggedIn: boolean;
+	/** Level of the signed-in account, `null` when nobody is signed in. */
+	level: number | null;
 }
 
 /**
  * Where a request must be redirected before it reaches a page, or `null` to
- * serve it. First run (no admin yet) funnels everything to `/register`;
- * afterwards `/register` is closed and everything but `/login` needs a session.
- * better-auth's own `/api/auth/*` endpoints are never redirected — they
- * enforce the same rules at the API level (see `auth.ts`).
+ * serve it. Anonymous visitors get the sign-in forms and are sent to `/login`
+ * otherwise; a signed-in account leaves them for `/`; a customer is sent
+ * `/` from staff pages. `/api/auth/*` is never redirected.
  */
 export function resolveAuthRedirect({
 	pathname,
-	hasAdmin,
-	isLoggedIn,
+	level,
 }: AuthRedirectInput): string | null {
 	if (pathname.startsWith("/api/auth/")) return null;
 
-	if (!hasAdmin) return pathname === "/register" ? null : "/register";
-
-	const isAuthPage = pathname === "/login" || pathname === "/register";
-	if (isLoggedIn) return isAuthPage ? "/" : null;
-	if (pathname === "/login") return null;
-	return "/login";
+	const isPublic = PUBLIC_PAGES.some((page) => under(pathname, page));
+	if (level === null) return isPublic ? null : "/login";
+	if (isPublic) return "/";
+	return canOpen(level, pathname) ? null : "/";
 }

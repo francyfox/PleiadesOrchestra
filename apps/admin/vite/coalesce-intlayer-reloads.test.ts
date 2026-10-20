@@ -15,7 +15,7 @@ const hook = (plugin: any) => plugin.hotUpdate as (o: any) => unknown;
 test("a burst of dictionary rebuilds becomes one full reload", async () => {
 	const plugin = coalesceIntlayerReloads({ delayMs: 20 });
 	const { sent, server } = fakeServer();
-	for (const name of ["common", "users", "admins", "auth"]) {
+	for (const name of ["common", "visitors", "admins", "auth"]) {
 		const result = hook(plugin)({
 			file: `/app/.intlayer/dictionary/${name}.json`,
 			server,

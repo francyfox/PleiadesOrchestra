@@ -20,16 +20,16 @@ export const liveQueries = {
 			queryFn: () => unwrap(api().dashboard.get()),
 			...pushed,
 		}),
-	users: (params: LiveTopics["users"]["params"]) =>
+	visitors: (params: LiveTopics["visitors"]["params"]) =>
 		queryOptions({
-			queryKey: topicKey("users", params),
-			queryFn: () => unwrap(api().users.get({ query: params })),
+			queryKey: topicKey("visitors", params),
+			queryFn: () => unwrap(api().visitors.get({ query: params })),
 			...pushed,
 		}),
-	user: (params: LiveTopics["user"]["params"]) =>
+	visitor: (params: LiveTopics["visitor"]["params"]) =>
 		queryOptions({
-			queryKey: topicKey("user", params),
-			queryFn: () => unwrap(api().users({ id: params.id }).get()),
+			queryKey: topicKey("visitor", params),
+			queryFn: () => unwrap(api().visitors({ id: params.id }).get()),
 			...pushed,
 		}),
 	channels: (params: LiveTopics["channels"]["params"]) =>
@@ -127,10 +127,36 @@ export const queries = {
 			queryFn: () =>
 				unwrap(api().subscriptions.get({ query: status ? { status } : {} })),
 		}),
-	providerKeys: () =>
+	/** The customer's own account (settings page). */
+	me: () =>
 		queryOptions({
-			queryKey: ["provider-keys"],
-			queryFn: () => unwrap(api()["provider-keys"].get()),
+			queryKey: ["me"],
+			queryFn: () => unwrap(api().user.me.get()),
+		}),
+	/** Staff: one server-cut page of the Users table. */
+	accounts: (params: { page: number; pageSize: number }) =>
+		queryOptions({
+			queryKey: ["accounts", params],
+			queryFn: () => unwrap(api().accounts.get({ query: params })),
+		}),
+	/** Staff: every customer, unpaged — resolves channel owners to names. */
+	allAccounts: () =>
+		queryOptions({
+			queryKey: ["accounts", "all"],
+			queryFn: () => unwrap(api().accounts.get({ query: {} })),
+		}),
+	/** Providers and models of the orchestrator's providers.toml (keys masked). */
+	providers: () =>
+		queryOptions({
+			queryKey: ["providers"],
+			queryFn: () => unwrap(api().providers.get()),
+		}),
+	/** The file for its editor; always fresh so a form edit since isn't overwritten. */
+	providersToml: () =>
+		queryOptions({
+			queryKey: ["providers-toml"],
+			queryFn: () => unwrap(api()["providers-toml"].get()),
+			staleTime: 0,
 		}),
 	/** A channel's persona; asked only while its dialog is open and always fresh (an edit elsewhere must not be overwritten by a stale form). */
 	persona: (channelId: string) =>

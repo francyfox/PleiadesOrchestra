@@ -12,7 +12,7 @@ export type StreamEvent =
 			totalOutputTokens?: number;
 	  }
 	/**
-	 * Progress for the user, in their language: what the run is doing right now
+	 * Progress for the visitor, in their language: what the run is doing right now
 	 * ("Ищу «cheese»…") and how each step ended. `id` is the action's name; a
 	 * later line with the same `id` replaces the earlier one (it started, then
 	 * finished). Not a terminal line — more follow.

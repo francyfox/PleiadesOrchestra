@@ -5,64 +5,58 @@ const usersContent = {
 	content: {
 		title: t({ ru: "Пользователи", en: "Users", kk: "Пайдаланушылар" }),
 		columns: {
-			user: t({ ru: "Пользователь", en: "User", kk: "Пайдаланушы" }),
-			channel: t({ ru: "Канал", en: "Channel", kk: "Арна" }),
-			ip: t({ ru: "IP", en: "IP", kk: "IP" }),
-			status: t({ ru: "Статус", en: "Status", kk: "Күйі" }),
-			lastSeen: t({ ru: "Активность", en: "Last seen", kk: "Белсенділік" }),
+			name: t({ ru: "Имя", en: "Name", kk: "Аты" }),
+			email: t({ ru: "Почта", en: "Email", kk: "Пошта" }),
 			created: t({ ru: "Создан", en: "Created", kk: "Құрылған" }),
-			tokens: t({ ru: "Токены", en: "Tokens", kk: "Токендер" }),
+			lastActive: t({
+				ru: "Последняя активность",
+				en: "Last active",
+				kk: "Соңғы белсенділік",
+			}),
+			channels: t({ ru: "Каналы", en: "Channels", kk: "Арналар" }),
+			status: t({ ru: "Статус", en: "Status", kk: "Күйі" }),
 		},
-		selectAll: t({
-			ru: "Выбрать все",
-			en: "Select all",
-			kk: "Барлығын таңдау",
+		verified: t({ ru: "подтверждена", en: "verified", kk: "расталған" }),
+		unverified: t({
+			ru: "не подтверждена",
+			en: "unverified",
+			kk: "расталмаған",
 		}),
-		selectRow: t({ ru: "Выбрать", en: "Select", kk: "Таңдау" }),
-		anonymous: t({ ru: "аноним", en: "anonymous", kk: "аноним" }),
-		filters: {
-			search: t({
-				ru: "Имя или внешний id",
-				en: "Name or external id",
-				kk: "Аты немесе сыртқы id",
-			}),
-			allChannels: t({
-				ru: "Все каналы",
-				en: "All channels",
-				kk: "Барлық арналар",
-			}),
-			anyStatus: t({
-				ru: "Любой статус",
-				en: "Any status",
-				kk: "Кез келген күй",
-			}),
-			allKinds: t({ ru: "Все", en: "All", kk: "Барлығы" }),
-			identified: t({
-				ru: "Идентифицированные",
-				en: "Identified",
-				kk: "Танылғандар",
-			}),
-			anonymous: t({ ru: "Анонимные", en: "Anonymous", kk: "Анонимділер" }),
-			apply: t({ ru: "Применить", en: "Apply", kk: "Қолдану" }),
-			reset: t({ ru: "Сбросить", en: "Reset", kk: "Тазалау" }),
-		},
-		bulk: {
-			selected: t({
-				ru: insert("Выбрано: {{count}}"),
-				en: insert("Selected: {{count}}"),
-				kk: insert("Таңдалды: {{count}}"),
-			}),
-			reason: t({
-				ru: "Причина блокировки (необязательно)",
-				en: "Block reason (optional)",
-				kk: "Бұғаттау себебі (міндетті емес)",
-			}),
-		},
+		banned: t({ ru: "заблокирован", en: "banned", kk: "бұғатталған" }),
+		active: t({ ru: "активен", en: "active", kk: "белсенді" }),
+		never: t({ ru: "никогда", en: "never", kk: "ешқашан" }),
 		empty: t({
-			ru: "Пользователей не найдено",
-			en: "No users found",
-			kk: "Пайдаланушылар табылмады",
+			ru: "Пользователей пока нет",
+			en: "No users yet",
+			kk: "Пайдаланушылар әлі жоқ",
 		}),
+		ban: t({ ru: "Заблокировать", en: "Ban", kk: "Бұғаттау" }),
+		unban: t({ ru: "Разблокировать", en: "Unban", kk: "Бұғаттан шығару" }),
+		remove: t({ ru: "Удалить", en: "Delete", kk: "Жою" }),
+		deleteDialog: {
+			title: t({
+				ru: insert("Удалить пользователя {{email}}?"),
+				en: insert("Delete user {{email}}?"),
+				kk: insert("{{email}} пайдаланушысын жою керек пе?"),
+			}),
+			description: t({
+				ru: "Будут удалены аккаунт и все его каналы вместе с данными посетителей. Это нельзя отменить.",
+				en: "This deletes the account and all its channels with their visitors' data. It can't be undone.",
+				kk: "Тіркелгі мен оның барлық арналары, келушілер деректерімен бірге жойылады. Мұны қайтару мүмкін емес.",
+			}),
+		},
+		errors: {
+			not_found: t({
+				ru: "Пользователь не найден",
+				en: "User not found",
+				kk: "Пайдаланушы табылмады",
+			}),
+			upstream_unavailable: t({
+				ru: "Оркестратор недоступен, аккаунт сохранён",
+				en: "The orchestrator is unavailable, the account was kept",
+				kk: "Оркестратор қолжетімсіз, тіркелгі сақталды",
+			}),
+		},
 	},
 } satisfies Dictionary;
 

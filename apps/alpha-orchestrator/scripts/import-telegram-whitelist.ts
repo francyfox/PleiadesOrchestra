@@ -35,4 +35,4 @@ const db = openDatabase(
 );
 const count = importTelegramWhitelist(db, parseIds(raw), Date.now());
 db.$client.close();
-console.log(`Whitelisted ${count} Telegram user(s) in ${path}`);
+console.log(`Whitelisted ${count} Telegram visitor(s) in ${path}`);

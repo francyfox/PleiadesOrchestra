@@ -4,28 +4,31 @@ export interface DocsOptions {
 	title: string;
 	description?: string;
 	version?: string;
-	/** Swagger UI lives here; the raw spec at `<path>/json`. */
+	/** The Scalar API reference lives here; the raw spec at `<path>/json`. */
 	path?: `/${string}`;
+	/** Sidebar groups in this order, with a line about each; routes pick one via `tags`. */
+	tags?: { name: string; description?: string }[];
 	/** Named security scheme shown as the "Authorize" button, e.g. a session cookie or a bearer key. */
 	security?: "bearer" | "cookie";
 }
 
 /**
- * Swagger UI + OpenAPI spec for a service. `@elysiajs/openapi` is the
- * maintained successor of `@elysiajs/swagger` and renders the same
- * Swagger UI, so every service documents itself the same way.
+ * Scalar API reference + OpenAPI spec for a service (`@elysiajs/openapi`),
+ * so every service documents itself the same way.
  */
 export function docs(options: DocsOptions) {
 	const path = options.path ?? "/swagger";
 	return openapi({
 		path,
-		provider: "swagger-ui",
+		// The plugin's default spec URL is relative ("api/docs/json"), which a page at /api/docs resolves to /api/api/docs/json.
+		scalar: { url: `${path}/json` },
 		documentation: {
 			info: {
 				title: options.title,
 				version: options.version ?? "0.0.0",
 				description: options.description,
 			},
+			tags: options.tags,
 			components: options.security
 				? {
 						securitySchemes:

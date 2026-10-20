@@ -12,12 +12,14 @@
 		"check-types": "bun check",
 		"lint": "biome check .",
 		"db:generate": "drizzle-kit generate",
+		"providers:schema": "bun scripts/providers-schema.ts",
 		"db:snapshot": "bun scripts/db-snapshot.ts",
 		"import:telegram-whitelist": "bun scripts/import-telegram-whitelist.ts"
 	},
 	"dependencies": {
 		"@repo/core": "workspace:*",
 		"@repo/elysia-kit": "workspace:*",
+		"@paralleldrive/cuid2": "catalog:",
 		"@t3-oss/env-core": "catalog:",
 		"drizzle-orm": "catalog:",
 		"elysia": "catalog:",

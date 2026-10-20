@@ -15,36 +15,36 @@ export function textOf(message: ModelMessage): string {
 }
 
 /**
- * Keeps only the newest `retentionPerUser` messages of a user (across all
+ * Keeps only the newest `retentionPerUser` messages of a visitor (across all
  * their threads), and drops plan runs whose messages are all gone. Call
  * inside the transaction that added messages.
  */
-export function trimUserHistory(
+export function trimVisitorHistory(
 	db: Db,
-	userId: string,
+	visitorId: string,
 	retentionPerUser: number,
 ): void {
 	const sqlite = db.$client;
 	sqlite
 		.query(
-			`DELETE FROM messages WHERE user_id = ?1 AND id NOT IN (
-				SELECT id FROM messages WHERE user_id = ?1 ORDER BY id DESC LIMIT ?2)`,
+			`DELETE FROM messages WHERE visitor_id = ?1 AND id NOT IN (
+				SELECT id FROM messages WHERE visitor_id = ?1 ORDER BY id DESC LIMIT ?2)`,
 		)
-		.run(userId, retentionPerUser);
+		.run(visitorId, retentionPerUser);
 	// Traces go away with their messages: finished runs whose request (the chain
 	// of runs sharing a root — one waited on the browser, a later one answered)
 	// has no surviving message, older than the oldest one that survives. A run still in
 	// flight (`attempts = 0` until `finishPlanRun`) is never touched — the
-	// same user's concurrent runs all exist before any of them appends, and
+	// same visitor's concurrent runs all exist before any of them appends, and
 	// deleting one broke its later message insert (FOREIGN KEY failure).
 	sqlite
 		.query(
-			`DELETE FROM plan_runs WHERE user_id = ?1
+			`DELETE FROM plan_runs WHERE visitor_id = ?1
 				AND attempts > 0
 				AND COALESCE(root_run_id, id) NOT IN (
 					SELECT COALESCE(p.root_run_id, p.id) FROM messages m
-					JOIN plan_runs p ON p.id = m.plan_run_id WHERE m.user_id = ?1)
-				AND created_at < (SELECT MIN(created_at) FROM messages WHERE user_id = ?1)`,
+					JOIN plan_runs p ON p.id = m.plan_run_id WHERE m.visitor_id = ?1)
+				AND created_at < (SELECT MIN(created_at) FROM messages WHERE visitor_id = ?1)`,
 		)
-		.run(userId);
+		.run(visitorId);
 }

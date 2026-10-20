@@ -1,0 +1,327 @@
+import { describe, expect, test } from "bun:test";
+import { mkdtemp, rm, stat } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import {
+	createProvidersConfig,
+	maskKey,
+	type Provider,
+	ProvidersConfigError,
+	parseProviders,
+	prepareProviders,
+	providersSchemaText,
+	removeModel,
+	seedProviders,
+	stringifyProviders,
+	upsertModel,
+	upsertProvider,
+} from "./providers.service.ts";
+
+const TOML = `
+[providers.openrouter]
+name = "OpenRouter"
+base_url = "https://openrouter.ai/api/v1"
+api_key = "sk-or-v1-secret1234"
+
+[[providers.openrouter.models]]
+id = "qwen/qwen3-30b-a3b-instruct-2507"
+temperature = 0
+reasoning_effort = "none"
+extra_body = { provider = { require_parameters = true } }
+
+[providers.ollama]
+base_url = "http://192.168.100.39:11434/v1"
+api_key = "$OLLAMA_KEY"
+models = [{ id = "qwen3:1.7b", name = "Qwen3 1.7B", context_window = 32000 }]
+`;
+
+const OPENROUTER: Provider = {
+	id: "openrouter",
+	name: "OpenRouter",
+	baseUrl: "https://openrouter.ai/api/v1",
+	apiKey: "sk-or-v1-secret1234",
+	models: [
+		{
+			id: "qwen/qwen3-30b-a3b-instruct-2507",
+			name: "qwen/qwen3-30b-a3b-instruct-2507",
+			temperature: 0,
+			reasoningEffort: "none",
+			extraBody: { provider: { require_parameters: true } },
+		},
+	],
+};
+
+async function inTempDir(run: (dir: string) => Promise<void>) {
+	const dir = await mkdtemp(join(tmpdir(), "providers-"));
+	try {
+		await run(dir);
+	} finally {
+		await rm(dir, { recursive: true });
+	}
+}
+
+describe("providers.toml", () => {
+	test("parses Crush-like TOML; name defaults to the id, unknown fields are dropped", () => {
+		expect(parseProviders(TOML)).toEqual([
+			OPENROUTER,
+			{
+				id: "ollama",
+				name: "ollama",
+				baseUrl: "http://192.168.100.39:11434/v1",
+				apiKey: "$OLLAMA_KEY",
+				models: [{ id: "qwen3:1.7b", name: "Qwen3 1.7B", extraBody: {} }],
+			},
+		]);
+		expect(parseProviders("")).toEqual([]);
+	});
+
+	test("refuses broken TOML and bad ids", () => {
+		expect(() => parseProviders("[providers.x")).toThrow(ProvidersConfigError);
+		expect(() =>
+			parseProviders('[providers.X_Y]\nbase_url = "https://x.dev/v1"'),
+		).toThrow(ProvidersConfigError);
+	});
+
+	test("stringify round-trips, quoting what TOML needs quoted", () => {
+		const providers = [
+			{
+				...OPENROUTER,
+				name: 'Open "Router"\n',
+				models: [
+					{
+						...OPENROUTER.models[0],
+						extraBody: { "a.b": [1, "x", { c: false }], plain: 2.5 },
+					},
+				],
+			},
+		] as Provider[];
+		expect(parseProviders(stringifyProviders(providers))).toEqual(providers);
+		expect(() =>
+			stringifyProviders([
+				{
+					...OPENROUTER,
+					models: [{ id: "m", name: "m", extraBody: { x: null } }],
+				},
+			]),
+		).toThrow(ProvidersConfigError);
+	});
+
+	test("seeding from env: one provider per base URL, keys as env references, no server = skipped", () => {
+		const model = (id: string) => ({ id, name: id, extraBody: {} });
+		expect(
+			seedProviders([
+				{
+					id: "local-text",
+					baseUrl: "http://a/v1",
+					apiKeyVar: "A",
+					model: model("m1"),
+				},
+				{
+					id: "local-fc",
+					baseUrl: "http://a/v1",
+					apiKeyVar: "B",
+					model: model("m2"),
+				},
+				{ id: "none", baseUrl: "", apiKeyVar: "C", model: model("m3") },
+			]),
+		).toEqual([
+			{
+				id: "local-text",
+				name: "local-text",
+				baseUrl: "http://a/v1",
+				apiKey: "$A",
+				models: [model("m1"), model("m2")],
+			},
+		]);
+	});
+
+	test("a key shows as a mask; an env reference shows as is", () => {
+		expect(maskKey("sk-or-v1-secret1234")).toBe("••••1234");
+		expect(maskKey("$OLLAMA_KEY")).toBe("$OLLAMA_KEY");
+		expect(maskKey("")).toBe("");
+	});
+
+	test("upserts and removals keep the rest; a missing provider is refused", () => {
+		const one = upsertProvider([], {
+			id: "a",
+			name: "A",
+			baseUrl: "http://a/v1",
+			apiKey: "k1",
+		});
+		const withModel = upsertModel(one, "a", {
+			id: "m",
+			name: "M",
+			extraBody: {},
+		});
+		// No apiKey in the input = keep the stored one.
+		const renamed = upsertProvider(withModel, {
+			id: "a",
+			name: "A2",
+			baseUrl: "http://a2/v1",
+		});
+		expect(renamed).toEqual([
+			{
+				id: "a",
+				name: "A2",
+				baseUrl: "http://a2/v1",
+				apiKey: "k1",
+				models: [{ id: "m", name: "M", extraBody: {} }],
+			},
+		]);
+		expect(removeModel(renamed, "a", "m")[0]?.models).toEqual([]);
+		expect(() =>
+			upsertModel([], "nope", { id: "m", name: "m", extraBody: {} }),
+		).toThrow(ProvidersConfigError);
+	});
+
+	test("a missing file is seeded and written 0600; text() masks keys; a masked key saved back keeps the stored one", async () => {
+		await inTempDir(async (dir) => {
+			const path = join(dir, "providers.toml");
+			const config = await createProvidersConfig({
+				path,
+				seed: () => [OPENROUTER],
+				env: { OLLAMA_KEY: "ol-key" },
+			});
+			expect(config.providers()).toEqual([OPENROUTER]);
+			expect((await stat(path)).mode & 0o777).toBe(0o600);
+			expect(config.text()).not.toContain("secret");
+			expect(config.text()).toContain('api_key = "••••1234"');
+
+			await config.save(
+				`${config.text()}\n[providers.ollama]\nbase_url = "http://o/v1"\napi_key = "$OLLAMA_KEY"\n`,
+			);
+			expect(config.providers()[0]?.apiKey).toBe("sk-or-v1-secret1234");
+			expect(config.resolveKey(config.providers()[1]?.apiKey ?? "")).toBe(
+				"ol-key",
+			);
+			await expect(
+				config.save(
+					'[providers.x]\nbase_url = "https://x/v1"\napi_key = "••••9999"',
+				),
+			).rejects.toThrow(/key/);
+			await config.update((providers) => providers.slice(0, 1));
+			expect(
+				(await Bun.file(path).text()).includes("sk-or-v1-secret1234"),
+			).toBe(true);
+			expect(config.providers().map((p) => p.id)).toEqual(["openrouter"]);
+		});
+	});
+});
+
+describe("check (prepareProviders)", () => {
+	const OK = `[providers.a]\nbase_url = "http://a/v1"\n`;
+	const errors = (toml: string, stored: Provider[] = []) =>
+		prepareProviders(toml, stored).errors;
+
+	test("empty file and a lone #:schema line are valid", () => {
+		expect(errors("")).toEqual([]);
+		expect(errors("#:schema ./providers.schema.json\n")).toEqual([]);
+		expect(errors(OK)).toEqual([]);
+	});
+
+	test.each([
+		["unterminated table header", "[providers.a\n", /table header/],
+		["missing value after =", `${OK}name =\n`, /Missing value/],
+		["unclosed string", `${OK}name = "abc\n`, /Unterminated/],
+		["duplicate table", `${OK}[providers.a]\n`, /redefine/],
+		["garbage text", "garbage text", /Expected '='/],
+	])("syntax: %s -> line, no path", (_n, toml, message) => {
+		const [error, ...rest] = errors(toml);
+		expect(rest).toEqual([]);
+		expect(error?.message).toMatch(message);
+		expect(error?.path).toBeUndefined();
+		expect(error?.line).toBeGreaterThan(0);
+	});
+
+	test("syntax error line is 1-based and points at the failing line", () => {
+		expect(errors("[providers.a\n")[0]?.line).toBe(1);
+		expect(errors(`${OK}\nname =\n`)[0]?.line).toBe(4);
+		expect(errors(`${OK}\nx = 1\ny = 2\nname = "abc\n`)[0]?.line).toBe(6);
+		// an unclosed multi-line array is not blamed on the line that opens it
+		expect(errors("a = [\n1,\n2,\n]]\n")[0]?.line).toBe(4);
+	});
+
+	test.each([
+		['temperature = "hot"', "providers.a.models.0.temperature"],
+		["temperature = 3", "providers.a.models.0.temperature"],
+		['reasoning_effort = "extreme"', "providers.a.models.0.reasoning_effort"],
+	])("schema: %s", (field, path) => {
+		const toml = `${OK}[[providers.a.models]]\nid = "m"\n${field}\n`;
+		const [error, ...rest] = errors(toml);
+		expect(rest).toEqual([]);
+		expect(error).toMatchObject({ path });
+		expect(error?.line).toBeUndefined();
+	});
+
+	test("schema: bad id, non-http url, models not an array", () => {
+		expect(
+			errors(`[providers.X_Y]\nbase_url = "http://a"\n`)[0]?.message,
+		).toMatch(/provider id/);
+		expect(errors(`[providers.a]\nbase_url = "ftp://a/v1"\n`)[0]?.path).toBe(
+			"providers.a.base_url",
+		);
+		expect(errors(`${OK}models = "m"\n`)[0]?.path).toBe("providers.a.models");
+	});
+
+	test("all schema issues come together", () => {
+		const paths = errors(
+			`[providers.a]\nbase_url = "ftp://a"\nmodels = [{ id = "m", temperature = 9 }, { id = "n", reasoning_effort = "x" }]\n`,
+		).map((e) => e.path);
+		expect(paths).toEqual([
+			"providers.a.base_url",
+			"providers.a.models.0.temperature",
+			"providers.a.models.1.reasoning_effort",
+		]);
+	});
+
+	test("a forged masked key is refused, the matching one resolves to the stored key", () => {
+		const stored = [{ ...OPENROUTER }];
+		const forged = `[providers.openrouter]\nbase_url = "http://a/v1"\napi_key = "••••9999"\n`;
+		expect(errors(forged, stored)).toEqual([
+			expect.objectContaining({ path: "providers.openrouter.api_key" }),
+		]);
+		expect(errors(forged.replace("9999", "1234"), stored)).toEqual([]);
+		expect(errors(forged.replace("9999", "1234"), [])).toHaveLength(1);
+		const ok = prepareProviders(forged.replace("9999", "1234"), stored);
+		expect(ok.providers[0]?.apiKey).toBe("sk-or-v1-secret1234");
+		expect(JSON.stringify(ok.errors)).not.toContain("secret");
+	});
+
+	test("config.check never writes the file", async () => {
+		await inTempDir(async (dir) => {
+			const path = join(dir, "providers.toml");
+			const config = await createProvidersConfig({
+				path,
+				seed: () => [OPENROUTER],
+			});
+			const before = await Bun.file(path).text();
+			expect(config.check(`${OK}[providers.a]\n`)).toHaveLength(1);
+			expect(config.check(OK)).toEqual([]);
+			expect(await Bun.file(path).text()).toBe(before);
+			expect(config.providers()).toEqual([OPENROUTER]);
+		});
+	});
+});
+
+test("stringify starts with the #:schema line and the example file does too", async () => {
+	expect(stringifyProviders([])).toStartWith(
+		"#:schema ./providers.schema.json\n",
+	);
+	const example = join(
+		import.meta.dir,
+		"../../../configs/providers.example.toml",
+	);
+	expect(await Bun.file(example).text()).toStartWith(
+		"#:schema ./providers.schema.json\n",
+	);
+});
+
+test("configs/providers.schema.json is up to date (run `bun run providers:schema`)", async () => {
+	const file = join(import.meta.dir, "../../../configs/providers.schema.json");
+	expect(
+		await Bun.file(file).text(),
+		"stale: run `bun run providers:schema`",
+	).toBe(providersSchemaText());
+	// the parser drops extra Crush fields, so the schema must not reject them
+	expect(providersSchemaText()).not.toContain('"additionalProperties": false');
+});

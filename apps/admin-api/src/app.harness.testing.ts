@@ -2,8 +2,10 @@ import { beforeEach, expect } from "bun:test";
 import { join } from "node:path";
 import { createObservability } from "@repo/elysia-kit";
 import { type AdminApiDeps, createApp } from "./app.ts";
+import { createStaff } from "./modules/admins/admins.service.ts";
 import { createAuth } from "./modules/auth/auth.ts";
 import { openAdminDb } from "./modules/database/database.ts";
+import { createFakeMailer } from "./modules/mail/mail.testing.ts";
 import { createOrchestratorClient } from "./modules/orchestrator/orchestrator.ts";
 import type { SystemSnapshot } from "./modules/system/system.schema.ts";
 
@@ -60,13 +62,15 @@ export const CHANNEL = {
 	publishableKey: "pk",
 	disabledAt: null,
 	createdAt: 1,
+	ownerId: null,
 };
-export const USER = {
+export const VISITOR = {
 	id: "u1",
 	channel: { id: "c1", slug: "site", name: "Site", kind: "web" },
 	kind: "identified",
 	externalUserId: "42",
 	displayName: "Ann",
+	name: "calm_otter_x7k2p9",
 	status: "allowed",
 	whitelistedAt: null,
 	whitelistedBy: null,
@@ -87,6 +91,7 @@ export function setRespond(fn: (req: Upstream) => Response) {
 	respond = fn;
 }
 let app: ReturnType<typeof createApp>;
+let authInstance: ReturnType<typeof createAuth>;
 
 /** Call once at the top of a test file: a fresh app + fake orchestrator before every test. */
 export function useHarness() {
@@ -98,7 +103,10 @@ export function useHarness() {
 			db,
 			secret: "test-secret-test-secret-test-secret",
 			baseURL: ORIGIN,
+			mailer: createFakeMailer(),
+			panelUrl: ORIGIN,
 		});
+		authInstance = auth;
 		const deps: AdminApiDeps = {
 			observability: createObservability("admin-api", { LOG_LEVEL: "silent" }),
 			auth,
@@ -114,6 +122,9 @@ export function useHarness() {
 						body: init?.body ? JSON.parse(String(init.body)) : undefined,
 					};
 					upstream.push(req);
+					// Like the real orchestrator: an admin write without X-Admin-Id is refused.
+					if (req.method !== "GET" && !req.headers.get("x-admin-id"))
+						return new Response("X-Admin-Id header required", { status: 400 });
 					return respond(req);
 				}) as typeof fetch,
 			}),
@@ -157,9 +168,14 @@ export const cookieOf = (response: Response) =>
 		.join("; ");
 
 export async function signedIn(email = "first@example.com") {
-	const response = await call("/api/auth/register", {
+	const { token } = await createStaff(authInstance, {
+		name: "First",
+		email,
+		level: 0,
+	});
+	const response = await call("/api/auth/token", {
 		method: "POST",
-		body: { email, password: PASSWORD, name: "First" },
+		body: { token },
 	});
 	expect(response.status).toBe(200);
 	return cookieOf(response);

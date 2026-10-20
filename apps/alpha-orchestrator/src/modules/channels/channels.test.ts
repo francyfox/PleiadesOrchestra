@@ -49,7 +49,7 @@ describe("admin channels", () => {
 		expect(duplicate.status).toBe(409);
 	});
 
-	test("patch disables a channel — its users are then denied on /v1/messages", async () => {
+	test("patch disables a channel — its visitors are then denied on /v1/messages", async () => {
 		const { app } = setupAdminApp();
 		const patched = await json(
 			await app.handle(

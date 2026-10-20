@@ -12,6 +12,7 @@
 	import DataTable from "#lib/components/data-table.svelte";
 	import { Badge } from "#lib/components/ui/badge/index.js";
 	import { useFormat } from "#lib/i18n/use-format.js";
+	import { type OwnerAccount, ownerLabel } from "#lib/owner-label.js";
 	import { DEFAULT_PAGE_SIZE } from "#lib/pagination.js";
 	import ChannelRowActions from "./channel-row-actions.svelte";
 
@@ -20,12 +21,17 @@
 		channels,
 		total,
 		page,
+		staff,
 		plans,
+		owners,
 		onEdit,
 	}: {
 		channels: Channel[];
+		/** Staff see the plan and owner columns; a customer only has their own channels. */
+		staff: boolean;
 		/** All subscriptions; the one linked to a channel shows as its plan. */
 		plans: Subscription[];
+		owners: OwnerAccount[];
 		total: number;
 		page: number;
 		onEdit: (channel: Channel) => void;
@@ -71,11 +77,20 @@
 				header: () => $content.columns.publishableKey.value,
 				cell: (ctx) => renderSnippet(publishableKey, ctx.getValue()),
 			}),
-			helper.display({
-				id: "plan",
-				header: () => $content.columns.plan.value,
-				cell: (ctx) => planOf(ctx.row.original.id),
-			}),
+			...(staff
+				? [
+						helper.display({
+							id: "owner",
+							header: () => $content.columns.owner.value,
+							cell: (ctx) => renderSnippet(ownerCell, ctx.row.original.ownerId),
+						}),
+						helper.display({
+							id: "plan",
+							header: () => $content.columns.plan.value,
+							cell: (ctx) => planOf(ctx.row.original.id),
+						}),
+					]
+				: []),
 			helper.accessor("createdAt", {
 				header: () => $content.columns.created.value,
 				cell: (ctx) => $format.date(ctx.getValue()),
@@ -99,6 +114,16 @@
 	<div class="font-medium">{channel.name}</div>
 	<div class="text-xs text-muted-foreground">{channel.slug}</div>
 	{#if channel.disabledAt}<Badge variant="destructive">{$content.disabled.value}</Badge>{/if}
+{/snippet}
+
+{#snippet ownerCell(ownerId: string | null)}
+	{@const owner = ownerLabel(ownerId, owners)}
+	{#if owner}
+		<div class="font-medium">{owner.name}</div>
+		{#if owner.email}<div class="text-xs text-muted-foreground">{owner.email}</div>{/if}
+	{:else}
+		<Badge variant="outline">{$content.staffOwner.value}</Badge>
+	{/if}
 {/snippet}
 
 {#snippet origins(list: string[])}

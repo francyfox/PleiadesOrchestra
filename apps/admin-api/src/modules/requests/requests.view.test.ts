@@ -72,7 +72,7 @@ function details(
 	return {
 		request: {
 			id: runs[0]?.id ?? "r",
-			userId: "u",
+			visitorId: "u",
 			threadId: "t",
 			prompt: "купи 1 сыр",
 			intent: "addToCart",

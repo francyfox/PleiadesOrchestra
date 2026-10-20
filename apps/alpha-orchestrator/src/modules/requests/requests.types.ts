@@ -10,7 +10,7 @@ export type RequestStatus =
 export interface RequestSummary {
 	/** Id of the request's first run. */
 	id: string;
-	userId: string;
+	visitorId: string;
 	threadId: string;
 	prompt: string | null;
 	/** What the message was classified as (`messageIntent`), if it got that far. */

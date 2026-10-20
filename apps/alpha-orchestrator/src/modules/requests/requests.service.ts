@@ -17,7 +17,7 @@ const LIST_PROMPT_CHARS = 200;
 interface RunRow {
 	id: string;
 	rootId: string;
-	userId: string;
+	visitorId: string;
 	threadId: string;
 	prompt: string | null;
 	goal: string;
@@ -26,7 +26,7 @@ interface RunRow {
 	createdAt: number;
 }
 
-const RUN_COLUMNS = `id, COALESCE(root_run_id, id) AS rootId, user_id AS userId,
+const RUN_COLUMNS = `id, COALESCE(root_run_id, id) AS rootId, visitor_id AS visitorId,
 	thread_id AS threadId, prompt, goal, succeeded, duration_ms AS durationMs, created_at AS createdAt`;
 
 const marks = (count: number) =>
@@ -146,7 +146,7 @@ function summarize(
 		return [
 			{
 				id,
-				userId: first.userId,
+				visitorId: first.visitorId,
 				threadId: first.threadId,
 				prompt:
 					(first.prompt ?? firstPlan?.prompt ?? null)?.slice(
@@ -168,7 +168,7 @@ function summarize(
  * The requests table, newest first. Status and intent are not columns (the
  * status depends on the live registry and the clock, the intent lives in a
  * trace event), so a filtered list summarizes every request and cuts the page
- * afterwards — cheap, since each user keeps only a handful of chains.
+ * afterwards — cheap, since each visitor keeps only a handful of chains.
  */
 export function listRequests(
 	db: Db,
@@ -312,7 +312,7 @@ export function getRequest(
 	return {
 		request: {
 			id: known.rootId,
-			userId: first.userId,
+			visitorId: first.visitorId,
 			threadId: first.threadId,
 			prompt:
 				first.prompt ??

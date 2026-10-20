@@ -15,19 +15,19 @@ describe("orchestrator failures", () => {
 		setRespond(
 			() => new Response("", { status: 404, statusText: "Not Found" }),
 		);
-		const notFound = await call("/api/users/nope", { cookie });
+		const notFound = await call("/api/visitors/nope", { cookie });
 		expect(notFound.status).toBe(404);
 		expect(await notFound.json()).toMatchObject({
 			message: expect.stringContaining("404"),
 		});
 
 		setRespond(() => new Response("", { status: 500 }));
-		expect((await call("/api/users/u1", { cookie })).status).toBe(502);
+		expect((await call("/api/visitors/u1", { cookie })).status).toBe(502);
 
 		setRespond(() => {
 			throw new Error("ECONNREFUSED");
 		});
-		const down = await call("/api/users/u1", { cookie });
+		const down = await call("/api/visitors/u1", { cookie });
 		expect(down.status).toBe(503);
 	});
 });

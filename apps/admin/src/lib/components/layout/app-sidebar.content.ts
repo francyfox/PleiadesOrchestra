@@ -5,7 +5,9 @@ const appSidebarContent = {
 	content: {
 		nav: {
 			dashboard: t({ ru: "Дашборд", en: "Dashboard", kk: "Бақылау тақтасы" }),
+			visitors: t({ ru: "Посетители", en: "Visitors", kk: "Келушілер" }),
 			users: t({ ru: "Пользователи", en: "Users", kk: "Пайдаланушылар" }),
+			settings: t({ ru: "Настройки", en: "Settings", kk: "Параметрлер" }),
 			flow: t({
 				ru: "Flow — запросы",
 				en: "Flow requests",
@@ -14,6 +16,7 @@ const appSidebarContent = {
 			intents: t({ ru: "Намерения", en: "Intents", kk: "Ниеттер" }),
 			mcp: t({ ru: "MCP", en: "MCP", kk: "MCP" }),
 			agents: t({ ru: "Агенты", en: "Agents", kk: "Агенттер" }),
+			models: t({ ru: "Модели", en: "Models", kk: "Модельдер" }),
 			performance: t({
 				ru: "Производительность",
 				en: "Performance",

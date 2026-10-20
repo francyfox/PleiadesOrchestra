@@ -8,13 +8,13 @@ import type { Db } from "../database/database.ts";
 import { prepared } from "../database/prepared.ts";
 
 /**
- * Internal thread id for (channel, user, external thread id). Threads are
- * per user: a Telegram group chat gives each member their own history.
+ * Internal thread id for (channel, visitor, external thread id). Threads are
+ * per visitor: a Telegram group chat gives each member their own history.
  */
 export function resolveThreadId(
 	db: Db,
 	channelId: string,
-	userId: string,
+	visitorId: string,
 	externalThreadId: string,
 	now: number,
 ): string {
@@ -24,7 +24,7 @@ export function resolveThreadId(
 		.where(
 			and(
 				eq(threads.channelId, channelId),
-				eq(threads.userId, userId),
+				eq(threads.visitorId, visitorId),
 				eq(threads.externalThreadId, externalThreadId),
 			),
 		)
@@ -33,7 +33,7 @@ export function resolveThreadId(
 
 	const id = crypto.randomUUID();
 	db.insert(threads)
-		.values({ id, channelId, userId, externalThreadId, createdAt: now })
+		.values({ id, channelId, visitorId, externalThreadId, createdAt: now })
 		.run();
 	return id;
 }
@@ -61,18 +61,28 @@ export function threadIdsByExternal(
 export function createWidgetThread(
 	db: Db,
 	channelId: string,
-	userId: string,
+	visitorId: string,
 	now: number,
 ): string {
 	const id = crypto.randomUUID();
 	db.insert(threads)
-		.values({ id, channelId, userId, externalThreadId: null, createdAt: now })
+		.values({
+			id,
+			channelId,
+			visitorId,
+			externalThreadId: null,
+			createdAt: now,
+		})
 		.run();
 	return id;
 }
 
-/** Ownership is checked by `threads.userId`, never by trusting the id from the request. */
-export function isOwnThread(db: Db, threadId: string, userId: string): boolean {
+/** Ownership is checked by `threads.visitorId`, never by trusting the id from the request. */
+export function isOwnThread(
+	db: Db,
+	threadId: string,
+	visitorId: string,
+): boolean {
 	return (
 		prepared(db, "isOwnThread", () =>
 			db
@@ -81,11 +91,11 @@ export function isOwnThread(db: Db, threadId: string, userId: string): boolean {
 				.where(
 					and(
 						eq(threads.id, sql.placeholder("threadId")),
-						eq(threads.userId, sql.placeholder("userId")),
+						eq(threads.visitorId, sql.placeholder("visitorId")),
 					),
 				)
 				.prepare(),
-		).get({ threadId, userId }) !== undefined
+		).get({ threadId, visitorId }) !== undefined
 	);
 }
 

@@ -11,10 +11,10 @@ import {
 useHarness();
 
 describe("dashboard", () => {
-	test("dashboard combines stats with usage by day, top users and channels", async () => {
+	test("dashboard combines stats with usage by day, top visitors and channels", async () => {
 		const cookie = await signedIn();
 		const stats = {
-			users: { total: 1, pending: 0, blocked: 0, anonymous: 0 },
+			visitors: { total: 1, pending: 0, blocked: 0, anonymous: 0 },
 			usage: { today: USAGE, last7d: USAGE, last30d: USAGE },
 		};
 		setRespond(({ url }) => {
@@ -32,14 +32,14 @@ describe("dashboard", () => {
 
 		const body = await (await call("/api/dashboard", { cookie })).json();
 
-		expect(body.stats.users.total).toBe(1);
+		expect(body.stats.visitors.total).toBe(1);
 		expect(body.byDay[0]).toEqual({
 			day: "small",
 			inputTokens: 1,
 			outputTokens: 2,
 			costUsd: 0.1,
 		});
-		expect(body.topUsers.map((r: { label: string }) => r.label)).toEqual([
+		expect(body.topVisitors.map((r: { label: string }) => r.label)).toEqual([
 			"big",
 			"small",
 		]);

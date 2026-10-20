@@ -24,7 +24,7 @@ function fakeOrchestrator() {
 		return Promise.resolve(value);
 	};
 	const orchestrator = {
-		stats: record("stats", { users: { total: 1 }, usage: {} }),
+		stats: record("stats", { visitors: { total: 1 }, usage: {} }),
 		usage: (query: { groupBy: string }) => {
 			calls.push(["usage", query]);
 			return Promise.resolve({
@@ -34,8 +34,12 @@ function fakeOrchestrator() {
 						: [row("small", 1, 1), row("big", 50, 50), row("mid", 5, 5)],
 			});
 		},
-		listUsers: record("listUsers", { items: [], nextCursor: null, total: 0 }),
-		getUser: record("getUser", { user: { id: "u1" } }),
+		listVisitors: record("listVisitors", {
+			items: [],
+			nextCursor: null,
+			total: 0,
+		}),
+		getVisitor: record("getVisitor", { visitor: { id: "u1" } }),
 		listChannels: record("listChannels", { items: [], total: 0 }),
 		listBlockedIps: record("listBlockedIps", { items: [], total: 0 }),
 		listAgents: record("listAgents", { items: [] }),
@@ -72,14 +76,14 @@ describe("createLiveTopics: validation", () => {
 				"performance",
 				"request",
 				"requests",
-				"user",
-				"users",
+				"visitor",
+				"visitors",
 			].sort(),
 		);
 		expect(LIVE_INTERVALS_MS).toEqual({
 			dashboard: 5000,
-			users: 5000,
-			user: 3000,
+			visitors: 5000,
+			visitor: 3000,
 			channels: 10000,
 			"blocked-ips": 10000,
 			admins: 10000,
@@ -106,28 +110,28 @@ describe("createLiveTopics: validation", () => {
 		}
 	});
 
-	test("users take the REST query and nothing else", () => {
+	test("visitors take the REST query and nothing else", () => {
 		expect(
-			t.users.validate({
+			t.visitors.validate({
 				status: "blocked",
 				sort: "tokens",
 				order: "asc",
 				limit: 10,
 			}),
 		).toBe(true);
-		expect(t.users.validate({})).toBe(true);
-		expect(t.users.validate({ status: "zzz" })).toBe(false);
-		expect(t.users.validate({ limit: 0 })).toBe(false);
-		expect(t.users.validate({ limit: 500 })).toBe(false);
-		expect(t.users.validate({ nope: 1 })).toBe(false);
-		expect(t.users.validate([])).toBe(false);
+		expect(t.visitors.validate({})).toBe(true);
+		expect(t.visitors.validate({ status: "zzz" })).toBe(false);
+		expect(t.visitors.validate({ limit: 0 })).toBe(false);
+		expect(t.visitors.validate({ limit: 500 })).toBe(false);
+		expect(t.visitors.validate({ nope: 1 })).toBe(false);
+		expect(t.visitors.validate([])).toBe(false);
 	});
 
-	test("user needs a non-empty id", () => {
-		expect(t.user.validate({ id: "u1" })).toBe(true);
-		expect(t.user.validate({ id: "" })).toBe(false);
-		expect(t.user.validate({})).toBe(false);
-		expect(t.user.validate({ id: 1 })).toBe(false);
+	test("visitor needs a non-empty id", () => {
+		expect(t.visitor.validate({ id: "u1" })).toBe(true);
+		expect(t.visitor.validate({ id: "" })).toBe(false);
+		expect(t.visitor.validate({})).toBe(false);
+		expect(t.visitor.validate({ id: 1 })).toBe(false);
 	});
 
 	test("paged lists take the REST paging", () => {
@@ -150,14 +154,14 @@ describe("createLiveTopics: validation", () => {
 describe("createLiveTopics: fetching", () => {
 	test("each topic asks the orchestrator exactly what its REST endpoint does", async () => {
 		const { topics: t, calls } = topics();
-		await t.users.fetch({ status: "blocked" });
-		await t.user.fetch({ id: "u1" });
+		await t.visitors.fetch({ status: "blocked" });
+		await t.visitor.fetch({ id: "u1" });
 		await t.channels.fetch({ page: 2, pageSize: 10 });
 		await t["blocked-ips"].fetch({ page: 1 });
 		await t.agents.fetch({});
 		expect(calls).toEqual([
-			["listUsers", { status: "blocked" }],
-			["getUser", "u1"],
+			["listVisitors", { status: "blocked" }],
+			["getVisitor", "u1"],
 			["listChannels", { page: 2, pageSize: 10 }],
 			["listBlockedIps", { page: 1 }],
 			["listAgents", undefined],
@@ -174,7 +178,7 @@ describe("createLiveTopics: fetching", () => {
 		]);
 	});
 
-	test("the dashboard is the REST dashboard: stats, days, top 10 users and channels by tokens", async () => {
+	test("the dashboard is the REST dashboard: stats, days, top 10 visitors and channels by tokens", async () => {
 		const { topics: t } = topics();
 		const data = (await t.dashboard.fetch({})) as {
 			byDay: unknown[];

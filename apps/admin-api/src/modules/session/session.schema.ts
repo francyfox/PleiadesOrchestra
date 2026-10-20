@@ -1,14 +1,12 @@
 import { type Static, t } from "elysia";
-import { AdminSelf, Credentials } from "../admins/admins.schema.ts";
+import { AdminSelf } from "../admins/admins.schema.ts";
 
-export const Registration = t.Composite([
-	Credentials,
-	t.Object({ name: t.Optional(t.String()) }),
-]);
+export const TokenLogin = t.Object({ token: t.String() });
 
 export const Session = t.Object({
-	/** No admin account exists yet: only /register is reachable. */
+	/** No staff account exists yet: create one with `admin:create`. */
 	setupRequired: t.Boolean(),
+	/** The signed-in account: staff or user, told apart by `level`. */
 	admin: t.Union([AdminSelf, t.Null()]),
 });
 

@@ -39,20 +39,20 @@ describe("authorizeRequest", () => {
 	test("admin routes need the admin key, not the transport key", () => {
 		expect(
 			authorizeRequest(
-				request("/v1/admin/users", { headers: bearer("transport") }),
+				request("/v1/admin/visitors", { headers: bearer("transport") }),
 				keys,
 			)?.status,
 		).toBe(401);
 		expect(
 			authorizeRequest(
-				request("/v1/admin/users", { headers: bearer("admin") }),
+				request("/v1/admin/visitors", { headers: bearer("admin") }),
 				keys,
 			),
 		).toBeUndefined();
 	});
 
 	test("admin mutations also need X-Admin-Id", () => {
-		const withoutId = request("/v1/admin/users/bulk", {
+		const withoutId = request("/v1/admin/visitors/bulk", {
 			method: "POST",
 			headers: bearer("admin"),
 		});
@@ -60,7 +60,7 @@ describe("authorizeRequest", () => {
 			status: 400,
 			body: "X-Admin-Id header required",
 		});
-		const withId = request("/v1/admin/users/bulk", {
+		const withId = request("/v1/admin/visitors/bulk", {
 			method: "POST",
 			headers: { ...bearer("admin"), "x-admin-id": "a1" },
 		});

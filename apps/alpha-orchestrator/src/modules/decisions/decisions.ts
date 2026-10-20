@@ -3,16 +3,12 @@ import type {
 	DecisionQuestion,
 	DecisionState,
 } from "@repo/core";
-import { Elysia, t } from "elysia";
-
-const DecisionsBody = t.Object({
-	state: t.Unknown(),
-	questions: t.Record(t.String(), t.Unknown()),
-});
+import { Elysia } from "elysia";
+import { DecisionsBody, DecisionsResult } from "./decisions.schema.ts";
 
 /** `POST /v1/decisions` — typed-decision questions answered by the decision agent (Laya). Questions and answers use the AI SDK's decision shapes: `choice` / `score` / `boolean`. */
 export function decisionsRoutes(decisionAgent: DecisionAgent) {
-	return new Elysia().post(
+	return new Elysia({ tags: ["Transport"] }).post(
 		"/v1/decisions",
 		async ({ body }) => {
 			// Elysia's body inference collapses `body` to `unknown` here; the
@@ -23,6 +19,14 @@ export function decisionsRoutes(decisionAgent: DecisionAgent) {
 			};
 			return { answers: await decisionAgent.decide(state, questions) };
 		},
-		{ body: DecisionsBody },
+		{
+			body: DecisionsBody,
+			response: { 200: DecisionsResult },
+			detail: {
+				summary: "Answer typed decision questions",
+				description:
+					"Questions are answered by the decision agent (Laya); question and answer shapes are the AI SDK's `choice` / `score` / `boolean`.",
+			},
+		},
 	);
 }

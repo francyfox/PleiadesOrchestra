@@ -181,6 +181,23 @@ Critical items are duplicated in the root `CLAUDE.md`. This file has the full li
 - **The env API key must not follow a changed base URL**: an override of `baseUrl` without a picked provider key sends no key, otherwise pointing an agent at a third-party host would leak the local server's key.
 - Changing or losing `PROVIDER_KEYS_SECRET` makes stored provider keys unreadable (the keys must be entered again). `llm_calls.provider` is now the provider key's name when one is picked.
 
+## Providers file instead of a free base URL (2026-10-20)
+
+- **Architecture change**: an agent no longer has `source`/`baseUrl`/`providerKey` overrides. It picks a `provider` from `apps/alpha-orchestrator/configs/providers.toml` (Crush-like, edited on the admin panel's Models tab) plus a model; the provider's key is the stored provider key of the same id. Migrations 0016/0017 drop the old columns (no data was saved yet).
+- **The file holds no keys**: `api_key` in it is refused, so a config edited from the panel and bind-mounted from the repo can't leak one. `providers.toml` is gitignored; the example is tracked.
+- **drizzle-kit asks "rename or create?"** when one migration drops columns and adds another; without a TTY it fails. Split it: generate the drops first, then the new column.
+
+## Model parameters and keys move into providers.toml (2026-10-20)
+
+- **Architecture change**: temperature, reasoning effort and extra request fields belong to a model in `providers.toml`, not to an agent or env (`LLM_TEMPERATURE` for the orchestrator, `FUNCTION_CALL_TEMPERATURE`, `FUNCTION_CALL_REASONING_EFFORT` removed; `LLM_TEMPERATURE` still feeds beta-text's llama-server). An agent only picks provider + model. The encrypted `provider_keys` table and `PROVIDER_KEYS_SECRET` are gone (migration 0018): keys are an `api_key` of the provider.
+- **A file with keys**: written 0600, gitignored, and **dockerignored** — the Dockerfiles copy the pruned app source, so without the ignore a local `providers.toml` would be baked into an image layer. The API masks keys; the editor's masked key saved back means "keep".
+- **Bun parses TOML but can't write it**: `stringifyProviders` writes our shape (JSON strings are valid TOML basic strings); comments of a hand-edited file are lost on the next save.
+
+## Floating `oven/bun:1` tag ran a different Bun than tests (2026-10-20)
+
+- The Dockerfiles used `oven/bun:1-alpine`; the cached image was Bun 1.3.14 while local and CI ran 1.4.3. `Bun.TOML.parse` errors differ between them (1.3: `BuildMessage: Unexpected end of file`; 1.4: `SyntaxError: TOML Parse error: …`), so the providers check found the error line in tests but not in the container. All Dockerfiles now pin `oven/bun:1.4.3(-alpine)`, the same as CI's `bun-version`; bump them together.
+- Neither version puts the TOML position on the error (`line`/`column` are the JS call site); the check finds the line by re-parsing prefixes.
+
 ## WordPress plugin MVP (2026-10-19)
 
 - **The widget installs the WebMCP polyfill at mount, not at script load.** A page registering its own tools cannot count on `document.modelContext`. The widget now dispatches `pleiades:webmcp-ready` on `document` right after installing it; the plugin registers at once if the API exists, else on that event. Verified in a real browser.
@@ -205,3 +222,27 @@ Critical items are duplicated in the root `CLAUDE.md`. This file has the full li
 - **The cart page's first `.woocommerce` element is not the cart** (Storefront has several); select it with `:has(.woocommerce-cart-form)`.
 - **WooCommerce 11 creates block Cart/Checkout pages**; for a classic theme `setup.sh` rewrites them to shortcodes, and back (delete + `WC_Install::create_pages()`) when switching to a block theme.
 - **Browser caches `tools.js`** (`?ver=` was constant): the asset version now includes the file mtimes.
+
+## Users became visitors (2026-10-20)
+
+- **"Users" now means paying accounts**, so the chat people (widget, bot) are **visitors** everywhere: orchestrator table `users` to `visitors` and every `user_id` column/index to `visitor_id` (migration 0019 is a pure rename plus `name`, data survives; drizzle-kit's own diff dropped and re-copied the tables with a SELECT of columns that did not exist yet, so the SQL was written by hand and only the snapshot kept), `/v1/admin/users*` to `/v1/admin/visitors*`, admin-api `/api/users*` to `/api/visitors*`, live topics `users`/`user` to `visitors`/`visitor`, groupBy `user` to `visitor`, panel `/users` to `/visitors`.
+- **Wire names that outside code reads stayed**: `userId`/`externalUserId` in `/v1/access`, `/v1/messages` and identify (transports and sites), and `userId` in `@repo/core` types (`CallContext`, `LlmCallRecord`, the `userId` world-state fact). A blanket find-and-replace broke exactly these; the tests caught it. Rename them together with the transports when needed.
+- **`visitors.name`** (`adjective_animal_xxxxxx`) is not unique and has no index on purpose: nothing may rely on it, the id is the key. Existing rows are named at startup (`backfillVisitorNames`), the column default `''` only lets the migration add a NOT NULL column.
+- **drizzle-kit asks rename-or-create interactively** and refuses without a TTY; drive it through a pty (Down + Enter) or write the SQL by hand.
+
+## Accounts: staff tokens and levels (2026-10-20)
+
+- **Roles are a number on the account, not "earliest account".** `user.level` (0 super admin, 100 admin, 200 user) replaced `superAdminId`; checks are `level <= 100` for staff, `=== 0` for super-only. The better-auth admin plugin's text `role` is now only a side effect (staff `admin`, users `user`) that keeps its ban endpoints working.
+- **Staff have no password.** They sign in with a 32-byte token (SHA-256 stored, constant-time compare) through a small better-auth plugin endpoint (`staff-token`) that creates a normal session, so every guard keeps working on one cookie. A migration deletes the credential rows of the existing accounts, and `/api/user/login` refuses staff emails on its own in case such a row ever comes back.
+- **A taken email at registration looks like success.** With `requireEmailVerification` better-auth answers the same `200` for a new and an existing address (no account enumeration); the UI says "check your email" in both cases. Do not add an `email_taken` branch: it is dead code.
+- **Verification link is a GET on admin-api** (`/api/user/verify`) that redirects to the panel; better-auth's own link would point at `/api/auth/verify-email`, which is not mounted (the API is wrapped, not exposed).
+- **`internalAdapter.deleteSessions` takes tokens**, not a user id: use `deleteUserSessions(userId)`. `createUser` needs a second argument (`{ method: "admin" }`) in 1.7.
+- **Existing installs**: the migration marks every account staff (earliest = super, the rest = admin) but they have no token yet. The CLI (`admin:create --email <existing>`) issues one. It runs on the host against `ADMIN_DATABASE_PATH` (the Docker image only has the compiled server).
+
+
+## Channel ownership (2026-10-20)
+
+- **Who sees what is decided only in admin-api.** The orchestrator takes `ownerId` as a plain filter (`channels`, `stats`, `usage`) and trusts `ADMIN_API_KEY`. For a user, admin-api sets the owner from the session on lists and creates and answers 404 `not_found` (not 403) for another owner's channel, checked by listing the owner's channels (no get-by-id upstream). The live hub injects `ownerId` from the session too; a client param is overwritten, other topics are `forbidden`.
+- **Deleting an account deletes its channels first.** `deleteAccount` calls the orchestrator and only then removes the row; on failure the account stays and the daily inactivity job retries. The orchestrator side needed no new foreign keys: channel children cascade and `llm_calls`/subscriptions were already `ON DELETE SET NULL`, so money totals survive.
+- **Elysia validates the body before the macro guard**, so a bad body on a staff route answers 422 to a user, 403 only for a valid one. No data leaks either way; the route-table walk test accepts 403 or 422 and requires that nearly all are 403. Do not rely on 403 for malformed bodies.
+- **Never `git stash` in a dirty tree with staged renames**: `stash pop` brought back the old-named files (`users.*`) and broke type-check; the index is not restored without `--index`.

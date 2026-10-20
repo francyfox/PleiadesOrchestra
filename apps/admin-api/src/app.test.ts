@@ -4,13 +4,13 @@ import { call, useHarness } from "./app.harness.testing.ts";
 useHarness();
 
 describe("docs", () => {
-	test("/health is open and Swagger documents the API", async () => {
+	test("/health is open and the API docs describe the API", async () => {
 		expect((await call("/health", { origin: null })).status).toBe(200);
 		const spec = await (await call("/api/docs/json", { origin: null })).json();
 		expect(Object.keys(spec.paths)).toEqual(
 			expect.arrayContaining([
 				"/api/session",
-				"/api/users",
+				"/api/visitors",
 				"/api/channels",
 				"/api/system",
 			]),

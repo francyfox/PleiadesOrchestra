@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { admin, NOW, setupAdminApp } from "../http/http.testing.ts";
-import { upsertIdentifiedUser } from "../users/users.service.ts";
+import { upsertIdentifiedVisitor } from "../visitors/visitors.service.ts";
 
 describe("admin auth", () => {
 	test("the transport key gets 401 on /v1/admin/*", async () => {
@@ -13,11 +13,17 @@ describe("admin auth", () => {
 
 	test("mutations without X-Admin-Id → 400, reads don't need it", async () => {
 		const { app, db } = setupAdminApp();
-		const user = upsertIdentifiedUser(db, "ch_telegram", "1", undefined, NOW);
+		const visitor = upsertIdentifiedVisitor(
+			db,
+			"ch_telegram",
+			"1",
+			undefined,
+			NOW,
+		);
 		expect(
 			(
 				await app.handle(
-					admin(`/users/${user.id}/whitelist`, {
+					admin(`/visitors/${visitor.id}/whitelist`, {
 						method: "POST",
 						adminId: null,
 					}),

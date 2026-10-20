@@ -1,5 +1,5 @@
 import { type Static, t } from "elysia";
-import { nullable, oneOf } from "../common/common.schema.ts";
+import { nullable, oneOf, PageQuery } from "../common/common.schema.ts";
 
 const ACCESS_MODES = ["whitelist", "open"] as const;
 
@@ -30,7 +30,15 @@ export const Channel = t.Composite([
 		publishableKey: nullable(t.String()),
 		disabledAt: nullable(t.Number()),
 		createdAt: t.Number(),
+		/** Account id of the owner; null = staff-owned. */
+		ownerId: nullable(t.String()),
 	}),
+]);
+
+/** `GET /channels`: paging, and for staff an optional owner filter (a user's list is always their own). */
+export const ChannelsQuery = t.Composite([
+	PageQuery,
+	t.Object({ ownerId: t.Optional(t.String({ minLength: 1 })) }),
 ]);
 
 /** Wire input of `POST /channels` (before the handler's slug/name check). */
@@ -40,6 +48,8 @@ export const CreateChannelInput = t.Object({
 	accessMode: t.Optional(oneOf(ACCESS_MODES)),
 	allowedOrigins: t.Optional(t.Array(t.String())),
 	catalogLanguage: t.Optional(t.String()),
+	/** Staff only: the account that will own the channel. A user's channel is always theirs. */
+	ownerId: t.Optional(t.String({ minLength: 1 })),
 });
 
 export const UpdateChannelInput = t.Object({

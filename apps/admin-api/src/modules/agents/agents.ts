@@ -6,15 +6,18 @@ import { Upstream } from "../orchestrator/orchestrator.schema.ts";
 import { orchestratorErrors } from "../orchestrator/orchestrator.service.ts";
 import {
 	Agent,
-	AgentSettingsPatch,
+	AgentPick,
 	AgentSettingsView,
 	AgentTestResult,
-	ProviderKey,
+	ProviderInput,
+	ProviderList,
+	ProviderModel,
+	ProvidersCheck,
+	ProvidersText,
 } from "./agents.schema.ts";
 
 const Id = t.Object({ id: t.String() });
-const Name = t.Object({ name: t.String() });
-/** The orchestrator answers 400 for bad settings (unknown key, gamma, no encryption secret). */
+/** The orchestrator answers 400 for bad input (unknown model or provider, gamma, a TOML that doesn't fit). */
 const Bad = { 400: ApiError, ...Upstream } as const;
 
 export function agentsRoutes({ auth, orchestrator }: RouteDeps) {
@@ -28,7 +31,7 @@ export function agentsRoutes({ auth, orchestrator }: RouteDeps) {
 					detail: {
 						summary: "Model services with their health",
 						description:
-							"The orchestrator's text (LLM) and decision (Laya) agents, each probed at request time.",
+							"The orchestrator's text (LLM) and decision (Laya) agents with the last health probe; each call starts the next one.",
 					},
 				})
 				.get(
@@ -38,23 +41,23 @@ export function agentsRoutes({ auth, orchestrator }: RouteDeps) {
 						params: Id,
 						response: { 200: AgentSettingsView, ...Upstream },
 						detail: {
-							summary:
-								"An agent's settings: overrides, env defaults, effective",
+							summary: "An agent's model and its provider",
+							description: "provider null = the env server. Never a key.",
 						},
 					},
 				)
-				.patch(
-					"/agents/:id",
+				.put(
+					"/agents/:id/model",
 					({ params, body, admin }) =>
-						orchestrator.as(admin.id).patchAgentSettings(params.id, body),
+						orchestrator.as(admin.id).pickAgentModel(params.id, body),
 					{
 						params: Id,
-						body: AgentSettingsPatch,
+						body: AgentPick,
 						response: { 200: AgentSettingsView, ...Bad },
 						detail: {
-							summary: "Change an agent's settings",
+							summary: "Pick an agent's model",
 							description:
-								"A field set to null clears its override (the env value applies). Takes effect without a restart.",
+								"A model of providers.toml with its parameters. Takes effect without a restart.",
 						},
 					},
 				)
@@ -64,35 +67,93 @@ export function agentsRoutes({ auth, orchestrator }: RouteDeps) {
 					{
 						params: Id,
 						response: { 200: AgentTestResult, ...Bad },
-						detail: { summary: "One call with the settings in effect" },
+						detail: { summary: "One call with the model in effect" },
 					},
 				)
-				.get("/provider-keys", async () => orchestrator.listProviderKeys(), {
-					response: {
-						200: t.Object({ items: t.Array(ProviderKey) }),
-						...Upstream,
+				.get("/providers", async () => orchestrator.listProviders(), {
+					response: { 200: ProviderList, ...Upstream },
+					detail: {
+						summary: "Providers and models of providers.toml",
+						description: "Keys masked.",
 					},
-					detail: { summary: "Provider API keys, masked" },
 				})
 				.put(
-					"/provider-keys/:name",
+					"/providers/:id",
 					({ params, body, admin }) =>
-						orchestrator.as(admin.id).saveProviderKey(params.name, body.key),
+						orchestrator.as(admin.id).saveProvider(params.id, body),
 					{
-						params: Name,
-						body: t.Object({ key: t.String({ minLength: 1, maxLength: 500 }) }),
-						response: { 200: ProviderKey, ...Bad },
-						detail: { summary: "Add or replace a provider's API key" },
+						params: Id,
+						body: ProviderInput,
+						response: { 200: ProviderList, ...Bad },
+						detail: {
+							summary: "Add or change a provider",
+							description:
+								'`apiKey` left out keeps the saved key, "" removes it, `$VAR` reads it from the env.',
+						},
 					},
 				)
 				.delete(
-					"/provider-keys/:name",
+					"/providers/:id",
 					({ params, admin }) =>
-						orchestrator.as(admin.id).deleteProviderKey(params.name),
+						orchestrator.as(admin.id).deleteProvider(params.id),
 					{
-						params: Name,
-						response: { 200: t.Object({ ok: t.Literal(true) }), ...Upstream },
-						detail: { summary: "Delete a provider's API key" },
+						params: Id,
+						response: { 200: ProviderList, ...Bad },
+						detail: { summary: "Delete a provider with its models" },
+					},
+				)
+				.put(
+					"/providers/:id/models",
+					({ params, body, admin }) =>
+						orchestrator.as(admin.id).saveModel(params.id, body),
+					{
+						params: Id,
+						body: ProviderModel,
+						response: { 200: ProviderList, ...Bad },
+						detail: { summary: "Add or change a model (matched by id)" },
+					},
+				)
+				.delete(
+					"/providers/:id/models",
+					({ params, query, admin }) =>
+						orchestrator.as(admin.id).deleteModel(params.id, query.model),
+					{
+						params: Id,
+						query: t.Object({ model: t.String({ minLength: 1 }) }),
+						response: { 200: ProviderList, ...Bad },
+						detail: { summary: "Delete a model" },
+					},
+				)
+				.get("/providers-toml", async () => orchestrator.getProvidersText(), {
+					response: { 200: ProvidersText, ...Upstream },
+					detail: { summary: "providers.toml as text, keys masked" },
+				})
+				.post(
+					"/providers-toml/check",
+					({ body, admin }) =>
+						orchestrator.as(admin.id).checkProvidersText(body.toml),
+					{
+						body: ProvidersText,
+						response: { 200: ProvidersCheck, ...Upstream },
+						detail: {
+							summary: "Check providers.toml without saving",
+							description:
+								"Always 200; `errors` empty = valid. `line` (1-based) for syntax errors, `path` for schema errors.",
+						},
+					},
+				)
+				.put(
+					"/providers-toml",
+					({ body, admin }) =>
+						orchestrator.as(admin.id).saveProvidersText(body.toml),
+					{
+						body: ProvidersText,
+						response: { 200: ProvidersText, ...Bad },
+						detail: {
+							summary: "Replace providers.toml",
+							description:
+								"Validated by the orchestrator (400 with the reason). A key left masked stays as saved; comments are not kept.",
+						},
 					},
 				),
 		);
