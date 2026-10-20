@@ -109,6 +109,8 @@ describe("email verification and login", () => {
 		});
 		expect(blocked.status).toBe(403);
 		expect(await blocked.json()).toEqual({ error: "email_not_verified" });
+		// The UI says "we sent the email again": a fresh link, the first may have expired.
+		expect(t.mailer.sent.map((mail) => mail.to)).toEqual([EMAIL, EMAIL]);
 
 		const link = t.mailer.sent[0]?.link ?? "";
 		const verify = await t.app.handle(

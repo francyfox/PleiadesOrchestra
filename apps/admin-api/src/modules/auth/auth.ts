@@ -5,7 +5,7 @@ import { accountFields, isStaff } from "../accounts/accounts.schema.ts";
 import { MIN_PASSWORD } from "../admin-policy/admin-policy.service.ts";
 import { TRUSTED_IP_HEADER } from "../client-ip/client-ip.service.ts";
 import { type AdminDb, schema } from "../database/database.ts";
-import { buildMail } from "../mail/mail.service.ts";
+import { buildMail, isEmailChangeToken } from "../mail/mail.service.ts";
 import type { Mailer } from "../mail/mail.types.ts";
 import { staffToken } from "../staff-token/staff-token.ts";
 
@@ -66,10 +66,13 @@ export function createAuth({
 		},
 		emailVerification: {
 			sendOnSignUp: true,
+			// A sign-in with the right password but an unverified email gets a fresh link (the old one lives an hour).
+			sendOnSignIn: true,
 			sendVerificationEmail: async ({ user, token }) => {
 				void mailer.send(
 					buildMail(
-						"verify",
+						// better-auth reuses this hook for a changed address; its token then carries `updateTo`.
+						isEmailChangeToken(token) ? "email-change" : "verify",
 						user.email,
 						`${panelUrl}/api/user/verify?token=${token}`,
 						(user as { locale?: string | null }).locale,

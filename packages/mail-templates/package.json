@@ -1,0 +1,27 @@
+{
+	"name": "@repo/mail-templates",
+	"version": "0.0.0",
+	"license": "AGPL-3.0-only",
+	"author": "Danil Golota",
+	"module": "src/index.ts",
+	"type": "module",
+	"private": true,
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"build:templates": "bun scripts/build-templates.ts",
+		"preview": "bun scripts/preview.ts",
+		"check-types": "bun check",
+		"lint": "biome check .",
+		"test": "bun test"
+	},
+	"devDependencies": {
+		"@types/bun": "catalog:",
+		"@types/mjml": "catalog:",
+		"mjml": "catalog:"
+	},
+	"peerDependencies": {
+		"typescript": "^5 || ^6"
+	}
+}

@@ -1,8 +1,9 @@
 export interface Mail {
 	to: string;
 	subject: string;
-	/** Full plain-text body. */
-	body: string;
+	/** Plain-text alternative. */
+	text: string;
+	html: string;
 	/** The one link in the body; logged instead of sending when SMTP isn't configured. */
 	link: string;
 }

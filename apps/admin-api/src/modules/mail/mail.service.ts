@@ -1,25 +1,24 @@
+import { type MailKind, renderMail } from "@repo/mail-templates";
 import type { Mail } from "./mail.types.ts";
-
-type Kind = "verify" | "reset";
-
-const TEXT = {
-	en: {
-		verify: ["Confirm your email", "Open the link to confirm your email:"],
-		reset: ["Reset your password", "Open the link to choose a new password:"],
-	},
-	ru: {
-		verify: ["Подтвердите email", "Откройте ссылку, чтобы подтвердить email:"],
-		reset: ["Сброс пароля", "Откройте ссылку, чтобы задать новый пароль:"],
-	},
-} as const;
 
 /** Only ru and en have texts; any other locale (or none) gets en. */
 export function buildMail(
-	kind: Kind,
+	kind: MailKind,
 	to: string,
 	link: string,
 	locale?: string | null,
 ): Mail {
-	const [subject, lead] = TEXT[locale === "ru" ? "ru" : "en"][kind];
-	return { to, subject, link, body: `${lead}\n${link}` };
+	return { to, link, ...renderMail(kind, { link, locale }) };
+}
+
+/** shortcut: reads the unverified JWT payload only to pick a template, never to trust it. */
+export function isEmailChangeToken(token: string): boolean {
+	try {
+		const payload = token.split(".")[1] ?? "";
+		return (
+			"updateTo" in JSON.parse(Buffer.from(payload, "base64url").toString())
+		);
+	} catch {
+		return false;
+	}
 }

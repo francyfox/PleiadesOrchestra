@@ -8,6 +8,7 @@ Every app and package of the monorepo, one line each. Internals live in each one
 
 - `packages/core` (`@repo/core`) — LLM client library, ports and the GOAP planner/executor; see `packages/core/CLAUDE.md`.
 - `packages/tax` (`@repo/tax`) — pure order-economics math (Polar fees, payout, tax, net profit); see `packages/tax/CLAUDE.md`.
+- `packages/mail-templates` (`@repo/mail-templates`) — MJML mail templates compiled at dev time, `renderMail(kind, …)` for admin-api; see `packages/mail-templates/CLAUDE.md`.
 - `packages/elysia-kit` (`@repo/elysia-kit`) — shared Elysia setup (logging, Sentry, `/health`, `serve`, `retryFetch`); see `packages/elysia-kit/CLAUDE.md`.
 - `packages/pleiades-widget` — framework-agnostic `<pleiades-chat>` web component; see `packages/pleiades-widget/CLAUDE.md`.
 - `packages/webmcp-polyfill` — WebMCP `document.modelContext` polyfill bundled into the widget; see `packages/webmcp-polyfill/CLAUDE.md`.
