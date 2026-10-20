@@ -47,7 +47,8 @@ export function authErrorText(
 /**
  * State of an auth page form: `submit` runs the action; `failure` is the
  * failed call's data (turn it into text with `authErrorText`); `done` flips on
- * success unless `onOk` is given (e.g. to navigate). Call during component init.
+ * success unless `onOk` is given (e.g. to navigate); `email` is the submitted
+ * address, for "we sent a link to …". Call during component init.
  */
 export function useAuthForm(
 	run: (form: FormData) => Promise<ActionResult>,
@@ -56,15 +57,16 @@ export function useAuthForm(
 	let pending = $state(false);
 	let done = $state(false);
 	let failure = $state<Record<string, unknown> | null>(null);
+	let email = $state("");
 
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
 		if (pending) return;
 		pending = true;
 		failure = null;
-		const result = await run(
-			new FormData(event.currentTarget as HTMLFormElement),
-		);
+		const data = new FormData(event.currentTarget as HTMLFormElement);
+		email = String(data.get("email") ?? "").trim();
+		const result = await run(data);
 		pending = false;
 		if (!result.ok) {
 			failure = result.data;
@@ -84,6 +86,9 @@ export function useAuthForm(
 		},
 		get failure() {
 			return failure;
+		},
+		get email() {
+			return email;
 		},
 	};
 }

@@ -24,7 +24,7 @@
 	</Card.Header>
 	<Card.Content class="grid gap-4">
 		{#if form.done}
-			<p class="text-sm">{$content.register.sent.value}</p>
+			<p class="text-sm">{$content.register.sent({ email: form.email })}</p>
 		{:else}
 			<form onsubmit={form.submit} class="grid gap-4">
 				<input type="hidden" name="locale" value={$locale} />

@@ -2,6 +2,8 @@ import { expect, test } from "bun:test";
 import { eq } from "drizzle-orm";
 import { visitors } from "../database/database.schema.ts";
 import { testDb } from "../database/database.testing.ts";
+import ADJECTIVES from "./visitor-names.adjectives.json";
+import ANIMALS from "./visitor-names.animals.json";
 import { generateVisitorName } from "./visitor-names.ts";
 import {
 	backfillVisitorNames,
@@ -11,6 +13,13 @@ import {
 test("a name is adjective_animal_xxxxxx in lowercase ascii", () => {
 	for (let i = 0; i < 500; i++) {
 		expect(generateVisitorName()).toMatch(/^[a-z]+_[a-z]+_[a-z0-9]{6}$/);
+	}
+});
+
+test("the word lists hold distinct lowercase ascii words", () => {
+	for (const words of [ADJECTIVES, ANIMALS]) {
+		for (const word of words) expect(word).toMatch(/^[a-z]+$/);
+		expect(new Set(words).size).toBe(words.length);
 	}
 });
 

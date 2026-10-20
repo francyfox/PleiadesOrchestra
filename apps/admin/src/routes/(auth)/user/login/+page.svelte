@@ -45,6 +45,5 @@
 			<a href="/user/register" class="underline-offset-4 hover:underline">{$content.userLogin.register.value}</a>
 			<a href="/user/forgot" class="underline-offset-4 hover:underline">{$content.userLogin.forgot.value}</a>
 		</div>
-		<a href="/login" class="text-center text-sm text-muted-foreground underline-offset-4 hover:underline">{$content.userLogin.staff.value}</a>
 	</Card.Content>
 </Card.Root>

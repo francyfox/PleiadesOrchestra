@@ -23,7 +23,7 @@
 	</Card.Header>
 	<Card.Content class="grid gap-4">
 		{#if form.done}
-			<p class="text-sm">{$content.forgot.sent.value}</p>
+			<p class="text-sm">{$content.forgot.sent({ email: form.email })}</p>
 		{:else}
 			<form onsubmit={form.submit} class="grid gap-4">
 				<FormField id="email" label={$content.fields.email.value} type="email" autocomplete="email" required />

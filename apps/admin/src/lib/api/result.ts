@@ -69,10 +69,11 @@ export async function submitted<T>(
 	try {
 		const { data, error: failure } = await reply;
 		if (failure) {
-			if (Number(failure.status) === 401) {
+			const data = failureData(failure.value);
+			// Only a lapsed session; a wrong token or password on a sign-in form is also a 401.
+			if (Number(failure.status) === 401 && data.error === "unauthorized") {
 				window.location.assign("/login");
 			}
-			const data = failureData(failure.value);
 			// The orchestrator is down or refusing: give the UI one code to localize (the raw `message` stays as fallback).
 			const status = Number(failure.status);
 			if (data.error === undefined && (status === 502 || status === 503)) {

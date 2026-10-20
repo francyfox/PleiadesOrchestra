@@ -59,11 +59,6 @@ const authContent = {
 				en: "Forgot your password?",
 				kk: "Құпиясөзді ұмыттыңыз ба?",
 			}),
-			staff: t({
-				ru: "Вход для администраторов",
-				en: "Staff sign in",
-				kk: "Әкімшілерге кіру",
-			}),
 			verified: t({
 				ru: "Почта подтверждена. Теперь можно войти.",
 				en: "Email confirmed. You can sign in now.",
@@ -88,9 +83,15 @@ const authContent = {
 			}),
 			submit: t({ ru: "Зарегистрироваться", en: "Sign up", kk: "Тіркелу" }),
 			sent: t({
-				ru: "Проверьте почту: мы отправили ссылку для подтверждения. Без неё войти не получится.",
-				en: "Check your email: we sent a confirmation link. You can't sign in without it.",
-				kk: "Поштаңызды тексеріңіз: растау сілтемесін жібердік. Онсыз кіру мүмкін емес.",
+				ru: insert(
+					"Мы отправили ссылку для подтверждения на {{email}}. Проверьте почту: без ссылки войти не получится.",
+				),
+				en: insert(
+					"We sent a confirmation link to {{email}}. Check your email: you can't sign in without it.",
+				),
+				kk: insert(
+					"Растау сілтемесін {{email}} поштасына жібердік. Поштаңызды тексеріңіз: онсыз кіру мүмкін емес.",
+				),
 			}),
 			hasAccount: t({
 				ru: "Уже есть аккаунт? Войти",
@@ -115,9 +116,11 @@ const authContent = {
 				kk: "Сілтемені жіберу",
 			}),
 			sent: t({
-				ru: "Если такой аккаунт есть, письмо уже в пути.",
-				en: "If that account exists, the email is on its way.",
-				kk: "Мұндай тіркелгі болса, хат жолда.",
+				ru: insert("Если аккаунт с почтой {{email}} есть, письмо уже в пути."),
+				en: insert(
+					"If an account with {{email}} exists, the email is on its way.",
+				),
+				kk: insert("{{email}} поштасы бар тіркелгі болса, хат жолда."),
 			}),
 			back: t({
 				ru: "Назад ко входу",

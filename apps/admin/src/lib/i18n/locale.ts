@@ -14,7 +14,7 @@ const { locales, defaultLocale } = configuration.internationalization;
 
 /**
  * The admin's language for this request: the saved choice (Intlayer's
- * locale cookie, written by the switcher) → Accept-Language → Russian.
+ * locale cookie, written by the switcher) → Accept-Language → English.
  */
 export function resolveLocale(source: LocaleSource): Locale {
 	const stored = getLocaleFromStorage(source);

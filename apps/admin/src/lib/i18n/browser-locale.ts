@@ -3,7 +3,7 @@ import { resolveLocale } from "./locale";
 
 /**
  * The locale for this browser: Intlayer's cookie (written by the language
- * switcher) → the browser's preferred languages → Russian. Resolved on the
+ * switcher) → the browser's preferred languages → English. Resolved on the
  * client — the panel has no server-side rendering (see `routes/+layout.ts`).
  */
 export function resolveBrowserLocale(): Locale {

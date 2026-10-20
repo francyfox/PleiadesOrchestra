@@ -1,13 +1,13 @@
 import { type IntlayerConfig, Locales } from "intlayer";
 
 /**
- * Admin panel i18n: Russian (default), English, Kazakh.
+ * Admin panel i18n: English (default), Russian, Kazakh.
  * @see https://intlayer.org/doc/concept/configuration
  */
 const config: IntlayerConfig = {
 	internationalization: {
 		locales: [Locales.RUSSIAN, Locales.ENGLISH, Locales.KAZAKH],
-		defaultLocale: Locales.RUSSIAN,
+		defaultLocale: Locales.ENGLISH,
 		// Every dictionary must provide all three languages — a missing
 		// translation is a type error, not a silent fallback.
 		strictMode: "strict",

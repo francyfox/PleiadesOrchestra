@@ -16,8 +16,8 @@ test("first visit: best match from Accept-Language among ru/en/kk", () => {
 	expect(resolveLocale(request(null, "en-GB,en;q=0.9"))).toBe("en");
 });
 
-test("unsupported or missing language falls back to Russian", () => {
-	expect(resolveLocale(request(null, "de-DE,de;q=0.9"))).toBe("ru");
-	expect(resolveLocale(request(null, null))).toBe("ru");
-	expect(resolveLocale(request("xx", null))).toBe("ru");
+test("unsupported or missing language falls back to English", () => {
+	expect(resolveLocale(request(null, "de-DE,de;q=0.9"))).toBe("en");
+	expect(resolveLocale(request(null, null))).toBe("en");
+	expect(resolveLocale(request("xx", null))).toBe("en");
 });

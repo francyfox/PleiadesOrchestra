@@ -14,6 +14,16 @@ const commonContent = {
 		yes: t({ ru: "есть", en: "yes", kk: "бар" }),
 		no: t({ ru: "нет", en: "no", kk: "жоқ" }),
 		cancel: t({ ru: "Отмена", en: "Cancel", kk: "Бас тарту" }),
+		showPassword: t({
+			ru: "Показать пароль",
+			en: "Show password",
+			kk: "Құпиясөзді көрсету",
+		}),
+		hidePassword: t({
+			ru: "Скрыть пароль",
+			en: "Hide password",
+			kk: "Құпиясөзді жасыру",
+		}),
 		save: t({ ru: "Сохранить", en: "Save", kk: "Сақтау" }),
 		add: t({ ru: "Добавить", en: "Add", kk: "Қосу" }),
 		create: t({ ru: "Создать", en: "Create", kk: "Құру" }),
