@@ -1,3 +1,4 @@
+import { sentrySvelteKit } from "@sentry/sveltekit/vite";
 import adapter from "@sveltejs/adapter-static";
 import { sveltekit } from "@sveltejs/kit/vite";
 import tailwindcss from "@tailwindcss/vite";
@@ -19,6 +20,8 @@ export default defineConfig({
 		intlayer(),
 		// Dev: one reload per dictionary rebuild instead of one per JSON file.
 		coalesceIntlayerReloads(),
+		// Before sveltekit(): wraps the load functions in spans. No source map upload (no auth token).
+		sentrySvelteKit({ autoUploadSourceMaps: false }),
 		sveltekit({
 			compilerOptions: {
 				// Force runes mode for the project, except for libraries. Can be removed in svelte 6.

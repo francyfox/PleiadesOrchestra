@@ -38,6 +38,9 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			SMTP_USER: z.string().optional(),
 			SMTP_PASS: z.string().optional(),
 			SMTP_FROM: z.string().min(1).default("info@shalotts.site"),
+			// The admin panel's own Sentry DSN (VITE_SENTRY_DSN there): /api/monitoring/tunnel
+			// forwards only its envelopes. Unset = no tunnel.
+			SENTRY_TUNNEL_DSN: z.url().optional(),
 			// Origins allowed to make state-changing requests. `localhost` and
 			// `127.0.0.1` are different origins to a browser, so both are listed.
 			ADMIN_TRUSTED_ORIGINS: list.default([

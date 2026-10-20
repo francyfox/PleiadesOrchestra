@@ -3,6 +3,7 @@
 	import { QueryClientProvider } from "@tanstack/svelte-query";
 	import { ModeWatcher } from "mode-watcher";
 	import { setupIntlayer, useIntlayer } from "svelte-intlayer";
+	import FeedbackWidget from "#lib/components/layout/feedback-widget.svelte";
 	import { Toaster } from "#lib/components/ui/sonner/index.js";
 	import { queryClient } from "#lib/query/client.js";
 
@@ -16,7 +17,7 @@
 
 	const common = useIntlayer("common");
 
-	// app.html ships lang="ru"; screen readers and hyphenation need the real one.
+	// app.html ships lang="en"; screen readers and hyphenation need the real one.
 	$effect(() => {
 		document.documentElement.lang = data.locale;
 	});
@@ -28,6 +29,7 @@
 
 <ModeWatcher />
 <Toaster richColors />
+<FeedbackWidget user={data.admin} />
 <QueryClientProvider client={queryClient}>
 	{@render children()}
 </QueryClientProvider>

@@ -42,10 +42,17 @@ const app = createApp({
 			pass: config.SMTP_PASS,
 			from: config.SMTP_FROM,
 			log: (line) => observability.logger.info(line),
+			onError: (error) => {
+				observability.logger.error(error.message);
+				observability.monitoring.capture(error, { feature: "mail" });
+			},
 		}),
 	}),
 	orchestrator,
 	trustedOrigins: config.ADMIN_TRUSTED_ORIGINS,
+	sentryTunnel: config.SENTRY_TUNNEL_DSN
+		? { dsn: config.SENTRY_TUNNEL_DSN }
+		: undefined,
 	clientIp: {
 		source: config.CLIENT_IP_SOURCE,
 		hops: config.TRUSTED_PROXY_HOPS,

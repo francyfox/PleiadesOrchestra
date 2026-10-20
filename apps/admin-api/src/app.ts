@@ -18,6 +18,7 @@ import { mcpRoutes } from "./modules/mcp/mcp.ts";
 import { foreignOriginRejection } from "./modules/origin-guard/origin-guard.service.ts";
 import { performanceRoutes } from "./modules/performance/performance.ts";
 import { requestsRoutes } from "./modules/requests/requests.ts";
+import { sentryTunnelRoutes } from "./modules/sentry-tunnel/sentry-tunnel.ts";
 import { sessionRoutes } from "./modules/session/session.ts";
 import { subscriptionsRoutes } from "./modules/subscriptions/subscriptions.ts";
 import { systemRoutes } from "./modules/system/system.ts";
@@ -91,7 +92,8 @@ export function createApp(input: AdminApiDeps) {
 				.use(intentsRoutes(deps))
 				.use(subscriptionsRoutes(deps))
 				.use(systemRoutes(deps))
-				.use(liveRoutes(deps)),
+				.use(liveRoutes(deps))
+				.use(sentryTunnelRoutes(deps)),
 		);
 }
 

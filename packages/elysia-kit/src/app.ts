@@ -24,6 +24,7 @@ export function createObservability(
 			dsn: env.SENTRY_DSN,
 			environment: env.SENTRY_ENVIRONMENT ?? env.NODE_ENV,
 			release: env.SENTRY_RELEASE,
+			tracesSampleRate: env.SENTRY_TRACES_SAMPLE_RATE,
 		}),
 	};
 }
@@ -43,7 +44,8 @@ export function createKitApp({
 	observability,
 	docs: docsOptions,
 }: KitAppOptions) {
-	const app = new Elysia()
+	const app = observability.monitoring
+		.instrument(new Elysia())
 		.use(requestLog({ logger: observability.logger }))
 		.use(observability.monitoring.plugin);
 	if (docsOptions) app.use(docs(docsOptions));

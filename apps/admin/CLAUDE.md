@@ -71,11 +71,15 @@ Admins page: «+ Add» takes name + email, the response carries the access token
 
 ## i18n (Intlayer)
 
-ru default / en / kk. Every UI string in a `*.content.ts` dictionary (`t({ ru, en, kk })`, `insert()` for params; `strictMode: "strict"` makes a missing language a type error) next to its components under `src/lib/components/<feature>/`. No URL prefixes (`routing.mode: "no-prefix"`): locale resolved client-side in root `+layout.ts` (`browser-locale.ts`), `setupIntlayer(data.locale)` called **synchronously** in root `+layout.svelte` before any child calls `useIntlayer`.
+en default / ru / kk. Every UI string in a `*.content.ts` dictionary (`t({ ru, en, kk })`, `insert()` for params; `strictMode: "strict"` makes a missing language a type error) next to its components under `src/lib/components/<feature>/`. No URL prefixes (`routing.mode: "no-prefix"`): locale resolved client-side in root `+layout.ts` (`browser-locale.ts`), `setupIntlayer(data.locale)` called **synchronously** in root `+layout.svelte` before any child calls `useIntlayer`.
 
 `admin-api` returns error **codes** (`{ error: "weak_password", min: 8 }`), never text — client localizes. Numbers/dates/ms/GB via `useFormat()` (`lib/i18n/format.ts`, Intl-based). TanStack column headers must be functions (`header: () => $content.x.value`), not strings, or they won't follow a locale switch.
 
 Dev gotcha: vite-intlayer rewrites every `.intlayer/dictionary/*.json` on content change, Vite sends one `full-reload` per file — 18–46 reloads/second. Fixed by `vite/coalesce-intlayer-reloads.ts` (swallows per-file reloads under `.intlayer/`, one debounced `full-reload`).
+
+## Sentry
+
+`@sentry/sveltekit` (own Sentry project): `hooks.client.ts` inits it only when `VITE_SENTRY_DSN` is set (baked in at build time; `apps/admin/.env` in dev), `tracesSampleRate: 1`, and wraps `handleError` in `handleErrorWithSentry`. `sentrySvelteKit({ autoUploadSourceMaps: false })` in `vite.config.ts` (import from `@sentry/sveltekit/vite`; before `sveltekit()`) wraps load functions in spans. `/api` calls are same-origin, so they carry `sentry-trace` and join admin-api's trace. Events go through `tunnel: "/api/monitoring/tunnel"` (admin-api forwards them; needs `SENTRY_TUNNEL_DSN` there = this DSN), so ad blockers don't drop them. Feedback: `feedbackIntegration({ autoInject: false })`, the button is created by `layout/feedback-widget.svelte` (bottom left; texts in `feedback-widget.content.ts`, rebuilt on locale switch; theme follows mode-watcher; `Sentry.setUser` from the session).
 
 ## Theme / fonts
 

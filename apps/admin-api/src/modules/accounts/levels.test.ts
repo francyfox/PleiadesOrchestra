@@ -43,6 +43,8 @@ describe("levels on the routes", () => {
 			/^\/api\/live$/,
 			// a WebSocket upgrade: covered by its own test below
 			/^\/api\/system\/stream$/,
+			// public on purpose (sign-in pages report too); its DSN check is tested in sentry-tunnel.test.ts
+			/^\/api\/monitoring\/tunnel$/,
 		];
 		const routes = t.app.routes.filter(
 			(route) =>

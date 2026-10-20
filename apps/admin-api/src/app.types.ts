@@ -31,6 +31,11 @@ export interface AdminApiDeps {
 	/** Overrides of the login / registration limits (defaults in login-throttle.service.ts). */
 	loginLimits?: Partial<LoginLimits>;
 	now?: () => number;
+	/** The panel's Sentry DSN: `/api/monitoring/tunnel` forwards only its envelopes (unset = tunnel off). */
+	sentryTunnel?: {
+		dsn: string;
+		fetch?: (url: string, init: RequestInit) => Promise<Response>;
+	};
 }
 
 /** `AdminApiDeps` with the defaults filled in — what the route plugins receive. */

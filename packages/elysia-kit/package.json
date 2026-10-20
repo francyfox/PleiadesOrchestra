@@ -15,7 +15,7 @@
 	},
 	"dependencies": {
 		"@elysiajs/openapi": "catalog:",
-		"@sentry/bun": "^11.0.0",
+		"@sentry/elysia": "catalog:",
 		"consola": "catalog:",
 		"zod": "catalog:"
 	},

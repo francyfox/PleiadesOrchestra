@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { isInitialized } from "@sentry/elysia";
 import { Elysia, t } from "elysia";
 import { createMonitoring, type SentryClient } from "./sentry.ts";
 
@@ -16,11 +17,14 @@ function fakeClient() {
 const settle = () => new Promise((resolve) => setTimeout(resolve, 5));
 
 describe("createMonitoring", () => {
-	test("is a silent no-op without a DSN", async () => {
+	test("is a silent no-op without a DSN: no SDK, the app is left as is", async () => {
 		const monitoring = createMonitoring({ service: "svc" });
 		expect(monitoring.enabled).toBe(false);
 		monitoring.capture(new Error("x"));
 		await monitoring.flush();
+		const app = new Elysia();
+		expect(monitoring.instrument(app)).toBe(app);
+		expect(isInitialized()).toBe(false);
 	});
 
 	test("reports server faults with the request's method and path", async () => {
