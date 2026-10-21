@@ -72,10 +72,12 @@
 
 {#snippet actionsCell(agent: Agent)}
 	<div class="flex justify-end">
+		{#if agent.role !== "translate"}
 		<IconButton icon={SettingsIcon} tone="primary" label={$content.settings.action.value} onclick={() => {
 			editing = agent;
 			dialogOpen = true;
 		}} />
+		{/if}
 	</div>
 {/snippet}
 

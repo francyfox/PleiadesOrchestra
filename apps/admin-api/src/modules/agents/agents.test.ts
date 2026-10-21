@@ -15,7 +15,6 @@ describe("agents and providers (proxied)", () => {
 		const cookie = await signedIn();
 		const view = {
 			id: "beta-text",
-			editable: true,
 			provider: "openrouter",
 			model: "google/gemini-2.5-flash",
 			baseUrl: "https://openrouter.ai/api/v1",
@@ -49,6 +48,7 @@ describe("agents and providers (proxied)", () => {
 					id: "openrouter",
 					name: "OpenRouter",
 					baseUrl: "https://openrouter.ai/api/v1",
+					type: "openai-compat",
 					apiKey: "••••1234",
 					models: [model],
 				},

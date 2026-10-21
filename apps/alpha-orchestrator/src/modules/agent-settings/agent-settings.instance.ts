@@ -55,6 +55,33 @@ export const agentSettings = createAgentSettings({
 						extraBody: {},
 					},
 				},
+				{
+					id: "local-decision",
+					baseUrl: config.LAYA_API_BASE_URL,
+					type: "systemone",
+					apiKeyVar: "LAYA_API_KEY",
+					model: {
+						id: config.LAYA_MODEL,
+						name: config.LAYA_MODEL,
+						extraBody: {},
+					},
+				},
+				// The in-process translator, only where a library is installed; no URL, no key.
+				...(config.TRANSLATE_LIB_PATH
+					? [
+							{
+								id: "local-translate",
+								baseUrl: "",
+								type: "ctranslate2" as const,
+								apiKeyVar: "",
+								model: {
+									id: config.TRANSLATE_MODEL_REPO,
+									name: config.TRANSLATE_MODEL_REPO,
+									extraBody: {},
+								},
+							},
+						]
+					: []),
 			]),
 	}),
 });

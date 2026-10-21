@@ -20,6 +20,7 @@ const agentsContent = {
 		role: {
 			text: t({ ru: "текст", en: "text", kk: "мәтін" }),
 			decision: t({ ru: "решения", en: "decision", kk: "шешім" }),
+			translate: t({ ru: "перевод", en: "translate", kk: "аударма" }),
 			"function-call": t({
 				ru: "вызов функций",
 				en: "function call",
@@ -41,11 +42,6 @@ const agentsContent = {
 				ru: "Модели и их параметры настраиваются во вкладке «Модели». Выбор действует сразу, без перезапуска; запрос, который уже идёт, дорабатывает на прежней модели.",
 				en: "Models and their parameters are set up on the Models tab. A pick applies at once, no restart; a request already running finishes on the old model.",
 				kk: "Модельдер мен олардың параметрлері «Модельдер» бетінде бапталады. Таңдау бірден қолданылады, қайта іске қосу керек емес; жүріп жатқан сұрау ескі модельмен аяқталады.",
-			}),
-			readOnly: t({
-				ru: "Решения принимает Laya, она остаётся на своём сервере (из env). Здесь только просмотр.",
-				en: "Laya makes the decisions and stays on its own server (from env). View only.",
-				kk: "Шешімдерді Laya қабылдайды, ол өз серверінде қалады (env). Тек қарау.",
 			}),
 			loading: t({ ru: "Загрузка…", en: "Loading…", kk: "Жүктелуде…" }),
 			model: t({ ru: "Модель", en: "Model", kk: "Модель" }),

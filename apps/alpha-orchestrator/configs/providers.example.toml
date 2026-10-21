@@ -30,3 +30,22 @@ temperature = 0.3
 # id = "qwen3:1.7b"
 # temperature = 0
 # reasoning_effort = "none"   # Qwen3 on Ollama "thinks" into {} otherwise
+
+# Decision agent (gamma-decision): systemone providers only; base_url is the root without /v1.
+# [providers.laya]
+# name = "Laya (local)"
+# base_url = "http://gamma-decision:8080"
+# type = "systemone"
+#
+# [[providers.laya.models]]
+# id = "laya"
+#
+# TypeSafe's hosted Jev, same protocol.
+# [providers.typesafe]
+# name = "TypeSafe"
+# base_url = "https://api.typesafe.ai"
+# type = "systemone"
+# api_key = "$TYPESAFE_AI_API_KEY"
+#
+# [[providers.typesafe.models]]
+# id = "jev-latest"   # or a pinned one, e.g. jev-1.14.0

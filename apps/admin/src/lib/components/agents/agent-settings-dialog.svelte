@@ -61,37 +61,32 @@
 		</Dialog.Header>
 		{#if query.data && providers.data}
 			{@const view = query.data}
-			{#if !view.editable}
-				<p class="text-sm text-muted-foreground">{$content.settings.readOnly.value}</p>
-				<p class="font-mono text-sm">{view.baseUrl} · {view.model}</p>
-			{:else}
-				<form id="agent-settings-form" use:save class="grid gap-2">
+			<form id="agent-settings-form" use:save class="grid gap-2">
+				<input type="hidden" name="id" value={agent.id} />
+				<Label for="agent-model">{$content.settings.model.value}</Label>
+				<!-- "<provider>\t<model id>": a model id may hold "/" or ":" -->
+				<select id="agent-model" name="model" required value={view.provider ? `${view.provider}\t${view.model}` : ""} class={selectClass}>
+					{#if !view.provider}
+						<option value="" disabled>{view.model} ({$content.settings.envServer.value})</option>
+					{/if}
+					{#each providers.data.items.filter((p) => p.type === (agent.role === "decision" ? "systemone" : "openai-compat")) as p (p.id)}
+						<optgroup label={p.name}>
+							{#each p.models as m (m.id)}
+								<option value={`${p.id}\t${m.id}`}>{m.name}</option>
+							{/each}
+						</optgroup>
+					{/each}
+				</select>
+				<p class="font-mono text-xs text-muted-foreground">{view.baseUrl}</p>
+			</form>
+			<div class="flex flex-wrap items-center gap-2 border-t pt-3">
+				<form use:test>
 					<input type="hidden" name="id" value={agent.id} />
-					<Label for="agent-model">{$content.settings.model.value}</Label>
-					<!-- "<provider>\t<model id>": a model id may hold "/" or ":" -->
-					<select id="agent-model" name="model" required value={view.provider ? `${view.provider}\t${view.model}` : ""} class={selectClass}>
-						{#if !view.provider}
-							<option value="" disabled>{view.model} ({$content.settings.envServer.value})</option>
-						{/if}
-						{#each providers.data.items as p (p.id)}
-							<optgroup label={p.name}>
-								{#each p.models as m (m.id)}
-									<option value={`${p.id}\t${m.id}`}>{m.name}</option>
-								{/each}
-							</optgroup>
-						{/each}
-					</select>
-					<p class="font-mono text-xs text-muted-foreground">{view.baseUrl}</p>
+					<Button variant="outline" type="submit"><ActivityIcon data-icon="inline-start" />{$content.settings.test.value}</Button>
 				</form>
-				<div class="flex flex-wrap items-center gap-2 border-t pt-3">
-					<form use:test>
-						<input type="hidden" name="id" value={agent.id} />
-						<Button variant="outline" type="submit"><ActivityIcon data-icon="inline-start" />{$content.settings.test.value}</Button>
-					</form>
-					<Button type="submit" form="agent-settings-form" class="ml-auto"><SaveIcon data-icon="inline-start" />{$common.save.value}</Button>
-					{#if answer}<p class="basis-full text-sm text-muted-foreground">{answer}</p>{/if}
-				</div>
-			{/if}
+				<Button type="submit" form="agent-settings-form" class="ml-auto"><SaveIcon data-icon="inline-start" />{$common.save.value}</Button>
+				{#if answer}<p class="basis-full text-sm text-muted-foreground">{answer}</p>{/if}
+			</div>
 		{:else}
 			<p class="text-sm text-muted-foreground">{$content.settings.loading.value}</p>
 		{/if}

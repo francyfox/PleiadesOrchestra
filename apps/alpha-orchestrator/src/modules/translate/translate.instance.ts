@@ -1,6 +1,18 @@
+import { agentSettings } from "../agent-settings/agent-settings.instance.ts";
 import { config } from "../config/config.service.ts";
-import { ensureModel } from "./translate-engine.ts";
+import { ensureModel, translateModelDir } from "./translate-engine.ts";
 import { createTranslatePool, workerEntryUrl } from "./translate-pool.ts";
+
+/** The translator's model from providers.toml (first `ctranslate2` provider, first model), else the env repo. */
+export function translatorModel(): { provider: string | null; repo: string } {
+	const p = agentSettings
+		.providersView()
+		.find((x) => x.type === "ctranslate2" && x.models[0]);
+	return {
+		provider: p?.id ?? null,
+		repo: p?.models[0]?.id ?? config.TRANSLATE_MODEL_REPO,
+	};
+}
 
 /**
  * The Russian → English translator, or `undefined` when none is configured
@@ -18,12 +30,18 @@ export async function loadTranslator(
 > {
 	if (!config.TRANSLATE_LIB_PATH) return undefined;
 	try {
-		await ensureModel(config.TRANSLATE_MODEL_DIR, config.TRANSLATE_MODEL_REPO);
+		// shortcut: the model is read once at start, so a change in providers.toml needs a restart; hot reload = download + pool swap.
+		const { repo } = translatorModel();
+		const modelDir = translateModelDir(repo, {
+			dir: config.TRANSLATE_MODEL_DIR,
+			repo: config.TRANSLATE_MODEL_REPO,
+		});
+		await ensureModel(modelDir, repo);
 		const pool = await createTranslatePool({
 			workerUrl: workerEntryUrl("modules/translate/translate.worker"),
 			init: {
 				libPath: config.TRANSLATE_LIB_PATH,
-				modelDir: config.TRANSLATE_MODEL_DIR,
+				modelDir,
 				threads: config.TRANSLATE_THREADS,
 				computeType: config.TRANSLATE_COMPUTE_TYPE,
 			},

@@ -15,8 +15,6 @@ const ReasoningEffort = t.Union([
 /** One agent: the model in effect and where it came from. Never a key. */
 export const AgentSettingsView = t.Object({
 	id: t.String(),
-	/** false for gamma-decision: Laya stays on its env server. */
-	editable: t.Boolean(),
 	/** null = the env server (no model picked, or the picked one is gone). */
 	provider: t.Nullable(t.String()),
 	model: t.String(),
@@ -54,6 +52,12 @@ export const Provider = t.Object({
 	id: t.String(),
 	name: t.String(),
 	baseUrl: t.String(),
+	/** `systemone` = Laya / TypeSafe Jev decisions (gamma-decision only); the other agents take `openai-compat`. */
+	type: t.Union([
+		t.Literal("openai-compat"),
+		t.Literal("systemone"),
+		t.Literal("ctranslate2"),
+	]),
 	apiKey: t.String(),
 	models: t.Array(ProviderModel),
 });

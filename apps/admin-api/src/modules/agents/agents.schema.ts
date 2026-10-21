@@ -1,7 +1,12 @@
 import { type Static, t } from "elysia";
 import { nullable, oneOf } from "../common/common.schema.ts";
 
-export const AgentRole = t.UnionEnum(["text", "decision", "function-call"]);
+export const AgentRole = t.UnionEnum([
+	"text",
+	"decision",
+	"function-call",
+	"translate",
+]);
 
 export const AgentStatus = t.UnionEnum(["up", "down"]);
 
@@ -23,7 +28,6 @@ const ReasoningEffort = oneOf(["none", "low", "medium", "high"]);
 /** One agent: the model in effect and its provider (null = the env server). Never a key. */
 export const AgentSettingsView = t.Object({
 	id: t.String(),
-	editable: t.Boolean(),
 	provider: nullable(t.String()),
 	model: t.String(),
 	baseUrl: nullable(t.String()),
@@ -52,6 +56,8 @@ export const Provider = t.Object({
 	id: t.String(),
 	name: t.String(),
 	baseUrl: t.String(),
+	/** `systemone` = Laya / TypeSafe Jev decisions (gamma-decision only). */
+	type: oneOf(["openai-compat", "systemone", "ctranslate2"]),
 	apiKey: t.String(),
 	models: t.Array(ProviderModel),
 });

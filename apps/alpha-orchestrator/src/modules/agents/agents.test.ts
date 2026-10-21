@@ -107,6 +107,24 @@ describe("probeAgents", () => {
 		expect(result.map((agent) => agent.latencyMs)).toEqual([null, null]);
 	});
 
+	test("an in-process agent is up or down by its own readiness, no HTTP", async () => {
+		const translate = (ready: boolean): AgentSpec => ({
+			id: "translate",
+			name: "Opus-MT translator",
+			role: "translate",
+			baseUrl: "",
+			model: "Helsinki-NLP/opus-mt-ru-en",
+			ready,
+		});
+		const result = await probeAgents([translate(true), translate(false)], {
+			fetch: async () => {
+				throw new Error("no HTTP expected");
+			},
+		});
+		expect(result.map((a) => a.status)).toEqual(["up", "down"]);
+		expect(result[0]).toMatchObject({ role: "translate", endpoint: "" });
+	});
+
 	test("Ollama has no /health: a text or function-call agent is up when /v1/models answers", async () => {
 		const ollama: AgentSpec = {
 			id: "delta-function-call",

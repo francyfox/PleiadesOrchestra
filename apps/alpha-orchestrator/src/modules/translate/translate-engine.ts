@@ -6,7 +6,7 @@ import {
 	renameSync,
 	rmSync,
 } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import type { NativeCalls } from "./translate.service.ts";
@@ -19,6 +19,16 @@ export const MODEL_FILES = [
 	"source.spm",
 	"target.spm",
 ] as const;
+
+/** Where a model repo lives: the env repo keeps `TRANSLATE_MODEL_DIR` (installs already downloaded it), another repo gets a sibling dir. */
+export function translateModelDir(
+	repo: string,
+	env: { dir: string; repo: string },
+): string {
+	return repo === env.repo
+		? env.dir
+		: join(dirname(env.dir), repo.replaceAll("/", "--"));
+}
 
 type Fetch = (url: string) => Promise<Response>;
 

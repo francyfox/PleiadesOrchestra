@@ -74,7 +74,7 @@ export function agentSettingsRoutes({ settings }: AgentSettingsDeps) {
 				detail: {
 					summary: "Pick an agent's model",
 					description:
-						"A model of providers.toml; its parameters come with it. Takes effect without a restart; a run already going keeps its model. 400 for a model not in the file or gamma-decision.",
+						"A model of providers.toml; its parameters come with it. Takes effect without a restart; a run already going keeps its model. 400 for a model not in the file or of a provider type the agent cannot use (gamma-decision takes `systemone` only).",
 				},
 				response: { 200: AgentSettingsView, 400: t.String(), 404: t.String() },
 			},
@@ -90,7 +90,7 @@ export function agentSettingsRoutes({ settings }: AgentSettingsDeps) {
 				detail: {
 					summary: "Test an agent",
 					description:
-						"One plain chat call with the model in effect. A failed call is still 200 with `ok: false` and `error`; 400 for gamma-decision.",
+						"One plain chat call with the model in effect (gamma-decision: one tiny decision). A failed call is still 200 with `ok: false` and `error`.",
 				},
 				response: { 200: AgentTestResult, 400: t.String(), 404: t.String() },
 			},

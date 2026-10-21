@@ -8,6 +8,7 @@ export const Agent = t.Object({
 		t.Literal("text"),
 		t.Literal("decision"),
 		t.Literal("function-call"),
+		t.Literal("translate"),
 	]),
 	/** Base URL without credentials. */
 	endpoint: t.String(),

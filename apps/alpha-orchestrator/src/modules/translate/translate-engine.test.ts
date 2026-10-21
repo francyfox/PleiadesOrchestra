@@ -2,7 +2,11 @@ import { describe, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { ensureModel, MODEL_FILES } from "./translate-engine.ts";
+import {
+	ensureModel,
+	MODEL_FILES,
+	translateModelDir,
+} from "./translate-engine.ts";
 
 const tmp = () => mkdtempSync(join(tmpdir(), "model-"));
 
@@ -71,5 +75,16 @@ describe("ensureModel", () => {
 
 		expect(existsSync(join(dir, "model.bin"))).toBe(false);
 		expect(existsSync(join(dir, "model.bin.part"))).toBe(false);
+	});
+});
+
+describe("translateModelDir", () => {
+	const env = { dir: "/models/opus-ru-en", repo: "gaudi/opus" };
+
+	test("the env repo keeps the env dir, another repo gets a sibling", () => {
+		expect(translateModelDir("gaudi/opus", env)).toBe("/models/opus-ru-en");
+		expect(translateModelDir("org/other-model", env)).toBe(
+			"/models/org--other-model",
+		);
 	});
 });

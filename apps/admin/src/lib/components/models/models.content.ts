@@ -25,6 +25,11 @@ const modelsContent = {
 				key: t({ ru: "Ключ", en: "Key", kk: "Кілт" }),
 				models: t({ ru: "Моделей", en: "Models", kk: "Модельдер" }),
 			},
+			inProcess: t({
+				ru: "в процессе",
+				en: "in-process",
+				kk: "процесс ішінде",
+			}),
 			noKey: t({ ru: "без ключа", en: "no key", kk: "кілтсіз" }),
 			deleteTitle: t({
 				ru: insert("Удалить провайдера «{{name}}» вместе с моделями?"),

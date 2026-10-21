@@ -106,6 +106,61 @@ describe("providers.toml", () => {
 		).toThrow(ProvidersConfigError);
 	});
 
+	test("a systemone provider round-trips and keeps its type through an upsert", () => {
+		const typesafe: Provider = {
+			id: "typesafe",
+			name: "typesafe",
+			baseUrl: "https://api.typesafe.ai",
+			type: "systemone",
+			apiKey: "$TYPESAFE_AI_API_KEY",
+			models: [{ id: "jev-latest", name: "jev-latest", extraBody: {} }],
+		};
+		const text = stringifyProviders([typesafe]);
+		expect(text).toContain('type = "systemone"');
+		expect(parseProviders(text)).toEqual([typesafe]);
+		expect(
+			upsertProvider([typesafe], { ...typesafe, name: "TypeSafe" })[0]?.type,
+		).toBe("systemone");
+	});
+
+	test("a ctranslate2 provider needs no base_url, the others do; it is written without one", () => {
+		const toml = `[providers.local-translate]
+type = "ctranslate2"
+models = [{ id = "gaudi/opus-mt-ru-en-ctranslate2" }]
+`;
+		const p = parseProviders(toml)[0] as Provider;
+		expect(p).toMatchObject({ type: "ctranslate2", baseUrl: "" });
+		expect(stringifyProviders([p])).not.toContain("base_url");
+		expect(parseProviders(stringifyProviders([p]))).toEqual([p]);
+		expect(() => parseProviders('[providers.x]\nname = "x"\n')).toThrow(
+			"base_url is required",
+		);
+	});
+
+	test("a ctranslate2 server is seeded without a base URL and without a key", () => {
+		const model = { id: "org/m", name: "org/m", extraBody: {} };
+		expect(
+			seedProviders([
+				{
+					id: "local-translate",
+					baseUrl: "",
+					type: "ctranslate2",
+					apiKeyVar: "",
+					model,
+				},
+			]),
+		).toEqual([
+			{
+				id: "local-translate",
+				name: "local-translate",
+				baseUrl: "",
+				type: "ctranslate2",
+				apiKey: "",
+				models: [model],
+			},
+		]);
+	});
+
 	test("seeding from env: one provider per base URL, keys as env references, no server = skipped", () => {
 		const model = (id: string) => ({ id, name: id, extraBody: {} });
 		expect(
@@ -123,6 +178,13 @@ describe("providers.toml", () => {
 					model: model("m2"),
 				},
 				{ id: "none", baseUrl: "", apiKeyVar: "C", model: model("m3") },
+				{
+					id: "local-decision",
+					baseUrl: "http://g:8080",
+					type: "systemone",
+					apiKeyVar: "D",
+					model: model("laya"),
+				},
 			]),
 		).toEqual([
 			{
@@ -131,6 +193,14 @@ describe("providers.toml", () => {
 				baseUrl: "http://a/v1",
 				apiKey: "$A",
 				models: [model("m1"), model("m2")],
+			},
+			{
+				id: "local-decision",
+				name: "local-decision",
+				baseUrl: "http://g:8080",
+				type: "systemone",
+				apiKey: "$D",
+				models: [model("laya")],
 			},
 		]);
 	});
@@ -172,6 +242,33 @@ describe("providers.toml", () => {
 		expect(() =>
 			upsertModel([], "nope", { id: "m", name: "m", extraBody: {} }),
 		).toThrow(ProvidersConfigError);
+	});
+
+	test("an existing file without a provider of a seeded type gets that seeded provider; others are left alone", async () => {
+		await inTempDir(async (dir) => {
+			const path = join(dir, "providers.toml");
+			await Bun.write(path, TOML);
+			const laya: Provider = {
+				id: "local-decision",
+				name: "local-decision",
+				baseUrl: "http://laya:8090",
+				type: "systemone",
+				apiKey: "$LAYA_API_KEY",
+				models: [{ id: "laya", name: "laya", extraBody: {} }],
+			};
+			const seed = () => [{ ...OPENROUTER, id: "local-text" }, laya];
+			const config = await createProvidersConfig({ path, seed });
+			expect(config.providers().map((p) => p.id)).toEqual([
+				"openrouter",
+				"ollama",
+				"local-decision",
+			]);
+			expect(await Bun.file(path).text()).toContain(
+				"[providers.local-decision]",
+			);
+			const again = await createProvidersConfig({ path, seed });
+			expect(again.providers()).toHaveLength(3);
+		});
 	});
 
 	test("a missing file is seeded and written 0600; text() masks keys; a masked key saved back keeps the stored one", async () => {

@@ -17,6 +17,8 @@ export interface DecisionAgentConfig {
 	apiKey: string;
 	/** Model name sent in the request body (`laya` by default); an external Laya server may serve it under another name. */
 	modelId?: string;
+	/** Name the telemetry reports for the provider ("laya" by default; the picked provider's id otherwise). */
+	provider?: string;
 	/** Any AI SDK decision model; defaults to `gamma-decision` over HTTP. */
 	model?: Experimental_DecisionModel;
 	fetchImpl?: typeof fetch;
@@ -45,6 +47,10 @@ export function createDecisionAgent(
 			fetch: config.fetchImpl,
 		}).decisionModel(config.modelId ?? "laya");
 	const telemetry = config.telemetry ?? defaultTelemetry;
+	const provider = config.provider ?? "laya";
+	const modelName = config.provider
+		? (config.modelId ?? "systemone")
+		: "laya-system-one";
 
 	return {
 		async decide(
@@ -62,8 +68,8 @@ export function createDecisionAgent(
 				});
 
 				telemetry.logLlmState({
-					provider: "laya",
-					model: "laya-system-one",
+					provider,
+					model: modelName,
 					latencyMs: Date.now() - startedAt,
 					ok: true,
 				});
@@ -71,8 +77,8 @@ export function createDecisionAgent(
 				return result.answers as Record<string, DecisionAnswer>;
 			} catch (error) {
 				telemetry.logLlmState({
-					provider: "laya",
-					model: "laya-system-one",
+					provider,
+					model: modelName,
 					latencyMs: Date.now() - startedAt,
 					ok: false,
 					error: error instanceof Error ? error.message : String(error),

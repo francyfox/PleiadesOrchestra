@@ -1,16 +1,18 @@
 export interface AgentSpec {
 	id: string;
 	name: string;
-	role: "text" | "decision" | "function-call";
+	role: "text" | "decision" | "function-call" | "translate";
 	/** As configured — may carry credentials; only `publicEndpoint()` of it leaves the process. */
 	baseUrl: string;
 	model: string | null;
+	/** In-process agent (the translator): up or down by this flag, no HTTP probe. */
+	ready?: boolean;
 }
 
 export interface AgentHealth {
 	id: string;
 	name: string;
-	role: "text" | "decision" | "function-call";
+	role: "text" | "decision" | "function-call" | "translate";
 	endpoint: string;
 	model: string | null;
 	status: "up" | "down";
@@ -86,8 +88,10 @@ export function probeAgents(
 	return Promise.all(
 		specs.map(async (spec): Promise<AgentHealth> => {
 			const startedAt = now();
-			let up = await answers(fetchFn, healthUrl(spec.baseUrl), timeoutMs);
-			if (!up && spec.role !== "decision") {
+			let up =
+				spec.ready ??
+				(await answers(fetchFn, healthUrl(spec.baseUrl), timeoutMs));
+			if (!up && spec.ready === undefined && spec.role !== "decision") {
 				up = await answers(fetchFn, modelsUrl(spec.baseUrl), timeoutMs);
 			}
 			const checkedAt = now();

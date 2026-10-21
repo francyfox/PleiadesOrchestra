@@ -14,7 +14,10 @@ import {
 } from "../http/http.testing.ts";
 import { createProvidersConfig } from "../providers/providers.service.ts";
 import { RunBinding } from "../run-binding/run-binding.ts";
-import { createAgentSettings } from "./agent-settings.service.ts";
+import {
+	AgentSettingsError,
+	createAgentSettings,
+} from "./agent-settings.service.ts";
 
 const ENV = {
 	"beta-text": {
@@ -42,16 +45,30 @@ api_key = "$LLM_API_KEY"
 models = [{ id = "vikhr", temperature = 0.3 }]
 `;
 
+// Decision providers speak systemone: the local Laya and TypeSafe's hosted Jev.
+const SYSTEMONE = `
+[providers.laya]
+base_url = "http://laya:8090"
+type = "systemone"
+models = [{ id = "laya" }]
+
+[providers.typesafe]
+base_url = "https://api.typesafe.ai"
+type = "systemone"
+api_key = "$TYPESAFE_AI_API_KEY"
+models = [{ id = "jev-latest" }]
+`;
+
 let dir = "";
 afterEach(async () => {
 	if (dir) await rm(dir, { recursive: true });
 	dir = "";
 });
 
-async function setup(fetchImpl?: typeof fetch) {
+async function setup(fetchImpl?: typeof fetch, seed = SEED) {
 	dir = await mkdtemp(join(tmpdir(), "agent-settings-"));
 	const path = join(dir, "providers.toml");
-	await Bun.write(path, SEED);
+	await Bun.write(path, seed);
 	const db = testDb();
 	const agentSettings = createAgentSettings({
 		db,
@@ -59,7 +76,7 @@ async function setup(fetchImpl?: typeof fetch) {
 		providers: await createProvidersConfig({
 			path,
 			seed: () => [],
-			env: { LLM_API_KEY: "env-key" },
+			env: { LLM_API_KEY: "env-key", TYPESAFE_AI_API_KEY: "jev-key" },
 		}),
 		now: () => NOW,
 		fetch: fetchImpl,
@@ -161,6 +178,86 @@ describe("agent settings", () => {
 		expect((await pick("nope", { provider: "a", model: "b" })).status).toBe(
 			404,
 		);
+	});
+
+	test("gamma picks systemone models only, the others openai-compat only", async () => {
+		const { agentSettings, call } = await setup(undefined, SEED + SYSTEMONE);
+		await call("/agents/gamma-decision/model", "PUT", {
+			provider: "typesafe",
+			model: "jev-latest",
+		});
+		expect(agentSettings.effective("gamma-decision")).toMatchObject({
+			provider: "typesafe",
+			baseUrl: "https://api.typesafe.ai",
+			apiKey: "jev-key",
+			model: "jev-latest",
+		});
+		expect(() =>
+			agentSettings.pick(
+				"gamma-decision",
+				{ provider: "local-text", model: "vikhr" },
+				"a",
+			),
+		).toThrow(AgentSettingsError);
+		expect(() =>
+			agentSettings.pick(
+				"beta-text",
+				{ provider: "typesafe", model: "jev-latest" },
+				"a",
+			),
+		).toThrow(AgentSettingsError);
+		const list = await json(await call("/providers"));
+		expect(list.items.map((p: { type: string }) => p.type)).toEqual([
+			"openai-compat",
+			"systemone",
+			"systemone",
+		]);
+	});
+
+	test("no agent picks the in-process ctranslate2 translator", async () => {
+		const { agentSettings } = await setup(
+			undefined,
+			`${SEED}${SYSTEMONE}
+[providers.local-translate]
+type = "ctranslate2"
+models = [{ id = "org/opus" }]
+`,
+		);
+		for (const id of ["beta-text", "gamma-decision"] as const)
+			expect(() =>
+				agentSettings.pick(
+					id,
+					{ provider: "local-translate", model: "org/opus" },
+					"a",
+				),
+			).toThrow(AgentSettingsError);
+	});
+
+	test("test for gamma makes one systemone decision at the effective server", async () => {
+		let seen: { url: string; auth: string | null } | undefined;
+		const { call } = await setup(
+			(async (url: string, init: RequestInit) => {
+				seen = {
+					url,
+					auth: new Headers(init.headers).get("authorization"),
+				};
+				return Response.json({
+					model: "jev-latest",
+					answers: { ok: { type: "noul", noul: 0.9 } },
+				});
+			}) as unknown as typeof fetch,
+			SEED + SYSTEMONE,
+		);
+		await call("/agents/gamma-decision/model", "PUT", {
+			provider: "typesafe",
+			model: "jev-latest",
+		});
+		const result = await json(
+			await call("/agents/gamma-decision/test", "POST", {}),
+		);
+		expect(result).toMatchObject({ ok: true, answer: "0.9" });
+		expect(seen?.url).toBe("https://api.typesafe.ai/v1/systemone");
+		expect(seen?.auth).toBe("Bearer jev-key");
 	});
 
 	test("no response carries a key; the file editor masks it and a masked key saved back keeps it", async () => {

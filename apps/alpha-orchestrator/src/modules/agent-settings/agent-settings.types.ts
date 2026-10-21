@@ -1,4 +1,7 @@
-import type { ReasoningEffort } from "../providers/providers.service.ts";
+import type {
+	ProviderType,
+	ReasoningEffort,
+} from "../providers/providers.service.ts";
 
 export const AGENT_IDS = [
 	"beta-text",
@@ -7,11 +10,9 @@ export const AGENT_IDS = [
 ] as const;
 export type AgentId = (typeof AGENT_IDS)[number];
 
-/** Gamma (Laya) speaks its own protocol: it is shown here, but stays on its env server. */
-export const EDITABLE_AGENT_IDS: readonly AgentId[] = [
-	"beta-text",
-	"delta-function-call",
-];
+/** Gamma speaks systemone (Laya, Jev), the others OpenAI chat: an agent picks only a provider of its type. */
+export const providerTypeOf = (id: AgentId): ProviderType =>
+	id === "gamma-decision" ? "systemone" : "openai-compat";
 
 /** The server env names for one agent; used until a model is picked. */
 export interface EnvServer {

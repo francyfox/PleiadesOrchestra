@@ -22,7 +22,11 @@
 					},
 					"type": {
 						"type": "string",
-						"const": "openai-compat"
+						"enum": [
+							"openai-compat",
+							"systemone",
+							"ctranslate2"
+						]
 					},
 					"api_key": {
 						"type": "string"
@@ -67,10 +71,7 @@
 							]
 						}
 					}
-				},
-				"required": [
-					"base_url"
-				]
+				}
 			}
 		}
 	}

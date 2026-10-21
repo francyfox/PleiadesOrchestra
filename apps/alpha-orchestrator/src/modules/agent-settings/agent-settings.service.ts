@@ -1,3 +1,4 @@
+import { createDecisionAgent } from "@repo/core";
 import { eq } from "drizzle-orm";
 import { publicEndpoint } from "../agents/agents.service.ts";
 import { agentSettings } from "../database/database.schema.ts";
@@ -16,14 +17,14 @@ import {
 import {
 	AGENT_IDS,
 	type AgentId,
-	EDITABLE_AGENT_IDS,
 	type EffectiveSettings,
 	type EnvServer,
+	providerTypeOf,
 } from "./agent-settings.types.ts";
 
 type Row = typeof agentSettings.$inferSelect;
 
-/** Bad input for a settings write (unknown model, gamma): the route answers 400. */
+/** Bad input for a settings write (unknown model, wrong provider type): the route answers 400. */
 export class AgentSettingsError extends Error {}
 
 /**
@@ -124,11 +125,6 @@ export function createAgentSettings(deps: AgentSettingsDeps) {
 		changed();
 	}
 
-	function assertEditable(id: AgentId) {
-		if (!EDITABLE_AGENT_IDS.includes(id))
-			throw new AgentSettingsError(`${id} stays on its env server`);
-	}
-
 	refresh();
 
 	return {
@@ -152,7 +148,6 @@ export function createAgentSettings(deps: AgentSettingsDeps) {
 			const s = this.effective(id);
 			return {
 				id,
-				editable: EDITABLE_AGENT_IDS.includes(id),
 				provider: s.provider ?? null,
 				model: s.model,
 				baseUrl: s.baseUrl ? publicEndpoint(s.baseUrl) : null,
@@ -166,15 +161,16 @@ export function createAgentSettings(deps: AgentSettingsDeps) {
 			pick: { provider: string; model: string },
 			adminId: string,
 		) {
-			assertEditable(id);
-			const exists = providers
+			const provider = providers
 				.providers()
-				.find((p) => p.id === pick.provider)
-				?.models.some((m) => m.id === pick.model);
-			if (!exists)
+				.find((p) => p.id === pick.provider);
+			if (!provider?.models.some((m) => m.id === pick.model))
 				throw new AgentSettingsError(
 					`no model "${pick.model}" at provider "${pick.provider}"`,
 				);
+			const type = providerTypeOf(id);
+			if ((provider.type ?? "openai-compat") !== type)
+				throw new AgentSettingsError(`${id} takes ${type} providers only`);
 			const values = { ...pick, updatedBy: adminId, updatedAt: now() };
 			db.insert(agentSettings)
 				.values({ agentId: id, ...values })
@@ -186,6 +182,7 @@ export function createAgentSettings(deps: AgentSettingsDeps) {
 		providersView() {
 			return providers.providers().map((p) => ({
 				...p,
+				type: p.type ?? "openai-compat",
 				apiKey: maskKey(p.apiKey),
 			}));
 		},
@@ -208,13 +205,32 @@ export function createAgentSettings(deps: AgentSettingsDeps) {
 			editProviders((current) => upsertModel(current, providerId, model)),
 		deleteModel: (providerId: string, modelId: string) =>
 			editProviders((current) => removeModel(current, providerId, modelId)),
-		/** One plain chat call with the settings in effect (not schema-constrained, even for delta): the answer and the latency. */
+		/** One plain chat call with the settings in effect (not schema-constrained, even for delta), or one tiny decision for gamma: the answer and the latency. */
 		async test(id: AgentId) {
-			assertEditable(id);
 			const s = this.effective(id);
 			const fetchFn = deps.fetch ?? fetch;
 			const startedAt = Date.now();
 			try {
+				if (id === "gamma-decision") {
+					const { ok } = await createDecisionAgent({
+						baseURL: s.baseUrl,
+						apiKey: s.apiKey,
+						modelId: s.model,
+						fetchImpl: ((url, init) =>
+							fetchFn(url, {
+								...init,
+								signal: AbortSignal.timeout(30_000),
+							})) as typeof fetch,
+					}).decide(
+						{ fact: "Water is wet." },
+						{ ok: { type: "boolean", instructions: "Is the fact true?" } },
+					);
+					return {
+						ok: true,
+						answer: String((ok as { probability: number }).probability),
+						latencyMs: Date.now() - startedAt,
+					};
+				}
 				const response = await fetchFn(
 					`${s.baseUrl.replace(/\/+$/, "")}/chat/completions`,
 					{
