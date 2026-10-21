@@ -3,128 +3,179 @@
 @import "shadcn-svelte/tailwind.css";
 
 /*
- * Fonts of the tweakcn theme, self-hosted via Fontsource (the Next.js
- * original used next/font). Oxanium has no Cyrillic at all, and this UI is
- * ru/kk first — so Exo 2 (similar geometric "tech" sans, Cyrillic +
- * Cyrillic-ext incl. Kazakh ә ғ қ ң ө ұ ү һ і) follows it in --font-sans:
- * Latin renders in Oxanium, Cyrillic falls through to Exo 2 per glyph.
- * Merriweather and Fira Code ship their own Cyrillic.
+ * Fonts of the tweakcn theme, self-hosted via Fontsource. Poppins has no
+ * Cyrillic, and this UI is ru/kk first, so Montserrat (a close geometric
+ * sans with Cyrillic + Cyrillic-ext incl. Kazakh ә ғ қ ң ө ұ ү һ і) follows
+ * it in --font-sans: Latin renders in Poppins, Cyrillic falls through to
+ * Montserrat per glyph. Only Poppins' Latin subset in the weights Tailwind
+ * uses here (normal, medium, semibold, bold). Lora (--font-serif) is not
+ * bundled: nothing uses the serif stack.
  */
-@import "@fontsource-variable/oxanium";
-@import "@fontsource-variable/exo-2";
-@import "@fontsource-variable/merriweather";
+@import "@fontsource/poppins/latin-400.css";
+@import "@fontsource/poppins/latin-500.css";
+@import "@fontsource/poppins/latin-600.css";
+@import "@fontsource/poppins/latin-700.css";
+@import "@fontsource-variable/montserrat";
 @import "@fontsource-variable/fira-code";
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
-	--background: oklch(0.9885 0.0057 84.5659);
-	--foreground: oklch(0.366 0.0251 49.6085);
-	--card: oklch(0.9686 0.0091 78.2818);
-	--card-foreground: oklch(0.366 0.0251 49.6085);
-	--popover: oklch(0.9686 0.0091 78.2818);
-	--popover-foreground: oklch(0.366 0.0251 49.6085);
-	--primary: oklch(0.5553 0.1455 48.9975);
+	--background: oklch(1 0 0);
+	--foreground: oklch(0.4712 0 0);
+	--card: oklch(1 0 0);
+	--card-foreground: oklch(0.4712 0 0);
+	--popover: oklch(1 0 0);
+	--popover-foreground: oklch(0.4712 0 0);
+	--primary: oklch(0.6 0.1467 290);
 	--primary-foreground: oklch(1 0 0);
-	--secondary: oklch(0.8276 0.0752 74.44);
-	--secondary-foreground: oklch(0.4444 0.0096 73.639);
-	--muted: oklch(0.9363 0.0218 83.2637);
-	--muted-foreground: oklch(0.5534 0.0116 58.0708);
-	--accent: oklch(0.9 0.05 74.9889);
-	--accent-foreground: oklch(0.4444 0.0096 73.639);
-	--destructive: oklch(0.2437 0.1613 26.8994);
+	--secondary: oklch(0.8835 0.0486 161.6932);
+	--secondary-foreground: oklch(0.3211 0 0);
+	--muted: oklch(0.9808 0.0121 169.2551);
+	--muted-foreground: oklch(0.5795 0 0);
+	--accent: oklch(0.9754 0.0101 23.7027);
+	--accent-foreground: oklch(0.3211 0 0);
+	--destructive: oklch(0.577 0.183 27.325);
 	--destructive-foreground: oklch(1 0 0);
-	--border: oklch(0.8866 0.0404 89.6994);
-	--input: oklch(0.8866 0.0404 89.6994);
-	--ring: oklch(0.5553 0.1455 48.9975);
-	--chart-1: oklch(0.5553 0.1455 48.9975);
-	--chart-2: oklch(0.5534 0.0116 58.0708);
-	--chart-3: oklch(0.5538 0.1207 66.4416);
-	--chart-4: oklch(0.5534 0.0116 58.0708);
-	--chart-5: oklch(0.6806 0.1423 75.834);
-	--sidebar: oklch(0.9363 0.0218 83.2637);
-	--sidebar-foreground: oklch(0.366 0.0251 49.6085);
-	--sidebar-primary: oklch(0.5553 0.1455 48.9975);
+	--border: oklch(0.7062 0.1467 290);
+	/* Inputs and the focus ring carry the primary colour: interactive parts stand out. */
+	--input: color-mix(in oklch, var(--primary) 45%, var(--background));
+	--ring: var(--primary);
+	--chart-1: oklch(0.8171 0.1114 290);
+	--chart-2: oklch(0.914 0.0542 169.8755);
+	--chart-3: oklch(0.9754 0.0101 23.7027);
+	--chart-4: oklch(0.9425 0.0356 290);
+	--chart-5: oklch(0.7175 0.1646 290);
+	--sidebar: oklch(1 0 0);
+	--sidebar-foreground: oklch(0.3211 0 0);
+	--sidebar-primary: oklch(0.7566 0.1752 290);
 	--sidebar-primary-foreground: oklch(1 0 0);
-	--sidebar-accent: oklch(0.5538 0.1207 66.4416);
-	--sidebar-accent-foreground: oklch(1 0 0);
-	--sidebar-border: oklch(0.8866 0.0404 89.6994);
-	--sidebar-ring: oklch(0.5553 0.1455 48.9975);
+	--sidebar-accent: oklch(0.9731 0.0167 290);
+	--sidebar-accent-foreground: oklch(0.3211 0 0);
+	--sidebar-border: oklch(1 0 0);
+	--sidebar-ring: oklch(0.7566 0.1752 290);
 
-	--font-sans: "Oxanium Variable", "Exo 2 Variable", sans-serif;
-	--font-serif: "Merriweather Variable", serif;
+	--font-sans: "Poppins", "Montserrat Variable", sans-serif;
+	--font-serif: "Lora", serif;
 	--font-mono: "Fira Code Variable", monospace;
-	--radius: 0.3rem;
+	--radius: 0.05rem;
 
-	--shadow-2xs: 0px 2px 3px 0px hsl(28 18% 25% / 0.09);
-	--shadow-xs: 0px 2px 3px 0px hsl(28 18% 25% / 0.09);
+	--shadow-2xs: 3px 3px 0px 0px hsl(262 52.0303% 67.6471% / 0.5);
+	--shadow-xs: 3px 3px 0px 0px hsl(262 52.0303% 67.6471% / 0.5);
 	--shadow-sm:
-		0px 2px 3px 0px hsl(28 18% 25% / 0.18),
-		0px 1px 2px -1px hsl(28 18% 25% / 0.18);
+		3px 3px 0px 0px hsl(262 52.0303% 67.6471% / 1),
+		3px 1px 2px -1px hsl(262 52.0303% 67.6471% / 1);
 	--shadow:
-		0px 2px 3px 0px hsl(28 18% 25% / 0.18),
-		0px 1px 2px -1px hsl(28 18% 25% / 0.18);
+		3px 3px 0px 0px hsl(262 52.0303% 67.6471% / 1),
+		3px 1px 2px -1px hsl(262 52.0303% 67.6471% / 1);
 	--shadow-md:
-		0px 2px 3px 0px hsl(28 18% 25% / 0.18),
-		0px 2px 4px -1px hsl(28 18% 25% / 0.18);
+		3px 3px 0px 0px hsl(262 52.0303% 67.6471% / 1),
+		3px 2px 4px -1px hsl(262 52.0303% 67.6471% / 1);
 	--shadow-lg:
-		0px 2px 3px 0px hsl(28 18% 25% / 0.18),
-		0px 4px 6px -1px hsl(28 18% 25% / 0.18);
+		3px 3px 0px 0px hsl(262 52.0303% 67.6471% / 1),
+		3px 4px 6px -1px hsl(262 52.0303% 67.6471% / 1);
 	--shadow-xl:
-		0px 2px 3px 0px hsl(28 18% 25% / 0.18),
-		0px 8px 10px -1px hsl(28 18% 25% / 0.18);
-	--shadow-2xl: 0px 2px 3px 0px hsl(28 18% 25% / 0.45);
+		3px 3px 0px 0px hsl(262 52.0303% 67.6471% / 1),
+		3px 8px 10px -1px hsl(262 52.0303% 67.6471% / 1);
+	--shadow-2xl: 3px 3px 0px 0px hsl(262 52.0303% 67.6471% / 2.5);
 
-	--tracking-normal: 0.05em;
+	--tracking-normal: 0em;
+	/* Tailwind's spacing unit (default 0.25rem): the theme is a bit denser. */
+	--spacing: 0.21rem;
+
+	/* Violet → teal: the primary turns toward the mint secondary through blue. */
+	/*
+	 * Gradients run from a colour to a darker shade of itself (mixed with
+	 * black): strong for primary fills, soft for cards and the side panel.
+	 * .dark sits on <html> like :root, so these follow the dark tokens too.
+	 */
+	--shade-strong: 22%;
+	--shade-soft: 7%;
+	--gradient-primary: linear-gradient(
+		135deg,
+		var(--primary),
+		color-mix(in oklch, var(--primary), black var(--shade-strong))
+	);
+	--gradient-card: linear-gradient(
+		160deg,
+		var(--card) 30%,
+		color-mix(in oklch, var(--card), black var(--shade-soft))
+	);
+	--gradient-sidebar: linear-gradient(
+		180deg,
+		var(--sidebar),
+		color-mix(in oklch, var(--sidebar), black var(--shade-soft))
+	);
+	--photo-opacity: 2%;
+	--gradient-page:
+		radial-gradient(
+			ellipse at top left,
+			color-mix(in oklch, var(--primary) 10%, transparent),
+			transparent 55%
+		),
+		radial-gradient(
+			ellipse at bottom right,
+			color-mix(in oklch, var(--secondary) 25%, transparent),
+			transparent 55%
+		);
 }
 
 .dark {
-	--background: oklch(0.2161 0.0061 56.0434);
-	--foreground: oklch(0.9699 0.0013 106.4238);
-	--card: oklch(0.2685 0.0063 34.2976);
-	--card-foreground: oklch(0.9699 0.0013 106.4238);
-	--popover: oklch(0.2685 0.0063 34.2976);
-	--popover-foreground: oklch(0.9699 0.0013 106.4238);
-	--primary: oklch(0.7924 0.1503 61.9935);
-	--primary-foreground: oklch(0.2686 0 0);
-	--secondary: oklch(0.4444 0.0096 73.639);
-	--secondary-foreground: oklch(0.9232 0.0026 48.7171);
-	--muted: oklch(0.233 0.0073 67.4563);
-	--muted-foreground: oklch(0.7161 0.0091 56.259);
-	--accent: oklch(0.3598 0.0497 229.3202);
-	--accent-foreground: oklch(0.9232 0.0026 48.7171);
-	--destructive: oklch(0.7437 0.1613 26.8994);
-	--destructive-foreground: oklch(1 0 0);
-	--border: oklch(0.3741 0.0087 67.5582);
-	--input: oklch(0.3741 0.0087 67.5582);
-	--ring: oklch(0.7049 0.1867 47.6044);
-	--chart-1: oklch(0.7049 0.1867 47.6044);
-	--chart-2: oklch(0.6847 0.1479 237.3225);
-	--chart-3: oklch(0.7952 0.1617 86.0468);
-	--chart-4: oklch(0.7161 0.0091 56.259);
-	--chart-5: oklch(0.5534 0.0116 58.0708);
-	--sidebar: oklch(0.2685 0.0063 34.2976);
-	--sidebar-foreground: oklch(0.9699 0.0013 106.4238);
-	--sidebar-primary: oklch(0.7049 0.1867 47.6044);
+	--background: oklch(0.2828 0.0232 78.3195);
+	--foreground: oklch(1 0 0);
+	--card: oklch(0.3847 0.057 37.2681);
+	--card-foreground: oklch(1 0 0);
+	--popover: oklch(0.3574 0.0371 179.489);
+	--popover-foreground: oklch(1 0 0);
+	--primary: oklch(0.9754 0.0101 23.7027);
+	--primary-foreground: oklch(0.4175 0.0477 60.1972);
+	--secondary: oklch(0.8359 0.1432 89.1327);
+	--secondary-foreground: oklch(0.2828 0.0232 78.3195);
+	--muted: oklch(0.3135 0.0093 196.6061);
+	--muted-foreground: oklch(0.9185 0.033 290);
+	--accent: oklch(0.6512 0.1567 45.5556);
+	--accent-foreground: oklch(1 0 0);
+	--destructive: oklch(0.704 0.162 22.216);
+	--destructive-foreground: oklch(0.312 0.0369 178.6158);
+	--border: oklch(0.4786 0.0905 59.3853);
+	--input: color-mix(in oklch, var(--ring) 45%, var(--background));
+	--ring: oklch(0.7636 0.0887 161.3018);
+	--chart-1: oklch(0.7636 0.0887 161.3018);
+	--chart-2: oklch(0.9185 0.033 290);
+	--chart-3: oklch(0.7843 0.077 290);
+	--chart-4: oklch(0.5457 0.0946 162.8054);
+	--chart-5: oklch(0.3135 0.0093 196.6061);
+	--sidebar: oklch(0.2845 0.0316 181.1728);
+	--sidebar-foreground: oklch(1 0 0);
+	--sidebar-primary: oklch(0.7566 0.1752 290);
 	--sidebar-primary-foreground: oklch(1 0 0);
-	--sidebar-accent: oklch(0.6847 0.1479 237.3225);
-	--sidebar-accent-foreground: oklch(0.2839 0.0734 254.5378);
-	--sidebar-border: oklch(0.3741 0.0087 67.5582);
-	--sidebar-ring: oklch(0.7049 0.1867 47.6044);
+	--sidebar-accent: oklch(0.9731 0.0167 290);
+	--sidebar-accent-foreground: oklch(0.353 0.0298 198.5218);
+	--sidebar-border: oklch(0.4628 0.0301 201.2348);
+	--sidebar-ring: oklch(0.7566 0.1752 290);
 
-	--shadow-2xs: 0px 2px 3px 0px hsl(0 0% 5% / 0.09);
-	--shadow-xs: 0px 2px 3px 0px hsl(0 0% 5% / 0.09);
+	/* Dark primary is near-white with dark text: a lighter shade keeps that text readable. */
+	--shade-strong: 14%;
+	--shade-soft: 22%;
+
+	--shadow-2xs: 3px 3px 0px 0px hsl(173.8776 25.2424% 32.3529% / 0.5);
+	--shadow-xs: 3px 3px 0px 0px hsl(173.8776 25.2424% 32.3529% / 0.5);
 	--shadow-sm:
-		0px 2px 3px 0px hsl(0 0% 5% / 0.18), 0px 1px 2px -1px hsl(0 0% 5% / 0.18);
+		3px 3px 0px 0px hsl(173.8776 25.2424% 32.3529% / 1),
+		3px 1px 2px -1px hsl(173.8776 25.2424% 32.3529% / 1);
 	--shadow:
-		0px 2px 3px 0px hsl(0 0% 5% / 0.18), 0px 1px 2px -1px hsl(0 0% 5% / 0.18);
+		3px 3px 0px 0px hsl(173.8776 25.2424% 32.3529% / 1),
+		3px 1px 2px -1px hsl(173.8776 25.2424% 32.3529% / 1);
 	--shadow-md:
-		0px 2px 3px 0px hsl(0 0% 5% / 0.18), 0px 2px 4px -1px hsl(0 0% 5% / 0.18);
+		3px 3px 0px 0px hsl(173.8776 25.2424% 32.3529% / 1),
+		3px 2px 4px -1px hsl(173.8776 25.2424% 32.3529% / 1);
 	--shadow-lg:
-		0px 2px 3px 0px hsl(0 0% 5% / 0.18), 0px 4px 6px -1px hsl(0 0% 5% / 0.18);
+		3px 3px 0px 0px hsl(173.8776 25.2424% 32.3529% / 1),
+		3px 4px 6px -1px hsl(173.8776 25.2424% 32.3529% / 1);
 	--shadow-xl:
-		0px 2px 3px 0px hsl(0 0% 5% / 0.18), 0px 8px 10px -1px hsl(0 0% 5% / 0.18);
-	--shadow-2xl: 0px 2px 3px 0px hsl(0 0% 5% / 0.45);
+		3px 3px 0px 0px hsl(173.8776 25.2424% 32.3529% / 1),
+		3px 8px 10px -1px hsl(173.8776 25.2424% 32.3529% / 1);
+	--shadow-2xl: 3px 3px 0px 0px hsl(173.8776 25.2424% 32.3529% / 2.5);
 }
 
 @theme inline {
@@ -167,8 +218,8 @@
 
 	/*
 	 * shadcn-svelte's multiplicative radius scale (components use up to
-	 * rounded-4xl), fed the theme's 0.3rem base — tweakcn's "- 4px" variant
-	 * would make radius-sm ~0.8px and has no 2xl–4xl steps.
+	 * rounded-4xl), fed the theme's base --radius — tweakcn's "- 4px" variant
+	 * goes negative on a small base and has no 2xl–4xl steps.
 	 */
 	--radius-sm: calc(var(--radius) * 0.6);
 	--radius-md: calc(var(--radius) * 0.8);
@@ -195,9 +246,24 @@
 	--tracking-widest: calc(var(--tracking-normal) + 0.1em);
 }
 
+/* Gradient fills: primary actions and the active menu item, cards, the side panel. */
+@utility bg-gradient-primary {
+	background-image: var(--gradient-primary);
+}
+@utility bg-gradient-card {
+	background-image: var(--gradient-card);
+}
+@utility bg-gradient-sidebar {
+	background-image: var(--gradient-sidebar);
+}
+
 @layer base {
 	* {
-		@apply border-border outline-ring/50;
+		@apply border-border outline-ring;
+	}
+	/* Plain links (not shadcn buttons/menu items, which carry data-slot) show they are clickable. */
+	a:not([data-slot]):hover {
+		color: var(--primary);
 	}
 	html {
 		@apply font-sans;
@@ -205,6 +271,25 @@
 	body {
 		/* `antialiased` was a body class in the Next.js layout. */
 		@apply bg-background text-foreground antialiased;
+		/*
+		 * Main background: the autumn photo (Unsplash, photo-1473343775075-61805b64e5d6,
+		 * free licence) at --photo-opacity: a veil of the page colour over it
+		 * equals that opacity and follows light/dark. Glows on top.
+		 */
+		background-image:
+			var(--gradient-page),
+			linear-gradient(
+				color-mix(
+					in oklch,
+					var(--background),
+					transparent var(--photo-opacity)
+				),
+				color-mix(in oklch, var(--background), transparent var(--photo-opacity))
+			),
+			url("/backgrounds/autumn-leaf.webp");
+		background-size: cover;
+		background-position: center;
+		background-attachment: fixed;
 		letter-spacing: var(--tracking-normal);
 	}
 }

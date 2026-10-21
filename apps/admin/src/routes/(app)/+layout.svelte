@@ -15,7 +15,7 @@
 <Tooltip.Provider>
 	<Sidebar.Provider>
 		<AppSidebar email={data.admin?.email ?? null} {level} />
-		<Sidebar.Inset class="min-w-0">
+		<Sidebar.Inset class="min-w-0 bg-transparent">
 			<AppHeader staff={isStaff(level)} />
 			<main class="flex min-w-0 flex-col gap-6 p-4 md:p-6">
 				{@render children()}

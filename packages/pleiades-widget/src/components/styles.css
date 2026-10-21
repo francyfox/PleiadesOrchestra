@@ -9,7 +9,7 @@
  * bundled theme file. Every token stays overridable via the matching
  * `--pleiades-*` custom property, same contract as before.
  *
- * Font: named the same as admin's (`Oxanium Variable`/`Exo 2 Variable`) so
+ * Font: named the same as admin's (`Poppins`/`Montserrat Variable`) so
  * the two look identical when a host page happens to have them loaded
  * already (e.g. the admin panel embedding this widget for its own preview),
  * but never bundled here — that's several hundred KB of variable font
@@ -24,23 +24,31 @@
  * markup (`pleiades-chat::part(panel) { ... }`), not by pasting this file in as-is.
  */
 .widget {
-	--accent: var(--pleiades-accent, oklch(0.5553 0.1455 48.9975));
+	--accent: var(--pleiades-accent, oklch(0.6 0.1467 290));
 	--accent-fg: var(--pleiades-accent-fg, oklch(1 0 0));
-	--bg: var(--pleiades-bg, oklch(0.9885 0.0057 84.5659));
-	--fg: var(--pleiades-fg, oklch(0.366 0.0251 49.6085));
-	--muted: var(--pleiades-muted, oklch(0.92 0 0));
-	--muted-fg: var(--pleiades-muted-fg, oklch(0.534 0.0116 58.0708));
-	--border: var(--pleiades-border, oklch(0.8866 0.0404 89.6994));
-	--destructive: var(--pleiades-destructive, oklch(0.4437 0.1613 26.8994));
+	--bg: var(--pleiades-bg, oklch(1 0 0));
+	--fg: var(--pleiades-fg, oklch(0.4712 0 0));
+	--muted: var(--pleiades-muted, oklch(0.9808 0.0121 169.2551));
+	--muted-fg: var(--pleiades-muted-fg, oklch(0.5795 0 0));
+	--border: var(--pleiades-border, oklch(0.7062 0.1467 290));
+	--destructive: var(--pleiades-destructive, oklch(0.577 0.183 27.325));
 	--destructive-fg: var(--pleiades-destructive-fg, oklch(1 0 0));
-	/* Same base + multiplicative scale as admin's --radius (0.3rem). */
-	--radius: 0.3rem;
+	/* Like admin's --gradient-primary: the accent to a darker shade of itself, so a site's own accent still drives it. */
+	--accent-gradient: linear-gradient(
+		135deg,
+		var(--accent),
+		color-mix(in oklch, var(--accent), black 22%)
+	);
+	/* Admin's hard offset shadow: no blur, theme colour. */
+	--shadow: 3px 3px 0px 0px hsl(262 52.0303% 67.6471%);
+	/* Same base + multiplicative scale as admin's --radius. */
+	--radius: 0.05rem;
 
 	/* Fonts: one family and one scale; every size below is its base in px times the scale. */
 	--font-family: var(
 		--pleiades-font-family,
-		"Oxanium Variable",
-		"Exo 2 Variable",
+		"Poppins",
+		"Montserrat Variable",
 		system-ui,
 		sans-serif
 	);
@@ -61,7 +69,7 @@
 		color: inherit;
 
 		&:focus-visible {
-			outline: 2px solid var(--fg);
+			outline: 2px solid var(--accent);
 			outline-offset: 2px;
 		}
 	}
@@ -77,9 +85,10 @@
 		border: 0;
 		border-radius: 50%;
 		background: var(--accent);
+		background-image: var(--accent-gradient);
 		color: var(--accent-fg);
 		cursor: pointer;
-		box-shadow: 0px 4px 6px -1px hsl(28 18% 25% / 0.28);
+		box-shadow: var(--shadow);
 	}
 
 	&[data-pos^="bottom"] .launcher {
@@ -108,7 +117,7 @@
 		flex-direction: column;
 		width: min(380px, 100vw);
 		background: var(--bg);
-		box-shadow: 0px 8px 10px -1px hsl(28 18% 25% / 0.28);
+		box-shadow: var(--shadow);
 		/* Closed: out of sight. The slide in and out is the Web Animations API (motion.ts), which
 		   only reveals the panel (.open) when it starts and hides it when it ends. */
 		visibility: hidden;
@@ -138,6 +147,7 @@
 		justify-content: space-between;
 		padding: 12px 16px;
 		background: var(--accent);
+		background-image: var(--accent-gradient);
 		color: var(--accent-fg);
 	}
 
@@ -178,6 +188,7 @@
 	.user {
 		align-self: flex-end;
 		background: var(--accent);
+		background-image: var(--accent-gradient);
 		color: var(--accent-fg);
 	}
 
@@ -194,16 +205,17 @@
 		color: var(--muted-fg);
 	}
 
+	/* Suggestions are clickable: accent border, tinted on hover. */
 	.try-row {
 		padding: 8px 12px;
-		border: 1px solid var(--border);
+		border: 1px solid var(--accent);
 		border-radius: calc(var(--radius) * 1.67);
 		background: var(--bg);
 		text-align: left;
 		cursor: pointer;
 
 		&:hover {
-			background: var(--muted);
+			background: color-mix(in oklch, var(--accent) 15%, var(--bg));
 		}
 	}
 
@@ -283,8 +295,16 @@
 			border: 0;
 			border-radius: calc(var(--radius) * 1.67);
 			background: var(--accent);
+			background-image: var(--accent-gradient);
 			color: var(--accent-fg);
+			box-shadow: var(--shadow);
 			cursor: pointer;
+
+			/* Pressed: the hard shadow folds in. */
+			&:active:not(:disabled) {
+				transform: translate(2px, 2px);
+				box-shadow: none;
+			}
 
 			&:disabled {
 				opacity: 0.5;
@@ -300,7 +320,7 @@
 				display: grid;
 				place-items: center;
 				padding: 8px 12px;
-				border: 1px solid var(--border);
+				border: 1px solid var(--accent);
 				background: var(--bg);
 				color: var(--muted-fg);
 
@@ -333,6 +353,10 @@
 		border-radius: calc(var(--radius) * 1.67);
 		background: var(--bg);
 		resize: none;
+
+		&:focus-visible {
+			border-color: var(--accent);
+		}
 	}
 
 	/* Tool integration switch: WebMCP (default) vs MCP. */
@@ -434,15 +458,24 @@
 
 @media (prefers-color-scheme: dark) {
 	.widget {
-		--accent: var(--pleiades-accent, oklch(0.7924 0.1503 61.9935));
-		--accent-fg: var(--pleiades-accent-fg, oklch(0.2686 0 0));
-		--bg: var(--pleiades-bg, oklch(0.2161 0.0061 56.0434));
-		--fg: var(--pleiades-fg, oklch(0.9699 0.0013 106.4238));
-		--muted: var(--pleiades-muted, oklch(0.29 0.0073 67.4563));
-		--muted-fg: var(--pleiades-muted-fg, oklch(0.9161 0.0091 56.259));
-		--border: var(--pleiades-border, oklch(0.3741 0.0087 67.5582));
-		--destructive: var(--pleiades-destructive, oklch(0.5771 0.2152 27.325));
-		--destructive-fg: var(--pleiades-destructive-fg, oklch(1 0 0));
+		--accent: var(--pleiades-accent, oklch(0.9754 0.0101 23.7027));
+		--accent-fg: var(--pleiades-accent-fg, oklch(0.4175 0.0477 60.1972));
+		--bg: var(--pleiades-bg, oklch(0.2828 0.0232 78.3195));
+		--fg: var(--pleiades-fg, oklch(1 0 0));
+		--muted: var(--pleiades-muted, oklch(0.3135 0.0093 196.6061));
+		--muted-fg: var(--pleiades-muted-fg, oklch(0.9185 0.033 290));
+		--border: var(--pleiades-border, oklch(0.4786 0.0905 59.3853));
+		--destructive: var(--pleiades-destructive, oklch(0.704 0.162 22.216));
+		--destructive-fg: var(
+			--pleiades-destructive-fg,
+			oklch(0.312 0.0369 178.6158)
+		);
+		--shadow: 3px 3px 0px 0px hsl(173.8776 25.2424% 32.3529%);
+		--accent-gradient: linear-gradient(
+			135deg,
+			var(--accent),
+			color-mix(in oklch, var(--accent), black 14%)
+		);
 	}
 }
 

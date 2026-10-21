@@ -14,7 +14,7 @@
 
 	const tones: Record<IconTone, string> = {
 		primary:
-			"bg-sky-500/15 text-sky-600 hover:bg-sky-500/25 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300",
+			"bg-primary/15 text-primary hover:bg-primary hover:text-primary-foreground",
 		success:
 			"bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/25 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300",
 		warning:
