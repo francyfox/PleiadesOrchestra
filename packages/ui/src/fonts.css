@@ -1,0 +1,15 @@
+/*
+ * Fonts of the design system, self-hosted via Fontsource. Poppins has no
+ * Cyrillic, and the UIs are ru/kk first, so Montserrat (a close geometric
+ * sans with Cyrillic + Cyrillic-ext incl. Kazakh ә ғ қ ң ө ұ ү һ і) follows
+ * it in --font-sans: Latin renders in Poppins, Cyrillic falls through to
+ * Montserrat per glyph. Only Poppins' Latin subset in the weights used
+ * (normal, medium, semibold, bold). Lora (--font-serif) is not bundled:
+ * nothing uses the serif stack.
+ */
+@import "@fontsource/poppins/latin-400.css";
+@import "@fontsource/poppins/latin-500.css";
+@import "@fontsource/poppins/latin-600.css";
+@import "@fontsource/poppins/latin-700.css";
+@import "@fontsource-variable/montserrat";
+@import "@fontsource-variable/fira-code";

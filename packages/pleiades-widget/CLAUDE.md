@@ -61,6 +61,8 @@ const r = await document.querySelector("pleiades-chat").send("buy A, B, C");
 
 ## CSS gotchas
 
+- Colours, radius, shadow and gradient in `src/components/styles.css` are hand copies of `packages/ui/src/tokens.css` (the 40 kB budget rules out importing it): change both together.
+
 - Same-specificity CSS order matters: `.p.o` must come after the `data-pos` rules.
 - A `visibility` transition delay on open makes the input unfocusable — open is instant, only close is delayed.
 

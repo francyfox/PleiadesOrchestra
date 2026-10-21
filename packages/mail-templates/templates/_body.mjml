@@ -1,20 +1,20 @@
-<mj-wrapper background-color="#1c1917" padding="24px 16px">
+<mj-wrapper background-color="#30281d" padding="24px 16px">
 	<mj-section padding="0 0 16px">
 		<mj-column>
-			<mj-text color="#ffa348" align="left" font-size="22px" font-weight="700" letter-spacing="0.5px" padding="0 8px">Pleiades</mj-text>
+			<mj-text color="#7dc4a0" align="left" font-size="22px" font-weight="700" letter-spacing="0.5px" padding="0 8px">Pleiades</mj-text>
 		</mj-column>
 	</mj-section>
-	<mj-section background-color="#292524" border="1px solid #44403c" border-radius="8px" padding="24px 16px">
+	<mj-section background-color="#5e382d" border="1px solid #824f22" border-radius="8px" padding="24px 16px">
 		<mj-column>
 			<mj-text font-size="22px" font-weight="700" line-height="1.3">{{title}}</mj-text>
 			<mj-text>{{lead}}</mj-text>
-			<mj-button href="{{link}}" background-color="#ffa348" color="#262626" font-size="16px" font-weight="600" border-radius="5px" inner-padding="12px 28px" align="left" padding="12px 25px 20px">{{button}}</mj-button>
-			<mj-text color="#a8a29e" font-size="13px"><a href="{{link}}" style="color:#ffa348;word-break:break-all">{{link}}</a></mj-text>
+			<mj-button href="{{link}}" background-color="#fef4f4" color="#604631" font-size="16px" font-weight="600" border-radius="5px" inner-padding="12px 28px" align="left" padding="12px 25px 20px">{{button}}</mj-button>
+			<mj-text color="#e3e1f9" font-size="13px"><a href="{{link}}" style="color:#7dc4a0;word-break:break-all">{{link}}</a></mj-text>
 		</mj-column>
 	</mj-section>
 	<mj-section padding="16px 0 0">
 		<mj-column>
-			<mj-text color="#a8a29e" font-size="12px" line-height="1.5">{{footer}}</mj-text>
+			<mj-text color="#e3e1f9" font-size="12px" line-height="1.5">{{footer}}</mj-text>
 		</mj-column>
 	</mj-section>
 </mj-wrapper>

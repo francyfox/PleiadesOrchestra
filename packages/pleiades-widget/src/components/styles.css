@@ -3,7 +3,7 @@
 }
 
 /*
- * Same color system as apps/admin (tweakcn theme, apps/admin/src/routes/layout.css):
+ * Same color system as packages/ui/src/tokens.css (the shared design tokens):
  * the OKLCH tokens are copied over (light + prefers-color-scheme dark), not
  * imported — this package's 10 kB brotli budget can't afford Tailwind or a
  * bundled theme file. Every token stays overridable via the matching

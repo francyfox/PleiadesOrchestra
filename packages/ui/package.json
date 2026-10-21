@@ -1,0 +1,21 @@
+{
+	"name": "@repo/ui",
+	"version": "0.0.0",
+	"license": "AGPL-3.0-only",
+	"author": "Danil Golota",
+	"type": "module",
+	"private": true,
+	"exports": {
+		"./tokens.css": "./src/tokens.css",
+		"./tailwind.css": "./src/tailwind.css",
+		"./fonts.css": "./src/fonts.css"
+	},
+	"scripts": {
+		"lint": "biome check ."
+	},
+	"dependencies": {
+		"@fontsource-variable/fira-code": "^5.3.0",
+		"@fontsource-variable/montserrat": "^5.3.0",
+		"@fontsource/poppins": "^5.3.0"
+	}
+}

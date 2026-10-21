@@ -1,33 +1,29 @@
 /*
- * Landing + playground styles. Tailwind WITHOUT preflight and tokens scoped to .po-site,
+ * Landing + playground styles. Tailwind WITHOUT preflight and its names for the tokens scoped to .po-site,
  * so nothing here leaks into the SveltePress docs pages (Tailwind utilities are class-only).
  */
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
 
-@theme {
-	--font-mono:
-		"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas,
-		"Liberation Mono", monospace;
-}
+/* Fonts, spacing, radius and shadows come from the @repo/ui tokens (unlayered, so they win over this theme layer). */
 
+/* Landing/playground names for the @repo/ui tokens (packages/ui); dark follows `.dark` on <html>. */
 .po-site {
-	--bg: #f6f5f1;
-	--panel: #ecece5;
-	--fg: #24261f;
-	--dim: #4b4a3a;
-	--accent: #8a5a2b;
-	--accent-2: #2e6767;
-	--rule: #d8d6cc;
-	--danger: #a8432f;
+	--bg: var(--background);
+	--panel: var(--card);
+	--fg: var(--foreground);
+	--dim: var(--muted-foreground);
+	--accent: var(--primary);
+	--accent-2: var(--tertiary);
+	--rule: var(--border);
+	--danger: var(--destructive);
 	/* Height of the SveltePress navbar above the page. */
 	--po-nav: 73px;
 
-	background: var(--bg);
+	/* Transparent: the page background (glows + photo) from docs-theme.css shows through. */
 	color: var(--fg);
-	font-family: var(--font-mono);
+	font-family: var(--font-sans);
 	font-size: 16px;
-	font-feature-settings: "liga" 0;
 	-webkit-font-smoothing: antialiased;
 	min-height: calc(100dvh - var(--po-nav));
 }
@@ -36,31 +32,6 @@
 	.po-site {
 		--po-nav: 56px;
 	}
-}
-
-@media (prefers-color-scheme: dark) {
-	:root:not([data-theme="light"]):not(.light) .po-site {
-		--bg: #16181c;
-		--panel: #1d2025;
-		--fg: #dddfd8;
-		--dim: #a6aca1;
-		--accent: #d3944b;
-		--accent-2: #6fbfbf;
-		--rule: #2b2f35;
-		--danger: #d97a63;
-	}
-}
-
-/* SveltePress sets the dark class on <html>. */
-:root.dark .po-site {
-	--bg: #16181c;
-	--panel: #1d2025;
-	--fg: #dddfd8;
-	--dim: #a6aca1;
-	--accent: #d3944b;
-	--accent-2: #6fbfbf;
-	--rule: #2b2f35;
-	--danger: #d97a63;
 }
 
 /* Minimal reset (what Tailwind's preflight would do), only inside .po-site. */

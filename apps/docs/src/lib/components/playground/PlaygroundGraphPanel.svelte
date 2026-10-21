@@ -25,7 +25,8 @@
 		const { width: w, height: h } = el;
 		if (w === 0 || h === 0) return;
 
-		const style = getComputedStyle(document.documentElement);
+		// The colours are declared on .po-site, not <html>: read them where the canvas sits.
+		const style = getComputedStyle(el);
 		const ruleColor = style.getPropertyValue("--rule").trim();
 		const fgColor = style.getPropertyValue("--fg").trim();
 		const accentColor = style.getPropertyValue("--accent").trim();

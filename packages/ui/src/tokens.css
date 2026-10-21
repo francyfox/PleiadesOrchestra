@@ -1,0 +1,197 @@
+/*
+ * PleiadesOrchestra design tokens: the one place to edit colours, fonts,
+ * radius, shadows and gradients for every web UI (apps/admin, apps/docs).
+ * Plain CSS custom properties, no Tailwind needed: import it once globally.
+ * Dark values sit on `.dark` on <html> (mode-watcher in admin, SveltePress in
+ * docs). The widget (packages/pleiades-widget) can't import it (size budget):
+ * its styles.css copies these values by hand, keep the two in step.
+ *
+ * Tweakcn theme: violet/mint/orange triad, square corners, hard 3px offset
+ * shadows; chroma cut 15% from the original, its pink swapped for violet.
+ */
+:root {
+	--background: oklch(1 0 0);
+	--foreground: oklch(0.4712 0 0);
+	--card: oklch(1 0 0);
+	--card-foreground: oklch(0.4712 0 0);
+	--popover: oklch(1 0 0);
+	--popover-foreground: oklch(0.4712 0 0);
+	--primary: oklch(0.6 0.1467 290);
+	--primary-foreground: oklch(1 0 0);
+	--secondary: oklch(0.8835 0.0486 161.6932);
+	--secondary-foreground: oklch(0.3211 0 0);
+	--muted: oklch(0.9808 0.0121 169.2551);
+	--muted-foreground: oklch(0.5795 0 0);
+	--accent: oklch(0.9754 0.0101 23.7027);
+	--accent-foreground: oklch(0.3211 0 0);
+	--destructive: oklch(0.577 0.183 27.325);
+	--destructive-foreground: oklch(1 0 0);
+	--border: oklch(0.7062 0.1467 290);
+	/* Inputs and the focus ring carry the primary colour: interactive parts stand out. */
+	--input: color-mix(in oklch, var(--primary) 45%, var(--background));
+	--ring: var(--primary);
+	--chart-1: oklch(0.8171 0.1114 290);
+	--chart-2: oklch(0.914 0.0542 169.8755);
+	--chart-3: oklch(0.9754 0.0101 23.7027);
+	--chart-4: oklch(0.9425 0.0356 290);
+	--chart-5: oklch(0.7175 0.1646 290);
+	--sidebar: oklch(1 0 0);
+	--sidebar-foreground: oklch(0.3211 0 0);
+	--sidebar-primary: oklch(0.7566 0.1752 290);
+	--sidebar-primary-foreground: oklch(1 0 0);
+	--sidebar-accent: oklch(0.9731 0.0167 290);
+	--sidebar-accent-foreground: oklch(0.3211 0 0);
+	--sidebar-border: oklch(1 0 0);
+	--sidebar-ring: oklch(0.7566 0.1752 290);
+	/* Headings (a step darker than body text) and a readable teal for secondary marks (dates, done states). */
+	--heading: oklch(0.3211 0 0);
+	--tertiary: oklch(0.3574 0.0371 179.489);
+
+	--font-sans: "Poppins", "Montserrat Variable", sans-serif;
+	--font-serif: "Lora", serif;
+	--font-mono: "Fira Code Variable", monospace;
+	--radius: 0.05rem;
+
+	--shadow-2xs: 3px 3px 0px 0px hsl(262 52.0303% 67.6471% / 0.5);
+	--shadow-xs: 3px 3px 0px 0px hsl(262 52.0303% 67.6471% / 0.5);
+	--shadow-sm:
+		3px 3px 0px 0px hsl(262 52.0303% 67.6471% / 1),
+		3px 1px 2px -1px hsl(262 52.0303% 67.6471% / 1);
+	--shadow:
+		3px 3px 0px 0px hsl(262 52.0303% 67.6471% / 1),
+		3px 1px 2px -1px hsl(262 52.0303% 67.6471% / 1);
+	--shadow-md:
+		3px 3px 0px 0px hsl(262 52.0303% 67.6471% / 1),
+		3px 2px 4px -1px hsl(262 52.0303% 67.6471% / 1);
+	--shadow-lg:
+		3px 3px 0px 0px hsl(262 52.0303% 67.6471% / 1),
+		3px 4px 6px -1px hsl(262 52.0303% 67.6471% / 1);
+	--shadow-xl:
+		3px 3px 0px 0px hsl(262 52.0303% 67.6471% / 1),
+		3px 8px 10px -1px hsl(262 52.0303% 67.6471% / 1);
+	--shadow-2xl: 3px 3px 0px 0px hsl(262 52.0303% 67.6471% / 2.5);
+
+	--tracking-normal: 0em;
+	/* Tailwind's spacing unit (default 0.25rem): the theme is a bit denser. */
+	--spacing: 0.21rem;
+
+	/* Violet → teal: the primary turns toward the mint secondary through blue. */
+	/*
+	 * Gradients run from a colour to a darker shade of itself (mixed with
+	 * black): strong for primary fills, soft for cards and the side panel.
+	 * .dark sits on <html> like :root, so these follow the dark tokens too.
+	 */
+	--shade-strong: 22%;
+	--shade-soft: 7%;
+	--primary-shade: color-mix(
+		in oklch,
+		var(--primary),
+		black var(--shade-strong)
+	);
+	--gradient-primary: linear-gradient(
+		135deg,
+		var(--primary),
+		var(--primary-shade)
+	);
+	--gradient-card: linear-gradient(
+		160deg,
+		var(--card) 30%,
+		color-mix(in oklch, var(--card), black var(--shade-soft))
+	);
+	/* Odd cards: the dark theme's teal (its --popover); light mixes it into the white card. */
+	--card-odd: color-mix(in oklch, var(--tertiary) 12%, var(--card));
+	--gradient-card-odd: linear-gradient(
+		160deg,
+		var(--card-odd) 30%,
+		color-mix(in oklch, var(--card-odd), black var(--shade-soft))
+	);
+	--gradient-sidebar: linear-gradient(
+		180deg,
+		var(--sidebar),
+		color-mix(in oklch, var(--sidebar), black var(--shade-soft))
+	);
+	/* Main background photo (Unsplash photo-1473343775075-61805b64e5d6, free licence, webp via ffmpeg). */
+	--page-photo: url("./assets/autumn-leaf.webp");
+	--photo-opacity: 2%;
+	--gradient-page:
+		radial-gradient(
+			ellipse at top left,
+			color-mix(in oklch, var(--primary) 10%, transparent),
+			transparent 55%
+		),
+		radial-gradient(
+			ellipse at bottom right,
+			color-mix(in oklch, var(--secondary) 25%, transparent),
+			transparent 55%
+		);
+	/* The whole page background: glows over the photo seen through a veil of --background. */
+	--page-veil: color-mix(
+		in oklch,
+		var(--background),
+		transparent var(--photo-opacity)
+	);
+	--page-background:
+		var(--gradient-page), linear-gradient(var(--page-veil), var(--page-veil)),
+		var(--page-photo);
+}
+
+.dark {
+	--background: oklch(0.2828 0.0232 78.3195);
+	--foreground: oklch(1 0 0);
+	--card: oklch(0.3847 0.057 37.2681);
+	--card-foreground: oklch(1 0 0);
+	--popover: oklch(0.3574 0.0371 179.489);
+	--popover-foreground: oklch(1 0 0);
+	--primary: oklch(0.9754 0.0101 23.7027);
+	--primary-foreground: oklch(0.4175 0.0477 60.1972);
+	--secondary: oklch(0.8359 0.1432 89.1327);
+	--secondary-foreground: oklch(0.2828 0.0232 78.3195);
+	--muted: oklch(0.3135 0.0093 196.6061);
+	--muted-foreground: oklch(0.9185 0.033 290);
+	--accent: oklch(0.6512 0.1567 45.5556);
+	--accent-foreground: oklch(1 0 0);
+	--destructive: oklch(0.704 0.162 22.216);
+	--destructive-foreground: oklch(0.312 0.0369 178.6158);
+	--border: oklch(0.4786 0.0905 59.3853);
+	--input: color-mix(in oklch, var(--ring) 45%, var(--background));
+	--ring: oklch(0.7636 0.0887 161.3018);
+	--chart-1: oklch(0.7636 0.0887 161.3018);
+	--chart-2: oklch(0.9185 0.033 290);
+	--chart-3: oklch(0.7843 0.077 290);
+	--chart-4: oklch(0.5457 0.0946 162.8054);
+	--chart-5: oklch(0.3135 0.0093 196.6061);
+	--sidebar: oklch(0.2845 0.0316 181.1728);
+	--sidebar-foreground: oklch(1 0 0);
+	--sidebar-primary: oklch(0.7566 0.1752 290);
+	--sidebar-primary-foreground: oklch(1 0 0);
+	--sidebar-accent: oklch(0.9731 0.0167 290);
+	--sidebar-accent-foreground: oklch(0.353 0.0298 198.5218);
+	--sidebar-border: oklch(0.4628 0.0301 201.2348);
+	--sidebar-ring: oklch(0.7566 0.1752 290);
+	--heading: oklch(1 0 0);
+	--tertiary: var(--ring);
+
+	/* Dark primary is near-white with dark text: a lighter shade keeps that text readable. */
+	--card-odd: oklch(0.3574 0.0371 179.489);
+	--shade-strong: 14%;
+	--shade-soft: 22%;
+
+	--shadow-2xs: 3px 3px 0px 0px hsl(173.8776 25.2424% 32.3529% / 0.5);
+	--shadow-xs: 3px 3px 0px 0px hsl(173.8776 25.2424% 32.3529% / 0.5);
+	--shadow-sm:
+		3px 3px 0px 0px hsl(173.8776 25.2424% 32.3529% / 1),
+		3px 1px 2px -1px hsl(173.8776 25.2424% 32.3529% / 1);
+	--shadow:
+		3px 3px 0px 0px hsl(173.8776 25.2424% 32.3529% / 1),
+		3px 1px 2px -1px hsl(173.8776 25.2424% 32.3529% / 1);
+	--shadow-md:
+		3px 3px 0px 0px hsl(173.8776 25.2424% 32.3529% / 1),
+		3px 2px 4px -1px hsl(173.8776 25.2424% 32.3529% / 1);
+	--shadow-lg:
+		3px 3px 0px 0px hsl(173.8776 25.2424% 32.3529% / 1),
+		3px 4px 6px -1px hsl(173.8776 25.2424% 32.3529% / 1);
+	--shadow-xl:
+		3px 3px 0px 0px hsl(173.8776 25.2424% 32.3529% / 1),
+		3px 8px 10px -1px hsl(173.8776 25.2424% 32.3529% / 1);
+	--shadow-2xl: 3px 3px 0px 0px hsl(173.8776 25.2424% 32.3529% / 2.5);
+}

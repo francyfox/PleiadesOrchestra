@@ -1,6 +1,6 @@
 <mjml>
 	<mj-include path="./_head.mjml" />
-	<mj-body width="560px" background-color="#0c0a09">
+	<mj-body width="560px" background-color="#1f1a11">
 		<mj-include path="./_body.mjml" />
 	</mj-body>
 </mjml>
