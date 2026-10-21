@@ -25,6 +25,10 @@ dist
 # Demo shop with its own git repo (a test bed for the widget), not part of this one
 /apps/shopping-cart-webmcp/
 
+# `bun run build:albedo` output (the CLI binary)
+/albedo
+/albedo.exe
+
 # Ad-hoc build/error logs
 *.err
 sh.err.*

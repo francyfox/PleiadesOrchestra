@@ -46,6 +46,22 @@ bun run check-types
 
 The Telegram bot runs on a webhook — it needs a public tunnel to `localhost:3001` (`TELEGRAM_WEBHOOK_URL`).
 
+### `albedo` CLI
+
+A single binary for working with a running stack. Install it once (Linux, macOS or Windows Git Bash; needs Bun to build):
+
+```bash
+scripts/install-albedo.sh       # builds ./albedo for this OS/CPU and links it into ~/.local/bin (or pass a dir)
+```
+
+Then, from any directory:
+
+```bash
+albedo admin:create --email you@example.com   # first admin = super admin; prints the sign-in token once
+```
+
+`admin:create` runs inside the `admin-api` container (`docker compose up -d admin-api` first). For an existing admin it issues a new token, and the old one stops working.
+
 ## Minimal system requirements
 
 The whole stack runs on one Linux x86-64 machine with Docker Compose. A GPU is optional.

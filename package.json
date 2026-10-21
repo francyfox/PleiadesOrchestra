@@ -5,6 +5,7 @@
 	"author": "Danil Golota",
 	"scripts": {
 		"build": "turbo run build",
+		"build:albedo": "bun build apps/cli/src/index.ts --compile --outfile albedo",
 		"dev": "turbo run dev",
 		"lint": "turbo run lint",
 		"lint:fix": "biome check --write .",

@@ -3,6 +3,7 @@ import { dirname } from "node:path";
 import { createObservability, serve } from "@repo/elysia-kit";
 import { createApp } from "./app.ts";
 import { deleteInactiveUsers } from "./modules/accounts/accounts.service.ts";
+import { runAdminCreate } from "./modules/admins/admins-cli.ts";
 import { createAuth } from "./modules/auth/auth.ts";
 import { DAY_MS } from "./modules/common/common.service.ts";
 import { config } from "./modules/config/config.service.ts";
@@ -10,6 +11,11 @@ import { openAdminDb } from "./modules/database/database.ts";
 import { createMailer } from "./modules/mail/mail.ts";
 import { createOrchestratorClient } from "./modules/orchestrator/orchestrator.ts";
 import { systemSnapshot } from "./modules/system/system-snapshot.service.ts";
+
+// The staff CLI runs inside the same binary (the image has nothing else): `admin-api admin:create ...`.
+if (process.argv[2] === "admin:create") {
+	process.exit(await runAdminCreate(process.argv.slice(3)));
+}
 
 const observability = createObservability("admin-api", config);
 
