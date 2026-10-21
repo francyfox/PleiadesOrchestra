@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import type { PlanTraceEvent, WorldState } from "@repo/core";
+import { eq } from "drizzle-orm";
 import { ActiveRuns } from "../active-runs/active-runs.ts";
-import { llmCalls, messages } from "../database/database.schema.ts";
+import { channels, llmCalls, messages } from "../database/database.schema.ts";
 import { testDb } from "../database/database.testing.ts";
 import { admin, json, setupAdminApp } from "../http/http.testing.ts";
 import {
@@ -370,5 +371,41 @@ describe("admin routes", () => {
 		expect(one.request.id).toBe("r");
 
 		expect((await app.handle(admin("/requests/nope"))).status).toBe(404);
+	});
+
+	test("ownerId: lists and opens only requests of the owner's channels", async () => {
+		const { app, db } = setupAdminApp();
+		db.update(channels)
+			.set({ ownerId: "ann" })
+			.where(eq(channels.id, "ch_cli"))
+			.run();
+		for (const [id, channelId] of [
+			["mine", "ch_cli"],
+			["theirs", "ch_telegram"],
+		] as const) {
+			const visitor = upsertIdentifiedVisitor(db, channelId, id, undefined, 1);
+			startPlanRun(db, {
+				id,
+				visitorId: visitor.id,
+				threadId: resolveThreadId(db, channelId, visitor.id, "t", 1),
+				goal: {},
+				createdAt: 1,
+			});
+		}
+
+		const list = await json(await app.handle(admin("/requests?ownerId=ann")));
+		expect(list.items.map((item: { id: string }) => item.id)).toEqual(["mine"]);
+		expect(list.total).toBe(1);
+		const filtered = await json(
+			await app.handle(admin("/requests?ownerId=ann&status=running")),
+		);
+		expect(filtered.total).toBe(0);
+
+		expect((await app.handle(admin("/requests/mine?ownerId=ann"))).status).toBe(
+			200,
+		);
+		expect(
+			(await app.handle(admin("/requests/theirs?ownerId=ann"))).status,
+		).toBe(404);
 	});
 });

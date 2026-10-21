@@ -149,8 +149,12 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 				"GET",
 				`/v1/admin/visitors${toSearch({ ...query })}`,
 			),
-		getVisitor: (id: string) =>
-			request<VisitorDetails>("GET", `/v1/admin/visitors/${segment(id)}`),
+		/** `ownerId` set = 404 unless the visitor is in that account's channel. */
+		getVisitor: (id: string, ownerId?: string) =>
+			request<VisitorDetails>(
+				"GET",
+				`/v1/admin/visitors/${segment(id)}${toSearch({ ownerId })}`,
+			),
 		usage: (query: {
 			groupBy: UsageGroupBy;
 			from?: number;
@@ -173,10 +177,11 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 				"GET",
 				`/v1/admin/requests${toSearch({ ...query })}`,
 			),
-		getRequest: (id: string) =>
+		/** `ownerId` set = 404 unless the request is from that account's channel. */
+		getRequest: (id: string, ownerId?: string) =>
 			request<UpstreamRequestDetails>(
 				"GET",
-				`/v1/admin/requests/${segment(id)}`,
+				`/v1/admin/requests/${segment(id)}${toSearch({ ownerId })}`,
 			),
 		listMcp: () => request<UpstreamMcpSites>("GET", "/v1/admin/mcp"),
 		listChannels: (query: PageQuery & { ownerId?: string } = {}) =>
@@ -191,7 +196,7 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 			),
 		listIntents: (query: IntentsQuery = {}) =>
 			request<IntentsPage>("GET", `/v1/admin/intents${toSearch({ ...query })}`),
-		listBlockedIps: (query: PageQuery = {}) =>
+		listBlockedIps: (query: PageQuery & { ownerId?: string } = {}) =>
 			request<{ items: BlockedIp[]; total: number }>(
 				"GET",
 				`/v1/admin/blocked-ips${toSearch({ ...query })}`,
@@ -234,12 +239,19 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 			blockVisitor: (id: string, reason?: string) =>
 				visitorAction(id, "block", reason ? { reason } : {}),
 			unblockVisitor: (id: string) => visitorAction(id, "unblock"),
-			bulkVisitors: (ids: string[], action: BulkAction, reason?: string) =>
-				write<{ updated: number }>(
-					"POST",
-					"/v1/admin/visitors/bulk",
-					reason ? { ids, action, reason } : { ids, action },
-				),
+			/** `ownerId` set = only visitors of that account's channels change. */
+			bulkVisitors: (
+				ids: string[],
+				action: BulkAction,
+				reason?: string,
+				ownerId?: string,
+			) =>
+				write<{ updated: number }>("POST", "/v1/admin/visitors/bulk", {
+					ids,
+					action,
+					...(reason ? { reason } : {}),
+					...(ownerId ? { ownerId } : {}),
+				}),
 			deleteVisitorMessages: (id: string) =>
 				write<void>("DELETE", `/v1/admin/visitors/${segment(id)}/messages`),
 			createChannel: (input: NewChannel) =>

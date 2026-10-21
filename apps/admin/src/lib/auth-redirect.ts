@@ -13,7 +13,16 @@ const PUBLIC_PAGES = [
 ];
 
 /** The only pages a customer (level 200) may open; staff open everything else. */
-const USER_PAGES = ["/", "/channels", "/faq", "/settings", "/billing"];
+const USER_PAGES = [
+	"/",
+	"/channels",
+	"/visitors",
+	"/flow",
+	"/blocked-ips",
+	"/faq",
+	"/settings",
+	"/billing",
+];
 
 /** Customer-only pages (own account settings, billing): staff have no customer account. */
 const USER_ONLY_PAGES = ["/settings", "/billing"];

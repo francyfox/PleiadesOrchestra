@@ -82,20 +82,36 @@ describe("/api/live for a user", () => {
 		socket.close();
 	});
 
+	test("visitors, flow and blocked IPs are scoped to the session's owner", async () => {
+		const { socket, send, calls, annId } = await start();
+		for (const [topic, params] of [
+			["visitors", { ownerId: "someone-else" }],
+			["visitor", { id: "v" }],
+			["requests", {}],
+			["request", { id: "r" }],
+			["blocked-ips", { page: 1 }],
+		] as const)
+			send({ type: "subscribe", id: topic, topic, params });
+		await Bun.sleep(100);
+		expect(
+			calls.map((c) => new URL(c.path, "http://x").pathname).sort(),
+		).toEqual([
+			"/v1/admin/blocked-ips",
+			"/v1/admin/requests",
+			"/v1/admin/requests/r",
+			"/v1/admin/visitors",
+			"/v1/admin/visitors/v",
+		]);
+		for (const call of calls) {
+			expect(call.path).toContain(`ownerId=${annId}`);
+			expect(call.path).not.toContain("someone-else");
+		}
+		socket.close();
+	});
+
 	test("every other topic is forbidden and fetches nothing", async () => {
 		const { socket, messages, send, calls } = await start();
-		const topics = [
-			"visitors",
-			"visitor",
-			"intents",
-			"blocked-ips",
-			"admins",
-			"agents",
-			"performance",
-			"requests",
-			"request",
-			"mcp",
-		];
+		const topics = ["intents", "admins", "agents", "performance", "mcp"];
 		for (const topic of topics)
 			send({ type: "subscribe", id: topic, topic, params: { id: "x" } });
 		await Bun.sleep(100);
@@ -116,7 +132,7 @@ describe("scopeSubscription", () => {
 		expect(
 			scopeSubscription({ id: "u", level: 200 }, "dashboard", undefined),
 		).toEqual({ ok: true, params: { ownerId: "u" } });
-		expect(scopeSubscription({ id: "u", level: 200 }, "visitors", {})).toEqual({
+		expect(scopeSubscription({ id: "u", level: 200 }, "agents", {})).toEqual({
 			ok: false,
 			code: "forbidden",
 		});

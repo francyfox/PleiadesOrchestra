@@ -69,6 +69,8 @@ export const AdminMessage = t.Object({
 
 export const VisitorsQuery = t.Object({
 	channel: t.Optional(t.String()),
+	/** Staff only: one account's channels. A user is always scoped to their own. */
+	ownerId: t.Optional(t.String({ minLength: 1 })),
 	// `oneOf`, not `UnionEnum`: inside Optional the latter fills in its first value.
 	kind: t.Optional(oneOf(USER_KINDS)),
 	status: t.Optional(oneOf(USER_STATUSES)),

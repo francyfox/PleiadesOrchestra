@@ -16,6 +16,7 @@ export const RequestsQuery = t.Composite([
 	t.Object({
 		status: t.Optional(RequestStatus),
 		intent: t.Optional(t.String({ minLength: 1, maxLength: 64 })),
+		ownerId: t.Optional(t.String({ minLength: 1 })),
 	}),
 ]);
 

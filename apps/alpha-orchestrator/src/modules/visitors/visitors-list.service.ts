@@ -110,6 +110,10 @@ function buildFilters(params: ListVisitorsParams): {
 		conditions.push("c.slug = $channel");
 		binds.channel = params.channel;
 	}
+	if (params.ownerId) {
+		conditions.push("c.owner_id = $ownerId");
+		binds.ownerId = params.ownerId;
+	}
 	if (params.kind) {
 		conditions.push("u.kind = $kind");
 		binds.kind = params.kind;

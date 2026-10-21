@@ -1,6 +1,7 @@
 import type { ActiveRuns } from "../active-runs/active-runs.ts";
 import type { Db } from "../database/database.ts";
 import { toEventRow } from "../plan-runs/plan-runs.service.ts";
+import { ownedVisitors } from "../visitors/visitors.sql.ts";
 import type {
 	RequestDetails,
 	RequestLlmCall,
@@ -178,26 +179,34 @@ export function listRequests(
 		pageSize?: number;
 		status?: RequestStatus;
 		intent?: string;
+		/** Only requests of visitors in this account's channels. */
+		ownerId?: string;
 	},
 	now: number,
 ): { items: RequestSummary[]; total: number } {
 	const sqlite = db.$client;
 	const pageSize = query.pageSize ?? 25;
 	const offset = ((query.page ?? 1) - 1) * pageSize;
+	const owner: { sql: string; binds: Record<string, string> } = query.ownerId
+		? {
+				sql: ` AND visitor_id IN (${ownedVisitors("$ownerId")})`,
+				binds: { ownerId: query.ownerId },
+			}
+		: { sql: "", binds: {} };
+	const ROOTS = `FROM plan_runs WHERE COALESCE(root_run_id, id) = id${owner.sql}`;
 
 	if (query.status === undefined && query.intent === undefined) {
 		const total =
 			sqlite
-				.query<{ n: number }, []>(
-					"SELECT COUNT(*) AS n FROM plan_runs WHERE COALESCE(root_run_id, id) = id",
+				.query<{ n: number }, Record<string, string>>(
+					`SELECT COUNT(*) AS n ${ROOTS}`,
 				)
-				.get()?.n ?? 0;
+				.get(owner.binds)?.n ?? 0;
 		const roots = sqlite
-			.query<{ id: string }, [number, number]>(
-				`SELECT id FROM plan_runs WHERE COALESCE(root_run_id, id) = id
-				ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`,
+			.query<{ id: string }, Record<string, string | number>>(
+				`SELECT id ${ROOTS} ORDER BY created_at DESC, id DESC LIMIT $limit OFFSET $offset`,
 			)
-			.all(pageSize, offset);
+			.all({ ...owner.binds, limit: pageSize, offset });
 		return {
 			items: summarize(
 				db,
@@ -210,11 +219,10 @@ export function listRequests(
 	}
 
 	const roots = sqlite
-		.query<{ id: string }, []>(
-			`SELECT id FROM plan_runs WHERE COALESCE(root_run_id, id) = id
-			ORDER BY created_at DESC, id DESC`,
+		.query<{ id: string }, Record<string, string>>(
+			`SELECT id ${ROOTS} ORDER BY created_at DESC, id DESC`,
 		)
-		.all();
+		.all(owner.binds);
 	const matching = summarize(
 		db,
 		active,

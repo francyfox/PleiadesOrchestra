@@ -44,11 +44,16 @@ const strictly = (schema: TObject) => (params: unknown) =>
 	Value.Check(schema, params);
 
 const NoParams = t.Object({});
-const IdParams = t.Object({ id: t.String({ minLength: 1 }) });
 const OwnerParams = t.Object({
 	ownerId: t.Optional(t.String({ minLength: 1 })),
 });
-const ChannelsParams = t.Composite([PageQuery, OwnerParams]);
+/** `ownerId` is set by `scopeSubscription` for a user: the item must be in their channel. */
+const OwnedIdParams = t.Composite([
+	t.Object({ id: t.String({ minLength: 1 }) }),
+	OwnerParams,
+]);
+const OwnedPageParams = t.Composite([PageQuery, OwnerParams]);
+type OwnedId = { id: string; ownerId?: string };
 const PerformanceParams = t.Object({ from: t.Optional(t.Number()) });
 
 /**
@@ -79,12 +84,15 @@ export function createLiveTopics(
 		},
 		visitor: {
 			intervalMs: every("visitor"),
-			validate: strictly(IdParams),
-			fetch: (params) => orchestrator.getVisitor((params as { id: string }).id),
+			validate: strictly(OwnedIdParams),
+			fetch: (params) => {
+				const { id, ownerId } = params as OwnedId;
+				return orchestrator.getVisitor(id, ownerId);
+			},
 		},
 		channels: {
 			intervalMs: every("channels"),
-			validate: strictly(ChannelsParams),
+			validate: strictly(OwnedPageParams),
 			fetch: (params) => orchestrator.listChannels(params as never),
 		},
 		intents: {
@@ -94,7 +102,7 @@ export function createLiveTopics(
 		},
 		"blocked-ips": {
 			intervalMs: every("blocked-ips"),
-			validate: strictly(PageQuery),
+			validate: strictly(OwnedPageParams),
 			fetch: (params) => orchestrator.listBlockedIps(params as never),
 		},
 		admins: {
@@ -124,8 +132,11 @@ export function createLiveTopics(
 		},
 		request: {
 			intervalMs: every("request"),
-			validate: strictly(IdParams),
-			fetch: (params) => fetchRequestView(ctx, (params as { id: string }).id),
+			validate: strictly(OwnedIdParams),
+			fetch: (params) => {
+				const { id, ownerId } = params as OwnedId;
+				return fetchRequestView(ctx, id, ownerId);
+			},
 		},
 	};
 }

@@ -20,6 +20,10 @@ export const VISITOR_SELECT = `
 	COALESCE(us.inputTokens, 0) AS inputTokens, COALESCE(us.outputTokens, 0) AS outputTokens,
 	COALESCE(us.calls, 0) AS calls, COALESCE(us.callsWithoutUsage, 0) AS callsWithoutUsage`;
 
+/** Ids of the visitors in channels of the owner bound as `param`. */
+export const ownedVisitors = (param: string) =>
+	`SELECT ov.id FROM visitors ov JOIN channels oc ON oc.id = ov.channel_id WHERE oc.owner_id = ${param}`;
+
 /** Usage per visitor in `[$from, $to]`, optionally limited to some visitors (`visitorFilter`). */
 export function usageCte(visitorFilter = ""): string {
 	return `WITH us AS (

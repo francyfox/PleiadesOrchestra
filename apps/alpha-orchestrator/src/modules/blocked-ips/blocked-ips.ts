@@ -1,6 +1,7 @@
 import { Elysia, t } from "elysia";
 import type { Db } from "../database/database.ts";
 import { PageQuery } from "../http/http.ts";
+import { OwnerQuery } from "../visitors/visitors.schema.ts";
 import {
 	BlockedIpResult,
 	BlockedIpsPage,
@@ -26,12 +27,12 @@ export function blockedIpsRoutes({ db, ipHashSalt, now }: BlockedIpsDeps) {
 		tags: ["Admin: blocked IPs"],
 	})
 		.get("/", ({ query }) => listBlockedIps(db, query), {
-			query: PageQuery,
+			query: t.Composite([PageQuery, OwnerQuery]),
 			response: { 200: BlockedIpsPage },
 			detail: {
 				summary: "List blocked IPs",
 				description:
-					"Newest first. Without `pageSize` the whole list is returned.",
+					"Newest first. Without `pageSize` the whole list is returned. `ownerId` keeps only blocks of that account's channels (no global ones).",
 			},
 		})
 		.post(

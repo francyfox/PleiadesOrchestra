@@ -4,6 +4,7 @@ import type { Db } from "../database/database.ts";
 import { prepared } from "../database/prepared.ts";
 import { randomToken, sha256Hex } from "../security/security.service.ts";
 import { generateVisitorName } from "./visitor-names.ts";
+import { ownedVisitors } from "./visitors.sql.ts";
 import type { VisitorAction, VisitorRow } from "./visitors.types.ts";
 
 /** Only the sha256 of a visitor token is stored — a DB leak doesn't hand out sessions. */
@@ -196,17 +197,41 @@ export function applyVisitorAction(
 	adminId: string,
 	now: number,
 	reason?: string,
+	/** Set = only visitors of this account's channels are touched. */
+	ownerId?: string,
 ): number {
 	if (ids.length === 0) return 0;
 	const idBinds = Object.fromEntries(ids.map((id, i) => [`id${i}`, id]));
 	const idList = Object.keys(idBinds)
 		.map((key) => `$${key}`)
 		.join(",");
+	const owned = ownerId ? ` AND id IN (${ownedVisitors("$ownerId")})` : "";
 	return db.$client
 		.query<{ id: string }, Record<string, string | number | null>>(
-			`UPDATE visitors SET ${ACTION_SET_SQL[action]} WHERE id IN (${idList}) RETURNING id`,
+			`UPDATE visitors SET ${ACTION_SET_SQL[action]} WHERE id IN (${idList})${owned} RETURNING id`,
 		)
-		.all({ ...idBinds, now, admin: adminId, reason: reason ?? null }).length;
+		.all({
+			...idBinds,
+			...(ownerId ? { ownerId } : {}),
+			now,
+			admin: adminId,
+			reason: reason ?? null,
+		}).length;
+}
+
+/** Whether the visitor is in a channel of `ownerId`. */
+export function visitorOwnedBy(
+	db: Db,
+	visitorId: string,
+	ownerId: string,
+): boolean {
+	return (
+		db.$client
+			.query<{ id: string }, [string, string]>(
+				`${ownedVisitors("?2")} AND ov.id = ?1`,
+			)
+			.get(visitorId, ownerId) !== null
+	);
 }
 
 /** "Erase messages": the user's messages and their GOAP traces. Usage rows stay. */

@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { eq } from "drizzle-orm";
+import { channels } from "../database/database.schema.ts";
 import { admin, json, NOW, setupAdminApp } from "../http/http.testing.ts";
 
 describe("admin blocked ips", () => {
@@ -93,5 +95,29 @@ describe("admin blocked ips", () => {
 			(item: { ip: string }) => item.ip,
 		);
 		expect(new Set(seen)).toEqual(new Set(["1.1.1.1", "2.2.2.2", "3.3.3.3"]));
+	});
+
+	test("ownerId lists only blocks of the owner's channels, never global ones", async () => {
+		const { app, db } = setupAdminApp();
+		db.update(channels)
+			.set({ ownerId: "ann" })
+			.where(eq(channels.id, "ch_cli"))
+			.run();
+		for (const channelId of ["ch_cli", "ch_telegram", undefined]) {
+			await app.handle(
+				admin("/blocked-ips", {
+					method: "POST",
+					body: { ip: "1.1.1.1", channelId, reason: "r", expiresInHours: 1 },
+				}),
+			);
+		}
+		const mine = await json(
+			await app.handle(admin("/blocked-ips?ownerId=ann")),
+		);
+		expect(
+			mine.items.map((item: { channelId: string }) => item.channelId),
+		).toEqual(["ch_cli"]);
+		expect(mine.total).toBe(1);
+		expect((await json(await app.handle(admin("/blocked-ips")))).total).toBe(3);
 	});
 });

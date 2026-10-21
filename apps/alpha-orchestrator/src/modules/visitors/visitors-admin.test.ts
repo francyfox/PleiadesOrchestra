@@ -1,6 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { eq } from "drizzle-orm";
-import { llmCalls, messages, visitors } from "../database/database.schema.ts";
+import {
+	channels,
+	llmCalls,
+	messages,
+	visitors,
+} from "../database/database.schema.ts";
 import {
 	admin,
 	DAY,
@@ -15,6 +20,43 @@ import { upsertIdentifiedVisitor } from "./visitors.service.ts";
 import { decodeCursor, encodeCursor } from "./visitors-list.service.ts";
 
 describe("admin visitors", () => {
+	test("ownerId scopes the list, the detail and bulk actions to the owner's channels", async () => {
+		const { app, db } = setupAdminApp();
+		db.update(channels)
+			.set({ ownerId: "ann" })
+			.where(eq(channels.id, "ch_cli"))
+			.run();
+		const mine = upsertIdentifiedVisitor(db, "ch_cli", "1", "Mine", NOW);
+		const theirs = upsertIdentifiedVisitor(
+			db,
+			"ch_telegram",
+			"2",
+			"Theirs",
+			NOW,
+		);
+
+		const list = await json(await app.handle(admin("/visitors?ownerId=ann")));
+		expect(list.items.map((v: { id: string }) => v.id)).toEqual([mine.id]);
+		expect(list.total).toBe(1);
+
+		expect(
+			(await app.handle(admin(`/visitors/${mine.id}?ownerId=ann`))).status,
+		).toBe(200);
+		expect(
+			(await app.handle(admin(`/visitors/${theirs.id}?ownerId=ann`))).status,
+		).toBe(404);
+
+		const bulk = await json(
+			await app.handle(
+				admin("/visitors/bulk", {
+					method: "POST",
+					body: { ids: [mine.id, theirs.id], action: "block", ownerId: "ann" },
+				}),
+			),
+		);
+		expect(bulk.updated).toBe(1);
+	});
+
 	test("list: status, usage totals (calls without usage counted separately), filters, total", async () => {
 		const { app, db } = setupAdminApp();
 		const pending = upsertIdentifiedVisitor(

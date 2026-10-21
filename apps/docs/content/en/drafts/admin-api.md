@@ -622,9 +622,9 @@ Email is contact data, not a login. Staff and customers share one email namespac
 - `DELETE /api/user/me` `{ confirmEmail }` (must equal the account email, trimmed, case-insensitive; else `400 { "error": "confirm_mismatch" }`) returns `{ ok: true }`: the channels (orchestrator) are deleted first, then the account and its sessions. If the orchestrator cannot delete the channels: `502`/`503 { message }` and the account is kept.
 - The three self-service routes above are for users only; a staff session gets `403 { "error": "forbidden" }`.
 
-### Ownership: channels, dashboard, live
+### Ownership: channels, dashboard, visitors, flow, blocked IPs, live
 
-A user (level 200) sees and edits only channels with `ownerId = their account id`. admin-api is the only place that decides this; the orchestrator trusts `ADMIN_API_KEY` and takes `ownerId` as a field.
+A user (level 200) sees and edits only channels with `ownerId = their account id`, and only visitors, requests and IP blocks of those channels. admin-api is the only place that decides this; the orchestrator trusts `ADMIN_API_KEY` and takes `ownerId` as a field (`GET /v1/admin/visitors`, `/visitors/:id`, `/requests`, `/requests/:id`, `/blocked-ips` filter or 404 by it; `POST /v1/admin/visitors/bulk` takes it in the body). Staff IP blocks without a channel stay global; a user's block covers only their channel.
 
 | Route | User | Staff |
 |---|---|---|
@@ -632,10 +632,16 @@ A user (level 200) sees and edits only channels with `ownerId = their account id
 | `POST /api/channels` `{ slug, name, accessMode?, allowedOrigins?, catalogLanguage?, ownerId? }` | owner = own id (body `ownerId` ignored) | `ownerId` optional (left out = staff-owned) |
 | `PATCH /api/channels/:id`, `POST /api/channels/:id/rotate-keys`, `GET\|PUT /api/channels/:id/persona`, `POST /api/channels/:id/persona/preview` | `404 { "error": "not_found" }` when the channel is not theirs (or does not exist; never 403, no probing), nothing reaches the orchestrator | any channel |
 | `GET /api/dashboard?ownerId` | numbers of own channels (stats, usage by day / visitor / channel / model); never `finance` | everything; `ownerId` narrows. Without `ownerId` also `finance` (orchestrator Finance above, last 30 days); the `dashboard` live topic pushes the same body |
+| `GET /api/visitors`, `GET /api/requests` (`?ownerId`) | only visitors / requests of own channels (`ownerId` forced) | all; `ownerId` filters |
+| `GET /api/visitors/:id`, `GET /api/requests/:id[/trace]`, visitor whitelist / block / unwhitelist / unblock / delete messages | `404` when the visitor / request is not in their channel, nothing is written | any |
+| `POST /api/visitors/bulk` | sent with `ownerId`: other owners' visitors are skipped upstream | any |
+| `GET /api/blocked-ips` | blocks of own channels only (no global ones) | all |
+| `POST /api/blocked-ips` | `channelId` required (`400 invalid_block` without), own channel only (`404 not_found`) | any channel, or none = global |
+| `DELETE /api/blocked-ips/:id` | own channel's block only (`404 not_found`) | any |
 
-`Channel` has `ownerId: string | null`. The embed snippet is built by the panel from the channel's `publishableKey`; there is no embed route in admin-api. Every other route (visitors, requests, mcp, agents, models, blocked IPs, intents, subscriptions, performance, system, admins, accounts) stays staff-only: a user gets `403 { "error": "forbidden" }` (a test walks the whole route table).
+`Channel` has `ownerId: string | null`. The embed snippet is built by the panel from the channel's `publishableKey`; there is no embed route in admin-api. Every other route (mcp, agents, models, intents, subscriptions, performance, system, admins, accounts) stays staff-only: a user gets `403 { "error": "forbidden" }` (a test walks the whole route table).
 
-**`/api/live` for a user.** The upgrade is open to any signed-in account. A user may subscribe only to `dashboard` and `channels`; any other topic answers `{ type: "error", id, code: "forbidden" }` (new `LiveErrorCode`, the socket stays open). For those two, the server sets `params.ownerId` to the session's account id, overwriting whatever the browser sent, so a user can never read another owner's data; the pushed `data` is the body of `GET /api/dashboard` / `GET /api/channels`. Staff may pass `ownerId` in the `dashboard` / `channels` params to filter.
+**`/api/live` for a user.** The upgrade is open to any signed-in account. A user may subscribe only to `dashboard`, `channels`, `visitors`, `visitor`, `requests`, `request` and `blocked-ips`; any other topic answers `{ type: "error", id, code: "forbidden" }` (new `LiveErrorCode`, the socket stays open). For those, the server sets `params.ownerId` to the session's account id, overwriting whatever the browser sent, so a user can never read another owner's data; the pushed `data` is the body of the matching REST route (a `visitor` / `request` of another owner answers the upstream 404 as an error). Staff may pass `ownerId` in the `dashboard` / `channels` params to filter.
 
 ### Billing (`/api/billing`, users)
 

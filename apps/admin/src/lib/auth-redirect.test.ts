@@ -58,10 +58,13 @@ describe("resolveAuthRedirect", () => {
 		}
 	});
 
-	test("a customer reaches Dashboard, Channels, FAQ, Settings and Billing only; staff pages go to /", () => {
+	test("a customer reaches Dashboard, Channels, Visitors, Flow, Blocked IPs, FAQ, Settings and Billing only; staff pages go to /", () => {
 		for (const pathname of [
 			"/",
 			"/channels",
+			"/visitors/42",
+			"/flow",
+			"/blocked-ips",
 			"/faq",
 			"/settings",
 			"/billing",
@@ -70,7 +73,7 @@ describe("resolveAuthRedirect", () => {
 		}
 		for (const pathname of [
 			"/admins",
-			"/visitors",
+			"/intents",
 			"/agents",
 			"/models",
 			"/system",

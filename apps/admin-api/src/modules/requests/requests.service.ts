@@ -17,20 +17,22 @@ export function fetchRequests(
 	return orchestrator.listRequests(query);
 }
 
-/** `GET /api/requests/:id`: one request, already shaped for drawing. */
+/** `GET /api/requests/:id`: one request, already shaped for drawing; `ownerId` = 404 unless it is from that account's channel. */
 export async function fetchRequestView(
 	{ orchestrator }: Orchestrator,
 	id: string,
+	ownerId?: string,
 ): Promise<RequestView> {
-	return buildRequestView(await orchestrator.getRequest(id));
+	return buildRequestView(await orchestrator.getRequest(id, ownerId));
 }
 
 /** `GET /api/requests/:id/trace`: the request as a Model Context Tool Inspector export. */
 export async function fetchRequestTrace(
 	{ orchestrator }: Orchestrator,
 	id: string,
+	ownerId?: string,
 ): Promise<unknown[]> {
-	const details = await orchestrator.getRequest(id);
+	const details = await orchestrator.getRequest(id, ownerId);
 	const channel = channelOf(details);
 	const { items } = channel ? await orchestrator.listMcp() : { items: [] };
 	const tools = items.find((site) => site.channelId === channel)?.tools ?? [];

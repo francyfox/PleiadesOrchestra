@@ -15,7 +15,7 @@ describe("levels on the routes", () => {
 			"/api/admins",
 			"/api/system",
 			"/api/agents",
-			"/api/blocked-ips",
+			"/api/intents",
 			"/api/performance",
 		]) {
 			const response = await t.call(path, { cookie });
@@ -40,6 +40,8 @@ describe("levels on the routes", () => {
 			/^\/api\/user\//,
 			/^\/api\/channels(\/|$)/,
 			/^\/api\/dashboard$/,
+			// scoped to the user's channels: channels/owned-pages.test.ts
+			/^\/api\/(visitors|requests|blocked-ips)(\/|$)/,
 			// a user's own billing (staff get 403 inside; see billing.test.ts)
 			/^\/api\/billing(\/|$)/,
 			/^\/api\/live$/,
@@ -56,7 +58,7 @@ describe("levels on the routes", () => {
 				!route.path.startsWith("/api/docs") &&
 				!open.some((pattern) => pattern.test(route.path)),
 		);
-		expect(routes.length).toBeGreaterThan(30);
+		expect(routes.length).toBeGreaterThan(25);
 		let forbidden = 0;
 		for (const { method, path, hooks } of routes) {
 			const url = path.replace(/:[^/]+/g, "x");

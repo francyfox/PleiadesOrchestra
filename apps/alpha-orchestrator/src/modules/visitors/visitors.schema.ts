@@ -4,8 +4,14 @@ import { oneOf } from "../http/http.ts";
 
 const USER_STATUSES = ["allowed", "pending", "blocked"] as const;
 
+/** Keeps only what belongs to this account's channels (admin-api scopes a user with it). */
+export const OwnerQuery = t.Object({
+	ownerId: t.Optional(t.String({ minLength: 1 })),
+});
+
 export const VisitorsQuery = t.Object({
 	channel: t.Optional(t.String()),
+	ownerId: t.Optional(t.String({ minLength: 1 })),
 	kind: t.Optional(oneOf(["identified", "anonymous"])),
 	status: t.Optional(oneOf(USER_STATUSES)),
 	q: t.Optional(t.String()),
@@ -21,6 +27,7 @@ export const BulkVisitorsBody = t.Object({
 	ids: t.Array(t.String(), { maxItems: 1000 }),
 	action: oneOf(["whitelist", "unwhitelist", "block", "unblock"]),
 	reason: t.Optional(t.String()),
+	ownerId: t.Optional(t.String({ minLength: 1 })),
 });
 
 export const BlockVisitorBody = t.Optional(

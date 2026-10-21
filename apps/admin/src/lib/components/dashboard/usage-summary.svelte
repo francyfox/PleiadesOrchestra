@@ -4,8 +4,7 @@
 	import * as Card from "#lib/components/ui/card/index.js";
 	import { useFormat } from "#lib/i18n/use-format.js";
 
-	/** `staff` = the visitor list is reachable; a customer sees the numbers only. */
-	let { stats, staff }: { stats: Stats; staff: boolean } = $props();
+	let { stats }: { stats: Stats } = $props();
 
 	const content = useIntlayer("dashboard");
 	const format = useFormat();
@@ -39,13 +38,9 @@
 			<Card.Title class="text-2xl">{$format.number(stats.visitors.total)}</Card.Title>
 		</Card.Header>
 		<Card.Content class="text-xs text-muted-foreground">
-			{#if staff}
-				<a class="underline-offset-4 hover:underline" href="/visitors?status=pending">
-					{$content.pendingLink({ count: stats.visitors.pending })}
-				</a>
-			{:else}
+			<a class="underline-offset-4 hover:underline" href="/visitors?status=pending">
 				{$content.pendingLink({ count: stats.visitors.pending })}
-			{/if}
+			</a>
 			· {$content.visitorsSummary({ blocked: stats.visitors.blocked, anonymous: stats.visitors.anonymous })}
 		</Card.Content>
 	</Card.Root>

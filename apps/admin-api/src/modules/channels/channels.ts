@@ -2,7 +2,11 @@ import { Elysia, t } from "elysia";
 import type { RouteDeps } from "../../app.types.ts";
 import { requireAdmin } from "../auth/auth.service.ts";
 import { ApiError } from "../common/common.schema.ts";
-import { IdParams, Upstream } from "../orchestrator/orchestrator.schema.ts";
+import {
+	IdParams,
+	OwnedUpstream,
+	Upstream,
+} from "../orchestrator/orchestrator.schema.ts";
 import { orchestratorErrors } from "../orchestrator/orchestrator.service.ts";
 import {
 	Channel,
@@ -19,14 +23,6 @@ import {
 	mayAccessChannel,
 	ownerScope,
 } from "./channels.service.ts";
-
-/** `Upstream` plus the 404 of a channel that is not yours; spelled out so `status(404, …)` type-checks. */
-const OwnedUpstream = {
-	401: ApiError,
-	404: ApiError,
-	502: ApiError,
-	503: ApiError,
-};
 
 /**
  * Channels. Staff see and edit all; a user (level 200) only their own: the

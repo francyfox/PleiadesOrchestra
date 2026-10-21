@@ -38,6 +38,8 @@ export type VisitorAction = "whitelist" | "unwhitelist" | "block" | "unblock";
 
 export interface ListVisitorsParams {
 	channel?: string;
+	/** Only visitors of this account's channels. */
+	ownerId?: string;
 	kind?: "identified" | "anonymous";
 	status?: VisitorStatus;
 	q?: string;

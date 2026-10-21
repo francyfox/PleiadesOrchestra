@@ -1,4 +1,14 @@
-import { and, count, desc, eq, gt, isNull, or, sql } from "drizzle-orm";
+import {
+	and,
+	count,
+	desc,
+	eq,
+	gt,
+	inArray,
+	isNull,
+	or,
+	sql,
+} from "drizzle-orm";
 import { blockedIps, channels } from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
 import { prepared } from "../database/prepared.ts";
@@ -7,12 +17,25 @@ import { hashIp } from "../security/security.service.ts";
 
 export class UnknownChannelError extends Error {}
 
-/** Newest first. */
-export function listBlockedIps(db: Db, paging: PageParams = {}) {
+/** Newest first. `ownerId` keeps only blocks of that account's channels (global ones are staff's). */
+export function listBlockedIps(
+	db: Db,
+	paging: PageParams & { ownerId?: string } = {},
+) {
 	const { limit, offset } = limitOffset(paging);
+	const where = paging.ownerId
+		? inArray(
+				blockedIps.channelId,
+				db
+					.select({ id: channels.id })
+					.from(channels)
+					.where(eq(channels.ownerId, paging.ownerId)),
+			)
+		: undefined;
 	const query = db
 		.select()
 		.from(blockedIps)
+		.where(where)
 		.orderBy(desc(blockedIps.createdAt), desc(blockedIps.id));
 	const items =
 		limit === undefined
@@ -22,7 +45,8 @@ export function listBlockedIps(db: Db, paging: PageParams = {}) {
 					.offset(offset ?? 0)
 					.all();
 	const total =
-		db.select({ value: count() }).from(blockedIps).get()?.value ?? 0;
+		db.select({ value: count() }).from(blockedIps).where(where).get()?.value ??
+		0;
 	return { items, total };
 }
 

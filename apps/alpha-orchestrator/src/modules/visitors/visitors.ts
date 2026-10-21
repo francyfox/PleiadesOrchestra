@@ -5,6 +5,7 @@ import {
 	BlockVisitorBody,
 	BulkVisitorsBody,
 	BulkVisitorsResult,
+	OwnerQuery,
 	VisitorDetail,
 	VisitorResult,
 	VisitorsPage,
@@ -13,6 +14,7 @@ import {
 import {
 	applyVisitorAction,
 	deleteVisitorMessages,
+	visitorOwnedBy,
 } from "./visitors.service.ts";
 import type { AdminVisitor, VisitorAction } from "./visitors.types.ts";
 import { getVisitorDetail } from "./visitors-detail.service.ts";
@@ -63,6 +65,7 @@ export function visitorsRoutes({ db, now }: VisitorsDeps) {
 			({ query }) =>
 				listVisitors(db, {
 					channel: query.channel,
+					ownerId: query.ownerId,
 					kind: query.kind,
 					status: query.status,
 					q: query.q,
@@ -79,7 +82,7 @@ export function visitorsRoutes({ db, now }: VisitorsDeps) {
 				detail: {
 					summary: "List visitors",
 					description:
-						"Filtered, sorted page of visitors with token usage in the `from`..`to` window (unix ms). Page with the opaque `nextCursor`.",
+						"Filtered, sorted page of visitors with token usage in the `from`..`to` window (unix ms). `ownerId` keeps only that account's channels. Page with the opaque `nextCursor`.",
 				},
 			},
 		)
@@ -93,6 +96,7 @@ export function visitorsRoutes({ db, now }: VisitorsDeps) {
 					adminIdOf(request),
 					now(),
 					body.reason,
+					body.ownerId,
 				),
 			}),
 			{
@@ -101,22 +105,26 @@ export function visitorsRoutes({ db, now }: VisitorsDeps) {
 				detail: {
 					summary: "Apply an action to many visitors",
 					description:
-						"Whitelist, unwhitelist, block or unblock up to 1000 visitors. `reason` is stored only for `block`. Unknown ids are skipped; `updated` counts the changed visitors.",
+						"Whitelist, unwhitelist, block or unblock up to 1000 visitors. `reason` is stored only for `block`. Unknown ids (and, with `ownerId`, visitors of other owners' channels) are skipped; `updated` counts the changed visitors.",
 				},
 			},
 		)
 		.get(
 			"/:id",
-			({ params, status }) => {
+			({ params, query, status }) => {
+				if (query.ownerId && !visitorOwnedBy(db, params.id, query.ownerId)) {
+					return status(404, "Not found");
+				}
 				const detail = getVisitorDetail(db, params.id, now());
 				return detail ?? status(404, "Not found");
 			},
 			{
+				query: OwnerQuery,
 				response: { 200: VisitorDetail, 404: t.String() },
 				detail: {
 					summary: "Get a visitor",
 					description:
-						"The visitor with the latest messages and usage of the last 30 days.",
+						"The visitor with the latest messages and usage of the last 30 days. With `ownerId`, 404 unless the visitor is in that account's channel.",
 				},
 			},
 		)

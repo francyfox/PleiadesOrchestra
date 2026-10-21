@@ -14,11 +14,9 @@
 	let {
 		rows,
 		groupBy,
-		staff,
 	}: {
 		rows: UsageRow[];
 		groupBy: "visitor" | "channel" | "model";
-		staff: boolean;
 	} = $props();
 
 	const content = useIntlayer("dashboard");
@@ -80,7 +78,7 @@
 </script>
 
 {#snippet labelCell(row: UsageRow)}
-	{#if staff && groupBy === "visitor" && row.key && row.label !== row.key}
+	{#if groupBy === "visitor" && row.key && row.label !== row.key}
 		<a class="underline-offset-4 hover:underline" href={`/visitors/${encodeURIComponent(row.key)}`}>{row.label}</a>
 	{:else}
 		{row.label}

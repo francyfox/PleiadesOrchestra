@@ -23,6 +23,8 @@ export const RequestsQuery = t.Composite([
 	t.Object({
 		status: t.Optional(oneOf(REQUEST_STATUSES)),
 		intent: t.Optional(t.String({ minLength: 1, maxLength: 64 })),
+		/** Staff only: one account's channels. A user is always scoped to their own. */
+		ownerId: t.Optional(t.String({ minLength: 1 })),
 	}),
 ]);
 

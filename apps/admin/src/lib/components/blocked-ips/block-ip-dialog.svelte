@@ -3,16 +3,19 @@
 	import { useIntlayer } from "svelte-intlayer";
 	import { blockedIpActions } from "#lib/actions.js";
 	import type { Channel } from "#lib/api-types.js";
+	import { isStaff } from "#lib/auth-redirect.js";
 	import FormField from "#lib/components/form-field.svelte";
 	import { Button } from "#lib/components/ui/button/index.js";
 	import * as Dialog from "#lib/components/ui/dialog/index.js";
 	import { Label } from "#lib/components/ui/label/index.js";
+	import { page } from "$app/state";
 	import { useBlockedIpEnhance } from "./use-blocked-ip-enhance";
 
 	/**
 	 * The "+ Add" button of the blocked-IPs page and the dialog with the form.
 	 * Only web channels have anonymous visitors to block by IP. A `defaultIp`
 	 * (the visitor page links here with `?ip=`) opens the dialog with it filled in.
+	 * Only staff block globally; a customer must pick one of their channels.
 	 */
 	let {
 		channels,
@@ -33,6 +36,7 @@
 			open = false;
 		},
 	);
+	const staff = $derived(isStaff(page.data.admin?.level ?? 200));
 	const webChannels = $derived(
 		channels.filter((channel) => channel.kind === "web"),
 	);
@@ -55,9 +59,12 @@
 				<select
 					id="channel"
 					name="channelId"
+					required={!staff}
 					class="h-9 rounded-md border border-input bg-background px-2 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
 				>
-					<option value="">{$content.allChannels.value}</option>
+					{#if staff}
+						<option value="">{$content.allChannels.value}</option>
+					{/if}
 					{#each webChannels as channel (channel.id)}
 						<option value={channel.id}>{channel.name}</option>
 					{/each}

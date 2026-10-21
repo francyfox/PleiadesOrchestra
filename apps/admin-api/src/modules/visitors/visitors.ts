@@ -1,6 +1,7 @@
 import { Elysia, t } from "elysia";
 import type { RouteDeps } from "../../app.types.ts";
 import { requireAdmin } from "../auth/auth.service.ts";
+import { ownerScope } from "../channels/channels.service.ts";
 import { ApiError } from "../common/common.schema.ts";
 import { IdParams, Upstream } from "../orchestrator/orchestrator.schema.ts";
 import { orchestratorErrors } from "../orchestrator/orchestrator.service.ts";
@@ -11,34 +12,48 @@ import {
 	VisitorsPage,
 	VisitorsQuery,
 } from "./visitors.schema.ts";
-import { cleanReason } from "./visitors.service.ts";
+import { assertVisitorAccess, cleanReason } from "./visitors.service.ts";
 
 const VisitorResponse = t.Object({ visitor: Visitor });
 
 /**
  * Chat visitors, proxied to the orchestrator. Every mutation carries the
- * signed-in admin's id (`X-Admin-Id`) for the audit fields.
+ * signed-in account's id (`X-Admin-Id`) for the audit fields. Staff see all; a
+ * user only visitors of their own channels (another owner's visitor is 404).
  */
 export function visitorsRoutes({ auth, orchestrator }: RouteDeps) {
 	return new Elysia({ name: "admin-api.visitors", tags: ["orchestrator"] })
 		.use(orchestratorErrors)
 		.use(requireAdmin(auth))
-		.guard({ admin: true }, (app) =>
+		.guard({ account: true }, (app) =>
 			app
-				.get("/visitors", ({ query }) => orchestrator.listVisitors(query), {
-					query: VisitorsQuery,
-					response: { 200: VisitorsPage, ...Upstream },
-					detail: { summary: "List chat visitors (cursor-paginated)" },
-				})
+				.get(
+					"/visitors",
+					({ query, account }) =>
+						orchestrator.listVisitors({
+							...query,
+							ownerId: ownerScope(account) ?? query.ownerId,
+						}),
+					{
+						query: VisitorsQuery,
+						response: { 200: VisitorsPage, ...Upstream },
+						detail: { summary: "List chat visitors (cursor-paginated)" },
+					},
+				)
 				.post(
 					"/visitors/bulk",
-					async ({ body, admin, status }) => {
+					async ({ body, account, status }) => {
 						if (body.ids.length === 0) {
 							return status(400, { error: "no_selection" });
 						}
 						return orchestrator
-							.as(admin.id)
-							.bulkVisitors(body.ids, body.action, cleanReason(body.reason));
+							.as(account.id)
+							.bulkVisitors(
+								body.ids,
+								body.action,
+								cleanReason(body.reason),
+								ownerScope(account),
+							);
 					},
 					{
 						body: t.Object({
@@ -56,7 +71,8 @@ export function visitorsRoutes({ auth, orchestrator }: RouteDeps) {
 				)
 				.get(
 					"/visitors/:id",
-					({ params }) => orchestrator.getVisitor(params.id),
+					({ params, account }) =>
+						orchestrator.getVisitor(params.id, ownerScope(account)),
 					{
 						params: IdParams,
 						response: { 200: VisitorDetails, ...Upstream },
@@ -65,8 +81,10 @@ export function visitorsRoutes({ auth, orchestrator }: RouteDeps) {
 				)
 				.post(
 					"/visitors/:id/whitelist",
-					({ params, admin }) =>
-						orchestrator.as(admin.id).whitelistVisitor(params.id),
+					async ({ params, account }) => {
+						await assertVisitorAccess(orchestrator, account, params.id);
+						return orchestrator.as(account.id).whitelistVisitor(params.id);
+					},
 					{
 						params: IdParams,
 						response: { 200: VisitorResponse, ...Upstream },
@@ -75,8 +93,10 @@ export function visitorsRoutes({ auth, orchestrator }: RouteDeps) {
 				)
 				.post(
 					"/visitors/:id/unwhitelist",
-					({ params, admin }) =>
-						orchestrator.as(admin.id).unwhitelistVisitor(params.id),
+					async ({ params, account }) => {
+						await assertVisitorAccess(orchestrator, account, params.id);
+						return orchestrator.as(account.id).unwhitelistVisitor(params.id);
+					},
 					{
 						params: IdParams,
 						response: { 200: VisitorResponse, ...Upstream },
@@ -85,10 +105,12 @@ export function visitorsRoutes({ auth, orchestrator }: RouteDeps) {
 				)
 				.post(
 					"/visitors/:id/block",
-					({ params, body, admin }) =>
-						orchestrator
-							.as(admin.id)
-							.blockVisitor(params.id, cleanReason(body?.reason)),
+					async ({ params, body, account }) => {
+						await assertVisitorAccess(orchestrator, account, params.id);
+						return orchestrator
+							.as(account.id)
+							.blockVisitor(params.id, cleanReason(body?.reason));
+					},
 					{
 						params: IdParams,
 						body: t.Optional(t.Object({ reason: t.Optional(t.String()) })),
@@ -98,8 +120,10 @@ export function visitorsRoutes({ auth, orchestrator }: RouteDeps) {
 				)
 				.post(
 					"/visitors/:id/unblock",
-					({ params, admin }) =>
-						orchestrator.as(admin.id).unblockVisitor(params.id),
+					async ({ params, account }) => {
+						await assertVisitorAccess(orchestrator, account, params.id);
+						return orchestrator.as(account.id).unblockVisitor(params.id);
+					},
 					{
 						params: IdParams,
 						response: { 200: VisitorResponse, ...Upstream },
@@ -108,8 +132,9 @@ export function visitorsRoutes({ auth, orchestrator }: RouteDeps) {
 				)
 				.delete(
 					"/visitors/:id/messages",
-					async ({ params, admin, set }) => {
-						await orchestrator.as(admin.id).deleteVisitorMessages(params.id);
+					async ({ params, account, set }) => {
+						await assertVisitorAccess(orchestrator, account, params.id);
+						await orchestrator.as(account.id).deleteVisitorMessages(params.id);
 						set.status = 204;
 					},
 					{

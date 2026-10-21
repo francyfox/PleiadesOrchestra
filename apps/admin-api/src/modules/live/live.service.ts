@@ -1,10 +1,15 @@
 import { isStaff } from "../accounts/accounts.schema.ts";
 import type { LiveTopic } from "./live.types.ts";
 
-/** The only topics a user (level 200) may watch: their dashboard and their channels. */
+/** The only topics a user (level 200) may watch, all scoped to their own channels. */
 const USER_TOPICS: ReadonlySet<string> = new Set<LiveTopic>([
 	"dashboard",
 	"channels",
+	"visitors",
+	"visitor",
+	"requests",
+	"request",
+	"blocked-ips",
 ]);
 
 export type Scoped =
