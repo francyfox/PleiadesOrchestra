@@ -1,0 +1,66 @@
+name: orchestra
+# Manual deploy of the VPS backend (alpha-orchestrator + admin-api) and the admin panel
+# (pleiades-panel.shalotts.site). Builds both images (`docker save`, CTranslate2 included: the
+# VPS can't compile it) and the panel's static build, then publishes them on a single rolling
+# prerelease (tag `orchestra`). ~/pleiades-orchestra/poll.py on the VPS loads them and restarts
+# the stack; nothing pushes to the server.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: orchestra-release
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      TURBO_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: oven-sh/setup-bun@v2.2.0
+        with:
+          # Same Bun as root package.json devEngines (the version that writes bun.lock).
+          bun-version: 1.4.3
+      - uses: docker/setup-buildx-action@v3
+
+      # Image names match ~/pleiades-orchestra/compose.yml on the VPS. The gha cache keeps the
+      # CTranslate2 `native` stage, so it is only rebuilt when native/ changes.
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/alpha-orchestrator/Dockerfile
+          tags: pleiades-orchestra-alpha-orchestrator:latest
+          load: true
+          cache-from: type=gha,scope=alpha-orchestrator
+          cache-to: type=gha,mode=max,scope=alpha-orchestrator
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/admin-api/Dockerfile
+          tags: pleiades-orchestra-admin-api:latest
+          load: true
+          cache-from: type=gha,scope=admin-api
+          cache-to: type=gha,mode=max,scope=admin-api
+      - run: docker save pleiades-orchestra-alpha-orchestrator:latest pleiades-orchestra-admin-api:latest | gzip > images.tar.gz
+
+      - run: bun install --frozen-lockfile
+      - run: bunx turbo run build --filter=admin
+        env:
+          # Browser Sentry DSN: public by design (shipped to every visitor).
+          VITE_SENTRY_DSN: https://1b3cd38e6690dc1c18560242c7683984@o450533.ingest.us.sentry.io/4512288711311360
+      - run: tar -czf panel.tar.gz -C apps/admin/build .
+
+      - name: Replace the rolling `orchestra` release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete orchestra --cleanup-tag --yes || true
+          gh release create orchestra images.tar.gz panel.tar.gz \
+            --target "$GITHUB_SHA" --prerelease --latest=false \
+            --title "orchestra (${GITHUB_SHA::7})" \
+            --notes "Built from $GITHUB_SHA. Deployed to the VPS (albedo / pleiades-panel.shalotts.site) by its poller."
