@@ -5,6 +5,7 @@
 		authErrorText,
 		useAuthForm,
 	} from "#lib/components/auth/auth-form.svelte.js";
+	import ResendMail from "#lib/components/auth/resend-mail.svelte";
 	import FormField from "#lib/components/form-field.svelte";
 	import { Button } from "#lib/components/ui/button/index.js";
 	import * as Card from "#lib/components/ui/card/index.js";
@@ -38,6 +39,10 @@
 			<FormField id="password" label={$content.fields.password.value} type="password" autocomplete="current-password" required />
 			{#if error}
 				<p class="text-sm text-destructive">{error}</p>
+			{/if}
+			{#if form.failure?.error === "email_not_verified"}
+				<!-- keyed: a new failed sign-in restarts the minute the server just started -->
+				{#key form.failure}<ResendMail email={form.email} />{/key}
 			{/if}
 			<Button type="submit" class="w-full" disabled={form.pending}>{$content.userLogin.submit.value}</Button>
 		</form>

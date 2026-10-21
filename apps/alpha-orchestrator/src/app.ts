@@ -17,12 +17,14 @@ import {
 } from "@repo/elysia-kit";
 import { Elysia } from "elysia";
 import { accessRoutes } from "./modules/access/access.ts";
+import { accountBillingRoutes } from "./modules/account-billing/account-billing.ts";
 import { ActiveRuns } from "./modules/active-runs/active-runs.ts";
 import type { AgentSettings } from "./modules/agent-settings/agent-settings.service.ts";
 import { agentSettingsRoutes } from "./modules/agent-settings/agent-settings.ts";
 import type { AgentSpec, FetchLike } from "./modules/agents/agents.service.ts";
 import { agentsRoutes } from "./modules/agents/agents.ts";
 import { authorizeRequest } from "./modules/auth/auth.service.ts";
+import type { BillingProducts } from "./modules/billing/billing.service.ts";
 import { billingRoutes } from "./modules/billing/billing.ts";
 import { blockedIpsRoutes } from "./modules/blocked-ips/blocked-ips.ts";
 import type { ChannelDirectory } from "./modules/channel-directory/channel-directory.ts";
@@ -32,6 +34,7 @@ import {
 } from "./modules/channels/channels.ts";
 import type { Db } from "./modules/database/database.ts";
 import { decisionsRoutes } from "./modules/decisions/decisions.ts";
+import { financeRoutes } from "./modules/finance/finance.ts";
 import { buildActions } from "./modules/goap/goap.service.ts";
 import { HOUR_MS } from "./modules/http/http.service.ts";
 import { identifyRoutes } from "./modules/identify/identify.ts";
@@ -107,7 +110,7 @@ export interface AppDeps {
 	/** OpenRouter model prices for the usage spend; unset = spend is `null`. */
 	prices?: PriceBook;
 	/** Polar webhook receiver; without it `POST /v1/billing/polar` does not exist (404). */
-	billing?: { webhookSecret: string };
+	billing?: { webhookSecret: string } & BillingProducts;
 	/** Prefix of a subscription's page in Polar's dashboard (`<it>/<id>`); unset = no link in the panel. */
 	polarDashboardUrl?: string;
 	/** Widget limits and settings; unset fields use `DEFAULT_WIDGET_OPTIONS`. */
@@ -271,7 +274,10 @@ export function createApp(deps: AppDeps) {
 					? billingRoutes({
 							db,
 							webhookSecret: deps.billing.webhookSecret,
+							products: deps.billing,
 							now,
+							onAccountChanged: (accountId) =>
+								directory.refreshStanding(accountId),
 							log: (message) => observability.logger.info({ message }),
 						})
 					: new Elysia(),
@@ -284,6 +290,7 @@ export function createApp(deps: AppDeps) {
 			.use(blockedIpsRoutes({ db, ipHashSalt: deps.ipHashSalt, now }))
 			.use(intentsRoutes({ db, memory: intentMemory, now }))
 			.use(usageRoutes({ db, now, prices: deps.prices }))
+			.use(financeRoutes({ db, now, prices: deps.prices }))
 			.use(statsRoutes({ db, now }))
 			.use(performanceRoutes({ db, now }))
 			.use(
@@ -303,6 +310,14 @@ export function createApp(deps: AppDeps) {
 				subscriptionsRoutes({
 					db,
 					now,
+					polarBaseUrl: deps.polarDashboardUrl,
+				}),
+			)
+			.use(
+				accountBillingRoutes({
+					db,
+					now,
+					prices: deps.prices,
 					polarBaseUrl: deps.polarDashboardUrl,
 				}),
 			)

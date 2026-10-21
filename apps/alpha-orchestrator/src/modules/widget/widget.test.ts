@@ -1673,3 +1673,42 @@ describe("widget tool-results: callId and tool must be the ones issued", () => {
 		expect(replay.at(-1)).toMatchObject({ type: "error" });
 	});
 });
+
+describe("a suspended channel (owner without plan or balance)", () => {
+	const body = { code: "channel_suspended" };
+	const own = (ctx: Ctx) => {
+		ctx.db.update(channels).set({ ownerId: "acc_1" }).run();
+		ctx.directory.invalidate();
+	};
+
+	test("answers 402 before any visitor is created or model is called", async () => {
+		const ctx = setup();
+		own(ctx);
+		const response = await ctx.app.handle(
+			widgetRequest("/v1/widget/visitors", {
+				publishableKey: ctx.publishableKey,
+			}),
+		);
+		expect(response.status).toBe(402);
+		expect(await response.json()).toEqual(body);
+		expect(ctx.db.select().from(visitorTokens).all()).toEqual([]);
+	});
+
+	test("a conversation in progress gets 402 on its next message", async () => {
+		const ctx = setup();
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+		own(ctx);
+		const response = await sendMessage(ctx, token, threadId);
+		expect(response.status).toBe(402);
+		expect(await response.json()).toEqual(body);
+		expect(ctx.calls).toEqual([]);
+	});
+
+	test("staff channels (no owner) are never suspended", async () => {
+		const ctx = setup();
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+		expect((await sendMessage(ctx, token, threadId)).status).toBe(200);
+	});
+});

@@ -2,6 +2,7 @@ import type { AdminsPage } from "../admins/admins.schema.ts";
 import type { Agent } from "../agents/agents.schema.ts";
 import type { BlockedIp } from "../blocked-ips/blocked-ips.schema.ts";
 import type { Channel } from "../channels/channels.schema.ts";
+import type { Finance } from "../finance/finance.schema.ts";
 import type { IntentsPage, IntentsQuery } from "../intents/intents.schema.ts";
 import type { McpSites } from "../mcp/mcp.schema.ts";
 import type { PerformanceReport } from "../performance/performance.schema.ts";
@@ -27,6 +28,7 @@ export interface PageParams {
 /** `GET /api/dashboard`. */
 export interface DashboardData {
 	stats: Stats;
+	finance?: Finance;
 	byDay: {
 		day: string;
 		inputTokens: number;

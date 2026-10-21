@@ -31,9 +31,9 @@ const authContent = {
 			}),
 			submit: t({ ru: "Войти", en: "Sign in", kk: "Кіру" }),
 			setup: t({
-				ru: "Администраторов ещё нет. Создайте первого на сервере: bun --cwd apps/admin-api run admin:create --email you@example.com",
-				en: "There are no administrators yet. Create the first one on the server: bun --cwd apps/admin-api run admin:create --email you@example.com",
-				kk: "Әзірге әкімшілер жоқ. Біріншісін серверде құрыңыз: bun --cwd apps/admin-api run admin:create --email you@example.com",
+				ru: "Администраторов ещё нет. Создайте первого на сервере: bun --cwd apps/cli start admin:create --email you@example.com",
+				en: "There are no administrators yet. Create the first one on the server: bun --cwd apps/cli start admin:create --email you@example.com",
+				kk: "Әзірге әкімшілер жоқ. Біріншісін серверде құрыңыз: bun --cwd apps/cli start admin:create --email you@example.com",
 			}),
 			customer: t({
 				ru: "Вы клиент? Войти по почте",
@@ -97,6 +97,18 @@ const authContent = {
 				ru: "Уже есть аккаунт? Войти",
 				en: "Have an account? Sign in",
 				kk: "Тіркелгіңіз бар ма? Кіру",
+			}),
+		},
+		resend: {
+			button: t({
+				ru: "Отправить письмо ещё раз",
+				en: "Send the email again",
+				kk: "Хатты қайта жіберу",
+			}),
+			wait: t({
+				ru: insert("Отправить ещё раз можно через {{seconds}} с"),
+				en: insert("You can send it again in {{seconds}} s"),
+				kk: insert("Қайта жіберуге {{seconds}} с кейін болады"),
 			}),
 		},
 		forgot: {
@@ -172,9 +184,9 @@ const authContent = {
 				kk: "Бұл тіркелгі бұғатталған",
 			}),
 			email_not_verified: t({
-				ru: "Почта не подтверждена. Мы отправили письмо ещё раз.",
-				en: "Your email isn't confirmed yet. We sent the email again.",
-				kk: "Пошта расталмаған. Хатты қайта жібердік.",
+				ru: "Почта не подтверждена. Откройте ссылку из письма или запросите новое.",
+				en: "Your email isn't confirmed yet. Open the link in the email, or ask for a new one.",
+				kk: "Пошта расталмаған. Хаттағы сілтемені ашыңыз немесе жаңасын сұраңыз.",
 			}),
 			invalid_email: t({
 				ru: "Проверьте адрес почты",

@@ -12,6 +12,7 @@ import {
 } from "../threads/threads.service.ts";
 import { createVisitor } from "../visitors/visitors.service.ts";
 import {
+	SuspendedResult,
 	ThreadMessagesResult,
 	VisitorResult,
 	WidgetThreadResult,
@@ -20,6 +21,7 @@ import {
 	ALLOWED_HEADERS,
 	corsHeaders,
 	emptyResponse,
+	suspendedResponse,
 	type WidgetAuth,
 	WidgetGuard,
 } from "./widget.service.ts";
@@ -131,6 +133,7 @@ export function widgetRoutes(deps: WidgetDeps) {
 					) {
 						return emptyResponse(403, origin);
 					}
+					if (directory.suspension(channel)) return suspendedResponse(origin);
 					const tooMany = guard.rejectIfTooManyNewVisitors(ipHash, origin);
 					if (tooMany) return tooMany;
 
@@ -150,13 +153,14 @@ export function widgetRoutes(deps: WidgetDeps) {
 					response: {
 						201: VisitorResult,
 						401: t.Void(),
+						402: SuspendedResult,
 						403: t.Void(),
 						429: t.Void(),
 					},
 					detail: {
 						summary: "Create an anonymous visitor",
 						description:
-							"Send the channel's publishable key in `X-Publishable-Key`; `Origin` must be in the channel's allowed origins. 401 unknown key, 403 wrong origin, disabled channel or blocked IP, 429 too many new visitors from this IP. Errors have empty bodies.",
+							"Send the channel's publishable key in `X-Publishable-Key`; `Origin` must be in the channel's allowed origins. 401 unknown key, 403 wrong origin, disabled channel or blocked IP, 429 too many new visitors from this IP. Errors have empty bodies except 402 `{ code: \"channel_suspended\" }` (the owner has no plan or balance).",
 					},
 				},
 			)
@@ -253,7 +257,7 @@ export function widgetRoutes(deps: WidgetDeps) {
 				{
 					detail: {
 						summary: "Send a message and stream the reply",
-						description: `Authenticated by \`X-Visitor-Token\`. Empty-body errors: 401, 403, 404 (foreign thread), 413 (text or customerContext over the limit), 429 (rate limit).\n\n${NDJSON_LINES}`,
+						description: `Authenticated by \`X-Visitor-Token\`. Empty-body errors: 401, 403, 404 (foreign thread), 413 (text or customerContext over the limit), 429 (rate limit). \`402 { code: "channel_suspended" }\` when the channel's owner has no plan or balance.\n\n${NDJSON_LINES}`,
 					},
 					body: t.Object({
 						threadId: t.String(),

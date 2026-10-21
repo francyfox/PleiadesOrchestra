@@ -100,9 +100,93 @@ describe("POST /api/user/register", () => {
 });
 
 describe("email verification and login", () => {
-	test("an unverified account can't sign in (403) until the link is opened", async () => {
-		const t = testApp();
+	test("signing up again with an unverified email sends a fresh link; a verified one gets nothing", async () => {
+		let clock = 1_000_000;
+		const t = testApp({ now: () => clock });
 		await post(t, "/api/user/register", { email: EMAIL, password: PASSWORD });
+		clock += 61_000;
+		const again = await post(t, "/api/user/register", {
+			email: EMAIL,
+			password: PASSWORD,
+		});
+		// Same answer as a new sign-up: whether the email is taken stays hidden.
+		expect(again.status).toBe(200);
+		expect(t.mailer.sent.map((mail) => mail.subject)).toEqual([
+			"Confirm your email",
+			"Confirm your email",
+		]);
+
+		const verify = await t.app.handle(
+			new Request(
+				(t.mailer.sent[1]?.link ?? "").replace(ORIGIN, "http://localhost"),
+			),
+		);
+		expect(verify.status).toBe(302);
+		clock += 61_000;
+		await post(t, "/api/user/register", { email: EMAIL, password: PASSWORD });
+		expect(t.mailer.sent).toHaveLength(2);
+	});
+
+	test("one verification mail a minute per address, whatever asks for it", async () => {
+		let clock = 1_000_000;
+		const t = testApp({ now: () => clock });
+		await post(t, "/api/user/register", { email: EMAIL, password: PASSWORD });
+		await post(t, "/api/user/resend", { email: EMAIL });
+		await post(t, "/api/user/login", { email: EMAIL, password: PASSWORD });
+		await post(t, "/api/user/register", { email: EMAIL, password: PASSWORD });
+		expect(t.mailer.sent).toHaveLength(1);
+
+		clock += 61_000;
+		const resend = await post(t, "/api/user/resend", { email: EMAIL });
+		expect(resend.status).toBe(200);
+		expect(await resend.json()).toEqual({ ok: true });
+		expect(t.mailer.sent).toHaveLength(2);
+	});
+
+	test("repeated sign-ins with an unverified email: always 403, one fresh link a minute", async () => {
+		let clock = 1_000_000;
+		const t = testApp({ now: () => clock });
+		await post(t, "/api/user/register", { email: EMAIL, password: PASSWORD });
+		clock += 61_000;
+		for (let i = 0; i < 3; i++) {
+			const response = await post(t, "/api/user/login", {
+				email: EMAIL,
+				password: PASSWORD,
+			});
+			expect(response.status).toBe(403);
+			expect(await response.json()).toEqual({ error: "email_not_verified" });
+		}
+		expect(t.mailer.sent).toHaveLength(2);
+
+		clock += 61_000;
+		await post(t, "/api/user/login", { email: EMAIL, password: PASSWORD });
+		expect(t.mailer.sent).toHaveLength(3);
+		// A wrong password never sends a link.
+		clock += 61_000;
+		await post(t, "/api/user/login", {
+			email: EMAIL,
+			password: "wrong-password-123",
+		});
+		expect(t.mailer.sent).toHaveLength(3);
+	});
+
+	test("resend answers the same for an unknown email and sends nothing", async () => {
+		const t = testApp();
+		await t.registerFirst("root@example.com");
+		await post(t, "/api/user/resend", { email: "root@example.com" });
+		const response = await post(t, "/api/user/resend", {
+			email: "nobody@example.com",
+		});
+		expect(response.status).toBe(200);
+		expect(await response.json()).toEqual({ ok: true });
+		expect(t.mailer.sent).toEqual([]);
+	});
+
+	test("an unverified account can't sign in (403) until the link is opened", async () => {
+		let clock = 1_000_000;
+		const t = testApp({ now: () => clock });
+		await post(t, "/api/user/register", { email: EMAIL, password: PASSWORD });
+		clock += 61_000;
 		const blocked = await post(t, "/api/user/login", {
 			email: EMAIL,
 			password: PASSWORD,

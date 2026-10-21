@@ -99,11 +99,12 @@ export function useHarness() {
 		upstream = [];
 		respond = () => json({});
 		const db = openAdminDb(":memory:", MIGRATIONS);
+		const mailer = createFakeMailer();
 		const auth = createAuth({
 			db,
 			secret: "test-secret-test-secret-test-secret",
 			baseURL: ORIGIN,
-			mailer: createFakeMailer(),
+			mailer,
 			panelUrl: ORIGIN,
 		});
 		authInstance = auth;
@@ -111,6 +112,7 @@ export function useHarness() {
 			observability: createObservability("admin-api", { LOG_LEVEL: "silent" }),
 			auth,
 			db,
+			mailer,
 			orchestrator: createOrchestratorClient({
 				baseUrl: "http://orchestrator",
 				apiKey: "admin-key",

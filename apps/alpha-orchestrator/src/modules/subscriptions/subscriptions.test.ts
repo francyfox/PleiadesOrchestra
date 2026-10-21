@@ -10,6 +10,7 @@ function seed(
 	db.insert(subscriptions)
 		.values({
 			id,
+			accountId: `acc_${id}`,
 			customerId: `cus_${id}`,
 			customerEmail: `${id}@shop.example`,
 			productName: "Cloud",
@@ -54,43 +55,14 @@ describe("admin subscriptions", () => {
 		expect(only.items.map((s: { id: string }) => s.id)).toEqual(["due"]);
 	});
 
-	test("a channel is linked and unlinked by hand; the list names it", async () => {
+	test("accountId filters the list", async () => {
 		const { app, db } = setupAdminApp();
 		seed(db, "s1");
-		const linked = await json(
-			await app.handle(
-				admin("/subscriptions/s1/channel", {
-					method: "PUT",
-					body: { channelId: "ch_cli" },
-				}),
-			),
+		seed(db, "s2");
+		const { items } = await json(
+			await app.handle(admin("/subscriptions?accountId=acc_s2")),
 		);
-		expect(linked).toMatchObject({
-			channelId: "ch_cli",
-			channelName: expect.any(String),
-		});
-		const unlinked = await json(
-			await app.handle(
-				admin("/subscriptions/s1/channel", {
-					method: "PUT",
-					body: { channelId: null },
-				}),
-			),
-		);
-		expect(unlinked.channelId).toBeNull();
-	});
-
-	test("unknown subscription or channel is refused", async () => {
-		const { app, db } = setupAdminApp();
-		seed(db, "s1");
-		const put = (id: string, channelId: string) =>
-			app.handle(
-				admin(`/subscriptions/${id}/channel`, {
-					method: "PUT",
-					body: { channelId },
-				}),
-			);
-		expect((await put("nope", "ch_cli")).status).toBe(404);
-		expect((await put("s1", "ch_nope")).status).toBe(400);
+		expect(items.map((s: { id: string }) => s.id)).toEqual(["s2"]);
+		expect(items[0].accountId).toBe("acc_s2");
 	});
 });

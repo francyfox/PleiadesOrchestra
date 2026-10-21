@@ -4,7 +4,7 @@ title: Accounts, roles and billing (plan)
 
 # Accounts, roles and billing (plan)
 
-Status: **decided, in progress** (phase 1 done; phase 2 backend done, admin UI follows). Decisions are recorded under "Open questions".
+Status: **decided; billing phase done** (accounts, ownership, Polar billing, standing, staff dashboard money). Decisions are recorded under "Open questions".
 
 ## Goal
 
@@ -31,7 +31,7 @@ One panel, two kinds of accounts:
 ## 1. Staff sign-in with a hashed token
 
 - An admin signs in with an **access token** (shown once when the admin is created or the token is rotated; stored as SHA-256, compared in constant time). No password for staff.
-- The first super admin: `bun --cwd apps/admin-api run admin:create` prints a token (replaces today's "first register is super").
+- The first super admin: `bun --cwd apps/cli start admin:create` prints a token (replaces today's "first register is super").
 - **Name and email** of an admin are edited in the panel (Admins page); email is contact data, not a login.
 - Rotate token: a button in the panel (own token, or the super for anyone), old token stops at once, sessions of that admin are dropped.
 - Sign-in page for staff: `/login` (token field). Users: `/user/login`.
@@ -60,6 +60,8 @@ Status: **backend done** (orchestrator `0020_channel_owner`, admin-api scoping, 
 - Copy-id button next to the name (house `CopyValue`).
 
 ## 4. Billing (Polar)
+
+Status: **stages 1 and 2 done** (stage 2: standing cached per account in `ChannelDirectory`, widget `402 channel_suspended`, `/v1/access` reason `suspended`, widget notice); stage 1: (orchestrator only: `0021_billing_accounts`, webhooks by `external_id`, orders + micro-USD credit ledger, debit per model call, `accountStanding`, `GET /v1/admin/accounts/:accountId/billing`). **Stage 3a done** (admin-api: `GET /api/billing[/standing]`, `POST /api/billing/checkout|portal`, staff `GET /api/accounts/:id/billing`, warning mails via `account_notices`, plan revoked on account deletion; see `admin-api.md` "Billing"). **Stage 3b done** (panel: `/billing` page, header alerts polling `GET /api/billing/standing` every 60 s, "paused" badge on a user's channels, staff billing dialog per user, FAQ entry). Next: staff dashboard money (4).
 
 Two products, both paid through Polar checkout:
 
@@ -136,7 +138,7 @@ Each group: tests first, `bun run test/lint/check-types` green, contract updates
 2. ~~Email transport~~ — **decided**: Gmail SMTP for `info@shalotts.site` (`smtp.gmail.com:465`, a Google app password) through `nodemailer` in admin-api; env `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`. Without `SMTP_PASS` the links are logged (dev). Gmail caps sending at ~500/day (Workspace ~2000); SPF of `shalotts.site` must include `_spf.google.com`.
 3. ~~Plan vs trenni~~ — **decided**: the plan gives access; model usage is debited from the TR balance at cost.
 4. ~~Balance 0 / plan expired~~ — **decided**: the user's channels are suspended, the widget stops, a header alert links to Billing (see "Suspension").
-5. **Account deletion** — default: channels and visitor data go at once; `llm_calls` and orders stay for the money numbers with the account id cut off.
+5. **Account deletion** — decided (default): the running Polar plan is revoked,  channels and visitor data go at once; `llm_calls` and orders stay for the money numbers with the account id cut off.
 6. ~~Users and models~~ — **decided**: staff-only Agents/Models; users use what staff picked.
 7. ~~cuid2~~ — **decided**: `@paralleldrive/cuid2`, length 6.
 8. **Net profit period** — default: the dashboard's existing period; USD only.

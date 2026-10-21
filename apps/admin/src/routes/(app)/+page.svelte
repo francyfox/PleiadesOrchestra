@@ -2,6 +2,7 @@
 	import { useIntlayer } from "svelte-intlayer";
 	import { isStaff } from "#lib/auth-redirect.js";
 	import UsageChart from "#lib/components/charts/usage-chart.svelte";
+	import FinanceSummary from "#lib/components/dashboard/finance-summary.svelte";
 	import UsageSummary from "#lib/components/dashboard/usage-summary.svelte";
 	import UsageTable from "#lib/components/dashboard/usage-table.svelte";
 	import * as Card from "#lib/components/ui/card/index.js";
@@ -21,6 +22,10 @@
 <h1 class="text-2xl font-semibold">{$content.title.value}</h1>
 
 <UsageSummary stats={dashboard.stats} {staff} />
+
+{#if dashboard.finance}
+	<FinanceSummary finance={dashboard.finance} />
+{/if}
 
 <Card.Root>
 	<Card.Header><Card.Title>{$content.usageByDay.value}</Card.Title></Card.Header>

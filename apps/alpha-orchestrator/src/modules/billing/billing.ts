@@ -3,6 +3,7 @@ import type { Db } from "../database/database.ts";
 import { PolarWebhookResult } from "./billing.schema.ts";
 import {
 	applyWebhook,
+	type BillingProducts,
 	InvalidPayloadError,
 	verifyWebhook,
 } from "./billing.service.ts";
@@ -11,15 +12,25 @@ export interface BillingDeps {
 	db: Db;
 	webhookSecret: string;
 	now: () => number;
-	/** Logged: payments (`order.paid`) and other events that change no row. */
+	products?: BillingProducts;
+	/** Logged: events that change no row (other types, no `external_id`). */
 	log?: (message: string) => void;
+	/** An applied webhook changed this account's plan or balance (the Polar customer's `external_id`). */
+	onAccountChanged?: (accountId: string) => void;
 }
 
 /**
  * Polar webhook receiver. Public (Polar has no bearer key): the signature is
  * the credential. `parse: "text"` keeps the raw body, which is what was signed.
  */
-export function billingRoutes({ db, webhookSecret, now, log }: BillingDeps) {
+export function billingRoutes({
+	db,
+	webhookSecret,
+	now,
+	products,
+	log,
+	onAccountChanged,
+}: BillingDeps) {
 	return new Elysia({ prefix: "/v1/billing", tags: ["Billing"] }).post(
 		"/polar",
 		({ body, request, status }) => {
@@ -44,7 +55,13 @@ export function billingRoutes({ db, webhookSecret, now, log }: BillingDeps) {
 				return status(400, "Invalid JSON");
 			}
 			try {
-				const outcome = applyWebhook(db, id, event, now());
+				const outcome = applyWebhook(db, id, event, now(), products);
+				if (outcome === "applied") {
+					const owner = (
+						event as { data?: { customer?: { external_id?: unknown } } }
+					).data?.customer?.external_id;
+					if (typeof owner === "string") onAccountChanged?.(owner);
+				}
 				if (outcome === "logged")
 					log?.(`polar webhook ${(event as { type?: string }).type}`);
 				return outcome === "duplicate"

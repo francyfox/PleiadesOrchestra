@@ -28,7 +28,7 @@ Registers a channel visitor (if not there yet), updates `lastSeenAt`/`displayNam
 { "allowed": true, "userId": "<our uuid>" }
 ```
 
-`channel` is the slug of an existing channel; an unknown slug → `404`. `displayName` is optional.
+`channel` is the slug of an existing channel; an unknown slug → `404`. `displayName` is optional. When the channel's owner has no plan in effect or no balance (see [Suspension](/docs/drafts/accounts-and-billing-plan/)), the answer is `{ "allowed": false, "reason": "suspended", "userId": "..." }`; transports stay silent, as for a blocked sender. `reason` is absent otherwise.
 
 ### `POST /v1/messages` (changed)
 
@@ -174,14 +174,23 @@ An unknown `:id` → `404`.
 
 With `ownerId` both the visitor counts and the usage cover only that owner's channels.
 
+### Finance (staff money)
+
+`GET /v1/admin/finance?from&to` (default the last 30 days) →
+
+```json
+{ "modelSpendUsd": 1.2, "revenueUsd": 10, "lossesUsd": 2.04, "netProfitUsd": 6.76, "ordersCount": 1, "skippedOrders": 0 }
+```
+
+`modelSpendUsd` = the `llm_calls` spend by model (as in Usage), `null` when prices could not be fetched (then `netProfitUsd` is `null` too). `revenueUsd` = orders created in the period with status `paid`, `partially_refunded` or `refunded`, USD only, minus `refunded_amount`; other currencies are not converted, only counted in `skippedOrders`. `lossesUsd` = `@repo/tax` `orderBreakdown(...).losses` summed **per order** (the fixed fee is per receipt, so a fully refunded order still costs it). `netProfitUsd = revenueUsd - lossesUsd - modelSpendUsd`. Not scoped by owner.
+
 ### Subscriptions (Polar, the "Cloud" plan)
 
 Filled by `POST /v1/billing/polar` (below). `status` is derived: `ended` (Polar `canceled`/`incomplete_expired`, or `ended_at` set), `past_due` (also `unpaid`, `incomplete`), `canceling` (active with `cancel_at_period_end`), `active` (also `trialing`).
 
 | Method | Path | Body | Response |
 |---|---|---|---|
-| GET | `/v1/admin/subscriptions?status=active\|canceling\|past_due\|ended` | — | `{ "items": [Subscription] }` — plans expiring within 7 days first, then by `currentPeriodEnd`, ended last |
-| PUT | `/v1/admin/subscriptions/:id/channel` | `{ "channelId": string \| null }` | `Subscription`; `404` unknown subscription, `400` unknown channel; `null` unlinks |
+| GET | `/v1/admin/subscriptions?status=active\|canceling\|past_due\|ended&accountId=` | — | `{ "items": [Subscription] }` — plans expiring within 7 days first, then by `currentPeriodEnd`, ended last |
 
 ```ts
 interface Subscription {
@@ -192,12 +201,31 @@ interface Subscription {
   startedAt: number | null;
   currentPeriodEnd: number | null;  // the expiry date
   endedAt: number | null;
-  channelId: string | null; channelName: string | null;  // set by hand
+  accountId: string;                // admin-api account = Polar customer external_id
   polarUrl: string | null;          // POLAR_DASHBOARD_URL + "/" + id; null when unset
 }
 ```
 
-Nothing is blocked when a plan ends: the panel shows it (Plans tab, a plan column on the channels page).
+The manual channel link is gone (migration `0021_billing_accounts`: `subscriptions.channel_id` became `account_id`; old rows were dropped and come back with the next Polar event). Enforcement of an ended plan is stage 2 of the billing phase.
+
+#### `GET /v1/admin/accounts/:accountId/billing`
+
+Everything the Billing page needs for one account (admin-api account id). An unknown account is an empty one, not a `404`.
+
+```ts
+interface AccountBilling {
+  standing:
+    | { ok: true; until: number | null }       // until: a canceled/past_due plan holds to this time (cache it); null = until a webhook says otherwise
+    | { ok: false; reason: "no_plan" | "plan_expired" | "no_balance"; since: number | null }; // since: when the plan ended
+  subscription: Subscription | null;           // the running plan, else the one whose paid period ended last
+  balanceUsd: number;                          // TR, 1 TR = 1 USD; negative = overdraft
+  orders: { id: string; kind: "plan" | "credits"; amount: number /* cents */; currency: string;
+            status: string; createdAt: number; refundedAmount: number /* cents */ }[]; // newest first
+  spend: { month: string /* YYYY-MM UTC */; tokens: number; costUsd: number | null }[]; // oldest first, over the account's channels; null = prices unknown
+}
+```
+
+The ledger (`credit_ledger`, append-only) is in **micro-USD** integers (1 TR = 1_000_000), so a call of $0.00004 is `40` and sums never drift. Rows: `top_up` (+, once per paid credits order), `refund` (-, the growth of the order's refunded amount), `usage` (-, one per priced model call of a channel with an owner, written when the usage recorder flushes; `ref` = `llm_calls.id`; a failed debit is logged and never fails the reply). Local models and staff channels write nothing.
 
 ### Performance
 
@@ -306,7 +334,7 @@ A channel is not only a "site": it is any entry point (telegram, discord, slack,
 interface Agent {
   id: string;                    // "beta-text" | "gamma-decision"
   name: string;
-  role: "text" | "decision" | "function-call"; // text (LLM) / typed decisions (Laya) / JSON arguments of a function call (delta)
+  role: "text" | "decision" | "function-call" | "translate"; // text (LLM) / typed decisions (Laya) / JSON arguments of a function call (delta) / the in-process Opus-MT translator (no endpoint; status = loaded)
   endpoint: string;              // base URL without login/password, query and fragment
   model: string | null;          // null for the decision agent
   status: "up" | "down";
@@ -340,7 +368,6 @@ Editors (Taplo, Tombi) validate `providers.toml` against `configs/providers.sche
 ```ts
 interface AgentModel {
   id: string;
-  editable: boolean;             // false for gamma-decision
   provider: string | null;       // null = the env server (nothing picked, or the pick is gone from the file)
   model: string;
   baseUrl: string | null;        // without login/password/query
@@ -354,7 +381,9 @@ interface ProviderModel {
   reasoningEffort?: "none" | "low" | "medium" | "high";
   extraBody: Record<string, unknown>; // extra request-body fields, e.g. { "provider": { "require_parameters": true } }
 }
-interface Provider { id: string; name: string; baseUrl: string; apiKey: string; models: ProviderModel[] }
+interface Provider { id: string; name: string; baseUrl: string; type: "openai-compat" | "systemone" | "ctranslate2"; apiKey: string; models: ProviderModel[] }
+// type: gamma-decision picks only "systemone" providers (local Laya, TypeSafe Jev; baseUrl without /v1), the other agents only "openai-compat"; a wrong pick is 400
+// type "ctranslate2": the in-process translator (no baseUrl, "" here; the model id is a Hugging Face repo); no agent can pick it, it is read at start (a change needs a restart)
 // apiKey: "••••" + last 4 characters, "$VAR" as written, "" = none — never the key
 ```
 
@@ -496,6 +525,7 @@ The thread's latest messages (≤ `MESSAGE_RETENTION_PER_USER`), oldest to newes
 | Status | When |
 |---|---|
 | `401` | no/unknown/expired token (a new token comes from `/v1/widget/visitors`) |
+| `402` | `{ "code": "channel_suspended" }`: the channel's owner has no plan or no balance (staff channels never). Sent by `/v1/widget/visitors` and every call with a visitor token, before any model call; the widget shows a neutral "Chat is unavailable right now" and locks the composer |
 | `403` (empty body) | `Origin` not in the token channel's `allowedOrigins`; user blocked; channel disabled; channel in `whitelist` mode and the visitor not whitelisted; IP blocked (`blocked_ips`, globally or for the channel, not expired). The model is not called |
 | `404` | the thread does not belong to this visitor (checked by owner, not by the id in the request) |
 | `413` | `text`/`customerContext` longer than `WIDGET_MAX_TEXT_CHARS`, or (on `/v1/widget/tools`) `webmcpTools` longer than `WIDGET_MAX_WEBMCP_TOOLS_CHARS` |
@@ -509,9 +539,9 @@ Public: no bearer key, the signature is the credential. The route exists only wh
 
 - **Verification** (Standard Webhooks): headers `webhook-id`, `webhook-timestamp` (seconds), `webhook-signature` (`v1,<base64>`, several separated by spaces). HMAC-SHA256 over `${id}.${timestamp}.${raw body}`, base64, compared in constant time; the body is read raw (`parse: "text"`), never re-serialized. A timestamp more than 5 minutes from now (either way) is rejected. Key: for a `whsec_` secret the base64 part is decoded (Standard Webhooks); the UTF-8 bytes of the whole secret string are tried as well, which is what Polar's older endpoints and user-provided secrets use (its SDK base64-encodes the string before handing it to the library). Both are accepted.
 - **Idempotent** by `webhook-id` (table `billing_webhooks`): a repeat is answered `200 {"ok":true,"duplicate":true}` and not applied. The id is recorded in the same transaction as the change, so a failed apply can be redelivered.
-- **Events**: every `subscription.*` event (`created`, `active`, `updated`, `cycled`, `canceled`, `uncanceled`, `revoked`, `past_due`) carries the whole subscription and overwrites its row in `subscriptions` (keyed by Polar id). Out of order: an event whose `data.modified_at` is older than the stored one is skipped (equal or newer wins); without `modified_at` the last delivery wins. `channel_id` is never touched by an event. `order.paid` and any other type are only logged.
-- Statuses: `200` ok / duplicate; `400` signed but not JSON or a `subscription.*` payload without `id`, `customer_id`, `status`; `401` missing or wrong signature or a stale timestamp.
-- Config: `POLAR_WEBHOOK_SECRET`; `POLAR_DASHBOARD_URL` (optional, the prefix of the subscription page in Polar for the panel's link).
+- **Events**: every `subscription.*` event (`created`, `active`, `updated`, `cycled`, `canceled`, `uncanceled`, `revoked`, `past_due`) carries the whole subscription and overwrites its row in `subscriptions` (keyed by Polar id) for the account `data.customer.external_id` (an event without it is only logged, answered `200`). Out of order: an event whose `data.modified_at` is older than the stored one is skipped (equal or newer wins); without `modified_at` the last delivery wins. `order.paid` / `order.refunded` upsert `orders` (id, account, product, `kind` credits when `product_id` is `POLAR_CREDITS_PRODUCT_ID` else plan, `net_amount` cents, currency, status, created, `refunded_amount`) and, for a credits order, add `+net_amount` to the ledger once (unique on the order id) and `-(growth of refunded_amount)` per refund; a late `order.paid` never shrinks a recorded refund. With `POLAR_PLAN_PRODUCT_ID` set, events of products other than the plan and credits are only logged. Any other type is only logged.
+- Statuses: `200` ok / duplicate; `400` signed but not JSON or a `subscription.*` payload without `id`, `customer_id`, `status`, or an `order.paid`/`order.refunded` one without `id`, `status`, integer `net_amount`; `401` missing or wrong signature or a stale timestamp.
+- Config: `POLAR_WEBHOOK_SECRET`; `POLAR_CREDITS_PRODUCT_ID`, `POLAR_PLAN_PRODUCT_ID`; `POLAR_DASHBOARD_URL` (optional, the prefix of the subscription page in Polar for the panel's link).
 
 ## `POST /v1/channels/:slug/identify` (server-to-server, the integrating site's backend)
 
@@ -563,7 +593,7 @@ The message intent classifier (`classifyMessageIntentDetailed`, only when the th
 
 - `POST /api/auth/token` `{ token }` returns `200 { ok: true }` and the session cookie. Wrong, malformed, rotated or customer tokens are all `401 { "error": "invalid_token" }`; a banned admin is `403 { "error": "banned" }`; repeated failures lock the client IP for the lockout window (`429 { "error": "too_many_attempts", "retryAfter" }`, `Retry-After`).
 - The token is 32 random bytes in base64url (43 characters), shown once on create / rotate. Only its SHA-256 hex is stored (`user.token_hash`), compared in constant time.
-- `bun --cwd apps/admin-api run admin:create --email you@example.com [--name X] [--level 0|100]` creates a staff account and prints its token. The first account is a super admin unless `--level` says otherwise; for an existing staff email it issues a new token (the way into an install that predates tokens).
+- `bun --cwd apps/cli start admin:create --email you@example.com [--name X] [--level 0|100]` creates a staff account and prints its token. The first account is a super admin unless `--level` says otherwise; for an existing staff email it issues a new token (the way into an install that predates tokens).
 - `GET /api/session` returns `{ setupRequired, admin: { id, name, email, level, isSuper } | null }`. `admin` is the signed-in account, staff or user; `setupRequired` is true while no staff account exists. `POST /api/auth/logout` ends the session. The old `POST /api/auth/login|register` and `POST /api/admins/:id/password` are gone.
 
 ### Admins (`/api/admins`, staff)
@@ -601,11 +631,30 @@ A user (level 200) sees and edits only channels with `ownerId = their account id
 | `GET /api/channels?page&pageSize&ownerId` | always `ownerId` = own id (the query value is ignored) | all; `ownerId` filters |
 | `POST /api/channels` `{ slug, name, accessMode?, allowedOrigins?, catalogLanguage?, ownerId? }` | owner = own id (body `ownerId` ignored) | `ownerId` optional (left out = staff-owned) |
 | `PATCH /api/channels/:id`, `POST /api/channels/:id/rotate-keys`, `GET\|PUT /api/channels/:id/persona`, `POST /api/channels/:id/persona/preview` | `404 { "error": "not_found" }` when the channel is not theirs (or does not exist; never 403, no probing), nothing reaches the orchestrator | any channel |
-| `GET /api/dashboard?ownerId` | numbers of own channels (stats, usage by day / visitor / channel / model) | everything; `ownerId` narrows |
+| `GET /api/dashboard?ownerId` | numbers of own channels (stats, usage by day / visitor / channel / model); never `finance` | everything; `ownerId` narrows. Without `ownerId` also `finance` (orchestrator Finance above, last 30 days); the `dashboard` live topic pushes the same body |
 
 `Channel` has `ownerId: string | null`. The embed snippet is built by the panel from the channel's `publishableKey`; there is no embed route in admin-api. Every other route (visitors, requests, mcp, agents, models, blocked IPs, intents, subscriptions, performance, system, admins, accounts) stays staff-only: a user gets `403 { "error": "forbidden" }` (a test walks the whole route table).
 
 **`/api/live` for a user.** The upgrade is open to any signed-in account. A user may subscribe only to `dashboard` and `channels`; any other topic answers `{ type: "error", id, code: "forbidden" }` (new `LiveErrorCode`, the socket stays open). For those two, the server sets `params.ownerId` to the session's account id, overwriting whatever the browser sent, so a user can never read another owner's data; the pushed `data` is the body of `GET /api/dashboard` / `GET /api/channels`. Staff may pass `ownerId` in the `dashboard` / `channels` params to filter.
+
+### Billing (`/api/billing`, users)
+
+All `{ account: true }` and **for users only**: staff have no billing, every route answers them `403 { "error": "forbidden" }`. The account id is always the session's. `AccountBilling` is the orchestrator's body (see `GET /v1/admin/accounts/:accountId/billing`).
+
+| Route | Response |
+|---|---|
+| `GET /api/billing` | `AccountBilling` |
+| `GET /api/billing/standing` | `{ ok, reason: "no_plan"\|"plan_expired"\|"no_balance"\|null, since, until, balanceUsd, warn }` for the header alerts. `ok: false` = channels paused (red alert); `warn` = balance < 1 TR (exactly 1 is fine) or a plan that holds to a set end (`until`) within 3 days (yellow alert). One orchestrator call, cached 5 s per account in memory |
+| `POST /api/billing/checkout` `{ kind: "plan"\|"credits", amountUsd? }` | `{ url }` of a Polar checkout (`external_customer_id` = user id, `customer_email`, `success_url` = `<panel>/billing?checkout=success`; `amountUsd` (whole USD, 1..10000) goes to Polar as `amount` cents for the credits product and only matters for a custom-price product) |
+| `POST /api/billing/portal` | `{ url }` of the Polar customer portal (`POST /v1/customer-sessions/`) |
+
+Errors: `503 billing_unavailable` without `POLAR_ACCESS_TOKEN` (or the product id of that `kind`); `502 billing_failed` when Polar refuses or is down; orchestrator failures as everywhere (`502`/`503` with `message`).
+
+Polar: plain `fetch` to `https://sandbox-api.polar.sh` (`POLAR_SERVER=sandbox`, default) or `https://api.polar.sh` (`production`) with `POLAR_ACCESS_TOKEN`; `POLAR_PLAN_PRODUCT_ID`, `POLAR_CREDITS_PRODUCT_ID` pick the product per `kind`.
+
+**Warning mails.** When `GET /api/billing/standing` finds `warn`, it mails the user (ru/en by `locale`; kinds `low-balance`, `plan-ending` of `@repo/mail-templates`, button to `<panel>/billing`) once per period. The claim is a row in admin-api's `account_notices` (`account_id`, `kind` `low_balance`\|`plan_ending`, `period`, `sent_at`; primary key on the first three; migration `0002_account_notices`; rows go with the account). Period = the plan's `until` for `plan_ending`, the UTC month for `low_balance`. No timer: it needs a panel open, which is where the header alert lives anyway.
+
+`GET /api/subscriptions` (staff) takes `?accountId=` too and each item has `accountId` and `accountEmail` (from the local `user` table, `null` when the account is gone); the `PUT /api/subscriptions/:id/channel` link route no longer exists.
 
 ### Staff: customers (`/api/accounts`)
 
@@ -614,10 +663,11 @@ The staff "Users" page. All routes `{ admin: true }`; an id that is not a custom
 | Route | Response |
 |---|---|
 | `GET /api/accounts?page&pageSize` | `{ items: [{ id, name, email, emailVerified, createdAt, lastActiveAt, banned, channelsCount }], total }`, oldest first; `lastActiveAt` epoch ms or `null`; `channelsCount` from the orchestrator's channel list (shortcut: one unpaged list grouped in memory) |
-| `DELETE /api/accounts/:id` | `{ id }`; channels first, then the account and sessions; `502`/`503` leaves the account untouched |
+| `GET /api/accounts/:id/billing` | the customer's `AccountBilling` (same body as `GET /api/billing` below) |
+| `DELETE /api/accounts/:id` | `{ id }`; a running Polar plan is revoked first, then the channels, then the account and sessions; `502` (`billing_failed`) / `502` / `503` leaves the account untouched |
 | `POST /api/accounts/:id/ban`, `POST /api/accounts/:id/unban` | `{ id }`; ban drops their sessions and refuses sign-in; their channels keep running |
 
-The inactivity job (`deleteInactiveUsers`, 180 days, daily) and both delete routes share `deleteAccount` in `accounts.service.ts`: the owner's channels are deleted in the orchestrator first (`X-Admin-Id` = the actor, `system:inactivity` for the job); if that call fails the account is kept, the error is logged and the next daily run retries.
+The inactivity job (`deleteInactiveUsers`, 180 days, daily) and both delete routes share `deleteAccount` in `accounts.service.ts`: a running Polar plan is revoked first (`DELETE /v1/subscriptions/{id}`, only with `POLAR_ACCESS_TOKEN`; the plan comes from the orchestrator's billing route), then the owner's channels are deleted in the orchestrator (orders and `llm_calls` stay there) (`X-Admin-Id` = the actor, `system:inactivity` for the job); if that call fails the account is kept, the error is logged and the next daily run retries.
 
 Mail goes through SMTP (`nodemailer`; `SMTP_HOST` `smtp.gmail.com`, `SMTP_PORT` `465`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` `info@shalotts.site`). Without `SMTP_PASS` the subject and link are only logged. Texts are ru or en by the account's `locale` (other or missing: en).
 

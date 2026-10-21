@@ -37,3 +37,13 @@ test("USD keeps sub-cent amounts visible", () => {
 	expect(en.usd(12)).toBe("$12.00");
 	expect(en.usd(null)).toBe("—");
 });
+
+test("trenni keep two decimals; an overdraft stays negative", () => {
+	const en = createFormat("en");
+	expect(en.tr(12.3401)).toBe("12.34 TR");
+	expect(en.tr(-1.5)).toBe("-1.50 TR");
+});
+
+test("order amounts are cents in the order's currency", () => {
+	expect(createFormat("en").money(1999, "usd")).toBe("$19.99");
+});

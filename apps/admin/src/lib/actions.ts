@@ -97,6 +97,7 @@ export const authActions = {
 				locale: LOCALES.find((locale) => locale === form.get("locale")),
 			}),
 		),
+	resend: (email: string) => submitted(api().user.resend.post({ email })),
 	forgot: (form: FormData) =>
 		submitted(api().user.forgot.post({ email: text(form, "email") })),
 	reset: (form: FormData) =>
@@ -160,6 +161,21 @@ export const meActions = {
 		submitted(
 			api().user.me.delete({ confirmEmail: text(form, "confirmEmail") }),
 		),
+};
+
+/** Polar checkout and customer portal; both answer `{ url }` to go to. */
+export const billingActions = {
+	checkout: (form: FormData) => {
+		const kind = form.get("kind") === "credits" ? "credits" : "plan";
+		return submitted(
+			api().billing.checkout.post({
+				kind,
+				amountUsd:
+					kind === "credits" ? Number(form.get("amountUsd")) : undefined,
+			}),
+		);
+	},
+	portal: () => submitted(api().billing.portal.post()),
 };
 
 /** Staff managing customer accounts (`/api/accounts`). */
@@ -375,15 +391,5 @@ export const providerActions = {
 	saveToml: (form: FormData) =>
 		submitted(
 			api()["providers-toml"].put({ toml: String(form.get("toml") ?? "") }),
-		),
-};
-
-export const subscriptionActions = {
-	/** An empty `channelId` unlinks. */
-	link: (form: FormData) =>
-		submitted(
-			api()
-				.subscriptions({ id: text(form, "id") })
-				.channel.put({ channelId: text(form, "channelId") || null }),
 		),
 };

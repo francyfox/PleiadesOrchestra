@@ -5,6 +5,7 @@ import { accountsRoutes } from "./modules/accounts/accounts.ts";
 import { createAdminDirectory } from "./modules/admins/admins.service.ts";
 import { adminsRoutes } from "./modules/admins/admins.ts";
 import { agentsRoutes } from "./modules/agents/agents.ts";
+import { billingRoutes } from "./modules/billing/billing.ts";
 import { blockedIpsRoutes } from "./modules/blocked-ips/blocked-ips.ts";
 import { channelsRoutes } from "./modules/channels/channels.ts";
 import { customersRoutes } from "./modules/customers/customers.ts";
@@ -91,6 +92,7 @@ export function createApp(input: AdminApiDeps) {
 				.use(blockedIpsRoutes(deps))
 				.use(intentsRoutes(deps))
 				.use(subscriptionsRoutes(deps))
+				.use(billingRoutes(deps))
 				.use(systemRoutes(deps))
 				.use(liveRoutes(deps))
 				.use(sentryTunnelRoutes(deps)),

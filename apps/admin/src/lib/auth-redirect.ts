@@ -13,10 +13,10 @@ const PUBLIC_PAGES = [
 ];
 
 /** The only pages a customer (level 200) may open; staff open everything else. */
-const USER_PAGES = ["/", "/channels", "/faq", "/settings"];
+const USER_PAGES = ["/", "/channels", "/faq", "/settings", "/billing"];
 
-/** Customer-only pages (own account settings): staff have no customer account to edit. */
-const USER_ONLY_PAGES = ["/settings"];
+/** Customer-only pages (own account settings, billing): staff have no customer account. */
+const USER_ONLY_PAGES = ["/settings", "/billing"];
 
 const under = (pathname: string, page: string) =>
 	page === "/"

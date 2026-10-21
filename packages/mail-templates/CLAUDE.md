@@ -2,7 +2,7 @@
 
 See root `CLAUDE.md` for monorepo commands and style.
 
-HTML + plain-text mails (`verify`, `reset`, `email-change`) for `admin-api`. Runtime API, no dependencies: `renderMail(kind, { locale, link, name? }) -> { subject, html, text }`. Texts (ru, en; any other locale gets en) live in `src/index.ts`. Every value is HTML-escaped; a non-http(s) link throws `TypeError`.
+HTML + plain-text mails (`verify`, `reset`, `email-change`, `low-balance`, `plan-ending`) for `admin-api`. Runtime API, no dependencies: `renderMail(kind, { locale, link, name? }) -> { subject, html, text }`. Texts (ru, en; any other locale gets en) live in `src/index.ts`. Every value is HTML-escaped; a non-http(s) link throws `TypeError`.
 
 Layout is MJML, compiled at dev time (`mjml` is a devDependency only): `templates/_head.mjml` (fonts; the letter is dark-only, colours inline from the admin dark theme) and `templates/_body.mjml` (wordmark, title, lead, button, raw link, footer) are shared by `templates/<kind>.mjml` through `mj-include`. All text is a `{{title|lead|button|link|footer}}` placeholder filled at runtime, so one template serves every locale.
 

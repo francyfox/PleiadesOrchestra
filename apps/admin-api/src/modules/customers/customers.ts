@@ -3,6 +3,8 @@ import { Elysia, t } from "elysia";
 import type { RouteDeps } from "../../app.types.ts";
 import { deleteAccount } from "../accounts/accounts.service.ts";
 import { requireAdmin } from "../auth/auth.service.ts";
+import { AccountBilling } from "../billing/billing.schema.ts";
+import { polarErrors } from "../billing/billing.service.ts";
 import { ApiError } from "../common/common.schema.ts";
 import { Upstream } from "../orchestrator/orchestrator.schema.ts";
 import { orchestratorErrors } from "../orchestrator/orchestrator.service.ts";
@@ -21,13 +23,14 @@ const Failures = {
 };
 
 /** Staff "Users" page: the customer accounts (level 200). Staff only; ids that are not customers are 404. */
-export function customersRoutes({ auth, db, orchestrator }: RouteDeps) {
+export function customersRoutes({ auth, db, orchestrator, polar }: RouteDeps) {
 	return new Elysia({
 		name: "admin-api.customers",
 		prefix: "/accounts",
 		tags: ["accounts"],
 	})
 		.use(orchestratorErrors)
+		.use(polarErrors)
 		.use(requireAdmin(auth))
 		.guard({ admin: true }, (app) =>
 			app
@@ -44,13 +47,35 @@ export function customersRoutes({ auth, db, orchestrator }: RouteDeps) {
 						},
 					},
 				)
+				.get(
+					"/:id/billing",
+					async ({ params, status }) => {
+						if (!(await findCustomer(db, params.id))) {
+							return status(404, { error: "not_found" });
+						}
+						return orchestrator.getAccountBilling(params.id);
+					},
+					{
+						params: Params,
+						response: { 200: AccountBilling, ...Failures },
+						detail: {
+							summary: "A customer's billing",
+							description:
+								"The same body as the customer's own `GET /api/billing`. Customers only (staff ids: 404).",
+						},
+					},
+				)
 				.delete(
 					"/:id",
 					async ({ params, admin, status }) => {
 						if (!(await findCustomer(db, params.id))) {
 							return status(404, { error: "not_found" });
 						}
-						await deleteAccount({ db, orchestrator }, params.id, admin.id);
+						await deleteAccount(
+							{ db, orchestrator, polar },
+							params.id,
+							admin.id,
+						);
 						return { id: params.id };
 					},
 					{
@@ -59,7 +84,7 @@ export function customersRoutes({ auth, db, orchestrator }: RouteDeps) {
 						detail: {
 							summary: "Delete a customer account",
 							description:
-								"Deletes the account, its sessions and its channels with their visitors' data. If the orchestrator cannot delete the channels the answer is 502/503 and the account is kept.",
+								"Deletes the account, its sessions and its channels with their visitors' data. A running Polar plan is cancelled first. If Polar (502 `billing_failed`) or the orchestrator cannot do its part the answer is 502/503 and the account is kept.",
 						},
 					},
 				)

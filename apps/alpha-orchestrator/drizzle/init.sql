@@ -180,23 +180,6 @@ CREATE TABLE `billing_webhooks` (
 	`type` text NOT NULL,
 	`received_at` integer NOT NULL
 );
-CREATE TABLE `subscriptions` (
-	`id` text PRIMARY KEY NOT NULL,
-	`customer_id` text NOT NULL,
-	`customer_email` text,
-	`product_id` text,
-	`product_name` text,
-	`status` text NOT NULL,
-	`started_at` integer,
-	`current_period_start` integer,
-	`current_period_end` integer,
-	`cancel_at_period_end` integer NOT NULL,
-	`ended_at` integer,
-	`polar_modified_at` integer,
-	`channel_id` text,
-	`updated_at` integer NOT NULL,
-	FOREIGN KEY (`channel_id`) REFERENCES `channels`(`id`) ON UPDATE no action ON DELETE set null
-);
 CREATE TABLE "agent_settings" (
 	`agent_id` text PRIMARY KEY NOT NULL,
 	`model` text,
@@ -211,6 +194,43 @@ CREATE INDEX `messages_visitor_idx` ON `messages` (`visitor_id`,`id`);
 CREATE INDEX `plan_runs_visitor_idx` ON `plan_runs` (`visitor_id`,`created_at`);
 CREATE UNIQUE INDEX `threads_channel_visitor_external_uq` ON `threads` (`channel_id`,`visitor_id`,`external_thread_id`);
 CREATE INDEX `channels_owner_idx` ON `channels` (`owner_id`);
+CREATE TABLE `credit_ledger` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`account_id` text NOT NULL,
+	`amount` integer NOT NULL,
+	`reason` text NOT NULL,
+	`ref` text NOT NULL,
+	`created_at` integer NOT NULL
+);
+CREATE INDEX `credit_ledger_account_idx` ON `credit_ledger` (`account_id`);
+CREATE UNIQUE INDEX `credit_ledger_top_up_once` ON `credit_ledger` (`ref`) WHERE "credit_ledger"."reason" = 'top_up';
+CREATE TABLE `orders` (
+	`id` text PRIMARY KEY NOT NULL,
+	`account_id` text NOT NULL,
+	`product_id` text,
+	`kind` text NOT NULL,
+	`amount` integer NOT NULL,
+	`currency` text NOT NULL,
+	`status` text NOT NULL,
+	`created_at` integer NOT NULL,
+	`refunded_amount` integer DEFAULT 0 NOT NULL
+);
+CREATE TABLE "subscriptions" (
+	`id` text PRIMARY KEY NOT NULL,
+	`customer_id` text NOT NULL,
+	`customer_email` text,
+	`product_id` text,
+	`product_name` text,
+	`status` text NOT NULL,
+	`started_at` integer,
+	`current_period_start` integer,
+	`current_period_end` integer,
+	`cancel_at_period_end` integer NOT NULL,
+	`ended_at` integer,
+	`polar_modified_at` integer,
+	`account_id` text NOT NULL,
+	`updated_at` integer NOT NULL
+);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'bdcb798cc72df040fe7ab496925f0e8c88132b905ac04cc8813006debb64f096', 1790244167287);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '18fd9f1b24512d674e4f6017463dec4418b32e8c7e134ed0e5b62399ac042d07', 1790244167777);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'ad4ae2f758bf5af433c6ae25117ef6dd2e3c7f7e7209d36c91ffb2a3f5bd24cf', 1790251963003);
@@ -232,6 +252,7 @@ INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '4
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '2e1e3951261ddfaf5a5f28f637b994da1edce286f601e0b390d9a8491453e9bc', 1792477534180);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'a57c22bfc049d04bfae0dbff53a41dee9259181e53636b895316dad53c2fcfca', 1792487367347);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '6a89ddd783b8155e61bd7d78539cb7e0f3fa1ad8148922445e7b64f3a7c45ed0', 1792490643768);
+INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'db4b68f84e07adb1fa993054f23e2f676a11bbc4d94047db081351b6f3c31c52', 1792559642677);
 INSERT INTO "channels" ("id", "slug", "kind", "name", "access_mode", "publishable_key", "secret_key_hash", "allowed_origins", "disabled_at", "created_at", "catalog_language", "owner_id") VALUES ('ch_telegram', 'telegram', 'telegram', 'Telegram', 'whitelist', NULL, NULL, '[]', NULL, CAST(strftime('%s', 'now') AS INTEGER) * 1000, 'en', NULL);
 INSERT INTO "channels" ("id", "slug", "kind", "name", "access_mode", "publishable_key", "secret_key_hash", "allowed_origins", "disabled_at", "created_at", "catalog_language", "owner_id") VALUES ('ch_cli', 'cli', 'cli', 'CLI', 'open', NULL, NULL, '[]', NULL, CAST(strftime('%s', 'now') AS INTEGER) * 1000, 'en', NULL);
 COMMIT;

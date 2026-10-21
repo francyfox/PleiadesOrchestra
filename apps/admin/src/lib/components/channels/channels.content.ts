@@ -34,6 +34,7 @@ const channelsContent = {
 			open: t({ ru: "Открытый", en: "Open", kk: "Ашық" }),
 		},
 		disabled: t({ ru: "отключён", en: "disabled", kk: "өшірілген" }),
+		paused: t({ ru: "приостановлен", en: "paused", kk: "тоқтатылған" }),
 		edit: t({ ru: "Изменить", en: "Edit", kk: "Өзгерту" }),
 		enable: t({ ru: "Включить", en: "Enable", kk: "Қосу" }),
 		disable: t({ ru: "Отключить", en: "Disable", kk: "Өшіру" }),

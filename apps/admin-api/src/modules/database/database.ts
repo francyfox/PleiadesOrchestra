@@ -1,7 +1,10 @@
 import { Database } from "bun:sqlite";
 import { type BunSQLiteDatabase, drizzle } from "drizzle-orm/bun-sqlite";
 import { migrate } from "drizzle-orm/bun-sqlite/migrator";
-import * as schema from "./database.auth-schema.ts";
+import * as authSchema from "./database.auth-schema.ts";
+import { accountNotices } from "./database.notices-schema.ts";
+
+const schema = { ...authSchema, accountNotices };
 
 export type AdminDb = BunSQLiteDatabase<typeof schema> & { $client: Database };
 

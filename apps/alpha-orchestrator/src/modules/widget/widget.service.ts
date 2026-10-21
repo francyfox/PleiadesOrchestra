@@ -29,6 +29,14 @@ export function emptyResponse(status: number, origin?: string): Response {
 	});
 }
 
+/** `402` when the channel's owner has no plan or no balance; the widget shows a neutral notice, never why. */
+export function suspendedResponse(origin: string): Response {
+	return Response.json(
+		{ code: "channel_suspended" },
+		{ status: 402, headers: corsHeaders(origin) },
+	);
+}
+
 /** Paths served by the widget routes — exempt from the transport-key check. */
 export function isPublicWidgetPath(pathname: string): boolean {
 	return (
@@ -154,6 +162,8 @@ export class WidgetGuard {
 		) {
 			return emptyResponse(403, origin);
 		}
+
+		if (directory.suspension(channel)) return suspendedResponse(origin);
 
 		const visitor = touchVisitor(db, found, now(), this.ttlMs, ip);
 		return { visitor, channel, origin, ipHash };

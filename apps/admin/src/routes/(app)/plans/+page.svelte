@@ -11,7 +11,6 @@
 
 	const content = useIntlayer("plans");
 	const plans = createQuery(() => queries.subscriptions(data.status));
-	const channelList = createQuery(() => queries.allChannels());
 </script>
 
 <div>
@@ -24,4 +23,4 @@
 	onChange={(status) => goto(status ? `?status=${status}` : "?", { replaceState: true })}
 />
 
-<PlansTable items={prefetched(plans).items} channels={prefetched(channelList).items} />
+<PlansTable items={prefetched(plans).items} />

@@ -25,6 +25,12 @@ export function accessRoutes({ db, directory, now }: AccessDeps) {
 				body.displayName,
 				now(),
 			);
+			if (directory.suspension(channel))
+				return {
+					allowed: false,
+					reason: "suspended" as const,
+					userId: visitor.id,
+				};
 			return { allowed: isAllowed(channel, visitor), userId: visitor.id };
 		},
 		{

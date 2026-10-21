@@ -10,6 +10,7 @@ import type {
 	ProvidersCheck,
 	ProvidersText,
 } from "../agents/agents.schema.ts";
+import type { AccountBilling } from "../billing/billing.schema.ts";
 import type {
 	BlockedIp,
 	CreateBlockedIpInput,
@@ -22,6 +23,7 @@ import type {
 	UpdateChannelInput,
 } from "../channels/channels.schema.ts";
 import type { PageQuery } from "../common/common.schema.ts";
+import type { Finance } from "../finance/finance.schema.ts";
 import type {
 	IntentExample,
 	IntentsPage,
@@ -157,6 +159,8 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 			ownerId?: string;
 		}) =>
 			request<{ rows: UsageRow[] }>("GET", `/v1/admin/usage${toSearch(query)}`),
+		finance: (query: { from?: number; to?: number } = {}) =>
+			request<Finance>("GET", `/v1/admin/finance${toSearch(query)}`),
 		stats: (ownerId?: string) =>
 			request<Stats>("GET", `/v1/admin/stats${toSearch({ ownerId })}`),
 		performance: (query: { from?: number; to?: number } = {}) =>
@@ -195,10 +199,17 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 		listAgents: () => request<{ items: Agent[] }>("GET", "/v1/admin/agents"),
 		getAgentSettings: (id: string) =>
 			request<AgentSettingsView>("GET", `/v1/admin/agents/${segment(id)}`),
-		listSubscriptions: (status?: PlanStatus) =>
+		listSubscriptions: (
+			query: { status?: PlanStatus; accountId?: string } = {},
+		) =>
 			request<{ items: Subscription[] }>(
 				"GET",
-				`/v1/admin/subscriptions${toSearch({ status })}`,
+				`/v1/admin/subscriptions${toSearch(query)}`,
+			),
+		getAccountBilling: (accountId: string) =>
+			request<AccountBilling>(
+				"GET",
+				`/v1/admin/accounts/${segment(accountId)}/billing`,
 			),
 		listProviders: () =>
 			request<{ items: Provider[] }>("GET", "/v1/admin/providers"),
@@ -296,12 +307,6 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 				}),
 			saveProvidersText: (toml: string) =>
 				write<ProvidersText>("PUT", "/v1/admin/providers-toml", { toml }),
-			linkSubscriptionChannel: (id: string, channelId: string | null) =>
-				write<Subscription>(
-					"PUT",
-					`/v1/admin/subscriptions/${segment(id)}/channel`,
-					{ channelId },
-				),
 			/** Removes every channel of an account with its data; `llm_calls` stay with the channel cleared. */
 			deleteOwnerChannels: (ownerId: string) =>
 				write<{ deleted: number }>(

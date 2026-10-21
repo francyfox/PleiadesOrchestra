@@ -5,6 +5,7 @@
  */
 export type {
 	AccessMode,
+	AccountBilling,
 	AdminMessage,
 	Agent,
 	AgentSettingsView,
@@ -44,6 +45,7 @@ export type {
 	RequestsPage,
 	RequestView,
 	SortOrder,
+	StandingView,
 	Stats,
 	Subscription,
 	TraceEvent,

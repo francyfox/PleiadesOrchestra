@@ -17,15 +17,19 @@ export async function fetchDashboard(
 	ownerId?: string,
 ): Promise<DashboardData> {
 	const from = now() - 30 * DAY_MS;
-	const [stats, byDay, byVisitor, byChannel, byModel] = await Promise.all([
-		orchestrator.stats(ownerId),
-		orchestrator.usage({ groupBy: "day", from, ownerId }),
-		orchestrator.usage({ groupBy: "visitor", from, ownerId }),
-		orchestrator.usage({ groupBy: "channel", from, ownerId }),
-		orchestrator.usage({ groupBy: "model", from, ownerId }),
-	]);
+	// Only the unscoped view (staff): a user's id, or a staff narrowing, always sets ownerId.
+	const [stats, byDay, byVisitor, byChannel, byModel, finance] =
+		await Promise.all([
+			orchestrator.stats(ownerId),
+			orchestrator.usage({ groupBy: "day", from, ownerId }),
+			orchestrator.usage({ groupBy: "visitor", from, ownerId }),
+			orchestrator.usage({ groupBy: "channel", from, ownerId }),
+			orchestrator.usage({ groupBy: "model", from, ownerId }),
+			ownerId === undefined ? orchestrator.finance({ from }) : undefined,
+		]);
 	return {
 		stats,
+		...(finance && { finance }),
 		byDay: byDay.rows.map((row) => ({
 			day: row.label,
 			inputTokens: row.inputTokens,

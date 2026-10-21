@@ -2,16 +2,20 @@
 	import BanIcon from "@lucide/svelte/icons/ban";
 	import ShieldCheckIcon from "@lucide/svelte/icons/shield-check";
 	import Trash2Icon from "@lucide/svelte/icons/trash-2";
+	import WalletIcon from "@lucide/svelte/icons/wallet";
 	import { useIntlayer } from "svelte-intlayer";
 	import { accountActions } from "#lib/actions.js";
 	import type { Customer } from "#lib/api-types.js";
 	import ConfirmDialog from "#lib/components/confirm-dialog.svelte";
 	import IconButton from "#lib/components/icon-button.svelte";
 	import { useUserEnhance } from "./use-user-enhance";
+	import UserBillingDialog from "./user-billing-dialog.svelte";
 
 	let { user }: { user: Customer } = $props();
 
 	const content = useIntlayer("users");
+	const billing = useIntlayer("billing");
+	let billingOpen = $state(false);
 	const ban = useUserEnhance(accountActions.ban);
 	const unban = useUserEnhance(accountActions.unban);
 
@@ -23,6 +27,8 @@
 </script>
 
 <div class="flex justify-end gap-1">
+	<IconButton icon={WalletIcon} tone="primary" label={$billing.staff.open.value} onclick={() => (billingOpen = true)} />
+	<UserBillingDialog {user} bind:open={billingOpen} />
 	{#if user.banned}
 		<form use:unban>
 			<input type="hidden" name="id" value={user.id} />

@@ -1,4 +1,3 @@
-import { LAYA_CALIBRATION, withCalibration } from "@repo/core";
 import { createObservability, serve } from "@repo/elysia-kit";
 import { createApp } from "./app.ts";
 import { agentSettings } from "./modules/agent-settings/agent-settings.instance.ts";
@@ -14,11 +13,14 @@ import { decisionAgent } from "./modules/decisions/decisions.instance.ts";
 import { withEnglishOnly } from "./modules/english-only/english-only.ts";
 import { functionCallAgent } from "./modules/function-calls/function-calls.instance.ts";
 import { historyStore } from "./modules/history/history.instance.ts";
-import { createPriceBook } from "./modules/prices/prices.service.ts";
+import { priceBook } from "./modules/prices/prices.instance.ts";
 import { assertRetentionCoversHistory } from "./modules/retention/retention.service.ts";
 import { startRetentionJobs } from "./modules/retention/retention.ts";
 import { runs } from "./modules/run-binding/run-binding.instance.ts";
-import { loadTranslator } from "./modules/translate/translate.instance.ts";
+import {
+	loadTranslator,
+	translatorModel,
+} from "./modules/translate/translate.instance.ts";
 import { usageRecorder } from "./modules/usage-recorder/usage-recorder.instance.ts";
 import { backfillVisitorNames } from "./modules/visitors/visitors.service.ts";
 import { SqliteWorldStateStore } from "./modules/world-state/world-state.ts";
@@ -61,13 +63,9 @@ const app = createApp({
 	agent,
 	// Laya reads English only: whatever still is not (a Russian site's tool
 	// descriptions and enum values) is translated here, or the call is refused.
-	// Probabilities are refitted on our own data (`bun run calibrate` in
-	// packages/core) closest to Laya, so every consumer, the intent confidence
-	// included, sees the calibrated ones.
-	decisionAgent: withEnglishOnly(
-		withCalibration(decisionAgent, LAYA_CALIBRATION),
-		{ translate },
-	),
+	// Laya's probabilities are refitted on our own data (`bun run calibrate` in
+	// packages/core) in decisions.instance, so every consumer sees calibrated ones.
+	decisionAgent: withEnglishOnly(decisionAgent, { translate }),
 	layaAutoApproveConfidence: config.LAYA_AUTO_APPROVE_CONFIDENCE,
 	productRequestAgent,
 	functionCallAgent,
@@ -83,9 +81,13 @@ const app = createApp({
 	worldStateStore: new SqliteWorldStateStore(db),
 	ipHashSalt: config.IP_HASH_SALT,
 	agentSettings,
-	prices: createPriceBook(),
+	prices: priceBook,
 	billing: config.POLAR_WEBHOOK_SECRET
-		? { webhookSecret: config.POLAR_WEBHOOK_SECRET }
+		? {
+				webhookSecret: config.POLAR_WEBHOOK_SECRET,
+				creditsProductId: config.POLAR_CREDITS_PRODUCT_ID,
+				planProductId: config.POLAR_PLAN_PRODUCT_ID,
+			}
 		: undefined,
 	polarDashboardUrl: config.POLAR_DASHBOARD_URL,
 	agents: {
@@ -108,6 +110,14 @@ const app = createApp({
 					role: "decision" as const,
 					baseUrl: laya.baseUrl,
 					model: laya.model,
+				},
+				{
+					id: "translate",
+					name: "Opus-MT translator",
+					role: "translate" as const,
+					baseUrl: "",
+					model: translatorModel().repo,
+					ready: translator !== undefined,
 				},
 				...(delta.baseUrl
 					? [

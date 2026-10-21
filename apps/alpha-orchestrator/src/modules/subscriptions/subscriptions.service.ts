@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { channels, subscriptions } from "../database/database.schema.ts";
+import { subscriptions } from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
 import { DAY_MS } from "../http/http.service.ts";
 
@@ -10,8 +10,6 @@ export const PLAN_STATUSES = [
 	"ended",
 ] as const;
 export type PlanStatus = (typeof PLAN_STATUSES)[number];
-
-export class UnknownChannelError extends Error {}
 
 type SubscriptionRow = typeof subscriptions.$inferSelect;
 
@@ -31,11 +29,7 @@ export function planStatus(row: SubscriptionRow): PlanStatus {
 	return "past_due";
 }
 
-function toView(
-	row: SubscriptionRow,
-	channelName: string | null,
-	polarBaseUrl: string | undefined,
-) {
+export function toView(row: SubscriptionRow, polarBaseUrl: string | undefined) {
 	return {
 		id: row.id,
 		customerEmail: row.customerEmail,
@@ -45,8 +39,7 @@ function toView(
 		startedAt: row.startedAt,
 		currentPeriodEnd: row.currentPeriodEnd,
 		endedAt: row.endedAt,
-		channelId: row.channelId,
-		channelName,
+		accountId: row.accountId,
 		polarUrl: polarBaseUrl
 			? `${polarBaseUrl.replace(/\/+$/, "")}/${row.id}`
 			: null,
@@ -56,15 +49,13 @@ function toView(
 /** Plans expiring within 7 days first, then by expiry, ended ones last. */
 export function listSubscriptions(
 	db: Db,
-	options: { status?: PlanStatus; now: number; polarBaseUrl?: string },
+	options: {
+		status?: PlanStatus;
+		accountId?: string;
+		now: number;
+		polarBaseUrl?: string;
+	},
 ) {
-	const names = new Map(
-		db
-			.select({ id: channels.id, name: channels.name })
-			.from(channels)
-			.all()
-			.map((c) => [c.id, c.name]),
-	);
 	const rank = (s: ReturnType<typeof toView>) =>
 		s.status === "ended"
 			? 2
@@ -74,14 +65,13 @@ export function listSubscriptions(
 	return db
 		.select()
 		.from(subscriptions)
-		.all()
-		.map((row) =>
-			toView(
-				row,
-				row.channelId ? (names.get(row.channelId) ?? null) : null,
-				options.polarBaseUrl,
-			),
+		.where(
+			options.accountId
+				? eq(subscriptions.accountId, options.accountId)
+				: undefined,
 		)
+		.all()
+		.map((row) => toView(row, options.polarBaseUrl))
 		.filter((s) => !options.status || s.status === options.status)
 		.sort(
 			(a, b) =>
@@ -89,28 +79,4 @@ export function listSubscriptions(
 				(a.currentPeriodEnd ?? Infinity) - (b.currentPeriodEnd ?? Infinity) ||
 				a.id.localeCompare(b.id),
 		);
-}
-
-/** Links (or, with `null`, unlinks) a channel; `undefined` = no such subscription. */
-export function linkChannel(
-	db: Db,
-	id: string,
-	channelId: string | null,
-	polarBaseUrl?: string,
-) {
-	const row = db
-		.select()
-		.from(subscriptions)
-		.where(eq(subscriptions.id, id))
-		.get();
-	if (!row) return undefined;
-	const channel = channelId
-		? db.select().from(channels).where(eq(channels.id, channelId)).get()
-		: undefined;
-	if (channelId && !channel) throw new UnknownChannelError(channelId);
-	db.update(subscriptions)
-		.set({ channelId })
-		.where(eq(subscriptions.id, id))
-		.run();
-	return toView({ ...row, channelId }, channel?.name ?? null, polarBaseUrl);
 }

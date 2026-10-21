@@ -246,3 +246,11 @@ Critical items are duplicated in the root `CLAUDE.md`. This file has the full li
 - **Deleting an account deletes its channels first.** `deleteAccount` calls the orchestrator and only then removes the row; on failure the account stays and the daily inactivity job retries. The orchestrator side needed no new foreign keys: channel children cascade and `llm_calls`/subscriptions were already `ON DELETE SET NULL`, so money totals survive.
 - **Elysia validates the body before the macro guard**, so a bad body on a staff route answers 422 to a user, 403 only for a valid one. No data leaks either way; the route-table walk test accepts 403 or 422 and requires that nearly all are 403. Do not rely on 403 for malformed bodies.
 - **Never `git stash` in a dirty tree with staged renames**: `stash pop` brought back the old-named files (`users.*`) and broke type-check; the index is not restored without `--index`.
+
+## Billing architecture (2026-10-21)
+
+- **Subscriptions belong to the account, not the channel.** `subscriptions.account_id`; a channel is served while its owner's account has a plan in effect and a balance above zero.
+- **The ledger is micro-USD integers** (`credit_ledger`, append-only, balance = SUM, 1 TR = 1_000_000): no float drift, top-up once per order, refunds as negative rows, usage debits keyed by `llm_calls.id`.
+- **Standing is cached in `ChannelDirectory`** and refreshed on the Polar webhook and after a usage flush that debited the account; expiry is computed on read, no timer. Staff channels never suspend.
+- **A suspended channel answers `402 channel_suspended`** (widget guard, visitors, `POST /v1/access`); nothing is deleted while suspended.
+- **Staff money** (`GET /v1/admin/finance`): `@repo/tax` is applied per order, not to the period total, because the fixed fee is per receipt. Unknown model prices give `null`, never 0; non-USD orders are counted, not converted. `finance` only reaches the dashboard when no `ownerId` is set, so a user's session can't get it.

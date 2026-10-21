@@ -51,14 +51,21 @@ describe("resolveAuthRedirect", () => {
 		}
 	});
 
-	test("staff cannot open the customer-only /settings", () => {
+	test("staff cannot open the customer-only /settings and /billing", () => {
 		for (const level of [0, 100]) {
 			expect(redirect("/settings", level)).toBe("/");
+			expect(redirect("/billing", level)).toBe("/");
 		}
 	});
 
-	test("a customer reaches Dashboard, Channels, FAQ and Settings only; staff pages go to /", () => {
-		for (const pathname of ["/", "/channels", "/faq", "/settings"]) {
+	test("a customer reaches Dashboard, Channels, FAQ, Settings and Billing only; staff pages go to /", () => {
+		for (const pathname of [
+			"/",
+			"/channels",
+			"/faq",
+			"/settings",
+			"/billing",
+		]) {
 			expect(redirect(pathname, 200)).toBeNull();
 		}
 		for (const pathname of [

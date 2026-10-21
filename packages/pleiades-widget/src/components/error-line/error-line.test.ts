@@ -40,6 +40,7 @@ describe("error line", () => {
 		const model = createErrorLineModel(s);
 		for (const error of [
 			"forbidden",
+			"suspended",
 			"rate_limited",
 			"too_long",
 			"network",

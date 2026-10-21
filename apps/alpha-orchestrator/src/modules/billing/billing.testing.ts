@@ -22,7 +22,11 @@ export function subscriptionData(overrides: Record<string, unknown> = {}) {
 		id: "sub_1",
 		status: "active",
 		customer_id: "cus_1",
-		customer: { id: "cus_1", email: "owner@shop.example" },
+		customer: {
+			id: "cus_1",
+			external_id: "acc_1",
+			email: "owner@shop.example",
+		},
 		product_id: "prod_1",
 		product: { id: "prod_1", name: "Cloud" },
 		started_at: "2026-10-01T00:00:00Z",
@@ -31,6 +35,21 @@ export function subscriptionData(overrides: Record<string, unknown> = {}) {
 		cancel_at_period_end: false,
 		ended_at: null,
 		modified_at: "2026-10-01T00:00:00Z",
+		...overrides,
+	};
+}
+
+/** An order as Polar's `order.paid` / `order.refunded` payload carries it (cents). */
+export function orderData(overrides: Record<string, unknown> = {}) {
+	return {
+		id: "ord_1",
+		status: "paid",
+		product_id: "prod_credits",
+		net_amount: 1000,
+		refunded_amount: 0,
+		currency: "usd",
+		created_at: "2026-10-02T00:00:00Z",
+		customer: { id: "cus_1", external_id: "acc_1" },
 		...overrides,
 	};
 }

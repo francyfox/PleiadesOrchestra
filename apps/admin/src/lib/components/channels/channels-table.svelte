@@ -24,14 +24,17 @@
 		staff,
 		plans,
 		owners,
+		paused,
 		onEdit,
 	}: {
 		channels: Channel[];
 		/** Staff see the plan and owner columns; a customer only has their own channels. */
 		staff: boolean;
-		/** All subscriptions; the one linked to a channel shows as its plan. */
+		/** All subscriptions; the owner's plan shows on each of their channels. */
 		plans: Subscription[];
 		owners: OwnerAccount[];
+		/** The signed-in customer's channels are paused (no plan or no balance). Staff view: always false, the owner's standing is not in the channel list. */
+		paused: boolean;
 		total: number;
 		page: number;
 		onEdit: (channel: Channel) => void;
@@ -41,8 +44,8 @@
 	const format = useFormat();
 
 	/** The channel's live plan with its expiry; an ended one only if there is nothing else. */
-	function planOf(channelId: string) {
-		const linked = plans.filter((plan) => plan.channelId === channelId);
+	function planOf(ownerId: string | null) {
+		const linked = plans.filter((plan) => plan.accountId === ownerId);
 		const plan = linked.find((p) => p.status !== "ended") ?? linked[0];
 		return plan
 			? $content.planUntil({
@@ -87,7 +90,7 @@
 						helper.display({
 							id: "plan",
 							header: () => $content.columns.plan.value,
-							cell: (ctx) => planOf(ctx.row.original.id),
+							cell: (ctx) => planOf(ctx.row.original.ownerId),
 						}),
 					]
 				: []),
@@ -114,6 +117,7 @@
 	<div class="font-medium">{channel.name}</div>
 	<div class="text-xs text-muted-foreground">{channel.slug}</div>
 	{#if channel.disabledAt}<Badge variant="destructive">{$content.disabled.value}</Badge>{/if}
+	{#if paused}<Badge variant="destructive">{$content.paused.value}</Badge>{/if}
 {/snippet}
 
 {#snippet ownerCell(ownerId: string | null)}

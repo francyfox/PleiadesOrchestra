@@ -1,4 +1,5 @@
 import { and, eq, sql } from "drizzle-orm";
+import type { PolarClient } from "../billing/billing.service.ts";
 import { DAY_MS } from "../common/common.service.ts";
 import { type AdminDb, schema } from "../database/database.ts";
 import type { OrchestratorClient } from "../orchestrator/orchestrator.ts";
@@ -16,20 +17,30 @@ export const needsTouch = (
 export interface AccountsContext {
 	db: AdminDb;
 	orchestrator: OrchestratorClient;
+	/** Unset (no Polar token): no plan can have been bought through us, so nothing to cancel. */
+	polar?: PolarClient;
 }
 
 /**
- * Deletes a level-200 account the safe way round: its channels (and their
- * visitors' data) go first, in the orchestrator. If that call fails it throws
- * and the account stays, so nothing is orphaned; the caller retries. Sessions
+ * Deletes a level-200 account the safe way round: a running Polar plan is
+ * revoked first (nobody keeps paying for a deleted account), then its channels
+ * (and their visitors' data) go, in the orchestrator. If either call fails it
+ * throws and the account stays, so nothing is orphaned; the caller retries.
+ * Orders and `llm_calls` stay in the orchestrator (money numbers). Sessions
  * and credentials cascade with the row. `actorId` is who asked (audit).
  * The one place to extend when a user owns more than an account row.
  */
 export async function deleteAccount(
-	{ db, orchestrator }: AccountsContext,
+	{ db, orchestrator, polar }: AccountsContext,
 	id: string,
 	actorId: string,
 ): Promise<void> {
+	if (polar) {
+		const { subscription } = await orchestrator.getAccountBilling(id);
+		if (subscription && subscription.status !== "ended") {
+			await polar.revoke(subscription.id);
+		}
+	}
 	await orchestrator.as(actorId).deleteOwnerChannels(id);
 	await db
 		.delete(schema.user)
@@ -39,7 +50,7 @@ export async function deleteAccount(
 /**
  * Deletes level-200 accounts unseen for `INACTIVE_DAYS`, each through
  * `deleteAccount`. Never-active accounts count from their creation. An account
- * whose channels cannot be deleted is kept and reported to `onError`; the next
+ * whose channels cannot be deleted (or plan revoked) is kept and reported to `onError`; the next
  * run retries it. Returns how many were deleted.
  */
 export async function deleteInactiveUsers(

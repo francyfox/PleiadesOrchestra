@@ -29,6 +29,7 @@ const appSidebarContent = {
 			}),
 			plans: t({ ru: "Тарифы", en: "Plans", kk: "Тарифтер" }),
 			channels: t({ ru: "Каналы", en: "Channels", kk: "Арналар" }),
+			billing: t({ ru: "Оплата", en: "Billing", kk: "Төлем" }),
 			blockedIps: t({
 				ru: "Блокировки IP",
 				en: "IP blocks",

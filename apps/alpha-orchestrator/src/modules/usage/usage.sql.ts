@@ -10,6 +10,11 @@ export function dayOf(column: string): string {
 	return `strftime('%Y-%m-%d', ${column} / 1000, 'unixepoch')`;
 }
 
+/** `YYYY-MM` (UTC) of a millisecond timestamp column. */
+export function monthOf(column: string): string {
+	return `strftime('%Y-%m', ${column} / 1000, 'unixepoch')`;
+}
+
 /**
  * Same totals as `USAGE_COLUMNS`, but only over calls matching `condition`.
  * Column names are prefixed (`<prefix>InputTokens`, …) so several windows can

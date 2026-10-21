@@ -30,3 +30,7 @@ export const ThreadMessage = t.Object({
 });
 
 export const ThreadMessagesResult = t.Object({ items: t.Array(ThreadMessage) });
+
+export const SuspendedResult = t.Object({
+	code: t.Literal("channel_suspended"),
+});

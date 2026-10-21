@@ -9,6 +9,7 @@ import { eq } from "drizzle-orm";
 import { createApp } from "../../app.ts";
 import { ChannelDirectory } from "../channel-directory/channel-directory.ts";
 import {
+	channels,
 	llmCalls,
 	messages,
 	planRuns,
@@ -94,6 +95,18 @@ function post(path: string, body: unknown, key = API_KEY): Request {
 }
 
 describe("POST /v1/access", () => {
+	test("denies with reason suspended when the channel's owner has no plan or balance", async () => {
+		const { app, db } = setup();
+		db.update(channels).set({ ownerId: "acc_1" }).run();
+		const response = await app.handle(
+			post("/v1/access", { channel: "telegram", externalUserId: "42" }),
+		);
+		expect(await response.json()).toMatchObject({
+			allowed: false,
+			reason: "suspended",
+		});
+	});
+
 	test("registers an unknown telegram visitor as pending (not allowed) and keeps their display name", async () => {
 		const { app, db } = setup();
 		const response = await app.handle(

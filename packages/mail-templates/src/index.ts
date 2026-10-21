@@ -50,6 +50,20 @@ const COPY: Record<MailLocale, Record<MailKind, Copy>> = {
 			footer:
 				"You got this email because an email change was requested on a Pleiades account. If it wasn't you, ignore it: nothing changes until the link is opened.",
 		},
+		"low-balance": {
+			title: "Your trenni are running low",
+			lead: "Your balance is below 1 TR. When it reaches zero your channels are paused until you top up.",
+			button: "Top up trenni",
+			footer:
+				"You got this email because the trenni balance of your Pleiades account is low. We send it once a month at most.",
+		},
+		"plan-ending": {
+			title: "Your plan ends soon",
+			lead: "Your plan ends within 3 days. After that your channels are paused until you renew it.",
+			button: "Open billing",
+			footer:
+				"You got this email because the plan of your Pleiades account is about to end. We send it once per billing period.",
+		},
 	},
 	ru: {
 		verify: {
@@ -72,6 +86,20 @@ const COPY: Record<MailLocale, Record<MailKind, Copy>> = {
 			button: "Подтвердить новый email",
 			footer:
 				"Вы получили это письмо, потому что в аккаунте Pleiades запросили смену email. Если это были не вы, проигнорируйте письмо: пока ссылка не открыта, ничего не изменится.",
+		},
+		"low-balance": {
+			title: "Трэнни заканчиваются",
+			lead: "На балансе меньше 1 TR. Когда он дойдёт до нуля, ваши каналы остановятся до пополнения.",
+			button: "Пополнить трэнни",
+			footer:
+				"Вы получили это письмо, потому что баланс трэнни вашего аккаунта Pleiades низкий. Мы шлём его не чаще раза в месяц.",
+		},
+		"plan-ending": {
+			title: "Тариф скоро закончится",
+			lead: "Тариф закончится в течение 3 дней. После этого каналы остановятся до продления.",
+			button: "Открыть оплату",
+			footer:
+				"Вы получили это письмо, потому что тариф вашего аккаунта Pleiades скоро закончится. Мы шлём его раз за период оплаты.",
 		},
 	},
 };

@@ -1,8 +1,14 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { sql } from "drizzle-orm";
-import { billingWebhooks, subscriptions } from "../database/database.schema.ts";
+import { eq, sql } from "drizzle-orm";
+import {
+	billingWebhooks,
+	creditLedger,
+	orders,
+	subscriptions,
+} from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
 import { MINUTE_MS } from "../http/http.service.ts";
+import { centsToMicro } from "../ledger/ledger.service.ts";
 
 /** Standard Webhooks: a timestamp further than this from now (either way) is a replay. */
 export const WEBHOOK_TOLERANCE_MS = 5 * MINUTE_MS;
@@ -67,6 +73,15 @@ const ms = (value: unknown) => {
 	return Number.isNaN(parsed) ? null : parsed;
 };
 
+const cents = (value: unknown) =>
+	typeof value === "number" && Number.isInteger(value) ? value : null;
+
+/** Polar products: the credits pack and the plan. With a plan id set, events of any other product are only logged; without, every non-credits product is a plan. */
+export interface BillingProducts {
+	creditsProductId?: string;
+	planProductId?: string;
+}
+
 export type WebhookOutcome = "applied" | "duplicate" | "logged";
 
 /**
@@ -74,13 +89,18 @@ export type WebhookOutcome = "applied" | "duplicate" | "logged";
  * `subscription.*` event carries the whole current subscription, so the row is
  * overwritten with it; an event whose `modified_at` is older than the stored one
  * (out-of-order delivery) is skipped, one without `modified_at` is last-write.
- * The channel link is never touched. `order.paid` and the rest are only logged.
+ * Accounts are Polar's `customer.external_id` (the admin-api user id); an event
+ * without one is only logged. `order.paid` / `order.refunded` upsert the order; a
+ * credits order tops the ledger up once (unique index) and a refund adds the
+ * growth of `refunded_amount` as a negative row, so replays and either arrival
+ * order give the same balance. Other types are only logged.
  */
 export function applyWebhook(
 	db: Db,
 	webhookId: string,
 	event: unknown,
 	now: number,
+	products: BillingProducts = {},
 ): WebhookOutcome {
 	const { type, data: rawData } = asObject(event);
 	const data = asObject(rawData);
@@ -91,6 +111,11 @@ export function applyWebhook(
 	const status = text(data.status);
 	if (isSubscription && !(id && customerId && status))
 		throw new InvalidPayloadError(`${type}: id, customer_id, status required`);
+	const isOrder = type === "order.paid" || type === "order.refunded";
+	const amount = cents(data.net_amount);
+	if (isOrder && !(id && status && amount !== null))
+		throw new InvalidPayloadError(`${type}: id, status, net_amount required`);
+	const accountId = text(asObject(data.customer).external_id);
 
 	return db.transaction((tx) => {
 		const fresh = tx
@@ -104,11 +129,25 @@ export function applyWebhook(
 			.returning({ id: billingWebhooks.id })
 			.all();
 		if (fresh.length === 0) return "duplicate";
-		if (!isSubscription || !id || !customerId || !status) return "logged";
+		if (!accountId || !id || !status) return "logged";
+		const productId = text(data.product_id);
+		const { creditsProductId, planProductId } = products;
+		if (
+			planProductId &&
+			productId !== planProductId &&
+			productId !== creditsProductId
+		)
+			return "logged";
+		if (isOrder && amount !== null) {
+			applyOrder(tx, { id, status, amount, accountId, data, now, products });
+			return "applied";
+		}
+		if (!isSubscription || !customerId) return "logged";
 
 		const customer = asObject(data.customer);
 		const product = asObject(data.product);
 		const values = {
+			accountId,
 			customerId,
 			customerEmail: text(customer.email),
 			productId: text(data.product_id),
@@ -132,4 +171,64 @@ export function applyWebhook(
 			.run();
 		return "applied";
 	});
+}
+
+type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
+
+function applyOrder(
+	tx: Tx,
+	o: {
+		id: string;
+		status: string;
+		amount: number;
+		accountId: string;
+		data: Json;
+		now: number;
+		products: BillingProducts;
+	},
+) {
+	const productId = text(o.data.product_id);
+	const kind: "plan" | "credits" =
+		productId === o.products.creditsProductId ? "credits" : "plan";
+	const before = tx.select().from(orders).where(eq(orders.id, o.id)).get();
+	const sent = cents(o.data.refunded_amount) ?? 0;
+	// A late `order.paid` carries the pre-refund state: the refund never shrinks.
+	const stale = before !== undefined && sent < before.refundedAmount;
+	const refunded = Math.max(sent, before?.refundedAmount ?? 0);
+	const values = {
+		accountId: o.accountId,
+		productId,
+		kind,
+		amount: o.amount,
+		currency: text(o.data.currency) ?? "usd",
+		status: stale ? before.status : o.status,
+		createdAt: ms(o.data.created_at) ?? before?.createdAt ?? o.now,
+		refundedAmount: refunded,
+	};
+	tx.insert(orders)
+		.values({ id: o.id, ...values })
+		.onConflictDoUpdate({ target: orders.id, set: values })
+		.run();
+	if (kind !== "credits") return;
+	tx.insert(creditLedger)
+		.values({
+			accountId: o.accountId,
+			amount: centsToMicro(o.amount),
+			reason: "top_up",
+			ref: o.id,
+			createdAt: o.now,
+		})
+		.onConflictDoNothing()
+		.run();
+	const delta = refunded - (before?.refundedAmount ?? 0);
+	if (delta > 0)
+		tx.insert(creditLedger)
+			.values({
+				accountId: o.accountId,
+				amount: -centsToMicro(delta),
+				reason: "refund",
+				ref: o.id,
+				createdAt: o.now,
+			})
+			.run();
 }

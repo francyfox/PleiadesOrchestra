@@ -60,6 +60,35 @@ const dashboardContent = {
 			en: "Prices are OpenRouter's today, applied to all tokens of the period; local models are free. No prices — a dash.",
 			kk: "Баға — OpenRouter-дің бүгінгі тарифі, кезеңнің барлық токендеріне қолданылған; жергілікті модельдер тегін. Баға жоқ — сызықша.",
 		}),
+		finance: {
+			modelSpend: t({
+				ru: "Расход моделей",
+				en: "Model spend",
+				kk: "Модель шығыны",
+			}),
+			revenue: t({ ru: "Выручка", en: "Revenue", kk: "Түсім" }),
+			losses: t({
+				ru: "Потери (комиссии и налог)",
+				en: "Losses (fees and tax)",
+				kk: "Шығындар (комиссия және салық)",
+			}),
+			netProfit: t({
+				ru: "Чистая прибыль",
+				en: "Net profit",
+				kk: "Таза пайда",
+			}),
+			note: t({
+				ru: insert(
+					"30 дней, заказов: {{orders}}, только USD. Нет цен моделей — прочерк.",
+				),
+				en: insert(
+					"30 days, {{orders}} orders, USD only. No model prices — a dash.",
+				),
+				kk: insert(
+					"30 күн, тапсырыс: {{orders}}, тек USD. Модель бағасы жоқ — сызықша.",
+				),
+			}),
+		},
 		columns: {
 			model: t({ ru: "Модель", en: "Model", kk: "Модель" }),
 			spend: t({ ru: "Расход", en: "Spend", kk: "Шығын" }),

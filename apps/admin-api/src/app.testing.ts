@@ -77,12 +77,14 @@ export function testApp(overrides: Partial<AdminApiDeps> = {}) {
 		baseURL: ORIGIN,
 		mailer,
 		panelUrl: ORIGIN,
+		now: overrides.now,
 	});
 	const app = createApp({
 		observability: createObservability("admin-api", { LOG_LEVEL: "silent" }),
 		auth,
 		db,
 		orchestrator,
+		mailer,
 		trustedOrigins: [ORIGIN],
 		systemSnapshot: async () => SNAPSHOT,
 		...overrides,

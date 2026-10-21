@@ -5,6 +5,7 @@ import { createApp } from "./app.ts";
 import { deleteInactiveUsers } from "./modules/accounts/accounts.service.ts";
 import { runAdminCreate } from "./modules/admins/admins-cli.ts";
 import { createAuth } from "./modules/auth/auth.ts";
+import { createPolarClient } from "./modules/billing/billing.service.ts";
 import { DAY_MS } from "./modules/common/common.service.ts";
 import { config } from "./modules/config/config.service.ts";
 import { openAdminDb } from "./modules/database/database.ts";
@@ -31,6 +32,28 @@ const orchestrator = createOrchestratorClient({
 	apiKey: config.ADMIN_API_KEY,
 });
 
+const mailer = createMailer({
+	host: config.SMTP_HOST,
+	port: config.SMTP_PORT,
+	user: config.SMTP_USER,
+	pass: config.SMTP_PASS,
+	from: config.SMTP_FROM,
+	log: (line) => observability.logger.info(line),
+	onError: (error) => {
+		observability.logger.error(error.message);
+		observability.monitoring.capture(error, { feature: "mail" });
+	},
+});
+
+const polar = config.POLAR_ACCESS_TOKEN
+	? createPolarClient({
+			token: config.POLAR_ACCESS_TOKEN,
+			server: config.POLAR_SERVER,
+			planProductId: config.POLAR_PLAN_PRODUCT_ID,
+			creditsProductId: config.POLAR_CREDITS_PRODUCT_ID,
+		})
+	: undefined;
+
 const app = createApp({
 	panelUrl,
 	observability,
@@ -41,20 +64,11 @@ const app = createApp({
 		baseURL: config.BETTER_AUTH_URL,
 		trustedOrigins: config.ADMIN_TRUSTED_ORIGINS,
 		panelUrl,
-		mailer: createMailer({
-			host: config.SMTP_HOST,
-			port: config.SMTP_PORT,
-			user: config.SMTP_USER,
-			pass: config.SMTP_PASS,
-			from: config.SMTP_FROM,
-			log: (line) => observability.logger.info(line),
-			onError: (error) => {
-				observability.logger.error(error.message);
-				observability.monitoring.capture(error, { feature: "mail" });
-			},
-		}),
+		mailer,
 	}),
 	orchestrator,
+	mailer,
+	polar,
 	trustedOrigins: config.ADMIN_TRUSTED_ORIGINS,
 	sentryTunnel: config.SENTRY_TUNNEL_DSN
 		? { dsn: config.SENTRY_TUNNEL_DSN }
@@ -77,9 +91,10 @@ const cleanInactive = () =>
 		{
 			db,
 			orchestrator,
+			polar,
 			onError: (id, error) =>
 				observability.logger.error(
-					`inactive user ${id} kept, channels not deleted: ${error}`,
+					`inactive user ${id} kept, not deleted: ${error}`,
 				),
 		},
 		Date.now(),

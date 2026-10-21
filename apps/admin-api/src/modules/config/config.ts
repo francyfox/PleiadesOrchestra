@@ -38,6 +38,12 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			SMTP_USER: z.string().optional(),
 			SMTP_PASS: z.string().optional(),
 			SMTP_FROM: z.string().min(1).default("info@shalotts.site"),
+			// Polar (billing): checkout and customer portal. Without a token they answer 503
+			// `billing_unavailable`. Product ids are the same ones alpha-orchestrator's webhook knows.
+			POLAR_SERVER: z.enum(["sandbox", "production"]).default("sandbox"),
+			POLAR_ACCESS_TOKEN: z.string().min(1).optional(),
+			POLAR_PLAN_PRODUCT_ID: z.string().min(1).optional(),
+			POLAR_CREDITS_PRODUCT_ID: z.string().min(1).optional(),
 			// The admin panel's own Sentry DSN (VITE_SENTRY_DSN there): /api/monitoring/tunnel
 			// forwards only its envelopes. Unset = no tunnel.
 			SENTRY_TUNNEL_DSN: z.url().optional(),

@@ -20,6 +20,10 @@ export type {
 	ProviderModel,
 } from "./modules/agents/agents.schema.ts";
 export type {
+	AccountBilling,
+	StandingView,
+} from "./modules/billing/billing.schema.ts";
+export type {
 	BlockedIp,
 	CreateBlockedIpInput,
 } from "./modules/blocked-ips/blocked-ips.schema.ts";

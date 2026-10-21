@@ -63,6 +63,15 @@ CREATE TABLE `verification` (
 	`updated_at` integer NOT NULL
 );
 CREATE INDEX `verification_identifier_idx` ON `verification` (`identifier`);
+CREATE TABLE `account_notices` (
+	`account_id` text NOT NULL,
+	`kind` text NOT NULL,
+	`period` text NOT NULL,
+	`sent_at` integer NOT NULL,
+	PRIMARY KEY(`account_id`, `kind`, `period`),
+	FOREIGN KEY (`account_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
+);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'bd34583cbc4715aeffe1812674c8c5a2db0410527eb539ff8ea64694bf6cda06', 1790244509625);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '462cdeb893cc79ca966d6c0ec4fa9e4f6ccb81b009d5c056a84970466ccad430', 1792487364567);
+INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '138a74cef7287b41d26cc6b1994a86cc8bca6f2769cf3db45f374ab2a9394594', 1792560211815);
 COMMIT;

@@ -46,9 +46,11 @@ describe("composer", () => {
 		}
 		model.render(state({ connection: "offline", error: "network" }));
 		expect(model.sendDisabled).toBe(true);
-		model.render(state({ error: "forbidden" }));
-		expect(model.sendDisabled).toBe(true);
-		expect(model.inputDisabled).toBe(true);
+		for (const error of ["forbidden", "suspended"] as const) {
+			model.render(state({ error }));
+			expect(model.sendDisabled).toBe(true);
+			expect(model.inputDisabled).toBe(true);
+		}
 	});
 
 	test("sending needs text; whitespace alone is not text", () => {

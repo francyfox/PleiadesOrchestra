@@ -39,8 +39,21 @@ export function createFormat(locale: string) {
 		maximumFractionDigits: 4,
 	});
 
+	const tr = new Intl.NumberFormat(locale, {
+		minimumFractionDigits: 2,
+		maximumFractionDigits: 2,
+	});
+	/** Order amounts arrive in cents with the currency code of the order. */
+	const money = (cents: number, currency: string) =>
+		new Intl.NumberFormat(locale, { style: "currency", currency }).format(
+			cents / 100,
+		);
+
 	return {
 		locale,
+		/** Trenni balance: "12.34 TR" (1 TR = 1 USD); negative = overdraft. */
+		tr: (value: number) => `${tr.format(value)} TR`,
+		money,
 		number: (value: number | null | undefined, missing = "—") =>
 			value === null || value === undefined ? missing : integer.format(value),
 		date: (ms: number | null | undefined) => (ms ? dateTime.format(ms) : "—"),

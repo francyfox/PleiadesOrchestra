@@ -22,3 +22,22 @@ export function isEmailChangeToken(token: string): boolean {
 		return false;
 	}
 }
+
+/** How often one address may get a verification or reset mail. */
+export const MAIL_COOLDOWN_MS = 60_000;
+
+/**
+ * `true` (and remembers the send) when `key` got no mail in the last `ms`.
+ * shortcut: in memory, per process — a restart resets it; move to the DB if admin-api ever runs replicated.
+ */
+export function createMailCooldown(ms: number, now: () => number) {
+	const sentAt = new Map<string, number>();
+	return (key: string) => {
+		const at = now();
+		const last = sentAt.get(key);
+		if (last !== undefined && at - last < ms) return false;
+		for (const [old, time] of sentAt) if (at - time >= ms) sentAt.delete(old);
+		sentAt.set(key, at);
+		return true;
+	};
+}

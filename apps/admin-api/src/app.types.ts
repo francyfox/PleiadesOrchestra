@@ -1,6 +1,7 @@
 import type { ClientIpSource, Observability } from "@repo/elysia-kit";
 import type { AdminDirectory } from "./modules/admins/admins.service.ts";
 import type { Auth } from "./modules/auth/auth.ts";
+import type { PolarClient } from "./modules/billing/billing.service.ts";
 import type { AdminDb } from "./modules/database/database.ts";
 import type { LiveTopic } from "./modules/live/live.types.ts";
 import type { LiveHub } from "./modules/live-hub/live-hub.ts";
@@ -8,6 +9,7 @@ import type {
 	LoginLimits,
 	LoginThrottle,
 } from "./modules/login-throttle/login-throttle.service.ts";
+import type { Mailer } from "./modules/mail/mail.types.ts";
 import type { OrchestratorClient } from "./modules/orchestrator/orchestrator.ts";
 import type { SystemSnapshot } from "./modules/system/system.schema.ts";
 import type { SystemFeed } from "./modules/system-feed/system-feed.ts";
@@ -17,6 +19,10 @@ export interface AdminApiDeps {
 	auth: Auth;
 	db: AdminDb;
 	orchestrator: OrchestratorClient;
+	/** Sends the billing warning mails (the auth mails go through the same one). */
+	mailer: Mailer;
+	/** Polar REST client; unset = checkout and portal answer 503 `billing_unavailable`, deleting an account cancels nothing. */
+	polar?: PolarClient;
 	/** Origins the panel is served from; other origins can't make state-changing requests. */
 	trustedOrigins: string[];
 	/** Origin the panel is opened at; links in mails and redirects use it (default: the first trusted origin). */

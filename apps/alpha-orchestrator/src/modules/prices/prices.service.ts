@@ -45,6 +45,8 @@ export function createPriceBook({
 	let prices: Prices | null = null;
 	let retryAt = 0;
 	return {
+		/** Last fetched prices without fetching; `null` until the first fetch succeeded. */
+		peek: (): Prices | null => prices,
 		async get(): Promise<Prices | null> {
 			if (now() < retryAt) return prices;
 			try {

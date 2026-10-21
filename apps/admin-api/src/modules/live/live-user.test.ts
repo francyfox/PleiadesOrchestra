@@ -66,6 +66,7 @@ describe("/api/live for a user", () => {
 				.sort(),
 		).toEqual(["c", "d"]);
 		expect(calls.length).toBeGreaterThan(0);
+		expect(calls.some((c) => c.path.includes("/finance"))).toBe(false);
 		for (const call of calls) {
 			expect(call.path).toContain(`ownerId=${annId}`);
 			expect(call.path).not.toContain("someone-else");

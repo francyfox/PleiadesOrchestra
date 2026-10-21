@@ -27,6 +27,11 @@
 		enabled: data.staff,
 	}));
 
+	const standing = createQuery(() => ({
+		...queries.standing(),
+		enabled: !data.staff,
+	}));
+
 	const content = useIntlayer("channels");
 	let editing = $state<Channel | null>(null);
 
@@ -52,6 +57,7 @@
 	staff={data.staff}
 	plans={subscriptions.data?.items ?? []}
 	owners={accounts.data?.items ?? []}
+	paused={standing.data?.ok === false}
 	onEdit={(channel) => (editing = channel)}
 />
 

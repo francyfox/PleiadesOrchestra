@@ -6,6 +6,5 @@ import type { PageLoad } from "./$types";
 export const load: PageLoad = async ({ fetch, url }) => {
 	const status = parsePlanStatus(url.searchParams.get("status"));
 	await prefetch(fetch, queries.subscriptions(status));
-	await prefetch(fetch, queries.allChannels());
 	return { status };
 };

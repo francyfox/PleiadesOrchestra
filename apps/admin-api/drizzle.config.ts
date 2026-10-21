@@ -4,6 +4,9 @@ import { defineConfig } from "drizzle-kit";
 // startup by `openAdminDb` (src/modules/database/database.ts).
 export default defineConfig({
 	dialect: "sqlite",
-	schema: "./src/modules/database/database.auth-schema.ts",
+	schema: [
+		"./src/modules/database/database.auth-schema.ts",
+		"./src/modules/database/database.notices-schema.ts",
+	],
 	out: "./drizzle",
 });

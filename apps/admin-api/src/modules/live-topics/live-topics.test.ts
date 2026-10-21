@@ -25,6 +25,7 @@ function fakeOrchestrator() {
 	};
 	const orchestrator = {
 		stats: record("stats", { visitors: { total: 1 }, usage: {} }),
+		finance: record("finance", { revenueUsd: 10 }),
 		usage: (query: { groupBy: string }) => {
 			calls.push(["usage", query]);
 			return Promise.resolve({
@@ -183,7 +184,9 @@ describe("createLiveTopics: fetching", () => {
 		const data = (await t.dashboard.fetch({})) as {
 			byDay: unknown[];
 			byChannel: { label: string }[];
+			finance: unknown;
 		};
+		expect(data.finance).toEqual({ revenueUsd: 10 });
 		expect(data.byDay).toEqual([
 			{ day: "2026-09-27", inputTokens: 1, outputTokens: 1 },
 		]);

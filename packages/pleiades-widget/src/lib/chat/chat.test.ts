@@ -286,6 +286,18 @@ describe("createChat.init", () => {
 	});
 });
 
+describe("createChat.init when the channel is suspended", () => {
+	test("402 is a terminal 'suspended'", async () => {
+		const { chat } = harness();
+		chat.api.createVisitor = async () => {
+			throw new ApiError(402);
+		};
+		await chat.init();
+		expect(chat.state.error).toBe("suspended");
+		expect(chat.state.ready).toBe(false);
+	});
+});
+
 describe("createChat.send", () => {
 	test("keeps only the last 10 messages, dropping the oldest as new ones arrive", async () => {
 		const { chat } = harness({
@@ -396,6 +408,7 @@ describe("createChat.send", () => {
 			[new ApiError(429), "rate_limited"],
 			[new ApiError(413), "too_long"],
 			[new ApiError(403), "forbidden"],
+			[new ApiError(402), "suspended"],
 			[new ApiError(0), "network"],
 			[new ApiError(500), "failed"],
 		];

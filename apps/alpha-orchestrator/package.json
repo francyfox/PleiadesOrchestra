@@ -19,6 +19,7 @@
 	"dependencies": {
 		"@repo/core": "workspace:*",
 		"@repo/elysia-kit": "workspace:*",
+		"@repo/tax": "workspace:*",
 		"@paralleldrive/cuid2": "catalog:",
 		"@t3-oss/env-core": "catalog:",
 		"drizzle-orm": "catalog:",

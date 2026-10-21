@@ -36,6 +36,8 @@ Security: only `pk_` key accepted (`sk_` refused), `https` only except localhost
 
 **Widget errors**: three types emitted by the server — `network` (no answer, locks composer), `request` (terminal `error` with `code: "task_failed"`, shown as `s.request` + `hint` ≤400 chars, never locks), `failed` (other server fault). The typing dots show only on the newest assistant bubble while `state.busy` (`bubbleViews(messages, busy)`).
 
+**Suspended channel**: `402` (`channel_suspended`, the site owner has no plan or balance) maps to the terminal `ChatError` `suspended`: neutral text (`strings.suspended`, never billing details), composer locked like `forbidden`.
+
 **Flow lines** (step events) survive a reload — attached to a reply message via `plan_runs.steps` (JSON), fetched by `GET /v1/widget/threads/:id/messages` (`threadMessages`). Widget maps `item.steps` onto `ChatMessage.steps`. A reply made only of steps must not be dropped (`hasOutput` in `chat.ts`).
 
 ## WebMCP polyfill

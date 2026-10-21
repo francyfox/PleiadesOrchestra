@@ -7,6 +7,8 @@ export type { ToolMode } from "@/lib/storage/storage.ts";
 
 export type ChatError =
 	| "forbidden"
+	/** `402`: the site's plan or balance ran out. Terminal like `forbidden`; never says why. */
+	| "suspended"
 	| "rate_limited"
 	| "too_long"
 	| "network"
@@ -137,6 +139,8 @@ function errorCodeOf(cause: unknown): ChatError {
 	switch (cause.status) {
 		case 0:
 			return "network";
+		case 402:
+			return "suspended";
 		case 403:
 			return "forbidden";
 		case 413:

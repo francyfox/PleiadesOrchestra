@@ -10,6 +10,15 @@ import {
 
 useHarness();
 
+const FINANCE = {
+	modelSpendUsd: 1,
+	revenueUsd: 10,
+	lossesUsd: 2.04,
+	netProfitUsd: 6.96,
+	ordersCount: 1,
+	skippedOrders: 0,
+};
+
 describe("dashboard", () => {
 	test("dashboard combines stats with usage by day, top visitors and channels", async () => {
 		const cookie = await signedIn();
@@ -19,6 +28,7 @@ describe("dashboard", () => {
 		};
 		setRespond(({ url }) => {
 			if (url.endsWith("/stats")) return json(stats);
+			if (url.includes("/finance")) return json(FINANCE);
 			const rows = (label: string, tokens: number) => ({
 				...USAGE,
 				inputTokens: tokens,
@@ -33,6 +43,7 @@ describe("dashboard", () => {
 		const body = await (await call("/api/dashboard", { cookie })).json();
 
 		expect(body.stats.visitors.total).toBe(1);
+		expect(body.finance).toEqual(FINANCE);
 		expect(body.byDay[0]).toEqual({
 			day: "small",
 			inputTokens: 1,

@@ -1,3 +1,4 @@
+import { standingOf } from "../account-billing/account-billing.service.ts";
 import type { ChannelRow } from "../channels/channels.types.ts";
 import { channels } from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
@@ -5,6 +6,7 @@ import {
 	allReplyPrompts,
 	DEFAULT_REPLY_PROMPT,
 } from "../persona/persona.service.ts";
+import type { Standing } from "../standing/standing.service.ts";
 
 /** Everything a request needs to find a channel quickly, built from one read of the table. */
 interface ChannelIndex {
@@ -46,8 +48,13 @@ function buildIndex(
  */
 export class ChannelDirectory {
 	private index: ChannelIndex | null = null;
+	/** Owner standing per account, read once and kept until `refreshStanding`. */
+	private standings = new Map<string, Standing>();
 
-	constructor(private readonly db: Db) {}
+	constructor(
+		private readonly db: Db,
+		private readonly now: () => number = Date.now,
+	) {}
 
 	private current(): ChannelIndex {
 		this.index ??= buildIndex(
@@ -81,6 +88,33 @@ export class ChannelDirectory {
 	/** The channel's reply system prompt (persona + fixed rules); the standard one for a channel without overrides. */
 	replyPrompt(channelId: string): string {
 		return this.current().replyPrompts.get(channelId) ?? DEFAULT_REPLY_PROMPT;
+	}
+
+	/**
+	 * Why this channel's owner may not be served, or `null` when it may. Staff
+	 * channels (no owner) never are. A plan that ran `until` a time now past is
+	 * `plan_expired` — no timer, the stored `until` is compared with `now`.
+	 */
+	suspension(channel: Pick<ChannelRow, "ownerId">): {
+		reason: "no_plan" | "plan_expired" | "no_balance";
+		since: number | null;
+	} | null {
+		const owner = channel.ownerId;
+		if (!owner) return null;
+		let standing = this.standings.get(owner);
+		if (!standing) {
+			standing = standingOf(this.db, owner, this.now());
+			this.standings.set(owner, standing);
+		}
+		if (!standing.ok) return { reason: standing.reason, since: standing.since };
+		if (standing.until !== null && standing.until <= this.now())
+			return { reason: "plan_expired", since: standing.until };
+		return null;
+	}
+
+	/** Forget one account's standing: a webhook or a debit changed what it is built from. */
+	refreshStanding(accountId: string): void {
+		this.standings.delete(accountId);
 	}
 
 	invalidate(): void {

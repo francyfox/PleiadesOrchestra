@@ -15,6 +15,13 @@
       "when": 1792487364567,
       "tag": "0001_accounts_levels",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792560211815,
+      "tag": "0002_account_notices",
+      "breakpoints": true
     }
   ]
 }

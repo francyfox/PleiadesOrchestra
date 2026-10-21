@@ -16,6 +16,7 @@
 	import ShieldIcon from "@lucide/svelte/icons/shield";
 	import UserRoundIcon from "@lucide/svelte/icons/user-round";
 	import UsersIcon from "@lucide/svelte/icons/users";
+	import WalletIcon from "@lucide/svelte/icons/wallet";
 	import { useIntlayer } from "svelte-intlayer";
 	import { authActions } from "#lib/actions.js";
 	import { canOpen } from "#lib/auth-redirect.js";
@@ -39,6 +40,7 @@
 		{ href: "/recommendations", key: "recommendations", icon: LightbulbIcon },
 		{ href: "/plans", key: "plans", icon: CreditCardIcon },
 		{ href: "/channels", key: "channels", icon: GlobeIcon },
+		{ href: "/billing", key: "billing", icon: WalletIcon },
 		{ href: "/settings", key: "settings", icon: SettingsIcon },
 		{ href: "/blocked-ips", key: "blockedIps", icon: BanIcon },
 		{ href: "/admins", key: "admins", icon: ShieldIcon },

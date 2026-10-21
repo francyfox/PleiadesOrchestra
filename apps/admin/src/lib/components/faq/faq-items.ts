@@ -7,6 +7,7 @@ export const FAQ_IDS = [
 	"noDelete",
 	"access",
 	"ipBlocks",
+	"billing",
 	"superAdmin",
 ] as const;
 

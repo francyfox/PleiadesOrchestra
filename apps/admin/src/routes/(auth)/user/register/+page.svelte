@@ -5,6 +5,7 @@
 		authErrorText,
 		useAuthForm,
 	} from "#lib/components/auth/auth-form.svelte.js";
+	import ResendMail from "#lib/components/auth/resend-mail.svelte";
 	import FormField from "#lib/components/form-field.svelte";
 	import { Button } from "#lib/components/ui/button/index.js";
 	import * as Card from "#lib/components/ui/card/index.js";
@@ -25,6 +26,7 @@
 	<Card.Content class="grid gap-4">
 		{#if form.done}
 			<p class="text-sm">{$content.register.sent({ email: form.email })}</p>
+			<ResendMail email={form.email} />
 		{:else}
 			<form onsubmit={form.submit} class="grid gap-4">
 				<input type="hidden" name="locale" value={$locale} />

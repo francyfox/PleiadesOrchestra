@@ -1,5 +1,7 @@
 import type { LlmCallRecord, UsageRecorder } from "@repo/core";
 import type { Db } from "../database/database.ts";
+import { usdToMicro } from "../ledger/ledger.service.ts";
+import { costUsd, type Prices } from "../prices/prices.service.ts";
 import type { RunBinding } from "../run-binding/run-binding.ts";
 
 /**
@@ -13,6 +15,13 @@ export class SqliteUsageRecorder implements UsageRecorder {
 	constructor(
 		private readonly db: Db,
 		private readonly runs: RunBinding,
+		/** Current model prices (sync, may be unknown) and where debit failures go. */
+		private readonly billing: {
+			prices?: () => Prices | null;
+			log?: (message: string) => void;
+			/** Called once per account debited by a flush, after the transaction. */
+			onDebited?: (accountId: string) => void;
+		} = {},
 	) {}
 
 	record(call: LlmCallRecord): void {
@@ -38,9 +47,21 @@ export class SqliteUsageRecorder implements UsageRecorder {
 				(SELECT id FROM threads WHERE id = ?3), (SELECT id FROM plan_runs WHERE id = ?4), ?5,
 				?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)`,
 		);
+		// The owner is read from the stored call: staff channels (NULL owner) and deleted ones debit nothing.
+		const debit = sqlite.query<
+			{ account_id: string },
+			[number, number | bigint, number]
+		>(
+			`INSERT INTO credit_ledger (account_id, amount, reason, ref, created_at)
+			SELECT owner_id, -?1, 'usage', ?2, ?3 FROM channels
+			WHERE id = (SELECT channel_id FROM llm_calls WHERE id = ?2) AND owner_id IS NOT NULL
+			RETURNING account_id`,
+		);
+		const prices = this.billing.prices?.();
+		const debited = new Set<string>();
 		sqlite.transaction(() => {
 			for (const call of pending) {
-				insert.run(
+				const { lastInsertRowid } = insert.run(
 					call.at,
 					call.userId,
 					call.threadId,
@@ -56,7 +77,23 @@ export class SqliteUsageRecorder implements UsageRecorder {
 					call.error ?? null,
 					call.confidence ?? null,
 				);
+				const micro = usdToMicro(
+					costUsd(
+						call.inputTokens ?? 0,
+						call.outputTokens ?? 0,
+						prices?.get(call.model),
+					),
+				);
+				// A failed debit must not lose the usage rows or fail the reply.
+				if (micro > 0)
+					try {
+						const row = debit.get(micro, lastInsertRowid, call.at);
+						if (row) debited.add(row.account_id);
+					} catch (error) {
+						this.billing.log?.(`ledger debit failed: ${String(error)}`);
+					}
 			}
 		})();
+		for (const accountId of debited) this.billing.onDebited?.(accountId);
 	}
 }

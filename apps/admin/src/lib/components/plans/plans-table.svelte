@@ -7,15 +7,13 @@
 		tableFeatures,
 	} from "@tanstack/svelte-table";
 	import { useIntlayer } from "svelte-intlayer";
-	import type { Channel, PlanStatus, Subscription } from "#lib/api-types.js";
+	import type { PlanStatus, Subscription } from "#lib/api-types.js";
 	import DataTable from "#lib/components/data-table.svelte";
 	import { Badge } from "#lib/components/ui/badge/index.js";
 	import { useFormat } from "#lib/i18n/use-format.js";
 	import { levelBadgeClass } from "../level-styles";
-	import PlanChannelSelect from "./plan-channel-select.svelte";
 
-	let { items, channels }: { items: Subscription[]; channels: Channel[] } =
-		$props();
+	let { items }: { items: Subscription[] } = $props();
 
 	const content = useIntlayer("plans");
 	const format = useFormat();
@@ -36,6 +34,10 @@
 				header: () => $content.columns.customer.value,
 				cell: (ctx) => renderSnippet(customerCell, ctx.row.original),
 			}),
+			helper.accessor("accountEmail", {
+				header: () => $content.columns.account.value,
+				cell: (ctx) => ctx.getValue() ?? ctx.row.original.accountId,
+			}),
 			helper.accessor("plan", {
 				header: () => $content.columns.plan.value,
 				cell: (ctx) => ctx.getValue() ?? "—",
@@ -51,11 +53,6 @@
 			helper.accessor("currentPeriodEnd", {
 				header: () => $content.columns.expires.value,
 				cell: (ctx) => $format.date(ctx.getValue()),
-			}),
-			helper.display({
-				id: "channel",
-				header: () => $content.columns.channel.value,
-				cell: (ctx) => renderSnippet(channelCell, ctx.row.original),
 			}),
 		]),
 		get data() {
@@ -82,10 +79,6 @@
 
 {#snippet statusCell(status: PlanStatus)}
 	<Badge variant="ghost" class={levelBadgeClass[level[status]]}>{$content.status[status].value}</Badge>
-{/snippet}
-
-{#snippet channelCell(subscription: Subscription)}
-	<PlanChannelSelect {subscription} {channels} />
 {/snippet}
 
 <DataTable {table} emptyText={$content.empty.value} />

@@ -86,6 +86,11 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			// https://polar.sh/dashboard/<org-slug>/sales/subscriptions (check the path in
 			// your dashboard). Unset = no link in the admin panel.
 			POLAR_DASHBOARD_URL: z.url().optional(),
+			// Polar product ids: the credits (TR) pack vs the monthly plan. An order of
+			// the credits product tops the balance up (1 TR = 1 USD). With a plan id set,
+			// events of other products are ignored; without, any other product is a plan.
+			POLAR_CREDITS_PRODUCT_ID: z.string().min(1).optional(),
+			POLAR_PLAN_PRODUCT_ID: z.string().min(1).optional(),
 
 			// Comma-separated origins allowed to call /v1/admin/requests/* from a
 			// browser (CORS). The token is still required on every actual request —

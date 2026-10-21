@@ -40,6 +40,8 @@ describe("levels on the routes", () => {
 			/^\/api\/user\//,
 			/^\/api\/channels(\/|$)/,
 			/^\/api\/dashboard$/,
+			// a user's own billing (staff get 403 inside; see billing.test.ts)
+			/^\/api\/billing(\/|$)/,
 			/^\/api\/live$/,
 			// a WebSocket upgrade: covered by its own test below
 			/^\/api\/system\/stream$/,

@@ -20,8 +20,10 @@ export const Subscription = t.Object({
 	/** When the paid period ends: the expiry date. */
 	currentPeriodEnd: nullable(t.Number()),
 	endedAt: nullable(t.Number()),
-	channelId: nullable(t.String()),
-	channelName: nullable(t.String()),
+	/** The admin-api account that owns the plan (Polar customer `external_id`). */
+	accountId: t.String(),
+	/** Added by admin-api's staff list from its own `user` table; absent from the orchestrator's answer. */
+	accountEmail: t.Optional(nullable(t.String())),
 	/** Link to the subscription in Polar; `null` when the orchestrator has no `POLAR_DASHBOARD_URL`. */
 	polarUrl: nullable(t.String()),
 });

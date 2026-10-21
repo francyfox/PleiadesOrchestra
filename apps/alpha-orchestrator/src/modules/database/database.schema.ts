@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
 	type AnySQLiteColumn,
 	index,
@@ -397,12 +398,48 @@ export const subscriptions = sqliteTable("subscriptions", {
 	endedAt: integer("ended_at"),
 	// Polar's `modified_at`: an older event never overwrites a newer row.
 	polarModifiedAt: integer("polar_modified_at"),
-	// Set by hand in the admin panel.
-	channelId: text("channel_id").references(() => channels.id, {
-		onDelete: "set null",
-	}),
+	// admin-api account id (Polar's `customer.external_id`); another database, so no FK.
+	accountId: text("account_id").notNull(),
 	updatedAt: integer("updated_at").notNull(),
 });
+
+/** Polar orders (`order.paid` / `order.refunded`); amounts are integer cents. */
+export const orders = sqliteTable("orders", {
+	// Polar's order id.
+	id: text("id").primaryKey(),
+	accountId: text("account_id").notNull(),
+	productId: text("product_id"),
+	kind: text("kind", { enum: ["plan", "credits"] }).notNull(),
+	amount: integer("amount").notNull(),
+	currency: text("currency").notNull(),
+	status: text("status").notNull(),
+	createdAt: integer("created_at").notNull(),
+	refundedAmount: integer("refunded_amount").notNull().default(0),
+});
+
+/**
+ * Append-only TR balance of an account (balance = SUM(amount)). `amount` is a
+ * signed integer in micro-USD (1 TR = 1 USD = 1_000_000): a call of $0.00004
+ * is 40, with no float drift in the sum. `ref` = order id (top_up, refund) or
+ * `llm_calls.id` (usage). A top-up happens once per order (partial unique index).
+ */
+export const creditLedger = sqliteTable(
+	"credit_ledger",
+	{
+		id: integer("id").primaryKey({ autoIncrement: true }),
+		accountId: text("account_id").notNull(),
+		amount: integer("amount").notNull(),
+		reason: text("reason", { enum: ["top_up", "usage", "refund"] }).notNull(),
+		ref: text("ref").notNull(),
+		createdAt: integer("created_at").notNull(),
+	},
+	(table) => [
+		index("credit_ledger_account_idx").on(table.accountId),
+		uniqueIndex("credit_ledger_top_up_once")
+			.on(table.ref)
+			.where(sql`${table.reason} = 'top_up'`),
+	],
+);
 
 /** `webhook-id`s already handled: Polar redelivers, a replay must not run twice. */
 export const billingWebhooks = sqliteTable("billing_webhooks", {
@@ -426,5 +463,7 @@ export const schema = {
 	threadWorldState,
 	agentSettings,
 	subscriptions,
+	orders,
+	creditLedger,
 	billingWebhooks,
 };

@@ -133,6 +133,26 @@ export const queries = {
 			queryKey: ["me"],
 			queryFn: () => unwrap(api().user.me.get()),
 		}),
+	/** The user's plan, TR balance, orders and spend (Billing page). */
+	billing: () =>
+		queryOptions({
+			queryKey: ["billing"],
+			queryFn: () => unwrap(api().billing.get()),
+		}),
+	/** Header alerts: polled, since a plan can lapse or the balance run out while a tab sits open. */
+	standing: () =>
+		queryOptions({
+			queryKey: ["billing", "standing"],
+			queryFn: () => unwrap(api().billing.standing.get()),
+			refetchInterval: 60_000,
+		}),
+	/** Staff: one customer's billing; asked only while the dialog is open. */
+	accountBilling: (id: string) =>
+		queryOptions({
+			queryKey: ["accounts", id, "billing"],
+			queryFn: () => unwrap(api().accounts({ id }).billing.get()),
+			staleTime: 0,
+		}),
 	/** Staff: one server-cut page of the Users table. */
 	accounts: (params: { page: number; pageSize: number }) =>
 		queryOptions({

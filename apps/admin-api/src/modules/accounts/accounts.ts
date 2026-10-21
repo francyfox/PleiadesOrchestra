@@ -4,6 +4,7 @@ import { Elysia, t } from "elysia";
 import type { RouteDeps } from "../../app.types.ts";
 import { isEmail, MIN_PASSWORD } from "../admin-policy/admin-policy.service.ts";
 import { requireAdmin } from "../auth/auth.service.ts";
+import { polarErrors } from "../billing/billing.service.ts";
 import { withTrustedIp } from "../client-ip/client-ip.service.ts";
 import { ApiError } from "../common/common.schema.ts";
 import {
@@ -38,6 +39,7 @@ export function accountsRoutes({
 	clientIp,
 	loginThrottle,
 	orchestrator,
+	polar,
 	panelUrl,
 }: RouteDeps) {
 	const ipOf = (request: Request, server: ServerLike | null) =>
@@ -54,6 +56,7 @@ export function accountsRoutes({
 		tags: ["user"],
 	})
 		.use(orchestratorErrors)
+		.use(polarErrors)
 		.use(requireAdmin(auth))
 		.post(
 			"/register",
@@ -159,6 +162,32 @@ export function accountsRoutes({
 					summary: "Open the link of the verification mail",
 					description:
 						"Redirects to `/user/login?verified=1` (or `=0` for a bad or expired token).",
+				},
+			},
+		)
+		.post(
+			"/resend",
+			async ({ body, request, server }) => {
+				const ip = ipOf(request, server);
+				const wait = loginThrottle.registerAttempt(ip);
+				if (wait > 0) return tooManyAttempts(wait);
+				try {
+					// better-auth answers the same for unknown and verified emails; the mail cooldown lives in auth.ts.
+					await auth.api.sendVerificationEmail({
+						body: { email: body.email.trim() },
+					});
+				} catch (error) {
+					if (!(error instanceof APIError)) throw error;
+				}
+				return { ok: true };
+			},
+			{
+				body: ForgotInput,
+				response: { 200: Ok, 429: ApiError },
+				detail: {
+					summary: "Send the verification mail again",
+					description:
+						"Always `{ ok: true }`: nothing is sent for an unknown or already verified email, nor within a minute of the last mail to it. Counts against the per-IP registration budget.",
 				},
 			},
 		)
@@ -309,8 +338,12 @@ export function accountsRoutes({
 						) {
 							return status(400, { error: "confirm_mismatch" });
 						}
-						// Channels first: if the orchestrator is down this throws (502/503) and the account stays.
-						await deleteAccount({ db, orchestrator }, account.id, account.id);
+						// Plan and channels first: if Polar or the orchestrator is down this throws (502/503) and the account stays.
+						await deleteAccount(
+							{ db, orchestrator, polar },
+							account.id,
+							account.id,
+						);
 						return { ok: true };
 					},
 					{

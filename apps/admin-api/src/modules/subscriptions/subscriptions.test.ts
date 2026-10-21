@@ -19,32 +19,33 @@ const SUBSCRIPTION = {
 	startedAt: 1,
 	currentPeriodEnd: 2,
 	endedAt: null,
-	channelId: null,
-	channelName: null,
+	accountId: "acc_1",
 	polarUrl: "https://polar.sh/x/sub_1",
 };
 
 describe("subscriptions (proxied)", () => {
-	test("the list forwards the status filter and the link goes upstream with the admin id", async () => {
+	test("the list forwards the filters and adds the account email", async () => {
 		const cookie = await signedIn();
 		setRespond(() => json({ items: [SUBSCRIPTION] }));
-		const list = await call("/api/subscriptions?status=canceling", { cookie });
-		expect((await list.json()).items[0].id).toBe("sub_1");
+		const list = await call(
+			"/api/subscriptions?status=canceling&accountId=acc_1",
+			{ cookie },
+		);
+		const [item] = (await list.json()).items;
+		expect(item).toMatchObject({ id: "sub_1", accountEmail: null });
 		expect(upstream[0]?.url).toBe(
-			"http://orchestrator/v1/admin/subscriptions?status=canceling",
+			"http://orchestrator/v1/admin/subscriptions?status=canceling&accountId=acc_1",
 		);
+	});
 
-		setRespond(() =>
-			json({ ...SUBSCRIPTION, channelId: "c1", channelName: "Shop" }),
-		);
+	test("the channel link route is gone", async () => {
+		const cookie = await signedIn();
 		const linked = await call("/api/subscriptions/sub_1/channel", {
 			method: "PUT",
 			cookie,
 			body: { channelId: "c1" },
 		});
-		expect(linked.status).toBe(200);
-		expect(upstream[1]?.method).toBe("PUT");
-		expect(upstream[1]?.body).toEqual({ channelId: "c1" });
+		expect(linked.status).toBe(404);
 	});
 
 	test("signed out is refused", async () => {

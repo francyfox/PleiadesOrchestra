@@ -29,8 +29,7 @@
 			<div><Button type="submit">{$common.save.value}</Button></div>
 		</form>
 		<form use:changeEmail class="grid max-w-md gap-3">
-			<p class="text-sm text-muted-foreground">{$content.profile.currentEmail({ email: me.email })}</p>
-			<FormField id="email" label={$content.profile.email.value} type="email" autocomplete="email" required />
+			<FormField id="email" label={$content.profile.email.value} value={me.email} type="email" autocomplete="email" required />
 			<div><Button type="submit">{$content.profile.changeEmail.value}</Button></div>
 		</form>
 		<p class="text-xs text-muted-foreground">

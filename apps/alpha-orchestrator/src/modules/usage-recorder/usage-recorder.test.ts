@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { LlmCallRecord } from "@repo/core";
-import { llmCalls } from "../database/database.schema.ts";
+import { creditLedger, llmCalls } from "../database/database.schema.ts";
 import { testDb } from "../database/database.testing.ts";
 import { RunBinding } from "../run-binding/run-binding.ts";
 import { resolveThreadId } from "../threads/threads.service.ts";
@@ -95,5 +95,96 @@ describe("SqliteUsageRecorder", () => {
 			threadId: null,
 			planRunId: null,
 		});
+	});
+});
+
+describe("SqliteUsageRecorder debit", () => {
+	const prices = () =>
+		new Map([["paid/model", { input: 0.000001, output: 0.000002 }]]);
+	function setup() {
+		const db = testDb();
+		const owner = db.$client.query(
+			"UPDATE channels SET owner_id = 'acc_1' WHERE id = 'ch_telegram'",
+		);
+		owner.run();
+		const visitor = upsertIdentifiedVisitor(
+			db,
+			"ch_telegram",
+			"42",
+			undefined,
+			1,
+		);
+		const recorder = new SqliteUsageRecorder(db, new RunBinding(), { prices });
+		return { db, visitor, recorder };
+	}
+
+	test("a paid call debits its owner by tokens x price, in micro-USD, referencing the call", () => {
+		const { db, visitor, recorder } = setup();
+		recorder.record(
+			call({
+				userId: visitor.id,
+				model: "paid/model",
+				inputTokens: 1000,
+				outputTokens: 500,
+			}),
+		);
+		recorder.flush();
+		const call1 = db.select().from(llmCalls).get();
+		expect(db.select().from(creditLedger).all()).toEqual([
+			expect.objectContaining({
+				accountId: "acc_1",
+				amount: -2000,
+				reason: "usage",
+				ref: String(call1?.id),
+			}),
+		]);
+	});
+
+	test("local, unpriced, usage-less and staff-owned calls debit nothing", () => {
+		const { db, visitor, recorder } = setup();
+		recorder.record(call({ userId: visitor.id, model: "local" }));
+		recorder.record(
+			call({
+				userId: visitor.id,
+				model: "paid/model",
+				inputTokens: undefined,
+				outputTokens: undefined,
+			}),
+		);
+		const staff = upsertIdentifiedVisitor(db, "ch_cli", "7", undefined, 1);
+		recorder.record(call({ userId: staff.id, model: "paid/model" }));
+		recorder.flush();
+		expect(db.select().from(llmCalls).all()).toHaveLength(3);
+		expect(db.select().from(creditLedger).all()).toEqual([]);
+	});
+
+	test("a failing debit is logged and the call row is still stored", () => {
+		const { db, visitor } = setup();
+		db.$client.run(
+			"CREATE TRIGGER boom BEFORE INSERT ON credit_ledger BEGIN SELECT RAISE(ABORT, 'boom'); END",
+		);
+		const logged: string[] = [];
+		const recorder = new SqliteUsageRecorder(db, new RunBinding(), {
+			prices,
+			log: (m) => logged.push(m),
+		});
+		recorder.record(call({ userId: visitor.id, model: "paid/model" }));
+		recorder.flush();
+		expect(db.select().from(llmCalls).all()).toHaveLength(1);
+		expect(logged).toHaveLength(1);
+	});
+
+	test("onDebited fires once per debited account per flush", () => {
+		const { db, visitor } = setup();
+		const debited: string[] = [];
+		const recorder = new SqliteUsageRecorder(db, new RunBinding(), {
+			prices,
+			onDebited: (id) => debited.push(id),
+		});
+		recorder.record(call({ userId: visitor.id, model: "paid/model" }));
+		recorder.record(call({ userId: visitor.id, model: "paid/model" }));
+		recorder.record(call({ userId: visitor.id, model: "local" }));
+		recorder.flush();
+		expect(debited).toEqual(["acc_1"]);
 	});
 });

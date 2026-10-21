@@ -11,6 +11,8 @@ import { devApiProxy } from "./vite/dev-api-proxy";
 const ADMIN_API = process.env.ADMIN_API_URL ?? "http://localhost:3003";
 
 export default defineConfig({
+	// SvelteKit narrows fs.allow to src/node_modules/.svelte-kit; the compiled dictionaries live in .intlayer.
+	server: { fs: { allow: [".intlayer"] } },
 	// intlayer() must come before sveltekit() (vite-intlayer docs).
 	plugins: [
 		// Same-origin /api in dev too, so the session cookie behaves as in prod.

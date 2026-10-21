@@ -96,8 +96,12 @@ export function createComposerModel(options: ComposerOptions) {
 			this.locked =
 				state.noTools ||
 				state.error === "forbidden" ||
+				state.error === "suspended" ||
 				state.connection === "offline";
-			this.inputDisabled = state.noTools || state.error === "forbidden";
+			this.inputDisabled =
+				state.noTools ||
+				state.error === "forbidden" ||
+				state.error === "suspended";
 		},
 		submit() {
 			if (this.busy) {
