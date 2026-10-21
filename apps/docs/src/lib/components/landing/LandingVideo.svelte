@@ -56,7 +56,11 @@
 			class="absolute inset-x-0 bottom-0 flex flex-col gap-4 p-4 sm:p-8"
 			style:background="linear-gradient(to top, var(--bg) 0%, transparent 150%)"
 		>
-			<h1 class="text-3xl font-bold text-white sm:text-5xl mix-blend-difference">PleiadesOrchestra</h1>
+			<!-- The logo stays outside the h1: its mix-blend would invert the logo's colours. -->
+			<div class="flex items-center gap-3 sm:gap-4">
+				<img src="/logo.svg" alt="" width="64" height="67" class="size-10 sm:size-16" />
+				<h1 class="text-3xl font-bold text-white sm:text-5xl mix-blend-difference">PleiadesOrchestra</h1>
+			</div>
 			<p class="max-w-2xl text-sm text-white/80 sm:text-base">{t.lead}</p>
 			<p class="text-xs text-white/70">{t.early}</p>
 			<div class="flex flex-wrap items-center gap-2 text-sm">

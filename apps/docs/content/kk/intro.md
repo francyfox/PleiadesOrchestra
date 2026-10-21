@@ -1,5 +1,5 @@
 ---
-title: PleiadesOrchestra
+title: Кіріспе
 lang: kk
 review: pending
 ---

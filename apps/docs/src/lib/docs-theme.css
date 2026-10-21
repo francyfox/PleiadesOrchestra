@@ -1,0 +1,145 @@
+/*
+ * The SveltePress default theme on the @repo/ui design tokens (packages/ui).
+ * The theme sets its colours in scoped/Uno rules (`html.dark`, `:root:root.dark`,
+ * `.header.svelte-…`), so these selectors are deliberately heavier; every value
+ * is a token, so light/dark follow `.dark` on <html> by themselves.
+ */
+:root:root:root:root {
+	--svp-text: var(--foreground);
+	--svp-c-heading: var(--heading);
+	--svp-code-font: var(--font-mono);
+	--svp-primary: var(--primary);
+	--svp-expansion-bg: var(--muted);
+	--svp-expansion-bg-darker: color-mix(in oklch, var(--muted), black 4%);
+	--svp-expansion-bg-darker2: color-mix(in oklch, var(--muted), black 8%);
+	--svp-divider: color-mix(in oklch, var(--border) 35%, transparent);
+	--docsearch-primary-color: var(--primary);
+	--docsearch-logo-color: var(--primary);
+	--docsearch-highlight-color: var(--primary);
+	--docsearch-focus-color: var(--ring);
+	--docsearch-soft-primary-color: color-mix(
+		in oklch,
+		var(--primary) 14%,
+		transparent
+	);
+	--docsearch-hit-highlight-color: color-mix(
+		in oklch,
+		var(--primary) 18%,
+		transparent
+	);
+	--docsearch-searchbox-shadow: inset 0 0 0 1px var(--primary);
+	--docsearch-muted-color: var(--muted-foreground);
+	--docsearch-modal-background: var(--popover);
+	--docsearch-footer-background: var(--card);
+	--docsearch-hit-background: var(--card);
+}
+
+html body {
+	background-color: var(--background);
+	background-image: var(--page-background);
+	background-size: cover;
+	background-position: center;
+	background-attachment: fixed;
+	color: var(--foreground);
+	font-family: var(--font-sans);
+}
+
+:root .header.header {
+	background-color: var(--card);
+	background-image: var(--gradient-card);
+}
+
+:root .theme-default-sidebar.theme-default-sidebar {
+	background-color: var(--sidebar);
+	background-image: var(--gradient-sidebar);
+	color: var(--sidebar-foreground);
+}
+
+/*
+ * Active sidebar link / section tab, like the admin's active menu item. The theme
+ * paints them `bg-svp-primary/8`, and Uno can't apply that alpha to a var() colour
+ * (it would be a solid --primary under --primary text).
+ */
+:root .links > .link.active.active,
+:root .section-tabs--list .section-tab.active.active {
+	background-color: var(--primary);
+	background-image: var(--gradient-primary);
+	color: var(--primary-foreground);
+}
+
+/* The site title always sits next to the logo (the theme shows it only from 1440px). */
+:root .logo-container .title.title {
+	display: inline;
+}
+
+/*
+ * Local search (Pagefind) in the site's style: token colours, square corners, the hard
+ * shadow, the primary gradient on the selected result. The theme's rules are scoped
+ * (`.x.svelte-…`, `.dark .x.svelte-…`), hence `:root:root` and doubled classes.
+ */
+:root:root .local-search-trigger.local-search-trigger {
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--card);
+	color: var(--muted-foreground);
+	box-shadow: var(--shadow-xs);
+	font-family: var(--font-sans);
+}
+:root:root .local-search-trigger.local-search-trigger:hover {
+	border-color: var(--ring);
+	box-shadow: var(--shadow-sm);
+}
+:root:root .shortcut-key.shortcut-key,
+:root:root .esc-button.esc-button,
+:root:root .search-footer kbd {
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--muted);
+	color: var(--muted-foreground);
+}
+:root:root .local-search-modal.local-search-modal {
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--popover);
+	background-image: var(--gradient-card);
+	color: var(--popover-foreground);
+	box-shadow: var(--shadow-xl);
+	font-family: var(--font-sans);
+}
+:root:root .search-header.search-header,
+:root:root .search-footer.search-footer {
+	border-color: color-mix(in oklch, var(--border) 50%, transparent);
+}
+:root:root .search-input.search-input {
+	color: var(--foreground);
+}
+:root:root .search-input.search-input::placeholder,
+:root:root .header-search-icon.header-search-icon,
+:root:root .result-url.result-url,
+:root:root .result-excerpt.result-excerpt,
+:root:root .no-results.no-results,
+:root:root .dev-notice.dev-notice {
+	color: var(--muted-foreground);
+}
+:root:root .result-item.result-item {
+	border-radius: var(--radius);
+}
+:root:root .result-item.result-item.selected {
+	background: var(--primary);
+	background-image: var(--gradient-primary);
+	color: var(--primary-foreground);
+}
+:root:root
+	.result-item.result-item.selected
+	:is(.title-text, .result-url, .result-excerpt, mark) {
+	color: var(--primary-foreground);
+}
+:root:root .result-title.result-title {
+	color: var(--heading);
+}
+
+/* Denser sidebar menu: the theme's links are py-1.5 with a 1px margin. */
+:root .links > .link.link {
+	padding-block: 0.25rem;
+	margin-block: 0;
+}

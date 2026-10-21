@@ -11,3 +11,9 @@ vite.config.ts.timestamp-*
 /.sveltepress
 # Built from packages/webmcp-polyfill by `bun run polyfill`
 /static/playground-demos/shared/webmcp-polyfill.js
+# Agent files (llmstxt.org) generated from content/ by vite/content-routes.ts
+/static/llms.txt
+/static/llms-full.txt
+/static/*/llms.txt
+/static/docs
+/static/*/docs

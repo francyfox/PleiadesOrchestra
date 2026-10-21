@@ -6,6 +6,8 @@
 	"private": true,
 	"type": "module",
 	"devDependencies": {
+		"@lucide/svelte": "^1.48.0",
+		"@repo/ui": "workspace:*",
 		"@repo/webmcp-polyfill": "workspace:*",
 		"@shalotts/pleiades-widget": "workspace:*",
 		"@sveltejs/adapter-static": "catalog:",
@@ -17,6 +19,7 @@
 		"@types/bun": "catalog:",
 		"svelte": "catalog:",
 		"svelte-check": "catalog:",
+		"svelte-meta-tags": "5.0.3",
 		"tailwindcss": "catalog:",
 		"typescript": "catalog:",
 		"vite": "catalog:"

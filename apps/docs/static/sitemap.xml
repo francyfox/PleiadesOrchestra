@@ -77,6 +77,10 @@
     <xhtml:link rel="alternate" hreflang="en" href="/docs/drafts/"/>
   </url>
   <url>
+    <loc>/docs/drafts/accounts-and-billing-plan/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="/docs/drafts/accounts-and-billing-plan/"/>
+  </url>
+  <url>
     <loc>/docs/drafts/admin-api/</loc>
     <xhtml:link rel="alternate" hreflang="en" href="/docs/drafts/admin-api/"/>
   </url>
@@ -103,6 +107,10 @@
   <url>
     <loc>/docs/drafts/lessons-learned/</loc>
     <xhtml:link rel="alternate" hreflang="en" href="/docs/drafts/lessons-learned/"/>
+  </url>
+  <url>
+    <loc>/docs/drafts/overview/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="/docs/drafts/overview/"/>
   </url>
   <url>
     <loc>/docs/drafts/playground/</loc>
@@ -133,6 +141,24 @@
     <xhtml:link rel="alternate" hreflang="en" href="/docs/intents/"/>
     <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/intents/"/>
     <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/intents/"/>
+  </url>
+  <url>
+    <loc>/docs/intro/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="/docs/intro/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/intro/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/intro/"/>
+  </url>
+  <url>
+    <loc>/ru/docs/intro/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="/docs/intro/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/intro/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/intro/"/>
+  </url>
+  <url>
+    <loc>/kk/docs/intro/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="/docs/intro/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/intro/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/intro/"/>
   </url>
   <url>
     <loc>/docs/tools/</loc>

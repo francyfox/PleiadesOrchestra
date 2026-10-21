@@ -5,8 +5,10 @@ import { sveltepress } from "@sveltepress/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig, loadEnv } from "vite";
 import { ALL_LOCALES, DEFAULT_LOCALE, type Locale } from "./src/lib/i18n.ts";
+import { SITE } from "./src/lib/site.ts";
 import {
 	contentRoutes,
+	DRAFTS_DIR,
 	loadContent,
 	sidebarItems,
 } from "./vite/content-routes.ts";
@@ -45,9 +47,22 @@ const navbar = (locale: Locale) => [
 
 // The sources themselves (content/<locale>), not the generated routes.
 const content = loadContent(join(root, "content"));
-const sidebar = (locale: Locale) => ({
-	"/docs/": sidebarItems(content.get(locale) ?? new Map()),
-});
+// Two groups, not a flat list: the theme draws every top-level item as its own group
+// (bold title, rule, wide gaps). Drafts are English-only working notes, folded.
+const sidebar = (locale: Locale) => {
+	const items = sidebarItems(content.get(locale) ?? new Map());
+	const isDraft = (item: { to: string }) =>
+		item.to.startsWith(`/docs/${DRAFTS_DIR}`);
+	const drafts = items.filter(isDraft);
+	return {
+		"/docs/": [
+			{ title: CHROME[locale].docs, items: items.filter((i) => !isDraft(i)) },
+			...(drafts.length
+				? [{ title: "Drafts", collapsible: true, items: drafts }]
+				: []),
+		],
+	};
+};
 
 export default defineConfig(({ mode }) => ({
 	define: {
@@ -57,17 +72,26 @@ export default defineConfig(({ mode }) => ({
 		__PUBLIC_ENV__: JSON.stringify(loadEnv(mode, root, "PUBLIC_")),
 	},
 	plugins: [
-		// Docs pages live in content/<locale>/*.md; mirrored into src/routes/{,<locale>/}docs for SveltePress.
-		contentRoutes(root),
+		// Docs pages live in content/<locale>/*.md; mirrored into src/routes/{,<locale>/}docs for SveltePress,
+		// plus llms.txt, llms-full.txt and each page's Markdown in static/ (llmstxt.org).
+		contentRoutes(root, SITE),
 		tailwindcss(),
 		sveltepress({
-			siteConfig: {
-				title: "PleiadesOrchestra",
-				description:
-					"Open-source GOAP orchestrator for tiny models: a website chatbot that works through MCP and WebMCP tools.",
-			},
+			siteConfig: SITE,
 			theme: defaultTheme({
 				github: "https://github.com/francyfox/PleiadesOrchestra",
+				// The theme shows it with the site title next to it (navbar, sidebar).
+				logo: "/logo.svg",
+				// Uno colours compiled into the theme: token references, so packages/ui drives them.
+				// `light`/`dark` are the <meta name="theme-color"> values and must be literal (--background).
+				themeColor: {
+					light: "#ffffff",
+					dark: "#30281d",
+					primary: "var(--primary)",
+					primaryDeep: "var(--primary)",
+					hover: "var(--primary-shade)",
+					gradient: { start: "var(--primary)", end: "var(--primary-shade)" },
+				},
 				navbar: navbar(DEFAULT_LOCALE),
 				sidebar: sidebar(DEFAULT_LOCALE),
 				highlighter: {

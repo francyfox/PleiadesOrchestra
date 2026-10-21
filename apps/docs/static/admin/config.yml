@@ -39,9 +39,9 @@ collections:
         file: apps/docs/content/{{locale}}/api/widget.md
         i18n: true
         fields: *page
-      - name: index
-        label: PleiadesOrchestra
-        file: apps/docs/content/{{locale}}/index.md
+      - name: intro
+        label: Intro
+        file: apps/docs/content/{{locale}}/intro.md
         i18n: true
         fields: *page
       - name: intents

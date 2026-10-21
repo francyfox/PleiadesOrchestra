@@ -2,13 +2,20 @@ import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
 import { ALL_LOCALES, DEFAULT_LOCALE, LOCALES } from "../src/lib/i18n.ts";
 import {
+	buildLlmsFull,
+	buildLlmsTxt,
 	buildPage,
+	cleanMarkdown,
 	contentRouteFile,
 	DRAFTS_DIR,
+	folderRedirects,
 	headingSlugs,
 	listMarkdown,
+	llmsFiles,
 	loadContent,
 	type PageSet,
+	pageDescription,
+	pageMarkdownPath,
 	parseFrontmatter,
 	rewriteLinks,
 	sidebarItems,
@@ -130,6 +137,38 @@ describe("buildPage", () => {
 		const ok = "---\ntitle: T\n---\n\n# T\n";
 		expect(buildPage("en", "a.md", set(ok))).not.toContain("ReviewNotice");
 	});
+
+	test("a page without a description gets its first paragraph (theme meta + OpenGraph)", () => {
+		expect(
+			pageDescription(
+				"---\ntitle: T\n---\n\n# T\n\nThe **site** uses [tools](/docs/tools/) and `code`.\nSecond line.\n\n## Next\n",
+			),
+		).toBe("The site uses tools and code. Second line.");
+		expect(
+			pageDescription(`# T\n\n${"word ".repeat(80)}`).length,
+		).toBeLessThanOrEqual(200);
+		const out = buildPage(
+			"en",
+			"a.md",
+			set("---\ntitle: T\n---\n\n# T\n\nHello there.\n"),
+		);
+		expect(out).toStartWith('---\ntitle: T\ndescription: "Hello there."\n---');
+		expect(out).toContain(
+			`const seo = {"title":"T - PleiadesOrchestra","description":"Hello there.","locale":"en"}`,
+		);
+	});
+
+	test("the page's own H1 is dropped: the theme prints the frontmatter title", () => {
+		const out = buildPage(
+			"en",
+			"a.md",
+			set("---\ntitle: T\n---\n\n# T\n\nText\n\n## Sub\n"),
+		);
+		expect(out).not.toContain("# T\n");
+		expect(out).toContain("## Sub");
+		expect(out).toContain("<CopyPage");
+		expect(out).toContain(`markdown="/docs/a/index.html.md" llms="/llms.txt"`);
+	});
 });
 
 describe("translations mirror English", () => {
@@ -195,11 +234,119 @@ describe("sidebar", () => {
 		["api/server.md", "---\ntitle: Серверный API\n---\n"],
 	]);
 
+	test("Intro (and a folder's overview) come first: the theme highlights every link under the current route, so no page sits at a bare folder URL", () => {
+		const items = sidebarItems(
+			new Map([
+				["api/server.md", "---\ntitle: API\n---\n"],
+				["intro.md", "---\ntitle: Intro\n---\n"],
+				["drafts/plan.md", "---\ntitle: Plan\n---\n"],
+				["drafts/overview.md", "---\ntitle: Drafts\n---\n"],
+			]),
+		);
+		expect(items.map((i) => i.title)).toEqual([
+			"Intro",
+			"API",
+			"Drafts",
+			"Plan",
+		]);
+	});
+
+	test("/docs/ and /docs/drafts/ redirect to their first page", () => {
+		expect(folderRedirects(content)).toEqual(
+			expect.arrayContaining([
+				{ route: "docs", to: "/docs/intro/" },
+				{ route: "ru/docs", to: "/ru/docs/intro/" },
+				{ route: "docs/drafts", to: "/docs/drafts/overview/" },
+			]),
+		);
+	});
+
 	test("one item per page, titled in the page's language, linked by logical path", () => {
 		expect(sidebarItems(pages)).toEqual([
 			{ title: "Обзор", to: "/docs/" },
 			{ title: "Серверный API", to: "/docs/api/server/" },
 			{ title: "Виджет", to: "/docs/widget/" },
 		]);
+	});
+});
+
+describe("llms.txt (llmstxt.org)", () => {
+	const site = { title: "Site", description: "What it is." };
+	const pages = (
+		en: Record<string, string>,
+		kk: Record<string, string> = {},
+	): Map<string, PageSet> =>
+		new Map([
+			["en", new Map(Object.entries(en))],
+			["kk", new Map(Object.entries(kk))],
+		]);
+	const page = (title: string, body = "") =>
+		`---\ntitle: ${title}\n---\n\n# ${title}\n${body}`;
+
+	test("a page's Markdown sits next to it as index.html.md", () => {
+		expect(pageMarkdownPath("index.md", "en")).toBe("docs/index.html.md");
+		expect(pageMarkdownPath("api/server.md", "kk")).toBe(
+			"kk/docs/api/server/index.html.md",
+		);
+	});
+
+	test("clean Markdown: no frontmatter, the Svelte-only code escape back to backticks", () => {
+		const md =
+			"---\ntitle: T\n---\n\n# T\n\nUse <code>{'${VAR}'}</code> here.\n";
+		expect(cleanMarkdown(md)).toBe("# T\n\nUse `${VAR}` here.\n");
+	});
+
+	test("H1, summary, the docs list, drafts and other languages under Optional", () => {
+		const txt = buildLlmsTxt(
+			"en",
+			pages(
+				{ "index.md": page("Home"), "drafts/plan.md": page("Plan") },
+				{ "index.md": page("Басты") },
+			),
+			site,
+		);
+		expect(txt).toStartWith("# Site\n\n> What it is.\n");
+		expect(txt).toContain("## Docs\n\n- [Home](/docs/index.html.md)\n");
+		const optional = txt.slice(txt.indexOf("## Optional"));
+		expect(optional).toContain("- [Plan](/docs/drafts/plan/index.html.md)");
+		expect(optional).toContain("(/kk/llms.txt)");
+		expect(txt.indexOf("## Docs")).toBeLessThan(txt.indexOf("## Optional"));
+	});
+
+	test("a translation lists its own pages under its prefix, no drafts", () => {
+		const txt = buildLlmsTxt(
+			"kk",
+			pages({ "index.md": page("Home") }, { "index.md": page("Басты") }),
+			site,
+		);
+		expect(txt).toContain("- [Басты](/kk/docs/index.html.md)");
+		expect(txt).toContain("(/llms.txt)");
+	});
+
+	test("llms-full.txt: every English page except drafts, in order", () => {
+		const full = buildLlmsFull(
+			pages({
+				"index.md": page("Home", "\nhello\n"),
+				"api/server.md": page("Server"),
+				"drafts/plan.md": page("Plan"),
+			}),
+			site,
+		);
+		expect(full).toContain("hello");
+		expect(full).not.toContain("# Plan");
+		expect(full.indexOf("# Home")).toBeLessThan(full.indexOf("# Server"));
+	});
+
+	test("every real page gets a Markdown file, every locale an llms.txt", () => {
+		const files = llmsFiles(content, site);
+		for (const locale of ALL_LOCALES) {
+			expect(
+				files.has(
+					locale === DEFAULT_LOCALE ? "llms.txt" : `${locale}/llms.txt`,
+				),
+			).toBe(true);
+		}
+		expect(files.has("llms-full.txt")).toBe(true);
+		expect(files.has("docs/intro/index.html.md")).toBe(true);
 	});
 });
