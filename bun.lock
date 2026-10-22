@@ -326,6 +326,7 @@
       "name": "@repo/wordpress-plugin",
       "devDependencies": {
         "@shalotts/pleiades-widget": "workspace:*",
+        "@types/bun": "catalog:",
       },
     },
   },

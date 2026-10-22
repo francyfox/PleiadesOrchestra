@@ -6,9 +6,10 @@
 		"build": "bun scripts/build.ts",
 		"test": "bun test pleiades-assistant",
 		"lint": "biome check .",
-		"check-types": "echo \"no types: PHP and plain JS\""
+		"check-types": "bun check"
 	},
 	"devDependencies": {
+		"@types/bun": "catalog:",
 		"@shalotts/pleiades-widget": "workspace:*"
 	}
 }
