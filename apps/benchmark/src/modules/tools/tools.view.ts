@@ -84,42 +84,51 @@ export function renderComplexCase(
 	return lines.join("\n");
 }
 
-/** The complex check's own table: whole cases, each kind of field, speed. */
+/** The complex check's own table: whole cases, each kind of field, speed; one column per model. */
+export function renderComplexComparison(
+	models: string[],
+	summaries: (ComplexSummary | undefined)[],
+): string {
+	const column = (read: (summary: ComplexSummary) => string) =>
+		summaries.map((summary) => (summary ? read(summary) : "💥"));
+	const byKind = KINDS.map((kind): [string, string[]] => [
+		kind,
+		column((summary) => {
+			const tally = summary.byKind[kind];
+			return tally
+				? `${pct(tally.right / tally.total)} (${tally.right}/${tally.total})`
+				: "—";
+		}),
+	]);
+	const table = metricTable(models, [
+		["Cases", column((summary) => String(summary.cases))],
+		[
+			"All fields",
+			column((s) => `${accuracyMark(s.allFields)} ${pct(s.allFields)}`),
+		],
+		...byKind,
+		// Per field the answer is always an object: this is calls that didn't fail.
+		["Completed", column((s) => pct(s.valid))],
+		["p50 ms", column((s) => s.p50Ms.toFixed(0))],
+		["p90 ms", column((s) => s.p90Ms.toFixed(0))],
+		["Prompt tok", column((s) => s.meanPromptTokens.toFixed(0))],
+		["Out tok", column((s) => s.meanOutputTokens.toFixed(0))],
+		["delta calls", column((s) => s.meanDeltaCalls.toFixed(1))],
+		...(summaries.some((s) => s?.meanLayaMs !== undefined)
+			? [
+					["Laya ms", column((s) => (s.meanLayaMs ?? 0).toFixed(0))] as [
+						string,
+						string[],
+					],
+				]
+			: []),
+	]);
+	return `\n${colors.bold("🧩 Complex check")}\n\n${table}`;
+}
+
 export function renderComplexTable(
 	model: string,
 	summary: ComplexSummary,
 ): string {
-	const byKind = KINDS.map((kind): [string, string[]] => {
-		const tally = summary.byKind[kind];
-		return [
-			kind,
-			[
-				tally
-					? `${pct(tally.right / tally.total)} (${tally.right}/${tally.total})`
-					: "—",
-			],
-		];
-	});
-	const table = metricTable(
-		[model],
-		[
-			["Cases", [String(summary.cases)]],
-			[
-				"All fields",
-				[`${accuracyMark(summary.allFields)} ${pct(summary.allFields)}`],
-			],
-			...byKind,
-			// Per field the answer is always an object: this is calls that didn't fail.
-			["Completed", [pct(summary.valid)]],
-			["p50 ms", [summary.p50Ms.toFixed(0)]],
-			["p90 ms", [summary.p90Ms.toFixed(0)]],
-			["Prompt tok", [summary.meanPromptTokens.toFixed(0)]],
-			["Out tok", [summary.meanOutputTokens.toFixed(0)]],
-			["delta calls", [summary.meanDeltaCalls.toFixed(1)]],
-			...(summary.meanLayaMs === undefined
-				? []
-				: [["Laya ms", [summary.meanLayaMs.toFixed(0)]] as [string, string[]]]),
-		],
-	);
-	return `\n${colors.bold("🧩 Complex check")}\n\n${table}`;
+	return renderComplexComparison([model], [summary]);
 }

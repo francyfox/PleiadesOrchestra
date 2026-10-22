@@ -8,6 +8,7 @@ import { connectServer, startServer } from "../delta/delta.server.ts";
 import { createDelta } from "../delta/delta.ts";
 import { loadLaya } from "../laya/laya.ts";
 import type { LoadedLaya } from "../laya/laya.types.ts";
+import { progressLine } from "../report/report.view.ts";
 import { COMPLEX_CASES } from "./tools.cases.ts";
 import { runComplex, summarizeComplex } from "./tools.service.ts";
 import type { ComplexResult } from "./tools.types.ts";
@@ -32,25 +33,6 @@ import { legend, renderComplexCase, renderComplexTable } from "./tools.view.ts";
 // DELTA_BASE_URL (+ DELTA_API_KEY, DELTA_MODEL) in .env runs the cases
 // against an OpenAI-compatible server already up elsewhere (delta's
 // llama-server, Ollama); --threads and --gpu then don't apply.
-
-/**
- * Progress on one stderr line, rewritten in place in a terminal. Not bunli's
- * spinner: it takes over the whole screen (OpenTUI), which wiped the results
- * table and cut emoji to one cell.
- */
-function progressLine() {
-	const tty = process.stderr.isTTY;
-	const started = performance.now();
-	const elapsed = () => `${((performance.now() - started) / 1000).toFixed(0)}s`;
-	return {
-		update(text: string) {
-			if (tty) process.stderr.write(`\r\x1b[K${text} (${elapsed()})`);
-		},
-		done(text: string) {
-			process.stderr.write(`${tty ? "\r\x1b[K" : ""}${text} (${elapsed()})\n`);
-		},
-	};
-}
 
 const flag = (description: string) =>
 	option(z.boolean().default(false), { description, argumentKind: "flag" });

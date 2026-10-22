@@ -36,7 +36,8 @@ export function choiceSchema(optional: string[]): Schema {
 			fill: {
 				type: "array",
 				items: { type: "string", enum: optional },
-				uniqueItems: true,
+				// Not `uniqueItems`: hosted grammar converters (DeepInfra behind OpenRouter) reject it; repeats are harmless (`fieldsToFill` takes a set).
+				maxItems: optional.length,
 			},
 		},
 		required: ["fill"],

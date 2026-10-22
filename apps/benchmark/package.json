@@ -7,6 +7,7 @@
 	"scripts": {
 		"start": "bun src/index.ts",
 		"tools": "bun src/index.ts tools",
+		"openrouter": "bun src/index.ts openrouter",
 		"laya": "bun src/index.ts laya",
 		"snake": "bun src/index.ts snake",
 		"sweep": "bun src/index.ts snake --headless --steps 100 --threads 0,1,2,4,6,12",

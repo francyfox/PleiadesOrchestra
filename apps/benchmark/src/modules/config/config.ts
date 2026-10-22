@@ -23,6 +23,8 @@ export function buildConfig(env: Record<string, string | undefined>) {
 				.transform((url) => url.replace(/\/+$/, "").replace(/\/v1$/, ""))
 				.optional(),
 			LAYA_API_KEY: z.string().optional(),
+			// `bun openrouter`: delta's candidates on OpenRouter (https://openrouter.ai/settings/keys).
+			OPENROUTER_API_KEY: z.string().optional(),
 		},
 		runtimeEnv: env,
 		emptyStringAsUndefined: true,

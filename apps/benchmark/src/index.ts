@@ -2,13 +2,14 @@
 import { createCLI } from "@bunli/core";
 import choices from "./modules/choices/choices.command.ts";
 import { menuText, pick } from "./modules/menu/menu.service.ts";
+import openrouter from "./modules/openrouter/openrouter.command.ts";
 import snake from "./modules/snake/snake.command.ts";
 import tools from "./modules/tools/tools.command.ts";
 
 // Every benchmark of the repo: `bun start` asks which one, `bun start tools …`
-// `bun start laya …` or `bun start snake …` runs it directly (`--help` after the name lists flags).
+// `bun start openrouter …` `bun start laya …` or `bun start snake …` runs it directly (`--help` after the name lists flags).
 
-const commands = [tools, choices, snake];
+const commands = [tools, openrouter, choices, snake];
 
 const cli = await createCLI({
 	name: "benchmark",

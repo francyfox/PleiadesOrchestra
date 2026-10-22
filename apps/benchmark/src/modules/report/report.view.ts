@@ -31,3 +31,22 @@ export function metricTable(
 
 /** A share as a whole percent, e.g. `0.664` → `66%`. */
 export const pct = (value: number) => `${(value * 100).toFixed(0)}%`;
+
+/**
+ * Progress on one stderr line, rewritten in place in a terminal. Not bunli's
+ * spinner: it takes over the whole screen (OpenTUI), which wiped the results
+ * table and cut emoji to one cell.
+ */
+export function progressLine() {
+	const tty = process.stderr.isTTY;
+	const started = performance.now();
+	const elapsed = () => `${((performance.now() - started) / 1000).toFixed(0)}s`;
+	return {
+		update(text: string) {
+			if (tty) process.stderr.write(`\r\x1b[K${text} (${elapsed()})`);
+		},
+		done(text: string) {
+			process.stderr.write(`${tty ? "\r\x1b[K" : ""}${text} (${elapsed()})\n`);
+		},
+	};
+}

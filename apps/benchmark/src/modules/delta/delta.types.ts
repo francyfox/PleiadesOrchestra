@@ -1,4 +1,5 @@
 import type { FunctionCallTool } from "@repo/core";
+import type { JSONValue } from "ai";
 
 /** A site's tool as `document.modelContext` lists it: name, description, JSON-schema input. */
 export interface ToolSpec {
@@ -24,6 +25,8 @@ export interface Endpoint {
 	apiKey?: string;
 	/** Sent as `model`; only multi-model servers (Ollama) need it. */
 	model?: string;
+	/** Request-body fields beside the model; given, they replace the default (`reasoning_effort: none` for a named model, which Ollama needs and a `require_parameters` route on OpenRouter refuses). */
+	providerOptions?: Record<string, JSONValue>;
 }
 
 export interface Server extends Endpoint {

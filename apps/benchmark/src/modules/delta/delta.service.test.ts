@@ -49,7 +49,7 @@ describe("phase 1: which optional fields", () => {
 				fill: {
 					type: "array",
 					items: { type: "string", enum: ["room", "breakfast"] },
-					uniqueItems: true,
+					maxItems: 2,
 				},
 			},
 			required: ["fill"],

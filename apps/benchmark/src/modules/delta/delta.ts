@@ -50,9 +50,9 @@ export function createDelta(deps: {
 	});
 	// Ollama (a named model) ignores chat_template_kwargs: without this Qwen3
 	// thinks ~1000 tokens and the schema leaves an empty object.
-	const providerOptions = endpoint.model
-		? { reasoningEffort: "none" }
-		: undefined;
+	const providerOptions =
+		endpoint.providerOptions ??
+		(endpoint.model ? { reasoningEffort: "none" } : undefined);
 
 	const fill = (
 		messages: Parameters<typeof fillOnce>[0]["messages"],

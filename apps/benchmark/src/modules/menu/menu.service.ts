@@ -6,7 +6,8 @@ export interface MenuItem {
 /** The numbered list shown when no benchmark is named on the command line. */
 export function menuText(items: MenuItem[]): string {
 	const lines = items.map(
-		(item, i) => `  ${i + 1}) ${item.name.padEnd(8)} ${item.description ?? ""}`,
+		(item, i) =>
+			`  ${i + 1}) ${item.name.padEnd(10)} ${item.description ?? ""}`,
 	);
 	return ["📊 Benchmarks", "", ...lines, ""].join("\n");
 }
