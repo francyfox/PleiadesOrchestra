@@ -381,9 +381,9 @@ interface ProviderModel {
   reasoningEffort?: "none" | "low" | "medium" | "high";
   extraBody: Record<string, unknown>; // extra request-body fields, e.g. { "provider": { "require_parameters": true } }
 }
-interface Provider { id: string; name: string; baseUrl: string; type: "openai-compat" | "systemone" | "ctranslate2"; apiKey: string; models: ProviderModel[] }
-// type: gamma-decision picks only "systemone" providers (local Laya, TypeSafe Jev; baseUrl without /v1), the other agents only "openai-compat"; a wrong pick is 400
-// type "ctranslate2": the in-process translator (no baseUrl, "" here; the model id is a Hugging Face repo); no agent can pick it, it is read at start (a change needs a restart)
+interface Provider { id: string; name: string; baseUrl: string; decisionsUrl?: string; apiKey: string; models: ProviderModel[] }
+// ProviderModel.type ("language" | "decision" | "translation", the AI SDK's factory names): gamma-decision picks only "decision" models, the other agents only "language"; a wrong pick is 400. decisionsUrl: where decision models are asked (Laya root without /v1, or an OpenRouter-style .../decisions URL), default baseUrl
+// "translation" models: the in-process translator (a provider of only those has no baseUrl, "" here; the model id is a Hugging Face repo); no agent can pick one, it is read at start (a change needs a restart)
 // apiKey: "••••" + last 4 characters, "$VAR" as written, "" = none — never the key
 ```
 

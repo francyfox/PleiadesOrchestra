@@ -41,6 +41,12 @@ export const AgentTestResult = t.Object({
 export const ProviderModel = t.Object({
 	id: t.String({ minLength: 1, maxLength: 200 }),
 	name: t.String({ minLength: 1, maxLength: 200 }),
+	/** What the model is for, as the AI SDK names its factories: `language`, `decision`; `translation` is the in-process translator. */
+	type: t.Union([
+		t.Literal("language"),
+		t.Literal("decision"),
+		t.Literal("translation"),
+	]),
 	temperature: t.Optional(t.Number({ minimum: 0, maximum: 2 })),
 	reasoningEffort: t.Optional(ReasoningEffort),
 	/** Extra request-body fields, e.g. `{ "provider": { "require_parameters": true } }` for OpenRouter. */
@@ -52,12 +58,8 @@ export const Provider = t.Object({
 	id: t.String(),
 	name: t.String(),
 	baseUrl: t.String(),
-	/** `systemone` = Laya / TypeSafe Jev decisions (gamma-decision only); the other agents take `openai-compat`. */
-	type: t.Union([
-		t.Literal("openai-compat"),
-		t.Literal("systemone"),
-		t.Literal("ctranslate2"),
-	]),
+	/** Where its decision models are asked (Laya root, or an OpenRouter-style `/decisions` URL); default `baseUrl`. */
+	decisionsUrl: t.Optional(t.String()),
 	apiKey: t.String(),
 	models: t.Array(ProviderModel),
 });
@@ -68,6 +70,8 @@ export const ProviderList = t.Object({ items: t.Array(Provider) });
 export const ProviderInput = t.Object({
 	name: t.String({ minLength: 1, maxLength: 100 }),
 	baseUrl: t.String({ pattern: "^https?://", maxLength: 500 }),
+	/** Where its decision models are asked; left out keeps the saved one. */
+	decisionsUrl: t.Optional(t.String({ pattern: "^https?://", maxLength: 500 })),
 	apiKey: t.Optional(t.String({ maxLength: 500 })),
 });
 

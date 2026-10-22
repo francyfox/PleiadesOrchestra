@@ -8,7 +8,8 @@
 [providers.openrouter]
 name = "OpenRouter"
 base_url = "https://openrouter.ai/api/v1"
-type = "openai-compat"
+# Where its decision models are asked (OpenRouter's own decisions API); default: base_url.
+decisions_url = "https://openrouter.ai/api/alpha/decisions"
 api_key = "$OPENROUTER_API_KEY"
 
 [[providers.openrouter.models]]
@@ -22,6 +23,12 @@ id = "google/gemini-2.5-flash"
 name = "Gemini 2.5 Flash"
 temperature = 0.3
 
+# type = what the model is for, named after the AI SDK's model factories:
+# "language" (default, chat), "decision" (typed questions), "translation".
+[[providers.openrouter.models]]
+id = "liquid/d1-ultra"
+type = "decision"
+
 # [providers.ollama]
 # name = "Ollama"
 # base_url = "http://192.168.1.10:11434/v1"
@@ -31,21 +38,21 @@ temperature = 0.3
 # temperature = 0
 # reasoning_effort = "none"   # Qwen3 on Ollama "thinks" into {} otherwise
 
-# Decision agent (gamma-decision): systemone providers only; base_url is the root without /v1.
+# Decision agent (gamma-decision): models of type "decision"; base_url (or decisions_url) is the root without /v1.
 # [providers.laya]
 # name = "Laya (local)"
 # base_url = "http://gamma-decision:8080"
-# type = "systemone"
 #
 # [[providers.laya.models]]
 # id = "laya"
+# type = "decision"
 #
 # TypeSafe's hosted Jev, same protocol.
 # [providers.typesafe]
 # name = "TypeSafe"
 # base_url = "https://api.typesafe.ai"
-# type = "systemone"
 # api_key = "$TYPESAFE_AI_API_KEY"
 #
 # [[providers.typesafe.models]]
-# id = "jev-latest"   # or a pinned one, e.g. jev-1.14.0
+# id = "jev-latest"
+# type = "decision"   # or a pinned one, e.g. jev-1.14.0

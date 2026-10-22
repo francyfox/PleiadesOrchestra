@@ -131,6 +131,7 @@ describe("agent settings", () => {
 		await call("/providers/openrouter/models", "PUT", {
 			id: "qwen/qwen3-30b",
 			name: "Qwen3 30B",
+			type: "language",
 			temperature: 0,
 			reasoningEffort: "none",
 			extraBody: { provider: { require_parameters: true } },
@@ -180,7 +181,7 @@ describe("agent settings", () => {
 		);
 	});
 
-	test("gamma picks systemone models only, the others openai-compat only", async () => {
+	test("gamma picks decision models only, the others language models only", async () => {
 		const { agentSettings, call } = await setup(undefined, SEED + SYSTEMONE);
 		await call("/agents/gamma-decision/model", "PUT", {
 			provider: "typesafe",
@@ -207,14 +208,51 @@ describe("agent settings", () => {
 			),
 		).toThrow(AgentSettingsError);
 		const list = await json(await call("/providers"));
-		expect(list.items.map((p: { type: string }) => p.type)).toEqual([
-			"openai-compat",
-			"systemone",
-			"systemone",
-		]);
+		expect(
+			list.items.map((p: { models: { type: string }[] }) =>
+				p.models.map((m) => m.type),
+			),
+		).toEqual([["language"], ["decision"], ["decision"]]);
 	});
 
-	test("no agent picks the in-process ctranslate2 translator", async () => {
+	test("one provider with a language and a decision model: each agent takes its own, decisions go to decisions_url", async () => {
+		const { agentSettings } = await setup(
+			undefined,
+			`${SEED}
+[providers.openrouter]
+base_url = "https://openrouter.ai/api/v1"
+decisions_url = "https://openrouter.ai/api/alpha/decisions"
+api_key = "sk-or-v1-key"
+models = [{ id = "qwen/qwen3-30b" }, { id = "liquid/d1-ultra", type = "decision" }]
+`,
+		);
+		agentSettings.pick(
+			"gamma-decision",
+			{ provider: "openrouter", model: "liquid/d1-ultra" },
+			"a",
+		);
+		agentSettings.pick(
+			"beta-text",
+			{ provider: "openrouter", model: "qwen/qwen3-30b" },
+			"a",
+		);
+		expect(agentSettings.effective("gamma-decision")).toMatchObject({
+			baseUrl: "https://openrouter.ai/api/alpha/decisions",
+			apiKey: "sk-or-v1-key",
+		});
+		expect(agentSettings.effective("beta-text").baseUrl).toBe(
+			"https://openrouter.ai/api/v1",
+		);
+		expect(() =>
+			agentSettings.pick(
+				"gamma-decision",
+				{ provider: "openrouter", model: "qwen/qwen3-30b" },
+				"a",
+			),
+		).toThrow(AgentSettingsError);
+	});
+
+	test("no agent picks a translation model", async () => {
 		const { agentSettings } = await setup(
 			undefined,
 			`${SEED}${SYSTEMONE}

@@ -18,7 +18,21 @@ describe("providerModelFromForm", () => {
 					reasoningEffort: "",
 				}),
 			),
-		).toEqual({ id: "qwen3:1.7b", name: "qwen3:1.7b", extraBody: {} });
+		).toEqual({
+			id: "qwen3:1.7b",
+			name: "qwen3:1.7b",
+			type: "language",
+			extraBody: {},
+		});
+	});
+
+	test("the type is one of the known ones, language when missing or unknown", () => {
+		const typeOf = (type: string) =>
+			providerModelFromForm(form({ id: "m", type }))?.type;
+		expect(typeOf("decision")).toBe("decision");
+		expect(typeOf("translation")).toBe("translation");
+		expect(typeOf("")).toBe("language");
+		expect(typeOf("image")).toBe("language");
 	});
 
 	test("filled fields are typed; 0 is a temperature", () => {
@@ -35,6 +49,7 @@ describe("providerModelFromForm", () => {
 		).toEqual({
 			id: "m",
 			name: "M",
+			type: "language",
 			temperature: 0,
 			reasoningEffort: "none",
 			extraBody: { provider: { require_parameters: true } },

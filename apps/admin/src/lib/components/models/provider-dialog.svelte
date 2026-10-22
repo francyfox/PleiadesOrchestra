@@ -34,6 +34,8 @@
 				{/if}
 				<FormField id="provider-name" name="name" label={$content.form.name.value} value={provider?.name ?? ""} placeholder="OpenRouter" required />
 				<FormField id="provider-url" name="baseUrl" type="url" label="Base URL" value={provider?.baseUrl ?? ""} placeholder="https://openrouter.ai/api/v1" required />
+				<FormField id="provider-decisions-url" name="decisionsUrl" type="url" label={$content.form.decisionsUrl.value} value={provider?.decisionsUrl ?? ""} placeholder="https://openrouter.ai/api/alpha/decisions" />
+				<p class="-mt-2 text-xs text-muted-foreground">{$content.form.decisionsUrlHint.value}</p>
 				<FormField
 					id="provider-key"
 					name="apiKey"

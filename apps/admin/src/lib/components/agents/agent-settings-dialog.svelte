@@ -69,12 +69,15 @@
 					{#if !view.provider}
 						<option value="" disabled>{view.model} ({$content.settings.envServer.value})</option>
 					{/if}
-					{#each providers.data.items.filter((p) => p.type === (agent.role === "decision" ? "systemone" : "openai-compat")) as p (p.id)}
-						<optgroup label={p.name}>
-							{#each p.models as m (m.id)}
-								<option value={`${p.id}\t${m.id}`}>{m.name}</option>
-							{/each}
-						</optgroup>
+					{#each providers.data.items as p (p.id)}
+						{@const models = p.models.filter((m) => m.type === (agent.role === "decision" ? "decision" : "language"))}
+						{#if models.length}
+							<optgroup label={p.name}>
+								{#each models as m (m.id)}
+									<option value={`${p.id}\t${m.id}`}>{m.name}</option>
+								{/each}
+							</optgroup>
+						{/if}
 					{/each}
 				</select>
 				<p class="font-mono text-xs text-muted-foreground">{view.baseUrl}</p>

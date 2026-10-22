@@ -44,6 +44,7 @@ const OPENROUTER: Provider = {
 		{
 			id: "qwen/qwen3-30b-a3b-instruct-2507",
 			name: "qwen/qwen3-30b-a3b-instruct-2507",
+			type: "language",
 			temperature: 0,
 			reasoningEffort: "none",
 			extraBody: { provider: { require_parameters: true } },
@@ -69,7 +70,14 @@ describe("providers.toml", () => {
 				name: "ollama",
 				baseUrl: "http://192.168.100.39:11434/v1",
 				apiKey: "$OLLAMA_KEY",
-				models: [{ id: "qwen3:1.7b", name: "Qwen3 1.7B", extraBody: {} }],
+				models: [
+					{
+						id: "qwen3:1.7b",
+						name: "Qwen3 1.7B",
+						type: "language",
+						extraBody: {},
+					},
+				],
 			},
 		]);
 		expect(parseProviders("")).toEqual([]);
@@ -100,36 +108,78 @@ describe("providers.toml", () => {
 			stringifyProviders([
 				{
 					...OPENROUTER,
-					models: [{ id: "m", name: "m", extraBody: { x: null } }],
+					models: [
+						{ id: "m", name: "m", type: "language", extraBody: { x: null } },
+					],
 				},
 			]),
 		).toThrow(ProvidersConfigError);
 	});
 
-	test("a systemone provider round-trips and keeps its type through an upsert", () => {
-		const typesafe: Provider = {
-			id: "typesafe",
-			name: "typesafe",
-			baseUrl: "https://api.typesafe.ai",
-			type: "systemone",
-			apiKey: "$TYPESAFE_AI_API_KEY",
-			models: [{ id: "jev-latest", name: "jev-latest", extraBody: {} }],
+	test("a decision model round-trips with the provider's decisions_url and keeps it through an upsert", () => {
+		const openrouter: Provider = {
+			id: "openrouter",
+			name: "openrouter",
+			baseUrl: "https://openrouter.ai/api/v1",
+			decisionsUrl: "https://openrouter.ai/api/alpha/decisions",
+			apiKey: "$OPENROUTER_API_KEY",
+			models: [
+				{
+					id: "liquid/d1-ultra",
+					name: "liquid/d1-ultra",
+					type: "decision",
+					extraBody: {},
+				},
+				{
+					id: "google/gemini-2.5-flash-lite",
+					name: "google/gemini-2.5-flash-lite",
+					type: "language",
+					extraBody: {},
+				},
+			],
 		};
-		const text = stringifyProviders([typesafe]);
-		expect(text).toContain('type = "systemone"');
-		expect(parseProviders(text)).toEqual([typesafe]);
+		const text = stringifyProviders([openrouter]);
+		expect(text).toContain('type = "decision"');
+		expect(text).not.toContain('type = "language"');
+		expect(parseProviders(text)).toEqual([openrouter]);
 		expect(
-			upsertProvider([typesafe], { ...typesafe, name: "TypeSafe" })[0]?.type,
-		).toBe("systemone");
+			upsertProvider([openrouter], {
+				...openrouter,
+				name: "OpenRouter",
+				decisionsUrl: undefined,
+			})[0]?.decisionsUrl,
+		).toBe("https://openrouter.ai/api/alpha/decisions");
 	});
 
-	test("a ctranslate2 provider needs no base_url, the others do; it is written without one", () => {
-		const toml = `[providers.local-translate]
+	test("a file from before model types: the provider's type decides what its models are", () => {
+		const [laya, translate, chat] = parseProviders(`[providers.laya]
+type = "systemone"
+base_url = "http://g:8080"
+models = [{ id = "laya" }]
+
+[providers.local-translate]
 type = "ctranslate2"
 models = [{ id = "gaudi/opus-mt-ru-en-ctranslate2" }]
+
+[providers.chat]
+base_url = "http://a/v1"
+models = [{ id = "m" }]
+`) as Provider[];
+		expect(laya?.models[0]?.type).toBe("decision");
+		expect(translate?.models[0]?.type).toBe("translation");
+		expect(chat?.models[0]?.type).toBe("language");
+		expect(stringifyProviders([laya as Provider])).not.toContain(
+			'type = "systemone"',
+		);
+	});
+
+	test("a provider of translation models needs no base_url, the others do; it is written without one", () => {
+		const toml = `[providers.local-translate]
+models = [{ id = "gaudi/opus-mt-ru-en-ctranslate2", type = "translation" }]
 `;
 		const p = parseProviders(toml)[0] as Provider;
-		expect(p).toMatchObject({ type: "ctranslate2", baseUrl: "" });
+		expect(p).toMatchObject({ baseUrl: "" });
+		expect(p.models[0]?.type).toBe("translation");
 		expect(stringifyProviders([p])).not.toContain("base_url");
 		expect(parseProviders(stringifyProviders([p]))).toEqual([p]);
 		expect(() => parseProviders('[providers.x]\nname = "x"\n')).toThrow(
@@ -138,13 +188,17 @@ models = [{ id = "gaudi/opus-mt-ru-en-ctranslate2" }]
 	});
 
 	test("a ctranslate2 server is seeded without a base URL and without a key", () => {
-		const model = { id: "org/m", name: "org/m", extraBody: {} };
+		const model = {
+			id: "org/m",
+			name: "org/m",
+			type: "translation" as const,
+			extraBody: {},
+		};
 		expect(
 			seedProviders([
 				{
 					id: "local-translate",
 					baseUrl: "",
-					type: "ctranslate2",
 					apiKeyVar: "",
 					model,
 				},
@@ -154,7 +208,6 @@ models = [{ id = "gaudi/opus-mt-ru-en-ctranslate2" }]
 				id: "local-translate",
 				name: "local-translate",
 				baseUrl: "",
-				type: "ctranslate2",
 				apiKey: "",
 				models: [model],
 			},
@@ -162,7 +215,12 @@ models = [{ id = "gaudi/opus-mt-ru-en-ctranslate2" }]
 	});
 
 	test("seeding from env: one provider per base URL, keys as env references, no server = skipped", () => {
-		const model = (id: string) => ({ id, name: id, extraBody: {} });
+		const model = (id: string, type: "language" | "decision" = "language") => ({
+			id,
+			name: id,
+			type,
+			extraBody: {},
+		});
 		expect(
 			seedProviders([
 				{
@@ -181,9 +239,8 @@ models = [{ id = "gaudi/opus-mt-ru-en-ctranslate2" }]
 				{
 					id: "local-decision",
 					baseUrl: "http://g:8080",
-					type: "systemone",
 					apiKeyVar: "D",
-					model: model("laya"),
+					model: model("laya", "decision"),
 				},
 			]),
 		).toEqual([
@@ -198,9 +255,8 @@ models = [{ id = "gaudi/opus-mt-ru-en-ctranslate2" }]
 				id: "local-decision",
 				name: "local-decision",
 				baseUrl: "http://g:8080",
-				type: "systemone",
 				apiKey: "$D",
-				models: [model("laya")],
+				models: [model("laya", "decision")],
 			},
 		]);
 	});
@@ -221,6 +277,7 @@ models = [{ id = "gaudi/opus-mt-ru-en-ctranslate2" }]
 		const withModel = upsertModel(one, "a", {
 			id: "m",
 			name: "M",
+			type: "language",
 			extraBody: {},
 		});
 		// No apiKey in the input = keep the stored one.
@@ -235,16 +292,21 @@ models = [{ id = "gaudi/opus-mt-ru-en-ctranslate2" }]
 				name: "A2",
 				baseUrl: "http://a2/v1",
 				apiKey: "k1",
-				models: [{ id: "m", name: "M", extraBody: {} }],
+				models: [{ id: "m", name: "M", type: "language", extraBody: {} }],
 			},
 		]);
 		expect(removeModel(renamed, "a", "m")[0]?.models).toEqual([]);
 		expect(() =>
-			upsertModel([], "nope", { id: "m", name: "m", extraBody: {} }),
+			upsertModel([], "nope", {
+				id: "m",
+				name: "m",
+				type: "language",
+				extraBody: {},
+			}),
 		).toThrow(ProvidersConfigError);
 	});
 
-	test("an existing file without a provider of a seeded type gets that seeded provider; others are left alone", async () => {
+	test("an existing file without a model of a seeded type gets that seeded provider; others are left alone", async () => {
 		await inTempDir(async (dir) => {
 			const path = join(dir, "providers.toml");
 			await Bun.write(path, TOML);
@@ -252,9 +314,8 @@ models = [{ id = "gaudi/opus-mt-ru-en-ctranslate2" }]
 				id: "local-decision",
 				name: "local-decision",
 				baseUrl: "http://laya:8090",
-				type: "systemone",
 				apiKey: "$LAYA_API_KEY",
-				models: [{ id: "laya", name: "laya", extraBody: {} }],
+				models: [{ id: "laya", name: "laya", type: "decision", extraBody: {} }],
 			};
 			const seed = () => [{ ...OPENROUTER, id: "local-text" }, laya];
 			const config = await createProvidersConfig({ path, seed });

@@ -19,7 +19,7 @@ import {
 	type AgentId,
 	type EffectiveSettings,
 	type EnvServer,
-	providerTypeOf,
+	modelTypeOf,
 } from "./agent-settings.types.ts";
 
 type Row = typeof agentSettings.$inferSelect;
@@ -57,7 +57,11 @@ export function buildEffective(
 	const { provider, model } = hit;
 	return {
 		provider: provider.id,
-		baseUrl: provider.baseUrl,
+		// A decision model is asked at the provider's decisions endpoint.
+		baseUrl:
+			model.type === "decision"
+				? (provider.decisionsUrl ?? provider.baseUrl)
+				: provider.baseUrl,
 		apiKey: resolveKey(provider.apiKey),
 		model: model.id,
 		temperature: model.temperature,
@@ -164,13 +168,14 @@ export function createAgentSettings(deps: AgentSettingsDeps) {
 			const provider = providers
 				.providers()
 				.find((p) => p.id === pick.provider);
-			if (!provider?.models.some((m) => m.id === pick.model))
+			const model = provider?.models.find((m) => m.id === pick.model);
+			if (!model)
 				throw new AgentSettingsError(
 					`no model "${pick.model}" at provider "${pick.provider}"`,
 				);
-			const type = providerTypeOf(id);
-			if ((provider.type ?? "openai-compat") !== type)
-				throw new AgentSettingsError(`${id} takes ${type} providers only`);
+			const type = modelTypeOf(id);
+			if (model.type !== type)
+				throw new AgentSettingsError(`${id} takes ${type} models only`);
 			const values = { ...pick, updatedBy: adminId, updatedAt: now() };
 			db.insert(agentSettings)
 				.values({ agentId: id, ...values })
@@ -182,7 +187,6 @@ export function createAgentSettings(deps: AgentSettingsDeps) {
 		providersView() {
 			return providers.providers().map((p) => ({
 				...p,
-				type: p.type ?? "openai-compat",
 				apiKey: maskKey(p.apiKey),
 			}));
 		},

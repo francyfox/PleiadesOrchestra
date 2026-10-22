@@ -9,12 +9,22 @@
 	import ProvidersTable from "#lib/components/models/providers-table.svelte";
 	import ProvidersTomlDialog from "#lib/components/models/providers-toml-dialog.svelte";
 	import { Button } from "#lib/components/ui/button/index.js";
+	import * as Tabs from "#lib/components/ui/tabs/index.js";
+	import { MODEL_TYPES } from "#lib/provider-model-form.js";
 	import { prefetched } from "#lib/query/prefetch.js";
 	import { queries } from "#lib/query/queries.js";
 
 	const content = useIntlayer("models");
 	const query = createQuery(() => queries.providers());
 	const providers = $derived(prefetched(query).items);
+
+	let typeFilter = $state<"all" | (typeof MODEL_TYPES)[number]>("all");
+	const countOf = (type: string) =>
+		providers.reduce(
+			(n, p) =>
+				n + p.models.filter((m) => type === "all" || m.type === type).length,
+			0,
+		);
 
 	let providerOpen = $state(false);
 	let editingProvider = $state<Provider | null>(null);
@@ -41,8 +51,16 @@
 </div>
 
 <h2 class="text-lg font-semibold">{$content.models.title.value}</h2>
+<Tabs.Root bind:value={typeFilter}>
+	<Tabs.List>
+		{#each ["all", ...MODEL_TYPES] as type (type)}
+			<Tabs.Trigger value={type}>{$content.types[type as "all"].value} {countOf(type)}</Tabs.Trigger>
+		{/each}
+	</Tabs.List>
+</Tabs.Root>
 <ModelsTable
 	{providers}
+	type={typeFilter}
 	onEdit={(row) => ((editingModel = { provider: row.provider.id, model: row.model }), (modelOpen = true))}
 />
 

@@ -20,6 +20,10 @@
 						"type": "string",
 						"format": "uri"
 					},
+					"decisions_url": {
+						"type": "string",
+						"format": "uri"
+					},
 					"type": {
 						"type": "string",
 						"enum": [
@@ -43,6 +47,14 @@
 								},
 								"name": {
 									"type": "string"
+								},
+								"type": {
+									"type": "string",
+									"enum": [
+										"language",
+										"decision",
+										"translation"
+									]
 								},
 								"temperature": {
 									"type": "number",

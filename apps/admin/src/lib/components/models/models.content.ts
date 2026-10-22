@@ -42,6 +42,13 @@ const modelsContent = {
 				kk: "Оның модельдеріндегі агенттер env серверіне оралады.",
 			}),
 		},
+		/** Model types, named after the AI SDK's model factories. */
+		types: {
+			all: t({ ru: "Все", en: "All", kk: "Барлығы" }),
+			language: t({ ru: "Текст", en: "Language", kk: "Мәтін" }),
+			decision: t({ ru: "Решения", en: "Decision", kk: "Шешімдер" }),
+			translation: t({ ru: "Перевод", en: "Translation", kk: "Аударма" }),
+		},
 		models: {
 			title: t({ ru: "Модели", en: "Models", kk: "Модельдер" }),
 			add: t({ ru: "Модель", en: "Model", kk: "Модель" }),
@@ -51,6 +58,7 @@ const modelsContent = {
 				kk: "Модельдер жоқ — алдымен провайдер қосыңыз",
 			}),
 			columns: {
+				type: t({ ru: "Тип", en: "Type", kk: "Түрі" }),
 				model: t({ ru: "Модель", en: "Model", kk: "Модель" }),
 				provider: t({ ru: "Провайдер", en: "Provider", kk: "Провайдер" }),
 				temperature: t({
@@ -97,6 +105,17 @@ const modelsContent = {
 				kk: "Бос — сақталғанын қалдыру. $АТЫ — орта айнымалысынан алу.",
 			}),
 			provider: t({ ru: "Провайдер", en: "Provider", kk: "Провайдер" }),
+			type: t({ ru: "Тип модели", en: "Model type", kk: "Модель түрі" }),
+			decisionsUrl: t({
+				ru: "Адрес решений (Decisions URL)",
+				en: "Decisions URL",
+				kk: "Шешімдер мекенжайы (Decisions URL)",
+			}),
+			decisionsUrlHint: t({
+				ru: "Нужен моделям типа «Решения», если их адрес не Base URL: корень Laya или .../decisions у OpenRouter. Пусто — оставить сохранённый.",
+				en: "For decision models whose endpoint is not the Base URL: a Laya root, or OpenRouter's .../decisions. Empty keeps the saved one.",
+				kk: "Мекенжайы Base URL емес «Шешімдер» үлгілері үшін: Laya түбірі немесе OpenRouter .../decisions. Бос — сақталғанын қалдыру.",
+			}),
 			modelId: t({ ru: "Id модели", en: "Model id", kk: "Модель id" }),
 			modelIdHint: t({
 				ru: "Как его ждёт сервер: google/gemini-2.5-flash, qwen3:1.7b.",

@@ -3,15 +3,13 @@ import { config } from "../config/config.service.ts";
 import { ensureModel, translateModelDir } from "./translate-engine.ts";
 import { createTranslatePool, workerEntryUrl } from "./translate-pool.ts";
 
-/** The translator's model from providers.toml (first `ctranslate2` provider, first model), else the env repo. */
+/** The translator's model from providers.toml (the first model of type `translation`), else the env repo. */
 export function translatorModel(): { provider: string | null; repo: string } {
-	const p = agentSettings
-		.providersView()
-		.find((x) => x.type === "ctranslate2" && x.models[0]);
-	return {
-		provider: p?.id ?? null,
-		repo: p?.models[0]?.id ?? config.TRANSLATE_MODEL_REPO,
-	};
+	for (const p of agentSettings.providersView()) {
+		const model = p.models.find((m) => m.type === "translation");
+		if (model) return { provider: p.id, repo: model.id };
+	}
+	return { provider: null, repo: config.TRANSLATE_MODEL_REPO };
 }
 
 /**

@@ -357,12 +357,14 @@ export const providerActions = {
 	/** An empty key field keeps the saved key. */
 	save: (form: FormData) => {
 		const apiKey = text(form, "apiKey");
+		const decisionsUrl = text(form, "decisionsUrl");
 		return submitted(
 			api()
 				.providers({ id: text(form, "id") })
 				.put({
 					name: text(form, "name"),
 					baseUrl: text(form, "baseUrl"),
+					...(decisionsUrl ? { decisionsUrl } : {}),
 					...(apiKey ? { apiKey } : {}),
 				}),
 		);

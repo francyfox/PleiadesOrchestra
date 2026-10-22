@@ -4,30 +4,51 @@ import { z } from "zod";
 export const REASONING_EFFORTS = ["none", "low", "medium", "high"] as const;
 export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
 
+/**
+ * What a model is for, named after the AI SDK's model factories
+ * (`languageModel`, `decisionModel`); `translation` is ours (the in-process
+ * CTranslate2 translator has no SDK counterpart).
+ */
+export const MODEL_TYPES = ["language", "decision", "translation"] as const;
+export type ModelType = (typeof MODEL_TYPES)[number];
+
 /** A model of a provider with the request parameters it is called with. */
 export interface ProviderModel {
 	id: string;
 	name: string;
+	type: ModelType;
 	temperature?: number;
 	reasoningEffort?: ReasoningEffort;
 	/** Extra request-body fields, e.g. `{ provider: { require_parameters: true } }` for OpenRouter. */
 	extraBody: Record<string, unknown>;
 }
 
-export const PROVIDER_TYPES = [
+/** Files from before models had a type: the provider's `type` decides what all its models are. */
+const LEGACY_PROVIDER_TYPES = [
 	"openai-compat",
 	"systemone",
 	"ctranslate2",
 ] as const;
-export type ProviderType = (typeof PROVIDER_TYPES)[number];
+const legacyModelType = (type: string | undefined): ModelType =>
+	type === "systemone"
+		? "decision"
+		: type === "ctranslate2"
+			? "translation"
+			: "language";
 
-/** A model server from `configs/providers.toml`: OpenAI-compatible, `systemone` (Laya / TypeSafe Jev decisions; `baseUrl` is the root without `/v1`), or `ctranslate2` (the in-process translator: no URL, `baseUrl` is "", the model id is a Hugging Face repo). */
+/**
+ * A model server from `configs/providers.toml`. `baseUrl` is the OpenAI-compatible
+ * endpoint (language models); `decisionsUrl` is where its decision models are
+ * asked: a root without `/v1` (Laya, TypeSafe Jev: `POST {root}/v1/systemone`)
+ * or a URL ending in `/decisions` (OpenRouter), default `baseUrl`. A provider
+ * with only translation models (the in-process translator) has no URL, `baseUrl`
+ * is "", and the model id is a Hugging Face repo.
+ */
 export interface Provider {
 	id: string;
 	name: string;
 	baseUrl: string;
-	/** Unset = openai-compat. */
-	type?: ProviderType;
+	decisionsUrl?: string;
 	/** As written: the key, `$ENV_VAR`, or "" for none. Never leaves the process (see `maskKey`). */
 	apiKey: string;
 	models: ProviderModel[];
@@ -47,13 +68,16 @@ const Schema = z.object({
 				.object({
 					name: z.string().min(1).optional(),
 					base_url: z.url({ protocol: /^https?$/ }).optional(),
-					type: z.enum(PROVIDER_TYPES).optional(),
+					decisions_url: z.url({ protocol: /^https?$/ }).optional(),
+					// Before models had a type: read, never written.
+					type: z.enum(LEGACY_PROVIDER_TYPES).optional(),
 					api_key: z.string().optional(),
 					models: z
 						.array(
 							z.object({
 								id: z.string().min(1),
 								name: z.string().optional(),
+								type: z.enum(MODEL_TYPES).optional(),
 								temperature: z.number().min(0).max(2).optional(),
 								reasoning_effort: z.enum(REASONING_EFFORTS).optional(),
 								extra_body: z.record(z.string(), z.unknown()).optional(),
@@ -61,10 +85,20 @@ const Schema = z.object({
 						)
 						.default([]),
 				})
-				.refine((p) => p.type === "ctranslate2" || p.base_url, {
-					message: "base_url is required (only ctranslate2 runs in-process)",
-					path: ["base_url"],
-				}),
+				.refine(
+					(p) =>
+						p.base_url ||
+						p.decisions_url ||
+						(p.models.length > 0 &&
+							p.models.every(
+								(m) => (m.type ?? legacyModelType(p.type)) === "translation",
+							)),
+					{
+						message:
+							"base_url is required (only a provider of translation models runs in-process)",
+						path: ["base_url"],
+					},
+				),
 		)
 		.default({}),
 });
@@ -125,13 +159,12 @@ function analyze(toml: string): {
 			id,
 			name: p.name ?? id,
 			baseUrl: p.base_url ?? "",
-			...(p.type === "systemone" || p.type === "ctranslate2"
-				? { type: p.type }
-				: {}),
+			...(p.decisions_url ? { decisionsUrl: p.decisions_url } : {}),
 			apiKey: p.api_key ?? "",
 			models: p.models.map((m) => ({
 				id: m.id,
 				name: m.name ?? m.id,
+				type: m.type ?? legacyModelType(p.type),
 				...(m.temperature === undefined ? {} : { temperature: m.temperature }),
 				...(m.reasoning_effort ? { reasoningEffort: m.reasoning_effort } : {}),
 				extraBody: m.extra_body ?? {},
@@ -206,12 +239,13 @@ export function stringifyProviders(providers: Provider[]): string {
 	for (const p of providers) {
 		lines.push(`[providers.${p.id}]`, `name = ${str(p.name)}`);
 		if (p.baseUrl) lines.push(`base_url = ${str(p.baseUrl)}`);
-		lines.push(`type = ${str(p.type ?? "openai-compat")}`);
+		if (p.decisionsUrl) lines.push(`decisions_url = ${str(p.decisionsUrl)}`);
 		if (p.apiKey) lines.push(`api_key = ${str(p.apiKey)}`);
 		lines.push("");
 		for (const m of p.models) {
 			lines.push(`[[providers.${p.id}.models]]`, `id = ${str(m.id)}`);
 			if (m.name !== m.id) lines.push(`name = ${str(m.name)}`);
+			if (m.type !== "language") lines.push(`type = ${str(m.type)}`);
 			if (m.temperature !== undefined)
 				lines.push(`temperature = ${m.temperature}`);
 			if (m.reasoningEffort)
@@ -247,8 +281,8 @@ export function upsertProvider(
 	const next: Provider = {
 		...input,
 		apiKey: input.apiKey ?? old?.apiKey ?? "",
-		// the forms don't send a type: an edit keeps the file's
-		type: input.type ?? old?.type,
+		// the forms don't send it: an edit keeps the file's
+		decisionsUrl: input.decisionsUrl ?? old?.decisionsUrl,
 		models: old?.models ?? [],
 	};
 	return old
@@ -297,23 +331,19 @@ export function seedProviders(
 	servers: {
 		id: string;
 		baseUrl: string;
-		type?: ProviderType;
 		apiKeyVar: string;
 		model: ProviderModel;
 	}[],
 ): Provider[] {
 	const seeded: Provider[] = [];
 	for (const server of servers) {
-		if (!server.baseUrl && server.type !== "ctranslate2") continue;
-		const same = seeded.find(
-			(p) => p.baseUrl === server.baseUrl && p.type === server.type,
-		);
+		if (!server.baseUrl && server.model.type !== "translation") continue;
+		const same = seeded.find((p) => p.baseUrl === server.baseUrl);
 		if (!same)
 			seeded.push({
 				id: server.id,
 				name: server.id,
 				baseUrl: server.baseUrl,
-				...(server.type ? { type: server.type } : {}),
 				apiKey: server.apiKeyVar ? `$${server.apiKeyVar}` : "",
 				models: [server.model],
 			});
@@ -351,11 +381,12 @@ export async function createProvidersConfig(deps: ProvidersConfigDeps) {
 
 	if (await file.exists()) {
 		providers = parseProviders(await file.text());
-		// A file from before a provider type existed (systemone) gets that type's env server, or its agent has nothing to pick.
-		const typeOf = (p: Provider) => p.type ?? "openai-compat";
+		// A file with no model of some type (a decision model, say) gets that type's env server, or its agent has nothing to pick.
+		const has = (type: ModelType) =>
+			providers.some((p) => p.models.some((m) => m.type === type));
 		const missing = deps
 			.seed()
-			.filter((s) => !providers.some((p) => typeOf(p) === typeOf(s)));
+			.filter((s) => !s.models.every((m) => has(m.type)));
 		if (missing.length) await write([...providers, ...missing]);
 	} else await write(deps.seed());
 

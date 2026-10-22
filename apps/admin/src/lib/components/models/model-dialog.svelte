@@ -8,6 +8,7 @@
 	import { Input } from "#lib/components/ui/input/index.js";
 	import { Label } from "#lib/components/ui/label/index.js";
 	import { Textarea } from "#lib/components/ui/textarea/index.js";
+	import { MODEL_TYPES } from "#lib/provider-model-form.js";
 	import { useModelsEnhance } from "./use-models-enhance";
 
 	/** Adds a model to a provider, or edits one (`editing` set; the id stays, the provider can change). */
@@ -54,6 +55,14 @@
 					<FormField id="model-id" name="id" label={$content.form.modelId.value} placeholder="google/gemini-2.5-flash" required />
 					<p class="-mt-2 text-xs text-muted-foreground">{$content.form.modelIdHint.value}</p>
 				{/if}
+				<div class="grid gap-2">
+					<Label for="model-type">{$content.form.type.value}</Label>
+					<select id="model-type" name="type" value={model?.type ?? "language"} class={selectClass}>
+						{#each MODEL_TYPES as type (type)}
+							<option value={type}>{$content.types[type].value}</option>
+						{/each}
+					</select>
+				</div>
 				<FormField id="model-name" name="name" label={$content.form.name.value} value={model?.name ?? ""} />
 				<div class="grid gap-2">
 					<Label for="model-temperature">{$content.form.temperature.value}</Label>

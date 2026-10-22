@@ -1,5 +1,5 @@
 import type {
-	ProviderType,
+	ModelType,
 	ReasoningEffort,
 } from "../providers/providers.service.ts";
 
@@ -10,9 +10,9 @@ export const AGENT_IDS = [
 ] as const;
 export type AgentId = (typeof AGENT_IDS)[number];
 
-/** Gamma speaks systemone (Laya, Jev), the others OpenAI chat: an agent picks only a provider of its type. */
-export const providerTypeOf = (id: AgentId): ProviderType =>
-	id === "gamma-decision" ? "systemone" : "openai-compat";
+/** Gamma asks decision models (Laya, Jev, OpenRouter d1), the others language models: an agent picks only a model of its type. */
+export const modelTypeOf = (id: AgentId): ModelType =>
+	id === "gamma-decision" ? "decision" : "language";
 
 /** The server env names for one agent; used until a model is picked. */
 export interface EnvServer {

@@ -1,4 +1,6 @@
 const REASONING_EFFORTS = ["none", "low", "medium", "high"] as const;
+/** Named after the AI SDK's model factories; what the model is for. */
+export const MODEL_TYPES = ["language", "decision", "translation"] as const;
 
 const text = (form: FormData, name: string) =>
 	String(form.get(name) ?? "").trim();
@@ -30,9 +32,11 @@ export function providerModelFromForm(form: FormData) {
 	const effort = REASONING_EFFORTS.find(
 		(e) => e === text(form, "reasoningEffort"),
 	);
+	const type = MODEL_TYPES.find((t) => t === text(form, "type")) ?? "language";
 	return {
 		id,
 		name: text(form, "name") || id,
+		type,
 		...(temperature ? { temperature: Number(temperature) } : {}),
 		...(effort ? { reasoningEffort: effort } : {}),
 		extraBody,

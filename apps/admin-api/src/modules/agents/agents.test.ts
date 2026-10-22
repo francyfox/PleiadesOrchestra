@@ -39,6 +39,7 @@ describe("agents and providers (proxied)", () => {
 		const model = {
 			id: "qwen/qwen3:1.7b",
 			name: "Qwen",
+			type: "language",
 			temperature: 0,
 			extraBody: {},
 		};
@@ -48,7 +49,6 @@ describe("agents and providers (proxied)", () => {
 					id: "openrouter",
 					name: "OpenRouter",
 					baseUrl: "https://openrouter.ai/api/v1",
-					type: "openai-compat",
 					apiKey: "••••1234",
 					models: [model],
 				},

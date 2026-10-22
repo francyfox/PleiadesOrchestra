@@ -21,7 +21,13 @@
 	let {
 		providers,
 		onEdit,
-	}: { providers: Provider[]; onEdit: (row: Row) => void } = $props();
+		type = "all",
+	}: {
+		providers: Provider[];
+		onEdit: (row: Row) => void;
+		/** Only the models of this type (`all` = every model). */
+		type?: ProviderModel["type"] | "all";
+	} = $props();
 
 	const content = useIntlayer("models");
 	const common = useIntlayer("common");
@@ -34,7 +40,9 @@
 
 	const rows = $derived(
 		providers.flatMap((provider) =>
-			provider.models.map((model) => ({ provider, model })),
+			provider.models
+				.filter((model) => type === "all" || model.type === type)
+				.map((model) => ({ provider, model })),
 		),
 	);
 
@@ -47,6 +55,11 @@
 				id: "model",
 				header: () => $content.models.columns.model.value,
 				cell: (ctx) => renderSnippet(modelCell, ctx.row.original.model),
+			}),
+			helper.accessor((r) => r.model.type, {
+				id: "type",
+				header: () => $content.models.columns.type.value,
+				cell: (ctx) => $content.types[ctx.getValue()].value,
 			}),
 			helper.accessor((r) => r.provider.name, {
 				id: "provider",
