@@ -356,6 +356,98 @@
 		},
 	];
 
+	// Recipes and kits: named bundles of products, printed into the page by PHP (window.PleiadesWp).
+	const findBundle = (list, name) => {
+		const found = list?.find(
+			(b) => b.name.toLowerCase() === String(name ?? "").toLowerCase(),
+		);
+		if (!found) throw new Error(`unknown: ${name}`);
+		return found;
+	};
+
+	/** Item quantities for `servings` (the bundle's own when it has none). */
+	function scaleItems(bundle, servings) {
+		const factor =
+			bundle.servings && servings > 0 ? servings / bundle.servings : 1;
+		return bundle.items.map((i) => ({
+			...i,
+			quantity: Math.max(1, Math.ceil(i.quantity * factor)),
+		}));
+	}
+
+	/** Adds every item with `addOne(item)`; one failure (e.g. out of stock) does not stop the rest. */
+	async function addAll(items, addOne) {
+		const out = { added: [], missing: [], cart: undefined };
+		for (const item of items) {
+			try {
+				out.cart = await addOne(item);
+				out.added.push({ name: item.name, quantity: item.quantity });
+			} catch (e) {
+				out.missing.push({ name: item.name, reason: e.message });
+			}
+		}
+		return out;
+	}
+
+	function summarize({ added, missing }) {
+		const n = added.length;
+		let text = `Added ${n} item${n === 1 ? "" : "s"}.`;
+		if (missing.length)
+			text += ` Could not add: ${missing.map((m) => `${m.name} (${m.reason})`).join(", ")}.`;
+		return text;
+	}
+
+	const listBundles = (list) =>
+		list.map((b) => ({
+			name: b.name,
+			servings: b.servings,
+			time_minutes: b.time_minutes,
+			ingredients: b.items.length,
+			url: b.url,
+		}));
+
+	/** list_/add_ tools of the recipes and kits the page printed; the enum is the name list. */
+	function bundleTools(cfg) {
+		const tools = [];
+		for (const [key, label, list] of [
+			["recipe", "recipe", cfg.recipes],
+			["kit", "kit", cfg.kits],
+		]) {
+			if (!list?.length) continue;
+			tools.push(
+				{
+					name: `list_${key}s`,
+					annotations: READ,
+					description: `The shop's ${label}s: name, ${key === "recipe" ? "servings, time, " : ""}number of products, link.`,
+					inputSchema: obj(),
+				},
+				{
+					name: `add_${key}_to_cart`,
+					annotations: WRITE,
+					description: `Add every product of a ${label} to the visitor's cart in one step${key === "recipe" ? ", scaled to the number of servings" : ""}. Reports what was added and what is missing or out of stock.`,
+					inputSchema: obj(
+						{
+							[key]: {
+								type: "string",
+								enum: list.map((b) => b.name),
+								description: `Name of the ${label}`,
+							},
+							...(key === "recipe"
+								? {
+										servings: num(
+											"People to cook for, default as in the recipe",
+										),
+									}
+								: {}),
+						},
+						[key],
+					),
+				},
+			);
+		}
+		return tools;
+	}
+
 	globalThis.PleiadesWpCore = {
 		buildRequest,
 		nextNonce,
@@ -365,5 +457,11 @@
 		shapeProduct,
 		shapeResult,
 		TOOLS,
+		bundleTools,
+		findBundle,
+		scaleItems,
+		addAll,
+		summarize,
+		listBundles,
 	};
 })();

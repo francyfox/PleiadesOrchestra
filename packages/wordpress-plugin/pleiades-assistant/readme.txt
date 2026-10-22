@@ -4,7 +4,7 @@ Tags: chatbot, assistant, woocommerce, ai, chat
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 0.1.0
+Stable tag: 0.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -28,6 +28,9 @@ The chat widget (BSD-3-Clause) is bundled in this plugin; no scripts are loaded 
 3. The channel must allow your site's address.
 
 == Changelog ==
+
+= 0.2.0 =
+* Recipes (custom post type, "add all ingredients" button), kits (grouped products with quantities) and the matching assistant tools.
 
 = 0.1.0 =
 * First version.

@@ -139,3 +139,78 @@ test("htmlToText strips tags and decodes entities", () => {
 		core.htmlToText("<h1>A</h1><p>b &amp; c&nbsp;d</p><script>x()</script>"),
 	).toBe("A b & c d");
 });
+
+const recipe = {
+	name: "Fruit Salad",
+	servings: 2,
+	items: [
+		{ id: 1, name: "Apple", quantity: 2 },
+		{ id: 2, name: "Kiwi", quantity: 3 },
+	],
+};
+
+test("bundle tools exist only for the lists the page printed; the enum is the names", () => {
+	expect(core.bundleTools({})).toEqual([]);
+	const tools = core.bundleTools({
+		recipes: [recipe],
+		kits: [{ name: "Kit A" }],
+	});
+	expect(tools.map((t: { name: string }) => t.name)).toEqual([
+		"list_recipes",
+		"add_recipe_to_cart",
+		"list_kits",
+		"add_kit_to_cart",
+	]);
+	expect(tools[1].inputSchema.properties.recipe.enum).toEqual(["Fruit Salad"]);
+	expect(tools[1].inputSchema.required).toEqual(["recipe"]);
+	expect(tools[3].inputSchema.properties.kit.enum).toEqual(["Kit A"]);
+});
+
+test("findBundle ignores case and rejects unknown names", () => {
+	expect(core.findBundle([recipe], "fruit salad")).toBe(recipe);
+	expect(() => core.findBundle([recipe], "Soup")).toThrow("unknown: Soup");
+});
+
+test("servings scale quantities up (rounded up) and never below 1", () => {
+	expect(
+		core
+			.scaleItems(recipe, undefined)
+			.map((i: { quantity: number }) => i.quantity),
+	).toEqual([2, 3]);
+	expect(
+		core.scaleItems(recipe, 3).map((i: { quantity: number }) => i.quantity),
+	).toEqual([3, 5]);
+	expect(
+		core.scaleItems(recipe, 1).map((i: { quantity: number }) => i.quantity),
+	).toEqual([1, 2]);
+	expect(core.scaleItems({ items: recipe.items }, 4)[0].quantity).toBe(2);
+});
+
+test("addAll keeps going after a failure and lists what could not be added", async () => {
+	const out = await core.addAll(recipe.items, async (item: { id: number }) => {
+		if (item.id === 2) throw new Error("Sorry, out of stock");
+		return { items_count: 2 };
+	});
+	expect(out.added).toEqual([{ name: "Apple", quantity: 2 }]);
+	expect(out.missing).toEqual([
+		{ name: "Kiwi", reason: "Sorry, out of stock" },
+	]);
+	expect(out.cart).toEqual({ items_count: 2 });
+	expect(core.summarize(out)).toBe(
+		"Added 1 item. Could not add: Kiwi (Sorry, out of stock).",
+	);
+});
+
+test("list_recipes shape: names, servings, time, ingredient count", () => {
+	expect(core.listBundles([{ ...recipe, time_minutes: 10, url: "u" }])).toEqual(
+		[
+			{
+				name: "Fruit Salad",
+				servings: 2,
+				time_minutes: 10,
+				ingredients: 2,
+				url: "u",
+			},
+		],
+	);
+});

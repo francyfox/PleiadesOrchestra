@@ -90,6 +90,8 @@ All of them run in the visitor's browser, same origin, with the visitor's own ca
 
 Without WooCommerce only `search_site`, `get_page` and `open_page` are registered, so a plain WordPress site gets an assistant over its own content.
 
+**Recipes and kits.** A recipe is a `pleiades_recipe` post (archive `/recipes/`; meta `servings`, `time_minutes`, `ingredients` = list of SKU, quantity, note), a kit is a WooCommerce grouped product whose quantities sit in the `_pleiades_kit` meta. Both pages get an "Add all" button (Store API, lists what could not be added). The plugin prints their names into the page, so `add_recipe_to_cart(recipe, servings?)` and `add_kit_to_cart(kit)` carry the names as an `enum` (the orchestrator picks them when a message says a name); `list_recipes` and `list_kits` list them.
+
 Things to check while building:
 
 - **The theme's mini cart.** After a Store API write, classic themes do not update their cart fragment by themselves (trigger `wc_fragment_refresh`); block themes read the `wc/store/cart` data store and need it refreshed. Test both a classic theme and a block theme.

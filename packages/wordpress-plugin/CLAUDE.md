@@ -11,6 +11,13 @@ WordPress plugin `pleiades-assistant` (PHP 7.4+, GPLv2+; the bundled widget is B
 - `assets/tools.js` — browser wiring: fetch, `document.modelContext.registerTool`, mini cart refresh (`wc_fragment_refresh` + `wc/store/cart` invalidate), stale-nonce retry (403 -> `GET /cart` -> retry once).
 - `assets/pleiades-widget.js` — copied from `packages/pleiades-widget/dist` by `bun run build` (git-ignored). `dist/pleiades-assistant.zip` is the installable plugin.
 
+## Recipes and kits (0.2.0)
+
+- CPT `pleiades_recipe` (public, REST, archive `/recipes/`, activation flushes rewrites). Meta, all `show_in_rest`: `servings` (int), `time_minutes` (int), `ingredients` (array of `{sku, quantity, note}`). Kit = WooCommerce **grouped** product in category `kits` with product meta `_pleiades_kit` = JSON text `[{"sku","quantity"}]` (the grouped children hold the products, the meta the quantities). SKUs resolve to products at render time; a deleted product drops out.
+- `the_content` filter on a single recipe/kit prints the ingredient list (recipes) and a hidden "Add all" button (`.pleiades-add-all`, `data-items`); `tools.js` un-hides it and runs `addAll` (Store API, nonce retry). Without a widget key only core + tools load, on those pages, and `cfg.tools` is false so no WebMCP tool is registered.
+- `window.PleiadesWp.recipes` / `.kits` (`{name, url, servings, time_minutes, items:[{id, name, quantity}]}`) feed `bundleTools(cfg)` in `tools-core.js`: `list_recipes`, `add_recipe_to_cart({recipe, servings?})`, `list_kits`, `add_kit_to_cart({kit})`; `recipe`/`kit` are enums of the names (core's "named options" picks them over `add_to_cart`). Servings scale quantities up (ceil); one failed item (out of stock) does not stop the rest and is listed under `missing`.
+- Limit: all recipes/kits (max 100 each) are printed into every page; no caching of that query.
+
 Without WooCommerce only `search_site`, `get_page`, `open_page` are registered. No checkout tool; `open_page` is same-origin only.
 
 ## Load order, navigation

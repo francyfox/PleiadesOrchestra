@@ -117,10 +117,39 @@
 		},
 	};
 
+	const addItem = (i) =>
+		call("add_to_cart", { id: i.id, quantity: i.quantity });
+	const addBundle = (list, key) => async (args) => {
+		const bundle = core.findBundle(list, args[key]);
+		const out = await core.addAll(
+			core.scaleItems(bundle, args.servings),
+			addItem,
+		);
+		const cart = out.cart && core.shapeResult("add_to_cart", out.cart);
+		return {
+			[key]: bundle.name,
+			message: core.summarize(out),
+			added: out.added,
+			missing: out.missing,
+			cart_count: cart?.count,
+			cart_total: cart?.total,
+			currency: cart?.currency,
+		};
+	};
+	Object.assign(run, {
+		list_recipes: async () => core.listBundles(cfg.recipes),
+		list_kits: async () => core.listBundles(cfg.kits),
+		add_recipe_to_cart: addBundle(cfg.recipes, "recipe"),
+		add_kit_to_cart: addBundle(cfg.kits, "kit"),
+	});
+
 	function register() {
-		if (registered || !document.modelContext) return;
+		if (registered || !document.modelContext || !cfg.tools) return;
 		registered = true;
-		for (const tool of core.TOOLS) {
+		const tools = cfg.woo
+			? [...core.TOOLS, ...core.bundleTools(cfg)]
+			: core.TOOLS;
+		for (const tool of tools) {
 			if (tool.woo && !cfg.woo) continue;
 			const { woo, ...def } = tool;
 			document.modelContext.registerTool({
@@ -137,6 +166,23 @@
 			});
 		}
 	}
+
+	// "Add all" buttons printed next to a recipe's or kit's product list: hidden until this script runs.
+	for (const b of document.querySelectorAll(".pleiades-add-all"))
+		b.hidden = false;
+	document.addEventListener("click", async (e) => {
+		const button = e.target.closest?.(".pleiades-add-all");
+		if (!button) return;
+		button.disabled = true;
+		const status = button.nextElementSibling;
+		try {
+			const out = await core.addAll(JSON.parse(button.dataset.items), addItem);
+			status.textContent = core.summarize(out);
+			await refreshCart().catch(() => {});
+		} finally {
+			button.disabled = false;
+		}
+	});
 
 	// Native WebMCP exists at once; otherwise the widget installs its polyfill at mount and says so.
 	register();
