@@ -27,6 +27,9 @@ export class ReplyService implements WidgetReply {
 	/** Classified catalogs by `hashTools`, least recently used first. Actions hold no per-thread state. */
 	private readonly classified = new Map<string, GoapAction[]>();
 
+	/** Catalogs still being classified, by thread: a reply waits for its thread's. */
+	private readonly pending = new Map<string, Promise<void>>();
+
 	constructor(private readonly deps: ReplyDeps) {}
 
 	/** Starts the GOAP reply for an already-authorized visitor and internal thread. */
@@ -72,7 +75,20 @@ export class ReplyService implements WidgetReply {
 	 * can satisfy (a site with one store has no "choose a store") are dropped.
 	 * An empty list clears the thread's entry, so nothing stale is left behind.
 	 */
-	async registerWebMcpTools(
+	registerWebMcpTools(
+		threadId: string,
+		tools: WebMcpToolDescriptor[],
+	): Promise<void> {
+		const work = this.classifyTools(threadId, tools);
+		const tracked = work.catch((error) => this.deps.onError?.(error));
+		this.pending.set(threadId, tracked);
+		void tracked.then(() => {
+			if (this.pending.get(threadId) === tracked) this.pending.delete(threadId);
+		});
+		return work;
+	}
+
+	private async classifyTools(
 		threadId: string,
 		tools: WebMcpToolDescriptor[],
 	): Promise<void> {
@@ -155,7 +171,11 @@ export class ReplyService implements WidgetReply {
 		return streamPlanRun(deps, {
 			run: { planRunId, threadId },
 			signal,
-			prepare: () => prepare(planRunId),
+			prepare: async () => {
+				// The widget does not wait for the catalog's classification.
+				await this.pending.get(threadId);
+				return prepare(planRunId);
+			},
 		});
 	}
 }

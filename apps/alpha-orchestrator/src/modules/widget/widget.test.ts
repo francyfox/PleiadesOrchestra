@@ -216,6 +216,8 @@ async function registerTools(
 		}),
 	);
 	expect(response.status).toBe(204);
+	// The route answers before the catalog is classified.
+	await Bun.sleep(20);
 	return response;
 }
 

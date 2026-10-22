@@ -578,3 +578,38 @@ describe("prepareNewMessage: what Laya is sure about is learned on its own", () 
 		expect(listIntentExamples(db, {}).items[0]?.status).toBe("pending");
 	});
 });
+
+describe("a reply waits for its thread's catalog still being classified", () => {
+	test("the catalog is pending while the model is slow, and settled after", async () => {
+		let release = () => {};
+		const decisionAgent = {
+			decide: () =>
+				new Promise((resolve) => {
+					release = () =>
+						resolve({ intent: { type: "choice", choice: "search" } });
+				}),
+		};
+		const webmcpCatalog = new Map<string, GoapAction[]>();
+		const service = new ReplyService({
+			decisionAgent,
+			webmcpCatalog,
+		} as unknown as ReplyDeps);
+		const pending = (
+			service as unknown as { pending: Map<string, Promise<void>> }
+		).pending;
+		const registering = service.registerWebMcpTools("t1", [
+			{
+				name: "find",
+				description: "Search",
+				inputSchema: { type: "object" as const, properties: {} },
+			},
+		]);
+		expect(pending.has("t1")).toBe(true);
+		expect(webmcpCatalog.has("t1")).toBe(false);
+		release();
+		await registering;
+		await Bun.sleep(0);
+		expect(webmcpCatalog.has("t1")).toBe(true);
+		expect(pending.has("t1")).toBe(false);
+	});
+});

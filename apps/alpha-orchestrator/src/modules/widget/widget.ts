@@ -288,7 +288,11 @@ export function widgetRoutes(deps: WidgetDeps) {
 					if (rejected) return rejected;
 
 					recordCatalog(db, auth.channel.id, body.webmcpTools, now());
-					await reply.registerWebMcpTools(body.threadId, body.webmcpTools);
+					// Classifying a new catalog takes a model call per tool: answer now,
+					// the thread's next reply waits for it (`ReplyService.pending`).
+					reply
+						.registerWebMcpTools(body.threadId, body.webmcpTools)
+						.catch(() => {});
 					return emptyResponse(204, auth.origin);
 				},
 				{
