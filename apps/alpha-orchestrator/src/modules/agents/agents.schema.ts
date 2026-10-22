@@ -14,7 +14,10 @@ export const Agent = t.Object({
 	endpoint: t.String(),
 	model: t.Nullable(t.String()),
 	status: t.Union([t.Literal("up"), t.Literal("down")]),
+	/** How long the health probe took (the ping), not a model call. */
 	latencyMs: t.Nullable(t.Number()),
+	/** Mean latency of this model's real, successful calls over the last 24 h; null when there were none. */
+	responseMs: t.Nullable(t.Number()),
 	checkedAt: t.Number(),
 });
 

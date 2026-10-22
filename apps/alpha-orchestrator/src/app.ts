@@ -322,7 +322,7 @@ export function createApp(deps: AppDeps) {
 				}),
 			)
 			.use(mcpRoutes(db))
-			.use(agentsRoutes({ agents: deps.agents, now }))
+			.use(agentsRoutes({ agents: deps.agents, now, db }))
 			.use(
 				deps.agentSettings
 					? agentSettingsRoutes({ settings: deps.agentSettings })

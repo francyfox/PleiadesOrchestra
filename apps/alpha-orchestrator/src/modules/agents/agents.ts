@@ -1,16 +1,21 @@
 import { Elysia } from "elysia";
+import type { Db } from "../database/database.ts";
 import { AgentList } from "./agents.schema.ts";
 import {
 	type AgentHealth,
 	type AgentSpec,
 	type FetchLike,
+	meanLatencies,
 	probeAgents,
+	responseMsOf,
 } from "./agents.service.ts";
 
 export interface AgentsDeps {
 	/** Agents listed (and health-probed) by `GET /v1/admin/agents`, with the fetch used to probe them (tests inject one). */
 	agents?: { specs: AgentSpec[] | (() => AgentSpec[]); fetch?: FetchLike };
 	now: () => number;
+	/** The ledger the real response times come from. */
+	db: Db;
 }
 
 /**
@@ -20,7 +25,7 @@ export interface AgentsDeps {
  * route and brings the fresh result. Only new specs (first call, an edited
  * base URL) wait for their own probe.
  */
-export function agentsRoutes({ agents, now }: AgentsDeps) {
+export function agentsRoutes({ agents, now, db }: AgentsDeps) {
 	let last: { key: string; items: AgentHealth[] } | undefined;
 	let running: { key: string; probe: Promise<AgentHealth[]> } | undefined;
 
@@ -51,7 +56,14 @@ export function agentsRoutes({ agents, now }: AgentsDeps) {
 					: (agents?.specs ?? []);
 			const key = JSON.stringify(specs);
 			const fresh = probe(specs, key);
-			return { items: last?.key === key ? last.items : await fresh };
+			const items = last?.key === key ? last.items : await fresh;
+			const means = meanLatencies(db, now());
+			return {
+				items: items.map((item) => ({
+					...item,
+					responseMs: responseMsOf(item, means),
+				})),
+			};
 		},
 		{
 			detail: {

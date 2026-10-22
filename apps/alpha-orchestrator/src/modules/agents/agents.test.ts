@@ -92,6 +92,34 @@ describe("probeAgents", () => {
 		});
 	});
 
+	test("a hosted decisions API (.../decisions, no /health) is up when the host answers with any status below 500, down on a network error or a 5xx", async () => {
+		const hosted: AgentSpec = {
+			...decision,
+			baseUrl: "https://openrouter.ai/api/alpha/decisions",
+		};
+		const urls: string[] = [];
+		const answerWith =
+			(status: number | "network") => async (input: unknown) => {
+				urls.push(String(input));
+				if (status === "network") throw new Error("unreachable");
+				return new Response("no", { status });
+			};
+		for (const [status, expected] of [
+			[404, "up"],
+			[405, "up"],
+			[502, "down"],
+			["network", "down"],
+		] as const) {
+			const [agent] = await probeAgents([hosted], {
+				fetch: answerWith(status),
+			});
+			expect(agent?.status).toBe(expected);
+		}
+		expect(new Set(urls)).toEqual(
+			new Set(["https://openrouter.ai/api/alpha/decisions"]),
+		);
+	});
+
 	test("down on a non-2xx answer or a network error, never throws, no latency", async () => {
 		const time = clock();
 		const result = await probeAgents([text, decision], {

@@ -45,14 +45,14 @@
 				header: () => $content.columns.status.value,
 				cell: (ctx) => renderSnippet(statusCell, ctx.getValue()),
 			}),
+			// The health probe (the ping) and the mean of real calls over the last day (the response) are different things.
 			helper.accessor("latencyMs", {
-				header: () => $content.columns.latency.value,
-				cell: (ctx) => {
-					const value = ctx.getValue();
-					return value === null
-						? "—"
-						: `${$format.number(value)} ${$content.ms.value}`;
-				},
+				header: () => $content.columns.ping.value,
+				cell: (ctx) => $format.ms(ctx.getValue()),
+			}),
+			helper.accessor("responseMs", {
+				header: () => $content.columns.response.value,
+				cell: (ctx) => $format.ms(ctx.getValue()),
 			}),
 			helper.accessor("checkedAt", {
 				header: () => $content.columns.checked.value,

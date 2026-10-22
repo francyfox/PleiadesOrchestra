@@ -1,3 +1,5 @@
+import type { Db } from "../database/database.ts";
+
 export interface AgentSpec {
 	id: string;
 	name: string;
@@ -54,17 +56,52 @@ export function publicEndpoint(baseUrl: string): string {
 	}
 }
 
-/** True when a GET to `url` answers 2xx within the timeout; never throws. */
+const RESPONSE_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+/** What the ledger calls the model of each agent's calls, besides the model it is configured with: Laya names itself on decision rows, the translator on its own. */
+const LEDGER_ALIASES: Record<string, string[]> = {
+	decision: ["laya-system-one", "gamma-decision"],
+	translate: ["opus-mt-ru-en"],
+};
+
+/** Mean latency of the successful calls of each model in the last 24 h (the ledger, `llm_calls`). */
+export function meanLatencies(db: Db, now: number): Map<string, number> {
+	const rows = db.$client
+		.query<{ model: string; mean: number }, [number]>(
+			"SELECT model, CAST(ROUND(AVG(latency_ms)) AS INTEGER) AS mean FROM llm_calls WHERE ok = 1 AND at >= ? GROUP BY model",
+		)
+		.all(now - RESPONSE_WINDOW_MS);
+	return new Map(rows.map((row) => [row.model, row.mean]));
+}
+
+/** The agent's real response time: its configured model's mean, else that of the name its ledger rows use. */
+export function responseMsOf(
+	agent: Pick<AgentHealth, "role" | "model">,
+	means: Map<string, number>,
+): number | null {
+	for (const model of [agent.model, ...(LEDGER_ALIASES[agent.role] ?? [])]) {
+		const mean = model ? means.get(model) : undefined;
+		if (mean !== undefined) return mean;
+	}
+	return null;
+}
+
+/** A hosted decisions API (OpenRouter `…/decisions`): it has no `/health`, so only the host answering at all tells it is reachable. */
+const isHostedDecisions = (spec: AgentSpec) =>
+	spec.role === "decision" && /\/decisions\/?$/.test(spec.baseUrl);
+
+/** True when a GET to `url` answers within the timeout (2xx, or with `anyStatus` anything below 500); never throws. */
 async function answers(
 	fetchFn: FetchLike,
 	url: string,
 	timeoutMs: number,
+	anyStatus = false,
 ): Promise<boolean> {
 	try {
 		const response = await fetchFn(url, {
 			signal: AbortSignal.timeout(timeoutMs),
 		});
-		return response.ok;
+		return anyStatus ? response.status < 500 : response.ok;
 	} catch {
 		return false;
 	}
@@ -90,7 +127,9 @@ export function probeAgents(
 			const startedAt = now();
 			let up =
 				spec.ready ??
-				(await answers(fetchFn, healthUrl(spec.baseUrl), timeoutMs));
+				(isHostedDecisions(spec)
+					? await answers(fetchFn, spec.baseUrl, timeoutMs, true)
+					: await answers(fetchFn, healthUrl(spec.baseUrl), timeoutMs));
 			if (!up && spec.ready === undefined && spec.role !== "decision") {
 				up = await answers(fetchFn, modelsUrl(spec.baseUrl), timeoutMs);
 			}

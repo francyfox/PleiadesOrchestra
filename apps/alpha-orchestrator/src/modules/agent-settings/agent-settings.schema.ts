@@ -32,7 +32,15 @@ export const AgentPick = t.Object({
 
 export const AgentTestResult = t.Object({
 	ok: t.Boolean(),
+	/** What was sent, in words (the prompt, or the fact and the question of a decision). */
+	input: t.Optional(t.String()),
+	/** The reply text; for a decision the likelier of true / false. */
 	answer: t.Optional(t.String()),
+	/** A decision's probability of "true". */
+	probability: t.Optional(t.Number()),
+	/** The model's own token counts, when it reports them. */
+	inputTokens: t.Optional(t.Number()),
+	outputTokens: t.Optional(t.Number()),
 	error: t.Optional(t.String()),
 	latencyMs: t.Number(),
 });

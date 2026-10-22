@@ -50,10 +50,77 @@ describe("admin agents", () => {
 				model: "vikhr",
 				status: "up",
 				latencyMs: expect.any(Number),
+				responseMs: null,
 				checkedAt: expect.any(Number),
 			},
 		]);
 		expect(JSON.stringify(body)).not.toContain("secret");
+	});
+
+	test("responseMs is the mean latency of the model's real calls in the last 24 h, null when there are none", async () => {
+		const db = testDb();
+		const DAY = 24 * 60 * 60 * 1000;
+		const call = (model: string, latencyMs: number, at: number, ok = true) =>
+			db.$client.run(
+				"INSERT INTO llm_calls (at, kind, provider, model, latency_ms, ok) VALUES (?, 'generate', 'p', ?, ?, ?)",
+				[at, model, latencyMs, ok ? 1 : 0],
+			);
+		call("vikhr", 1000, NOW - 1000);
+		call("vikhr", 2000, NOW - 2000);
+		call("vikhr", 90_000, NOW - 1000, false); // a failed call says nothing about response time
+		call("vikhr", 50_000, NOW - 2 * DAY); // older than a day
+		call("laya-system-one", 400, NOW - 500);
+		const app = createApp({
+			agent,
+			decisionAgent,
+			apiKey: "transport-key",
+			adminApiKey: ADMIN_KEY,
+			maxChunkChars: 100,
+			db,
+			channels: new ChannelDirectory(db),
+			runs: new RunBinding(),
+			ipHashSalt: "salt",
+			now: () => NOW,
+			agents: {
+				specs: [
+					{
+						id: "beta-text",
+						name: "beta-text",
+						role: "text",
+						baseUrl: "http://b/v1",
+						model: "vikhr",
+					},
+					{
+						id: "gamma-decision",
+						name: "gamma-decision",
+						role: "decision",
+						baseUrl: "http://g",
+						model: "liquid/d1-ultra",
+					},
+					{
+						id: "delta-function-call",
+						name: "delta",
+						role: "function-call",
+						baseUrl: "http://d/v1",
+						model: "qwen",
+					},
+				],
+				fetch: async () => new Response("ok"),
+			},
+		});
+		const body = await json(await app.handle(admin("/agents")));
+		const byId = Object.fromEntries(
+			body.items.map((a: { id: string; responseMs: number | null }) => [
+				a.id,
+				a.responseMs,
+			]),
+		);
+		// the decision ledger rows carry Laya's own model name, whatever model the agent picked
+		expect(byId).toEqual({
+			"beta-text": 1500,
+			"gamma-decision": 400,
+			"delta-function-call": null,
+		});
 	});
 
 	test("answers with the last probe while the next one runs; new specs wait for their own", async () => {

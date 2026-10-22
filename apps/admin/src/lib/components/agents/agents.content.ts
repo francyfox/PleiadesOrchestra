@@ -14,7 +14,8 @@ const agentsContent = {
 			endpoint: t({ ru: "Адрес", en: "Endpoint", kk: "Мекенжайы" }),
 			model: t({ ru: "Модель", en: "Model", kk: "Модель" }),
 			status: t({ ru: "Статус", en: "Status", kk: "Күйі" }),
-			latency: t({ ru: "Отклик", en: "Latency", kk: "Жауап беру" }),
+			ping: t({ ru: "Пинг", en: "Ping", kk: "Пинг" }),
+			response: t({ ru: "Ответ", en: "Response", kk: "Жауап" }),
 			checked: t({ ru: "Проверен", en: "Checked", kk: "Тексерілді" }),
 		},
 		role: {
@@ -51,11 +52,20 @@ const agentsContent = {
 				kk: "env сервері",
 			}),
 			test: t({ ru: "Проверить", en: "Test", kk: "Тексеру" }),
-			testResult: t({
-				ru: insert("Ответ: «{{answer}}» за {{ms}} мс"),
-				en: insert("Answer: “{{answer}}” in {{ms}} ms"),
-				kk: insert("Жауап: «{{answer}}», {{ms}} мс"),
+			testSent: t({ ru: "Отправлено", en: "Sent", kk: "Жіберілді" }),
+			testAnswer: t({ ru: "Ответ", en: "Answer", kk: "Жауап" }),
+			testProbability: t({
+				ru: "Вероятность «true»",
+				en: "Probability of “true”",
+				kk: "«true» ықтималдығы",
 			}),
+			testTokens: t({
+				ru: insert("вход {{input}} · выход {{output}}"),
+				en: insert("in {{input}} · out {{output}}"),
+				kk: insert("кіріс {{input}} · шығыс {{output}}"),
+			}),
+			testTokensLabel: t({ ru: "Токены", en: "Tokens", kk: "Токендер" }),
+			testTime: t({ ru: "Время", en: "Time", kk: "Уақыт" }),
 		},
 		ms: t({ ru: "мс", en: "ms", kk: "мс" }),
 		empty: t({

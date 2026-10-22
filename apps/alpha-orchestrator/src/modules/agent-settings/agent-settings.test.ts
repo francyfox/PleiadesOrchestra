@@ -282,6 +282,7 @@ models = [{ id = "org/opus" }]
 				return Response.json({
 					model: "jev-latest",
 					answers: { ok: { type: "noul", noul: 0.9 } },
+					usage: { input_tokens: 38, output_tokens: 0 },
 				});
 			}) as unknown as typeof fetch,
 			SEED + SYSTEMONE,
@@ -293,7 +294,14 @@ models = [{ id = "org/opus" }]
 		const result = await json(
 			await call("/agents/gamma-decision/test", "POST", {}),
 		);
-		expect(result).toMatchObject({ ok: true, answer: "0.9" });
+		expect(result).toMatchObject({
+			ok: true,
+			input: 'Fact: "Water is wet." · Question: "Is the fact true?"',
+			answer: "true",
+			probability: 0.9,
+			inputTokens: 38,
+			outputTokens: 0,
+		});
 		expect(seen?.url).toBe("https://api.typesafe.ai/v1/systemone");
 		expect(seen?.auth).toBe("Bearer jev-key");
 	});

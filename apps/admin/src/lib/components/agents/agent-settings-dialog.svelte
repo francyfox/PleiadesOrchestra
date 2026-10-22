@@ -40,20 +40,22 @@
 	});
 	const errors = save.errors;
 	const errorText = useFieldErrorText();
-	let answer = $state("");
+	/** What the last test sent and got back (the model's own token counts when it reports them). */
+	let result = $state<{
+		input?: string;
+		answer?: string;
+		probability?: number;
+		inputTokens?: number;
+		outputTokens?: number;
+		latencyMs?: number;
+	} | null>(null);
 	const test = useActionEnhance({
 		run: agentActions.test,
 		quietSuccess: () => true,
-		onSuccess: (data) =>
-			(answer = String(
-				get(content).settings.testResult({
-					answer: String(data.answer ?? ""),
-					ms: get(format).number(Number(data.latencyMs ?? 0)),
-				}),
-			)),
+		onSuccess: (data) => (result = data),
 	});
 	$effect(() => {
-		if (!open) answer = "";
+		if (!open) result = null;
 	});
 
 	const selectClass =
@@ -96,7 +98,26 @@
 					<Button variant="outline" type="submit"><ActivityIcon data-icon="inline-start" />{$content.settings.test.value}</Button>
 				</form>
 				<Button type="submit" form="agent-settings-form" class="ml-auto"><SaveIcon data-icon="inline-start" />{$common.save.value}</Button>
-				{#if answer}<p class="basis-full text-sm text-muted-foreground">{answer}</p>{/if}
+				{#if result}
+					<dl class="grid basis-full grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+						{#if result.input}
+							<dt class="text-muted-foreground">{$content.settings.testSent.value}</dt>
+							<dd class="break-words font-mono text-xs">{result.input}</dd>
+						{/if}
+						<dt class="text-muted-foreground">{$content.settings.testAnswer.value}</dt>
+						<dd class="break-words font-mono text-xs">{result.answer}</dd>
+						{#if result.probability !== undefined}
+							<dt class="text-muted-foreground">{$content.settings.testProbability.value}</dt>
+							<dd>{($format.percent(result.probability))}</dd>
+						{/if}
+						{#if result.inputTokens !== undefined || result.outputTokens !== undefined}
+							<dt class="text-muted-foreground">{$content.settings.testTokensLabel.value}</dt>
+							<dd>{$content.settings.testTokens({ input: $format.number(result.inputTokens), output: $format.number(result.outputTokens) })}</dd>
+						{/if}
+						<dt class="text-muted-foreground">{$content.settings.testTime.value}</dt>
+						<dd>{$format.ms(result.latencyMs)}</dd>
+					</dl>
+				{/if}
 			</div>
 		{:else}
 			<p class="text-sm text-muted-foreground">{$content.settings.loading.value}</p>

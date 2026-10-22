@@ -61,3 +61,8 @@ test("compact numbers: K/M/B/T suffixes, rounded down, plain below 1000", () => 
 	expect(createFormat("ru").compact(1500)).toBe("1,5K");
 	expect(compact(null, "no data")).toBe("no data");
 });
+
+test("a probability is shown as a percentage with one decimal", () => {
+	expect(createFormat("en").percent(0.9349716873278769)).toBe("93.5%");
+	expect(createFormat("en").percent(null)).toBe("—");
+});

@@ -51,6 +51,7 @@ const AGENT = {
 	model: "vikhr",
 	status: "up",
 	latencyMs: 12,
+	responseMs: 840,
 	checkedAt: 5,
 };
 

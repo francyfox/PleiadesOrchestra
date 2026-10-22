@@ -31,6 +31,10 @@ export function createFormat(locale: string) {
 		minimumFractionDigits: 1,
 	});
 	const seconds = unit("second", 1);
+	const percent = new Intl.NumberFormat(locale, {
+		style: "percent",
+		maximumFractionDigits: 1,
+	});
 	const SUFFIXES = ["", "K", "M", "B", "T"];
 	const scaled = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
 	// Token spend is often a fraction of a cent: show up to 4 decimals.
@@ -58,6 +62,9 @@ export function createFormat(locale: string) {
 		money,
 		number: (value: number | null | undefined, missing = "—") =>
 			value === null || value === undefined ? missing : integer.format(value),
+		/** A probability 0..1 as "93.5%". */
+		percent: (value: number | null | undefined) =>
+			value === null || value === undefined ? "—" : percent.format(value),
 		/** 1.9K / 12.3M / 2.5B: one decimal, always rounded down; the exact value goes in a tooltip. */
 		compact: (value: number | null | undefined, missing = "—") => {
 			if (value === null || value === undefined) return missing;

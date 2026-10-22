@@ -1,4 +1,4 @@
-import { createDecisionAgent } from "@repo/core";
+import { collectTokens, createDecisionAgent } from "@repo/core";
 import { eq } from "drizzle-orm";
 import { publicEndpoint } from "../agents/agents.service.ts";
 import { agentSettings } from "../database/database.schema.ts";
@@ -34,6 +34,9 @@ export class AgentSettingsError extends Error {}
  * and model, as seeded on first start), else the bare env server. The env key
  * never leaves for another host: a provider brings its own key or none.
  */
+/** What the chat test sends. */
+const PROMPT = "Reply with one word: OK";
+
 export function buildEffective(
 	modelType: ModelType,
 	env: EnvServer,
@@ -219,22 +222,30 @@ export function createAgentSettings(deps: AgentSettingsDeps) {
 			const startedAt = Date.now();
 			try {
 				if (id === "gamma-decision") {
-					const { ok } = await createDecisionAgent({
-						baseURL: s.baseUrl,
-						apiKey: s.apiKey,
-						modelId: s.model,
-						fetchImpl: ((url, init) =>
-							fetchFn(url, {
-								...init,
-								signal: AbortSignal.timeout(30_000),
-							})) as typeof fetch,
-					}).decide(
-						{ fact: "Water is wet." },
-						{ ok: { type: "boolean", instructions: "Is the fact true?" } },
+					const fact = "Water is wet.";
+					const question = "Is the fact true?";
+					const { value, tokens } = await collectTokens(() =>
+						createDecisionAgent({
+							baseURL: s.baseUrl,
+							apiKey: s.apiKey,
+							modelId: s.model,
+							fetchImpl: ((url, init) =>
+								fetchFn(url, {
+									...init,
+									signal: AbortSignal.timeout(30_000),
+								})) as typeof fetch,
+						}).decide(
+							{ fact },
+							{ ok: { type: "boolean", instructions: question } },
+						),
 					);
+					const { probability } = value.ok as { probability: number };
 					return {
 						ok: true,
-						answer: String((ok as { probability: number }).probability),
+						input: `Fact: "${fact}" · Question: "${question}"`,
+						answer: probability >= 0.5 ? "true" : "false",
+						probability,
+						...tokens,
 						latencyMs: Date.now() - startedAt,
 					};
 				}
@@ -248,7 +259,7 @@ export function createAgentSettings(deps: AgentSettingsDeps) {
 						},
 						body: JSON.stringify({
 							model: s.model,
-							messages: [{ role: "user", content: "Reply with one word: OK" }],
+							messages: [{ role: "user", content: PROMPT }],
 							max_tokens: 16,
 							...(s.temperature === undefined
 								? {}
@@ -266,10 +277,18 @@ export function createAgentSettings(deps: AgentSettingsDeps) {
 					return { ok: false, error: `HTTP ${response.status}`, latencyMs };
 				const body = (await response.json()) as {
 					choices?: { message?: { content?: string } }[];
+					usage?: { prompt_tokens?: number; completion_tokens?: number };
 				};
 				return {
 					ok: true,
+					input: PROMPT,
 					answer: body.choices?.[0]?.message?.content ?? "",
+					...(body.usage?.prompt_tokens === undefined
+						? {}
+						: { inputTokens: body.usage.prompt_tokens }),
+					...(body.usage?.completion_tokens === undefined
+						? {}
+						: { outputTokens: body.usage.completion_tokens }),
 					latencyMs,
 				};
 			} catch (error) {
