@@ -48,10 +48,34 @@
 								"name": {
 									"type": "string"
 								},
+								"types": {
+									"minItems": 1,
+									"type": "array",
+									"items": {
+										"type": "string",
+										"enum": [
+											"language",
+											"embedding",
+											"image",
+											"video",
+											"speech",
+											"transcription",
+											"reranking",
+											"decision",
+											"translation"
+										]
+									}
+								},
 								"type": {
 									"type": "string",
 									"enum": [
 										"language",
+										"embedding",
+										"image",
+										"video",
+										"speech",
+										"transcription",
+										"reranking",
 										"decision",
 										"translation"
 									]

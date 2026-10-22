@@ -6,7 +6,7 @@ import { createTranslatePool, workerEntryUrl } from "./translate-pool.ts";
 /** The translator's model from providers.toml (the first model of type `translation`), else the env repo. */
 export function translatorModel(): { provider: string | null; repo: string } {
 	for (const p of agentSettings.providersView()) {
-		const model = p.models.find((m) => m.type === "translation");
+		const model = p.models.find((m) => m.types.includes("translation"));
 		if (model) return { provider: p.id, repo: model.id };
 	}
 	return { provider: null, repo: config.TRANSLATE_MODEL_REPO };

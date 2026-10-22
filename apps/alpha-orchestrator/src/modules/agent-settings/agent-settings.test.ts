@@ -131,7 +131,7 @@ describe("agent settings", () => {
 		await call("/providers/openrouter/models", "PUT", {
 			id: "qwen/qwen3-30b",
 			name: "Qwen3 30B",
-			type: "language",
+			types: ["language"],
 			temperature: 0,
 			reasoningEffort: "none",
 			extraBody: { provider: { require_parameters: true } },
@@ -209,10 +209,10 @@ describe("agent settings", () => {
 		).toThrow(AgentSettingsError);
 		const list = await json(await call("/providers"));
 		expect(
-			list.items.map((p: { models: { type: string }[] }) =>
-				p.models.map((m) => m.type),
+			list.items.map((p: { models: { types: string[] }[] }) =>
+				p.models.map((m) => m.types),
 			),
-		).toEqual([["language"], ["decision"], ["decision"]]);
+		).toEqual([[["language"]], [["decision"]], [["decision"]]]);
 	});
 
 	test("one provider with a language and a decision model: each agent takes its own, decisions go to decisions_url", async () => {
@@ -223,7 +223,7 @@ describe("agent settings", () => {
 base_url = "https://openrouter.ai/api/v1"
 decisions_url = "https://openrouter.ai/api/alpha/decisions"
 api_key = "sk-or-v1-key"
-models = [{ id = "qwen/qwen3-30b" }, { id = "liquid/d1-ultra", type = "decision" }]
+models = [{ id = "qwen/qwen3-30b", types = ["language", "image"] }, { id = "liquid/d1-ultra", types = ["decision"] }]
 `,
 		);
 		agentSettings.pick(

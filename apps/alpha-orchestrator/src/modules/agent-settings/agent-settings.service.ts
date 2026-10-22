@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { publicEndpoint } from "../agents/agents.service.ts";
 import { agentSettings } from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
+import type { ModelType } from "../providers/providers.service.ts";
 import {
 	maskKey,
 	type Provider,
@@ -34,6 +35,7 @@ export class AgentSettingsError extends Error {}
  * never leaves for another host: a provider brings its own key or none.
  */
 export function buildEffective(
+	modelType: ModelType,
 	env: EnvServer,
 	row: Row | undefined,
 	providers: Provider[],
@@ -59,7 +61,7 @@ export function buildEffective(
 		provider: provider.id,
 		// A decision model is asked at the provider's decisions endpoint.
 		baseUrl:
-			model.type === "decision"
+			modelType === "decision"
 				? (provider.decisionsUrl ?? provider.baseUrl)
 				: provider.baseUrl,
 		apiKey: resolveKey(provider.apiKey),
@@ -111,6 +113,7 @@ export function createAgentSettings(deps: AgentSettingsDeps) {
 			cache.set(
 				id,
 				buildEffective(
+					modelTypeOf(id),
 					env[id],
 					row(id),
 					providers.providers(),
@@ -174,7 +177,7 @@ export function createAgentSettings(deps: AgentSettingsDeps) {
 					`no model "${pick.model}" at provider "${pick.provider}"`,
 				);
 			const type = modelTypeOf(id);
-			if (model.type !== type)
+			if (!model.types.includes(type))
 				throw new AgentSettingsError(`${id} takes ${type} models only`);
 			const values = { ...pick, updatedBy: adminId, updatedAt: now() };
 			db.insert(agentSettings)

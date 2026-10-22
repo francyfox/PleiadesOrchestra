@@ -41,12 +41,21 @@ export const AgentTestResult = t.Object({
 export const ProviderModel = t.Object({
 	id: t.String({ minLength: 1, maxLength: 200 }),
 	name: t.String({ minLength: 1, maxLength: 200 }),
-	/** What the model is for, as the AI SDK names its factories: `language`, `decision`; `translation` is the in-process translator. */
-	type: t.Union([
-		t.Literal("language"),
-		t.Literal("decision"),
-		t.Literal("translation"),
-	]),
+	/** What the model can do (several for a multimodal one), as the AI SDK names its factories; `translation` is the in-process translator. */
+	types: t.Array(
+		t.Union([
+			t.Literal("language"),
+			t.Literal("embedding"),
+			t.Literal("image"),
+			t.Literal("video"),
+			t.Literal("speech"),
+			t.Literal("transcription"),
+			t.Literal("reranking"),
+			t.Literal("decision"),
+			t.Literal("translation"),
+		]),
+		{ minItems: 1 },
+	),
 	temperature: t.Optional(t.Number({ minimum: 0, maximum: 2 })),
 	reasoningEffort: t.Optional(ReasoningEffort),
 	/** Extra request-body fields, e.g. `{ "provider": { "require_parameters": true } }` for OpenRouter. */

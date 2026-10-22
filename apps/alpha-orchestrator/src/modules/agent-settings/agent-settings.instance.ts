@@ -38,7 +38,7 @@ export const agentSettings = createAgentSettings({
 					model: {
 						id: config.LLM_MODEL,
 						name: config.LLM_MODEL,
-						type: "language",
+						types: ["language"],
 						temperature: 0.3,
 						extraBody: {},
 					},
@@ -51,7 +51,7 @@ export const agentSettings = createAgentSettings({
 					model: {
 						id: config.FUNCTION_CALL_MODEL,
 						name: config.FUNCTION_CALL_MODEL,
-						type: "language",
+						types: ["language"],
 						temperature: 0,
 						reasoningEffort: "none",
 						extraBody: {},
@@ -64,7 +64,7 @@ export const agentSettings = createAgentSettings({
 					model: {
 						id: config.LAYA_MODEL,
 						name: config.LAYA_MODEL,
-						type: "decision",
+						types: ["decision"],
 						extraBody: {},
 					},
 				},
@@ -78,7 +78,7 @@ export const agentSettings = createAgentSettings({
 								model: {
 									id: config.TRANSLATE_MODEL_REPO,
 									name: config.TRANSLATE_MODEL_REPO,
-									type: "translation" as const,
+									types: ["translation" as const],
 									extraBody: {},
 								},
 							},

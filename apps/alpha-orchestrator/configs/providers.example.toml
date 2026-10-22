@@ -23,11 +23,12 @@ id = "google/gemini-2.5-flash"
 name = "Gemini 2.5 Flash"
 temperature = 0.3
 
-# type = what the model is for, named after the AI SDK's model factories:
-# "language" (default, chat), "decision" (typed questions), "translation".
+# types = what the model can do (several for a multimodal one), named after the AI SDK's model factories:
+# language (default, chat), embedding, image, video, speech, transcription, reranking,
+# decision (typed questions), translation. Example: types = ["language", "image"].
 [[providers.openrouter.models]]
 id = "liquid/d1-ultra"
-type = "decision"
+types = ["decision"]
 
 # [providers.ollama]
 # name = "Ollama"
@@ -45,7 +46,7 @@ type = "decision"
 #
 # [[providers.laya.models]]
 # id = "laya"
-# type = "decision"
+# types = ["decision"]
 #
 # TypeSafe's hosted Jev, same protocol.
 # [providers.typesafe]
@@ -55,4 +56,4 @@ type = "decision"
 #
 # [[providers.typesafe.models]]
 # id = "jev-latest"
-# type = "decision"   # or a pinned one, e.g. jev-1.14.0
+# types = ["decision"]   # or a pinned one, e.g. jev-1.14.0

@@ -6,17 +6,31 @@ export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
 
 /**
  * What a model is for, named after the AI SDK's model factories
- * (`languageModel`, `decisionModel`); `translation` is ours (the in-process
- * CTranslate2 translator has no SDK counterpart).
+ * (`languageModel`, `embeddingModel`, `imageModel`, `videoModel`, `speechModel`,
+ * `transcriptionModel`, `rerankingModel`, `decisionModel`); `translation` is
+ * ours (the in-process CTranslate2 translator has no SDK counterpart). Only
+ * `language`, `decision` and `translation` are used by agents today; the rest
+ * can be listed so the file describes a provider's whole catalog.
  */
-export const MODEL_TYPES = ["language", "decision", "translation"] as const;
+export const MODEL_TYPES = [
+	"language",
+	"embedding",
+	"image",
+	"video",
+	"speech",
+	"transcription",
+	"reranking",
+	"decision",
+	"translation",
+] as const;
 export type ModelType = (typeof MODEL_TYPES)[number];
 
 /** A model of a provider with the request parameters it is called with. */
 export interface ProviderModel {
 	id: string;
 	name: string;
-	type: ModelType;
+	/** What the model can do; several for a multimodal one (text + image). Never empty. */
+	types: ModelType[];
 	temperature?: number;
 	reasoningEffort?: ReasoningEffort;
 	/** Extra request-body fields, e.g. `{ provider: { require_parameters: true } }` for OpenRouter. */
@@ -77,6 +91,8 @@ const Schema = z.object({
 							z.object({
 								id: z.string().min(1),
 								name: z.string().optional(),
+								types: z.array(z.enum(MODEL_TYPES)).min(1).optional(),
+								// The first form of the field (one type): read, never written.
 								type: z.enum(MODEL_TYPES).optional(),
 								temperature: z.number().min(0).max(2).optional(),
 								reasoning_effort: z.enum(REASONING_EFFORTS).optional(),
@@ -90,8 +106,10 @@ const Schema = z.object({
 						p.base_url ||
 						p.decisions_url ||
 						(p.models.length > 0 &&
-							p.models.every(
-								(m) => (m.type ?? legacyModelType(p.type)) === "translation",
+							p.models.every((m) =>
+								(m.types ?? [m.type ?? legacyModelType(p.type)]).every(
+									(type) => type === "translation",
+								),
 							)),
 					{
 						message:
@@ -164,7 +182,7 @@ function analyze(toml: string): {
 			models: p.models.map((m) => ({
 				id: m.id,
 				name: m.name ?? m.id,
-				type: m.type ?? legacyModelType(p.type),
+				types: [...new Set(m.types ?? [m.type ?? legacyModelType(p.type)])],
 				...(m.temperature === undefined ? {} : { temperature: m.temperature }),
 				...(m.reasoning_effort ? { reasoningEffort: m.reasoning_effort } : {}),
 				extraBody: m.extra_body ?? {},
@@ -245,7 +263,8 @@ export function stringifyProviders(providers: Provider[]): string {
 		for (const m of p.models) {
 			lines.push(`[[providers.${p.id}.models]]`, `id = ${str(m.id)}`);
 			if (m.name !== m.id) lines.push(`name = ${str(m.name)}`);
-			if (m.type !== "language") lines.push(`type = ${str(m.type)}`);
+			if (m.types.length !== 1 || m.types[0] !== "language")
+				lines.push(`types = ${value(m.types)}`);
 			if (m.temperature !== undefined)
 				lines.push(`temperature = ${m.temperature}`);
 			if (m.reasoningEffort)
@@ -337,7 +356,8 @@ export function seedProviders(
 ): Provider[] {
 	const seeded: Provider[] = [];
 	for (const server of servers) {
-		if (!server.baseUrl && server.model.type !== "translation") continue;
+		if (!server.baseUrl && !server.model.types.includes("translation"))
+			continue;
 		const same = seeded.find((p) => p.baseUrl === server.baseUrl);
 		if (!same)
 			seeded.push({
@@ -383,10 +403,10 @@ export async function createProvidersConfig(deps: ProvidersConfigDeps) {
 		providers = parseProviders(await file.text());
 		// A file with no model of some type (a decision model, say) gets that type's env server, or its agent has nothing to pick.
 		const has = (type: ModelType) =>
-			providers.some((p) => p.models.some((m) => m.type === type));
+			providers.some((p) => p.models.some((m) => m.types.includes(type)));
 		const missing = deps
 			.seed()
-			.filter((s) => !s.models.every((m) => has(m.type)));
+			.filter((s) => !s.models.every((m) => m.types.every(has)));
 		if (missing.length) await write([...providers, ...missing]);
 	} else await write(deps.seed());
 
