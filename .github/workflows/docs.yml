@@ -28,6 +28,7 @@ jobs:
     env:
       TURBO_TELEMETRY_DISABLED: "1"
     steps:
+      - run: echo "CI_START=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
@@ -51,4 +52,5 @@ jobs:
           gh release create docs docs.tar.gz \
             --target "$GITHUB_SHA" --prerelease --latest=false \
             --title "docs (${GITHUB_SHA::7})" \
-            --notes "Built from $GITHUB_SHA. Deployed to https://pleiades.shalotts.site by the VPS poller."
+            --notes "Built from $GITHUB_SHA. Deployed to https://pleiades.shalotts.site by the VPS poller.
+          ci-start=$CI_START ci-commit=$(git log -1 --format=%ct)"

@@ -21,6 +21,7 @@ jobs:
     env:
       TURBO_TELEMETRY_DISABLED: "1"
     steps:
+      - run: echo "CI_START=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@v7.0.1
       - uses: oven-sh/setup-bun@v2.2.0
         with:
@@ -63,4 +64,5 @@ jobs:
           gh release create orchestra images.tar.gz panel.tar.gz \
             --target "$GITHUB_SHA" --prerelease --latest=false \
             --title "orchestra (${GITHUB_SHA::7})" \
-            --notes "Built from $GITHUB_SHA. Deployed to the VPS (albedo / pleiades-panel.shalotts.site) by its poller."
+            --notes "Built from $GITHUB_SHA. Deployed to the VPS (albedo / pleiades-panel.shalotts.site) by its poller.
+          ci-start=$CI_START"
