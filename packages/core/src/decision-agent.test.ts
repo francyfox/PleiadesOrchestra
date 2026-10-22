@@ -3,6 +3,7 @@ import { Experimental_DecisionMockModelV4 } from "ai/test";
 import type { ConsolaReporter, LogObject } from "consola";
 import { createDecisionAgent } from "./decision-agent.ts";
 import { createTelemetry } from "./telemetry.ts";
+import { collectTokens } from "./usage-collector";
 
 const BASE_URL = "https://laya-api.internal";
 const API_KEY = "test-api-key";
@@ -41,6 +42,48 @@ describe("createDecisionAgent", () => {
 			}).decide({ ticket: "x" }, urgentQuestion);
 		}
 		expect(bodies.map((body) => body.model)).toEqual(["laya", "laya-big"]);
+	});
+
+	test("a baseURL ending in /decisions is the whole endpoint (OpenRouter)", async () => {
+		const urls: string[] = [];
+		await createDecisionAgent({
+			baseURL: "https://openrouter.ai/api/alpha/decisions",
+			apiKey: API_KEY,
+			fetchImpl: fakeFetch((input) => {
+				urls.push(String(input));
+				return new Response(
+					JSON.stringify({
+						model: "m",
+						answers: { urgent: { type: "noul", noul: 0.5 } },
+						usage: { input_tokens: 1, output_tokens: 1 },
+					}),
+					{ headers: { "content-type": "application/json" } },
+				);
+			}),
+		}).decide({ ticket: "x" }, urgentQuestion);
+		expect(urls).toEqual(["https://openrouter.ai/api/alpha/decisions"]);
+	});
+
+	test("the model's own usage is reported to the surrounding collectTokens", async () => {
+		const agent = createDecisionAgent({
+			baseURL: BASE_URL,
+			apiKey: API_KEY,
+			fetchImpl: fakeFetch(
+				() =>
+					new Response(
+						JSON.stringify({
+							model: "m",
+							answers: { urgent: { type: "noul", noul: 0.5 } },
+							usage: { input_tokens: 86, output_tokens: 0 },
+						}),
+						{ headers: { "content-type": "application/json" } },
+					),
+			),
+		});
+		const { tokens } = await collectTokens(() =>
+			agent.decide({ ticket: "x" }, urgentQuestion),
+		);
+		expect(tokens).toEqual({ inputTokens: 86, outputTokens: 0 });
 	});
 
 	test("by default decide posts to /v1/systemone with a bearer token and returns SDK-shaped answers", async () => {

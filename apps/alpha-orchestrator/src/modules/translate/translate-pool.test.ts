@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
+import { collectTokens } from "@repo/core";
 import { TextTooLongError } from "./translate.service.ts";
 import {
 	createTranslatePool,
@@ -53,6 +54,13 @@ describe("createTranslatePool", () => {
 	test("a text goes to the worker and its translation comes back", async () => {
 		const { translate } = await pool();
 		expect(await translate("купи сыр")).toStartWith("[купи сыр]");
+	});
+
+	test("the tokens a worker reports reach the caller's collectTokens", async () => {
+		const { translate } = await pool();
+		const { value, tokens } = await collectTokens(() => translate("tokens"));
+		expect(value).toStartWith("[tokens]");
+		expect(tokens).toEqual({ inputTokens: 5, outputTokens: 3 });
 	});
 
 	test("the event loop keeps running while a translation blocks the worker", async () => {

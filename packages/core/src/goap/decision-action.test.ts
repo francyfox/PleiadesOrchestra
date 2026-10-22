@@ -5,6 +5,7 @@ import type {
 	DecisionQuestion,
 } from "../decision-types.ts";
 import type { LlmCallRecord } from "../types.ts";
+import { reportTokens } from "../usage-collector";
 import { createDecisionAction } from "./decision-action.ts";
 import type { WorldState } from "./types.ts";
 
@@ -183,7 +184,7 @@ describe("createDecisionAction", () => {
 			return { action, calls };
 		}
 
-		test("records a successful decide() as a decision call without tokens", async () => {
+		test("records a successful decide() as a decision call (no tokens when the model reported none)", async () => {
 			const { action, calls } = recordingAction(
 				fakeDecisionAgent({
 					type: "boolean",
@@ -207,6 +208,19 @@ describe("createDecisionAction", () => {
 			});
 			expect(calls[0]?.inputTokens).toBeUndefined();
 			expect(calls[0]?.latencyMs).toBeNumber();
+		});
+
+		test("records the tokens the decision model reported", async () => {
+			const { action, calls } = recordingAction({
+				async decide() {
+					reportTokens({ inputTokens: 42, outputTokens: 0 });
+					return { checkUrgent: { type: "boolean", probability: 0.9 } };
+				},
+			});
+
+			await action.execute({ state: { threadId: "t1", userId: "u1" } });
+
+			expect(calls[0]).toMatchObject({ inputTokens: 42, outputTokens: 0 });
 		});
 
 		test("records a failed decide() with ok:false and rethrows", async () => {

@@ -1,3 +1,4 @@
+import { type CollectedTokens, reportTokens } from "@repo/core";
 import {
 	type FromWorker,
 	fromWire,
@@ -61,7 +62,7 @@ export interface TranslatePool {
 
 interface Job {
 	text: string;
-	resolve(text: string): void;
+	resolve(answer: { text: string; tokens?: CollectedTokens }): void;
 	reject(error: unknown): void;
 }
 
@@ -124,7 +125,8 @@ export async function createTranslatePool(
 						if (!job || job.id !== message.id) return;
 						clearTimeout(job.timer);
 						slot.job = undefined;
-						if (message.type === "result") job.resolve(message.text);
+						if (message.type === "result")
+							job.resolve({ text: message.text, tokens: message.tokens });
 						else job.reject(fromWire(message.error));
 						pump();
 					}
@@ -217,18 +219,27 @@ export async function createTranslatePool(
 	}
 
 	return {
-		translate(text) {
-			if (closed) return Promise.reject(new TranslatePoolClosedError());
-			if (slots.every((s) => s.state === "dead")) {
-				return Promise.reject(
-					new TranslateWorkerExitedError("no translation worker is running"),
-				);
-			}
-			return new Promise<string>((resolve, reject) => {
-				queue.push({ text, resolve, reject });
-				pump();
-			});
+		async translate(text) {
+			const answer = await enqueue(text);
+			// Back in the caller's async context: the event handler that got the answer is not in it.
+			if (answer.tokens) reportTokens(answer.tokens);
+			return answer.text;
 		},
 		close,
 	};
+
+	function enqueue(text: string) {
+		if (closed) return Promise.reject(new TranslatePoolClosedError());
+		if (slots.every((s) => s.state === "dead")) {
+			return Promise.reject(
+				new TranslateWorkerExitedError("no translation worker is running"),
+			);
+		}
+		return new Promise<{ text: string; tokens?: CollectedTokens }>(
+			(resolve, reject) => {
+				queue.push({ text, resolve, reject });
+				pump();
+			},
+		);
+	}
 }

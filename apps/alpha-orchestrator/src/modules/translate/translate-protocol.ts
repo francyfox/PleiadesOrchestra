@@ -1,3 +1,4 @@
+import { type CollectedTokens, collectTokens } from "@repo/core";
 import { TextTooLongError, type Translate } from "./translate.service.ts";
 
 /** Main thread → worker. `init` is posted once, right after the worker starts. */
@@ -17,7 +18,7 @@ export interface WireError {
 export type FromWorker =
 	| { type: "ready" }
 	| { type: "init-failed"; error: WireError }
-	| { type: "result"; id: number; text: string }
+	| { type: "result"; id: number; text: string; tokens?: CollectedTokens }
 	| { type: "failed"; id: number; error: WireError };
 
 export function toWire(error: unknown): WireError {
@@ -83,11 +84,12 @@ export function serveTranslations<Init>(
 			return;
 		}
 		try {
-			port.postMessage({
-				type: "result",
-				id: message.id,
-				text: translate(message.text),
-			});
+			// The worker is another thread: the tokens ride in the answer.
+			const run = translate;
+			const { value: text, tokens } = await collectTokens(async () =>
+				run(message.text),
+			);
+			port.postMessage({ type: "result", id: message.id, text, tokens });
 		} catch (error) {
 			port.postMessage({
 				type: "failed",

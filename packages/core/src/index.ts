@@ -172,4 +172,6 @@ export type {
 	UsageRecorder,
 } from "./types";
 export { UntranslatableError } from "./untranslatable-error";
+export type { CollectedTokens } from "./usage-collector";
+export { collectTokens, reportTokens } from "./usage-collector";
 export { validateArguments } from "./validate-arguments";

@@ -5,6 +5,7 @@ import type {
 	DecisionState,
 } from "../decision-types";
 import type { UsageRecorder } from "../types";
+import { type CollectedTokens, collectTokens } from "../usage-collector";
 import type { ActionContext, GoapAction, WorldState } from "./types";
 
 export interface DecisionActionConfig {
@@ -20,7 +21,7 @@ export interface DecisionActionConfig {
 	toDecisionState: (state: WorldState) => DecisionState;
 	/** Maps Laya's real answer into observed world-state facts. */
 	toEffects: (answer: DecisionAnswer) => Partial<WorldState>;
-	/** Optional: records each `decide()` call as a `kind: "decision"` usage row (latency only — Laya has no tokens). */
+	/** Optional: records each `decide()` call as a `kind: "decision"` usage row (with the model's own token count when it reports one). */
 	usageRecorder?: UsageRecorder;
 	/** Who the recorded call belongs to — only read when `usageRecorder` is set. */
 	threadId?: (state: WorldState) => string;
@@ -43,7 +44,11 @@ export function createDecisionAction(config: DecisionActionConfig): GoapAction {
 		async execute(ctx: ActionContext) {
 			const { state } = ctx;
 			const startedAt = Date.now();
-			const record = (outcome: { ok: true } | { ok: false; error: string }) =>
+			const record = (
+				outcome:
+					| ({ ok: true } & CollectedTokens)
+					| { ok: false; error: string },
+			) =>
 				config.usageRecorder?.record({
 					threadId: config.threadId?.(state) ?? "",
 					userId: config.userId?.(state) ?? "",
@@ -59,11 +64,13 @@ export function createDecisionAction(config: DecisionActionConfig): GoapAction {
 				});
 
 			let answers: Record<string, DecisionAnswer>;
+			let tokens: CollectedTokens;
 			try {
-				answers = await config.decisionAgent.decide(
-					config.toDecisionState(state),
-					{ [config.name]: config.question },
-				);
+				({ value: answers, tokens } = await collectTokens(() =>
+					config.decisionAgent.decide(config.toDecisionState(state), {
+						[config.name]: config.question,
+					}),
+				));
 			} catch (error) {
 				record({
 					ok: false,
@@ -71,7 +78,7 @@ export function createDecisionAction(config: DecisionActionConfig): GoapAction {
 				});
 				throw error;
 			}
-			record({ ok: true });
+			record({ ok: true, ...tokens });
 
 			const answer = answers[config.name];
 			return answer ? config.toEffects(answer) : {};

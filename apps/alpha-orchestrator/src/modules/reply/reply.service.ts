@@ -1,5 +1,6 @@
 import type {
 	CallContext,
+	CollectedTokens,
 	GoapAction,
 	IntentVerdict,
 	WorldState,
@@ -7,6 +8,7 @@ import type {
 import {
 	bindListScope,
 	classifyMessageIntentDetailed,
+	collectTokens,
 	goalForIntent,
 	MAX_TOOL_TEXT_CHARS,
 	matchSpecialist,
@@ -138,7 +140,9 @@ async function translateMessage(
 	const recorder = deps.usageRecorder?.record
 		? { record: deps.usageRecorder.record.bind(deps.usageRecorder) }
 		: undefined;
-	const report = (outcome: { ok: true } | { ok: false; error: string }) =>
+	const report = (
+		outcome: ({ ok: true } & CollectedTokens) | { ok: false; error: string },
+	) =>
 		recordCall(recorder, {
 			...context,
 			actionName: "translate",
@@ -150,10 +154,14 @@ async function translateMessage(
 			...outcome,
 		});
 	try {
-		const translated =
-			(await translateAroundLatin(text, deps.translate)) || undefined;
-		report({ ok: true });
-		return translated;
+		const { value, tokens } = await collectTokens(() =>
+			translateAroundLatin(
+				text,
+				deps.translate as NonNullable<ReplyDeps["translate"]>,
+			),
+		);
+		report({ ok: true, ...tokens });
+		return value || undefined;
 	} catch (error) {
 		report({
 			ok: false,
@@ -175,7 +183,7 @@ const INTENT_PROVIDERS = {
 function reportIntent(
 	deps: ReplyDeps,
 	verdict: IntentVerdict,
-	context: CallContext & { latencyMs: number },
+	context: CallContext & CollectedTokens & { latencyMs: number },
 ): void {
 	const { latencyMs, ...call } = context;
 	const recorder = deps.usageRecorder?.record
@@ -227,20 +235,23 @@ export async function prepareNewMessage(
 		typeof state.userMessageEn === "string" ? state.userMessageEn : undefined;
 	const original = String(state.userMessage ?? "");
 	const startedAt = performance.now();
-	const verdict = await classifyMessageIntentDetailed(
-		{
-			decisionAgent: deps.decisionAgent,
-			// A new site has no hand-written words: only checkout and removal are
-			// taken from words; the rest comes from what the site has been taught,
-			// then from Laya.
-			rules: "guarded",
-			memory: (text) => deps.intentMemory?.classify(visitor.channelId, text),
-		},
-		original,
-		english,
+	const { value: verdict, tokens } = await collectTokens(() =>
+		classifyMessageIntentDetailed(
+			{
+				decisionAgent: deps.decisionAgent,
+				// A new site has no hand-written words: only checkout and removal are
+				// taken from words; the rest comes from what the site has been taught,
+				// then from Laya.
+				rules: "guarded",
+				memory: (text) => deps.intentMemory?.classify(visitor.channelId, text),
+			},
+			original,
+			english,
+		),
 	);
 	const intent = verdict.intent;
 	reportIntent(deps, verdict, {
+		...tokens,
 		threadId,
 		userId: visitor.id,
 		planRunId,

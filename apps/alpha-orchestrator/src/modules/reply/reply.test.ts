@@ -5,6 +5,7 @@ import {
 	InMemoryWorldStateStore,
 	plan,
 	pruneUnproducibleFacts,
+	reportTokens,
 	UntranslatableError,
 } from "@repo/core";
 import { createWebChannel } from "../channels/channels.service.ts";
@@ -502,6 +503,7 @@ describe("prepareNewMessage: what Laya is sure about is learned on its own", () 
 			db,
 			decisionAgent: {
 				async decide() {
+					reportTokens({ inputTokens: 30, outputTokens: 0 });
 					return {
 						intent: {
 							type: "choice",
@@ -554,6 +556,8 @@ describe("prepareNewMessage: what Laya is sure about is learned on its own", () 
 		expect(recorded.find((c) => c.kind === "classify")).toMatchObject({
 			provider: "laya",
 			confidence: 0.9,
+			inputTokens: 30,
+			outputTokens: 0,
 		});
 	});
 

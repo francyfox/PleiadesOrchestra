@@ -112,6 +112,7 @@ export function loadEngine(options: EngineOptions): NativeCalls {
 			],
 			returns: FFIType.i32,
 		},
+		tr_last_tokens: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.void },
 		tr_free: { args: [FFIType.ptr], returns: FFIType.void },
 	});
 
@@ -132,7 +133,12 @@ export function loadEngine(options: EngineOptions): NativeCalls {
 		);
 	}
 
+	const counts = new Int32Array(2);
 	return {
+		tokens: () => {
+			lib.symbols.tr_last_tokens(handle, ptr(counts));
+			return { inputTokens: counts[0] ?? 0, outputTokens: counts[1] ?? 0 };
+		},
 		call: (text, out) =>
 			lib.symbols.tr_translate(
 				handle,

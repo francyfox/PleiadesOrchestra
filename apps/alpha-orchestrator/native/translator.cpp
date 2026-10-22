@@ -20,6 +20,9 @@ struct Handle {
   std::unique_ptr<ctranslate2::Translator> translator;
   sentencepiece::SentencePieceProcessor source;
   sentencepiece::SentencePieceProcessor target;
+  // Token counts of the last successful tr_translate, read with tr_last_tokens.
+  int last_input_tokens = 0;
+  int last_output_tokens = 0;
 };
 
 void put_error(char* error, int capacity, const std::string& message) {
@@ -80,8 +83,12 @@ int tr_translate(void* raw, const char* text, int beam_size, int max_length,
 
     auto results = handle->translator->translate_batch({pieces}, options);
     std::string decoded;
+    handle->last_input_tokens = static_cast<int>(pieces.size());
+    handle->last_output_tokens = 0;
     if (!results.empty() && !results[0].hypotheses.empty()) {
       handle->target.Decode(results[0].hypotheses[0], &decoded);
+      handle->last_output_tokens =
+          static_cast<int>(results[0].hypotheses[0].size());
     }
     if (static_cast<int>(decoded.size()) + 1 > out_capacity) {
       return -(static_cast<int>(decoded.size()) + 2);
@@ -93,6 +100,15 @@ int tr_translate(void* raw, const char* text, int beam_size, int max_length,
     put_error(out, out_capacity, e.what());
     return -1;
   }
+}
+
+// Writes the SentencePiece token counts of the last tr_translate into
+// counts[0] (source, with `</s>`) and counts[1] (translation): the exact
+// numbers the model saw, for the admin's usage columns.
+void tr_last_tokens(void* raw, int* counts) {
+  auto* handle = static_cast<Handle*>(raw);
+  counts[0] = handle->last_input_tokens;
+  counts[1] = handle->last_output_tokens;
 }
 
 void tr_free(void* raw) { delete static_cast<Handle*>(raw); }

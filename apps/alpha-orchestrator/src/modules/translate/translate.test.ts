@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { collectTokens } from "@repo/core";
 import {
 	createTranslator,
 	TextTooLongError,
@@ -27,6 +28,17 @@ function fakeNative(reply: (text: string) => string) {
 }
 
 describe("createTranslator", () => {
+	test("reports the native token counts once, after the call that succeeded (a buffer retry is not counted twice)", async () => {
+		const native = {
+			...fakeNative((text) => `[${text}] and a much longer answer`),
+			tokens: () => ({ inputTokens: 7, outputTokens: 9 }),
+		};
+		const translate = createTranslator({ ...native, initialBuffer: 4 });
+		const { tokens } = await collectTokens(async () => translate("купи сыр"));
+		expect(native.calls).toHaveLength(2);
+		expect(tokens).toEqual({ inputTokens: 7, outputTokens: 9 });
+	});
+
 	test("sends the text NUL-terminated and returns what the native side wrote", () => {
 		const native = fakeNative((text) => `[${text}]`);
 		const translate = createTranslator(native);

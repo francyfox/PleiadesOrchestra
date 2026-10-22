@@ -1,3 +1,5 @@
+import { reportTokens } from "@repo/core";
+
 export class TextTooLongError extends Error {
 	constructor(readonly limit: number) {
 		super(`text is longer than ${limit} characters`);
@@ -8,6 +10,8 @@ export class TextTooLongError extends Error {
 export interface NativeCalls {
 	/** `tr_translate`: bytes written, -1 on error (message in `out`), or -(needed + 2) when `out` is too small. */
 	call(text: Uint8Array, out: Uint8Array): number;
+	/** `tr_last_tokens`: the SentencePiece token counts (source with `</s>`, translation) of the last successful call. */
+	tokens?(): { inputTokens: number; outputTokens: number };
 	free(): void;
 }
 
@@ -30,6 +34,7 @@ const decoder = new TextDecoder();
  */
 export function createTranslator({
 	call,
+	tokens,
 	maxChars = 500,
 	initialBuffer = 1024,
 }: TranslatorOptions): Translate {
@@ -52,6 +57,7 @@ export function createTranslator({
 					"translation failed",
 			);
 		}
+		if (tokens) reportTokens(tokens());
 		return decoder.decode(out.subarray(0, written)).trim();
 	};
 }

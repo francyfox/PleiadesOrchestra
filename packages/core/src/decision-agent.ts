@@ -10,9 +10,10 @@ import {
 	type createTelemetry,
 	telemetry as defaultTelemetry,
 } from "./telemetry";
+import { reportTokens } from "./usage-collector";
 
 export interface DecisionAgentConfig {
-	/** `gamma-decision` root, without `/v1` (the TypeSafe client appends it). */
+	/** `gamma-decision` root, without `/v1` (the TypeSafe client appends it); a URL ending in `/decisions` (OpenRouter) is posted to as it is. */
 	baseURL: string;
 	apiKey: string;
 	/** Model name sent in the request body (`laya` by default); an external Laya server may serve it under another name. */
@@ -39,12 +40,17 @@ export interface DecisionAgentConfig {
 export function createDecisionAgent(
 	config: DecisionAgentConfig,
 ): DecisionAgent {
+	// OpenRouter serves the same wire shape at `/api/alpha/decisions`; the SDK always appends `/v1/systemone`.
+	const wholeEndpoint = config.baseURL.endsWith("/decisions");
+	const send = config.fetchImpl ?? fetch;
 	const model =
 		config.model ??
 		createTypeSafeAi({
 			baseURL: `${config.baseURL}/v1`,
 			apiKey: config.apiKey,
-			fetch: config.fetchImpl,
+			fetch: wholeEndpoint
+				? (((_url, init) => send(config.baseURL, init)) as typeof fetch)
+				: config.fetchImpl,
 		}).decisionModel(config.modelId ?? "laya");
 	const telemetry = config.telemetry ?? defaultTelemetry;
 	const provider = config.provider ?? "laya";
@@ -67,11 +73,17 @@ export function createDecisionAgent(
 					maxRetries: 0,
 				});
 
+				const tokens = {
+					inputTokens: result.usage.inputTokens,
+					outputTokens: result.usage.outputTokens,
+				};
+				reportTokens(tokens);
 				telemetry.logLlmState({
 					provider,
 					model: modelName,
 					latencyMs: Date.now() - startedAt,
 					ok: true,
+					...tokens,
 				});
 
 				return result.answers as Record<string, DecisionAnswer>;
