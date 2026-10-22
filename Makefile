@@ -18,7 +18,7 @@ ps:
 # WordPress + WooCommerce for the plugin (compose.wp.yml), http://localhost:8088 (admin/admin)
 wp-build:
 	bun run --cwd packages/pleiades-widget build
-	bun run --cwd apps/wordpress-plugin build
+	bun run --cwd packages/wordpress-plugin build
 
 wp-up: wp-build
 	$(WP) up -d

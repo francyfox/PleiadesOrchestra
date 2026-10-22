@@ -1,5 +1,5 @@
-# Local WordPress + WooCommerce for the plugin (apps/wordpress-plugin), separate from the main stack.
-# Build the plugin first: bun run --cwd apps/wordpress-plugin build. Then
+# Local WordPress + WooCommerce for the plugin (packages/wordpress-plugin), separate from the main stack.
+# Build the plugin first: bun run --cwd packages/wordpress-plugin build. Then
 # docker compose -f compose.wp.yml up -d. Site: http://localhost:8088 (admin/admin).
 name: pleiades-wordpress
 
@@ -33,7 +33,7 @@ services:
       - "127.0.0.1:${WORDPRESS_PORT:-8088}:80"
     volumes:
       - wordpress-data:/var/www/html
-      - ./apps/wordpress-plugin/pleiades-assistant:/var/www/html/wp-content/plugins/pleiades-assistant:ro
+      - ./packages/wordpress-plugin/pleiades-assistant:/var/www/html/wp-content/plugins/pleiades-assistant:ro
     restart: unless-stopped
 
   wordpress-setup:
@@ -54,8 +54,8 @@ services:
       PLEIADES_AGENT_URL: ${WORDPRESS_PLEIADES_AGENT_URL:-}
     volumes:
       - wordpress-data:/var/www/html
-      - ./apps/wordpress-plugin/pleiades-assistant:/var/www/html/wp-content/plugins/pleiades-assistant:ro
-      - ./apps/wordpress-plugin/dev/setup.sh:/setup.sh:ro
+      - ./packages/wordpress-plugin/pleiades-assistant:/var/www/html/wp-content/plugins/pleiades-assistant:ro
+      - ./packages/wordpress-plugin/dev/setup.sh:/setup.sh:ro
     entrypoint: ["sh", "/setup.sh"]
     restart: "no"
 

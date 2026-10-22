@@ -21,13 +21,13 @@ Without WooCommerce only `search_site`, `get_page`, `open_page` are registered. 
 ## Local WordPress + WooCommerce
 
 ```
-bun run --cwd apps/wordpress-plugin build      # widget must be built: bun run --cwd packages/pleiades-widget build
+bun run --cwd packages/wordpress-plugin build      # widget must be built: bun run --cwd packages/pleiades-widget build
 docker compose -f compose.wp.yml up -d
 ```
 
 `compose.wp.yml` is its own compose project (`pleiades-wordpress`), apart from the main stack. `wordpress-setup` (`dev/setup.sh`, wp-cli, idempotent) installs core, WooCommerce, the sample products (clothing with variations), activates the plugin and, if `WORDPRESS_PLEIADES_KEY` (+ `WORDPRESS_PLEIADES_AGENT_URL`) are set in the root `.env`, presets the settings. Site `http://localhost:8088` (`WORDPRESS_PORT`), admin / admin. Re-run setup: `docker compose -f compose.wp.yml up wordpress-setup`. The plugin dir is mounted read-only, so rebuild assets on the host.
 
-PHP lint (no PHP on the host): `docker run --rm -v $PWD/apps/wordpress-plugin/pleiades-assistant:/p php:8.3-cli sh -c 'for f in $(find /p -name "*.php"); do php -l $f; done'`.
+PHP lint (no PHP on the host): `docker run --rm -v $PWD/packages/wordpress-plugin/pleiades-assistant:/p php:8.3-cli sh -c 'for f in $(find /p -name "*.php"); do php -l $f; done'`.
 
 Theme: `WORDPRESS_THEME=storefront` (classic: cart and checkout pages become `[woocommerce_cart]`/`[woocommerce_checkout]`) or `twentytwentyfive` (block, default: WooCommerce's block pages are recreated); rerun `wordpress-setup` to switch. Both checked in a real browser (header, /cart/, /checkout/ update without reload after every cart tool). Not tested yet: caching plugins.
 

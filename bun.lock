@@ -227,12 +227,6 @@
         "typescript": "catalog:",
       },
     },
-    "apps/wordpress-plugin": {
-      "name": "@repo/wordpress-plugin",
-      "devDependencies": {
-        "@shalotts/pleiades-widget": "workspace:*",
-      },
-    },
     "packages/core": {
       "name": "@repo/core",
       "version": "0.0.0",
@@ -326,6 +320,12 @@
       "devDependencies": {
         "@types/bun": "catalog:",
         "typescript": "catalog:",
+      },
+    },
+    "packages/wordpress-plugin": {
+      "name": "@repo/wordpress-plugin",
+      "devDependencies": {
+        "@shalotts/pleiades-widget": "workspace:*",
       },
     },
   },
@@ -1096,7 +1096,7 @@
 
     "@repo/webmcp-polyfill": ["@repo/webmcp-polyfill@workspace:packages/webmcp-polyfill"],
 
-    "@repo/wordpress-plugin": ["@repo/wordpress-plugin@workspace:apps/wordpress-plugin"],
+    "@repo/wordpress-plugin": ["@repo/wordpress-plugin@workspace:packages/wordpress-plugin"],
 
     "@rolldown/binding-android-arm-eabi": ["@rolldown/binding-android-arm-eabi@1.2.14", "", { "os": "android", "cpu": "arm" }, "sha512-aWR+XKH9+rW7m5fWq/5360J3mHycrx/o6xZM2DQFdJnTMdyP7/WzxPjhtLbVWdKo2y612/4U1bWqb3HQhiF7vg=="],
 
