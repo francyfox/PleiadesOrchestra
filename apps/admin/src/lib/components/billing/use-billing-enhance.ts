@@ -1,7 +1,10 @@
 import { get } from "svelte/store";
 import { useIntlayer } from "svelte-intlayer";
 import type { ActionResult } from "#lib/api/result.js";
-import { useActionEnhance } from "#lib/components/use-action-enhance.js";
+import {
+	type ActionEnhanceOptions,
+	useActionEnhance,
+} from "#lib/components/use-action-enhance.js";
 
 const CODES = [
 	"billing_unavailable",
@@ -13,9 +16,12 @@ const CODES = [
 export function useBillingEnhance(
 	run: (form: FormData) => Promise<ActionResult>,
 	onUnavailable: () => void,
+	/** Field validation (see `useActionEnhance`). */
+	validation?: Pick<ActionEnhanceOptions, "schema" | "overrides">,
 ) {
 	const content = useIntlayer("billing");
 	return useActionEnhance({
+		...validation,
 		run,
 		quietSuccess: () => true,
 		onSuccess: (data) => window.location.assign(String(data.url)),

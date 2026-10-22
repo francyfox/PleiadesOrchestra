@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { ForgotForm } from "admin-api/forms";
 	import { useIntlayer } from "svelte-intlayer";
 	import { authActions } from "#lib/actions.js";
 	import {
@@ -8,9 +9,13 @@
 	import FormField from "#lib/components/form-field.svelte";
 	import { Button } from "#lib/components/ui/button/index.js";
 	import * as Card from "#lib/components/ui/card/index.js";
+	import { useFieldErrorText } from "#lib/forms/use-field-error-text.js";
 
 	const content = useIntlayer("auth");
-	const form = useAuthForm(authActions.forgot);
+	const form = useAuthForm(authActions.forgot, undefined, {
+		schema: ForgotForm,
+	});
+	const errorText = useFieldErrorText();
 	const error = $derived(
 		form.failure ? authErrorText($content.errors, form.failure) : null,
 	);
@@ -25,8 +30,8 @@
 		{#if form.done}
 			<p class="text-sm">{$content.forgot.sent({ email: form.email })}</p>
 		{:else}
-			<form onsubmit={form.submit} class="grid gap-4">
-				<FormField id="email" label={$content.fields.email.value} type="email" autocomplete="email" required />
+			<form onsubmit={form.submit} oninput={form.clear} novalidate class="grid gap-4">
+				<FormField id="email" label={$content.fields.email.value} type="email" autocomplete="email" required error={$errorText(form.errors?.email)} />
 				{#if error}
 					<p class="text-sm text-destructive">{error}</p>
 				{/if}

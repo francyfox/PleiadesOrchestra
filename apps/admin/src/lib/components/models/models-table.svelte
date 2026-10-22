@@ -13,6 +13,8 @@
 	import ConfirmDialog from "#lib/components/confirm-dialog.svelte";
 	import DataTable from "#lib/components/data-table.svelte";
 	import IconButton from "#lib/components/icon-button.svelte";
+	import { MODEL_TYPE_ICONS } from "#lib/model-type-icons.js";
+	import { typeLabel } from "#lib/model-types.js";
 	import { useModelsEnhance } from "./use-models-enhance";
 
 	type Row = { provider: Provider; model: ProviderModel };
@@ -26,7 +28,7 @@
 		providers: Provider[];
 		onEdit: (row: Row) => void;
 		/** Only the models of this type (`all` = every model). */
-		type?: ProviderModel["type"] | "all";
+		type?: ProviderModel["types"][number] | "all";
 	} = $props();
 
 	const content = useIntlayer("models");
@@ -41,7 +43,7 @@
 	const rows = $derived(
 		providers.flatMap((provider) =>
 			provider.models
-				.filter((model) => type === "all" || model.type === type)
+				.filter((model) => type === "all" || model.types.includes(type))
 				.map((model) => ({ provider, model })),
 		),
 	);
@@ -56,10 +58,10 @@
 				header: () => $content.models.columns.model.value,
 				cell: (ctx) => renderSnippet(modelCell, ctx.row.original.model),
 			}),
-			helper.accessor((r) => r.model.type, {
-				id: "type",
-				header: () => $content.models.columns.type.value,
-				cell: (ctx) => $content.types[ctx.getValue()].value,
+			helper.accessor((r) => r.model.types.join(", "), {
+				id: "types",
+				header: () => $content.models.columns.types.value,
+				cell: (ctx) => renderSnippet(typesCell, ctx.row.original.model.types),
 			}),
 			helper.accessor((r) => r.provider.name, {
 				id: "provider",
@@ -94,6 +96,15 @@
 {#snippet modelCell(m: ProviderModel)}
 	<span class="font-medium">{m.name}</span>
 	{#if m.name !== m.id}<span class="font-mono text-xs text-muted-foreground">{m.id}</span>{/if}
+{/snippet}
+
+{#snippet typesCell(types: ProviderModel["types"])}
+	<span class="flex flex-wrap gap-1">
+		{#each types as type (type)}
+			{@const Icon = MODEL_TYPE_ICONS[type]}
+			<span class="bg-muted inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs"><Icon class="size-3.5" />{typeLabel(type)}</span>
+		{/each}
+	</span>
 {/snippet}
 
 {#snippet extraCell(extra: Record<string, unknown>)}

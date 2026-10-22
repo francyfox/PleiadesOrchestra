@@ -1,4 +1,5 @@
 import { type Static, t } from "elysia";
+import { CreateBlockedIpInput } from "../../forms/forms.ts";
 import { nullable } from "../common/common.schema.ts";
 
 export const BlockedIp = t.Object({
@@ -12,12 +13,6 @@ export const BlockedIp = t.Object({
 	expiresAt: t.Number(),
 });
 
-export const CreateBlockedIpInput = t.Object({
-	ip: t.String(),
-	channelId: t.Optional(t.String()),
-	reason: t.String(),
-	expiresInHours: t.Number(),
-});
+export { CreateBlockedIpInput };
 
 export type BlockedIp = Static<typeof BlockedIp>;
-export type CreateBlockedIpInput = Static<typeof CreateBlockedIpInput>;

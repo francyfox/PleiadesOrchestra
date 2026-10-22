@@ -54,10 +54,10 @@ export const Me = t.Object({
 	lastActiveAt: t.Nullable(t.Number()),
 });
 
-export const UpdateMeInput = t.Object({ name: t.String() });
-
-export const ChangeEmailInput = t.Object({ email: t.String() });
-
-export const DeleteMeInput = t.Object({ confirmEmail: t.String() });
+export {
+	ChangeEmailInput,
+	DeleteMeInput,
+	UpdateMeInput,
+} from "../../forms/forms.ts";
 
 export type Me = Static<typeof Me>;

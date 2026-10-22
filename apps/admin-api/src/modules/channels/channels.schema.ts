@@ -1,7 +1,14 @@
 import { type Static, t } from "elysia";
-import { nullable, oneOf, PageQuery } from "../common/common.schema.ts";
+import {
+	AccessMode,
+	CreateChannelInput,
+	Persona,
+	UpdateChannelInput,
+} from "../../forms/forms.ts";
+import { nullable, PageQuery } from "../common/common.schema.ts";
 
-const ACCESS_MODES = ["whitelist", "open"] as const;
+// One definition with the admin forms.
+export { AccessMode, CreateChannelInput, Persona, UpdateChannelInput };
 
 /**
  * DTOs of the orchestrator's admin API — apps/docs/content/en/drafts/admin-api.md is the source of
@@ -10,8 +17,6 @@ const ACCESS_MODES = ["whitelist", "open"] as const;
  */
 
 export const ChannelKind = t.UnionEnum(["telegram", "cli", "web"]);
-
-export const AccessMode = t.UnionEnum(ACCESS_MODES);
 
 export const ChannelRef = t.Object({
 	id: t.String(),
@@ -41,38 +46,6 @@ export const ChannelsQuery = t.Composite([
 	t.Object({ ownerId: t.Optional(t.String({ minLength: 1 })) }),
 ]);
 
-/** Wire input of `POST /channels` (before the handler's slug/name check). */
-export const CreateChannelInput = t.Object({
-	slug: t.String(),
-	name: t.String(),
-	accessMode: t.Optional(oneOf(ACCESS_MODES)),
-	allowedOrigins: t.Optional(t.Array(t.String())),
-	catalogLanguage: t.Optional(t.String()),
-	/** Staff only: the account that will own the channel. A user's channel is always theirs. */
-	ownerId: t.Optional(t.String({ minLength: 1 })),
-});
-
-export const UpdateChannelInput = t.Object({
-	name: t.Optional(t.String()),
-	accessMode: t.Optional(oneOf(ACCESS_MODES)),
-	allowedOrigins: t.Optional(t.Array(t.String())),
-	catalogLanguage: t.Optional(t.String()),
-	disabled: t.Optional(t.Boolean()),
-});
-
-/** What the visitor meets: the bot's name, tone and limits. Empty string / list = not set. */
-export const Persona = t.Object({
-	botName: t.String(),
-	tone: t.String(),
-	/** Multi-line role / behaviour text; the fixed rules always come after it. */
-	instructions: t.String(),
-	/** `ru`, `pt-BR`, or "" = the visitor's own language. */
-	defaultLang: t.String(),
-	greeting: t.String(),
-	forbiddenTopics: t.Array(t.String()),
-	handoffContact: t.String(),
-});
-
 /** The persona in effect, the standard values, and the prompt built from them (read-only). */
 export const PersonaView = t.Object({
 	persona: Persona,
@@ -87,11 +60,7 @@ export const ChannelWithSecret = t.Object({
 	secretKey: t.String(),
 });
 
-export type Persona = Static<typeof Persona>;
 export type PersonaView = Static<typeof PersonaView>;
 export type ChannelKind = Static<typeof ChannelKind>;
-export type AccessMode = Static<typeof AccessMode>;
 export type ChannelRef = Static<typeof ChannelRef>;
 export type Channel = Static<typeof Channel>;
-export type CreateChannelInput = Static<typeof CreateChannelInput>;
-export type UpdateChannelInput = Static<typeof UpdateChannelInput>;

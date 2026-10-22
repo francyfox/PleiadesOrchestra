@@ -1,5 +1,8 @@
 import { type Static, t } from "elysia";
-import { nullable, oneOf } from "../common/common.schema.ts";
+import { AgentPick, ProviderInput, ProviderModel } from "../../forms/forms.ts";
+import { nullable } from "../common/common.schema.ts";
+
+export { AgentPick, ProviderInput, ProviderModel };
 
 export const AgentRole = t.UnionEnum([
 	"text",
@@ -23,8 +26,6 @@ export const Agent = t.Object({
 	checkedAt: t.Number(),
 });
 
-const ReasoningEffort = oneOf(["none", "low", "medium", "high"]);
-
 /** One agent: the model in effect and its provider (null = the env server). Never a key. */
 export const AgentSettingsView = t.Object({
 	id: t.String(),
@@ -33,24 +34,6 @@ export const AgentSettingsView = t.Object({
 	baseUrl: nullable(t.String()),
 	updatedBy: nullable(t.String()),
 	updatedAt: nullable(t.Number()),
-});
-
-/** A model of providers.toml, by provider id and model id. */
-export const AgentPick = t.Object({
-	provider: t.String({ minLength: 1, maxLength: 64 }),
-	model: t.String({ minLength: 1, maxLength: 200 }),
-});
-
-/** A model with the parameters it is called with. */
-export const ProviderModel = t.Object({
-	id: t.String({ minLength: 1, maxLength: 200 }),
-	name: t.String({ minLength: 1, maxLength: 200 }),
-	/** What the model is for, as the AI SDK names its factories; `translation` is the in-process translator. */
-	type: oneOf(["language", "decision", "translation"]),
-	temperature: t.Optional(t.Number({ minimum: 0, maximum: 2 })),
-	reasoningEffort: t.Optional(ReasoningEffort),
-	/** Extra request-body fields, e.g. `{ "provider": { "require_parameters": true } }` for OpenRouter. */
-	extraBody: t.Record(t.String(), t.Any()),
 });
 
 /** A provider of providers.toml: the key masked (`••••1234`), `$VAR` as is, "" = none. */
@@ -65,15 +48,6 @@ export const Provider = t.Object({
 });
 
 export const ProviderList = t.Object({ items: t.Array(Provider) });
-
-/** Add or change a provider; `apiKey` left out keeps the saved key, "" removes it. */
-export const ProviderInput = t.Object({
-	name: t.String({ minLength: 1, maxLength: 100 }),
-	baseUrl: t.String({ pattern: "^https?://", maxLength: 500 }),
-	/** Where its decision models are asked; left out keeps the saved one. */
-	decisionsUrl: t.Optional(t.String({ pattern: "^https?://", maxLength: 500 })),
-	apiKey: t.Optional(t.String({ maxLength: 500 })),
-});
 
 /** providers.toml as text, keys masked. */
 export const ProvidersText = t.Object({
@@ -99,11 +73,8 @@ export const AgentTestResult = t.Object({
 });
 
 export type AgentSettingsView = Static<typeof AgentSettingsView>;
-export type AgentPick = Static<typeof AgentPick>;
 export type AgentTestResult = Static<typeof AgentTestResult>;
 export type Provider = Static<typeof Provider>;
-export type ProviderInput = Static<typeof ProviderInput>;
-export type ProviderModel = Static<typeof ProviderModel>;
 export type ProvidersText = Static<typeof ProvidersText>;
 export type ProvidersCheck = Static<typeof ProvidersCheck>;
 export type AgentRole = Static<typeof AgentRole>;

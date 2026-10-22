@@ -1,8 +1,9 @@
+import { LANGUAGE_PATTERN, SLUG_PATTERN } from "../../forms/forms.ts";
 import { isStaff } from "../accounts/accounts.schema.ts";
 import type { OrchestratorClient } from "../orchestrator/orchestrator.ts";
 
-const SLUG = /^[a-z0-9-]+$/;
-const LANGUAGE = /^[a-z]{2}(-[A-Z]{2})?$/;
+const SLUG = new RegExp(SLUG_PATTERN);
+const LANGUAGE = new RegExp(LANGUAGE_PATTERN);
 
 /** Channel slugs are lowercase letters, digits and dashes. */
 export function isValidSlug(slug: string): boolean {

@@ -1,7 +1,9 @@
+import type { TObject } from "@sinclair/typebox";
 import { get } from "svelte/store";
 import { useIntlayer } from "svelte-intlayer";
 import type { ActionResult } from "#lib/api/result.js";
 import { useActionEnhance } from "#lib/components/use-action-enhance.js";
+import type { FieldOverrides } from "#lib/forms/schema-to-zod.js";
 import { type IssuedSecret, issued } from "./issued-secret.svelte";
 
 /** Channel forms: localized validation errors; no toast when new keys are shown instead. */
@@ -10,10 +12,14 @@ export function useChannelEnhance(
 	onSettled?: () => void,
 	/** Only after a successful call (e.g. close the create dialog; a failed one stays open with its input). */
 	onDone?: () => void,
+	schema?: TObject,
+	overrides?: FieldOverrides,
 ) {
 	const content = useIntlayer("channels");
 	return useActionEnhance({
 		run,
+		schema,
+		overrides,
 		onSettled,
 		resetOnSuccess: true,
 		onSuccess: (data) => {

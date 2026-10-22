@@ -42,13 +42,8 @@ const modelsContent = {
 				kk: "Оның модельдеріндегі агенттер env серверіне оралады.",
 			}),
 		},
-		/** Model types, named after the AI SDK's model factories. */
-		types: {
-			all: t({ ru: "Все", en: "All", kk: "Барлығы" }),
-			language: t({ ru: "Текст", en: "Language", kk: "Мәтін" }),
-			decision: t({ ru: "Решения", en: "Decision", kk: "Шешімдер" }),
-			translation: t({ ru: "Перевод", en: "Translation", kk: "Аударма" }),
-		},
+		/** Model types are shown in English everywhere (AI SDK names); only "All" is translated. */
+		allTypes: t({ ru: "Все", en: "All", kk: "Барлығы" }),
 		models: {
 			title: t({ ru: "Модели", en: "Models", kk: "Модельдер" }),
 			add: t({ ru: "Модель", en: "Model", kk: "Модель" }),
@@ -58,7 +53,7 @@ const modelsContent = {
 				kk: "Модельдер жоқ — алдымен провайдер қосыңыз",
 			}),
 			columns: {
-				type: t({ ru: "Тип", en: "Type", kk: "Түрі" }),
+				types: t({ ru: "Типы", en: "Types", kk: "Түрлері" }),
 				model: t({ ru: "Модель", en: "Model", kk: "Модель" }),
 				provider: t({ ru: "Провайдер", en: "Provider", kk: "Провайдер" }),
 				temperature: t({
@@ -105,7 +100,27 @@ const modelsContent = {
 				kk: "Бос — сақталғанын қалдыру. $АТЫ — орта айнымалысынан алу.",
 			}),
 			provider: t({ ru: "Провайдер", en: "Provider", kk: "Провайдер" }),
-			type: t({ ru: "Тип модели", en: "Model type", kk: "Модель түрі" }),
+			types: t({ ru: "Типы модели", en: "Model types", kk: "Модель түрлері" }),
+			typesSearch: t({
+				ru: "Поиск типа…",
+				en: "Search types…",
+				kk: "Түрді іздеу…",
+			}),
+			typesClear: t({
+				ru: "Очистить типы",
+				en: "Clear types",
+				kk: "Түрлерді тазалау",
+			}),
+			typesRemove: t({
+				ru: insert("Убрать {{label}}"),
+				en: insert("Remove {{label}}"),
+				kk: insert("{{label}} алып тастау"),
+			}),
+			typesEmpty: t({
+				ru: "Нет такого типа",
+				en: "No such type",
+				kk: "Мұндай түр жоқ",
+			}),
 			decisionsUrl: t({
 				ru: "Адрес решений (Decisions URL)",
 				en: "Decisions URL",
@@ -187,13 +202,6 @@ const modelsContent = {
 				ru: "Ключи показаны маской: оставьте маску — сохранится прежний ключ. Комментарии при сохранении не сохраняются.",
 				en: "Keys are masked: leave a mask to keep the saved key. Comments are not kept on save.",
 				kk: "Кілттер маскаланған: масканы қалдырсаңыз, бұрынғы кілт сақталады. Сақтағанда түсініктемелер сақталмайды.",
-			}),
-		},
-		errors: {
-			invalid_json: t({
-				ru: "Доп. поля — это JSON-объект",
-				en: "Extra fields must be a JSON object",
-				kk: "Қосымша өрістер — JSON нысаны болуы керек",
 			}),
 		},
 	},

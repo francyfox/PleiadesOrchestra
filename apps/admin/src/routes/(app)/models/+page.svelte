@@ -10,7 +10,8 @@
 	import ProvidersTomlDialog from "#lib/components/models/providers-toml-dialog.svelte";
 	import { Button } from "#lib/components/ui/button/index.js";
 	import * as Tabs from "#lib/components/ui/tabs/index.js";
-	import { MODEL_TYPES } from "#lib/provider-model-form.js";
+	import { MODEL_TYPE_ICONS } from "#lib/model-type-icons.js";
+	import { MODEL_TYPES, typeLabel } from "#lib/model-types.js";
 	import { prefetched } from "#lib/query/prefetch.js";
 	import { queries } from "#lib/query/queries.js";
 
@@ -22,7 +23,10 @@
 	const countOf = (type: string) =>
 		providers.reduce(
 			(n, p) =>
-				n + p.models.filter((m) => type === "all" || m.type === type).length,
+				n +
+				p.models.filter(
+					(m) => type === "all" || m.types.includes(type as never),
+				).length,
 			0,
 		);
 
@@ -54,7 +58,11 @@
 <Tabs.Root bind:value={typeFilter}>
 	<Tabs.List>
 		{#each ["all", ...MODEL_TYPES] as type (type)}
-			<Tabs.Trigger value={type}>{$content.types[type as "all"].value} {countOf(type)}</Tabs.Trigger>
+			{@const Icon = type === "all" ? null : MODEL_TYPE_ICONS[type as keyof typeof MODEL_TYPE_ICONS]}
+			<Tabs.Trigger value={type}>
+				{#if Icon}<Icon class="size-4" />{/if}
+				{type === "all" ? $content.allTypes.value : typeLabel(type)} {countOf(type)}
+			</Tabs.Trigger>
 		{/each}
 	</Tabs.List>
 </Tabs.Root>

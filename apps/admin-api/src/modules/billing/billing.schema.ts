@@ -53,11 +53,7 @@ export const StandingView = t.Object({
 	warn: t.Boolean(),
 });
 
-export const CheckoutInput = t.Object({
-	kind: oneOf(["plan", "credits"]),
-	/** Credits only: the amount to preselect, whole USD (= TR). Plans have a fixed price. */
-	amountUsd: t.Optional(t.Integer({ minimum: 1, maximum: 10_000 })),
-});
+export { CheckoutInput } from "../../forms/forms.ts";
 
 export const UrlOut = t.Object({ url: t.String() });
 

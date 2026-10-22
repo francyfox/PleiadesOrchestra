@@ -1,6 +1,7 @@
 <script lang="ts">
+	import { UserLoginForm } from "admin-api/forms";
 	import { useIntlayer } from "svelte-intlayer";
-	import { authActions } from "#lib/actions.js";
+	import { authActions, passwordAsTyped } from "#lib/actions.js";
 	import {
 		authErrorText,
 		useAuthForm,
@@ -9,13 +10,17 @@
 	import FormField from "#lib/components/form-field.svelte";
 	import { Button } from "#lib/components/ui/button/index.js";
 	import * as Card from "#lib/components/ui/card/index.js";
+	import { useFieldErrorText } from "#lib/forms/use-field-error-text.js";
 	import { goto } from "$app/navigation";
 	import { page } from "$app/state";
 
 	const content = useIntlayer("auth");
-	const form = useAuthForm(authActions.userLogin, () =>
-		goto("/", { refreshAll: true }),
+	const form = useAuthForm(
+		authActions.userLogin,
+		() => goto("/", { refreshAll: true }),
+		{ schema: UserLoginForm, overrides: passwordAsTyped },
 	);
+	const errorText = useFieldErrorText();
 	const error = $derived(
 		form.failure ? authErrorText($content.errors, form.failure) : null,
 	);
@@ -34,9 +39,9 @@
 		{:else if verified === "0"}
 			<p class="text-sm text-destructive">{$content.userLogin.notVerified.value}</p>
 		{/if}
-		<form onsubmit={form.submit} class="grid gap-4">
-			<FormField id="email" label={$content.fields.email.value} type="email" autocomplete="email" required />
-			<FormField id="password" label={$content.fields.password.value} type="password" autocomplete="current-password" required />
+		<form onsubmit={form.submit} oninput={form.clear} novalidate class="grid gap-4">
+			<FormField id="email" label={$content.fields.email.value} type="email" autocomplete="email" required error={$errorText(form.errors?.email)} />
+			<FormField id="password" label={$content.fields.password.value} type="password" autocomplete="current-password" required error={$errorText(form.errors?.password)} />
 			{#if error}
 				<p class="text-sm text-destructive">{error}</p>
 			{/if}

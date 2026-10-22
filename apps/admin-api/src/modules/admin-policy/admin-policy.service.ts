@@ -30,8 +30,7 @@ export function banRefusal({
 	return null;
 }
 
-/** Shortest password the panel accepts (users; staff sign in with a token). */
-export const MIN_PASSWORD = 12;
+export { MIN_PASSWORD } from "../../forms/auth.schema.ts";
 
 export interface AccountCheck {
 	actorId: string;

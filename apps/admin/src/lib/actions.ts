@@ -1,8 +1,30 @@
-import type { AccessMode, BulkAction } from "#lib/api-types.js";
+import type { Static, TObject } from "@sinclair/typebox";
+import {
+	AgentPick,
+	ChangeEmailInput,
+	CreateAdminInput,
+	CreateBlockedIpInput,
+	CreateChannelForm,
+	DeleteMeInput,
+	EditAdminForm,
+	ForgotForm,
+	IntentVerdictInput,
+	PersonaForm,
+	ProviderForm,
+	ProviderModel,
+	ResetForm,
+	TokenLoginForm,
+	TopUpForm,
+	UpdateChannelForm,
+	UpdateMeInput,
+	UserLoginForm,
+	UserRegisterForm,
+} from "admin-api/forms";
+import type { BulkAction } from "#lib/api-types.js";
 import { api } from "./api/client";
 import { type ActionResult, submitted } from "./api/result";
-import { REQUEST_INTENTS } from "./flow-filters";
-import { providerModelFromForm } from "./provider-model-form";
+import { parseForm } from "./forms/field-errors";
+import type { FieldOverrides } from "./forms/schema-to-zod";
 import { queryClient } from "./query/client";
 
 /**
@@ -15,14 +37,12 @@ import { queryClient } from "./query/client";
 const text = (form: FormData, name: string) =>
 	String(form.get(name) ?? "").trim();
 
-const LOCALES = ["ru", "en", "kk"] as const;
 const BULK_ACTIONS: readonly BulkAction[] = [
 	"whitelist",
 	"unwhitelist",
 	"block",
 	"unblock",
 ];
-const ACCESS_MODES: readonly AccessMode[] = ["open", "whitelist"];
 
 /** One origin per line (or comma-separated), blanks dropped. */
 export function parseOrigins(value: FormDataEntryValue | null): string[] {
@@ -39,9 +59,6 @@ export function lines(value: FormDataEntryValue | null): string[] {
 		.map((line) => line.trim())
 		.filter(Boolean);
 }
-
-const accessMode = (form: FormData) =>
-	ACCESS_MODES.find((mode) => mode === form.get("accessMode"));
 
 /** Keys handed out once by create / rotate, for the "copy them now" card. */
 function withSecret(result: ActionResult): ActionResult {
@@ -73,57 +90,58 @@ async function startsSession(result: Promise<ActionResult>) {
 	return settled;
 }
 
+/** A password is sent as typed: `parseForm` would trim it. */
+export const passwordAsTyped: FieldOverrides = {
+	password: (form) => String(form.get("password") ?? "") || undefined,
+};
+
+/** Auth forms are validated by `useAuthForm` first (same cached parse); `invalidForm` only guards a skipped check. */
 export const authActions = {
 	/** Staff: the access token from the super admin. */
-	tokenLogin: (form: FormData) =>
-		startsSession(
-			submitted(api().auth.token.post({ token: text(form, "token") })),
-		),
-	userLogin: (form: FormData) =>
-		startsSession(
-			submitted(
-				api().user.login.post({
-					email: text(form, "email"),
-					password: String(form.get("password") ?? ""),
-				}),
-			),
-		),
-	userRegister: (form: FormData) =>
-		submitted(
-			api().user.register.post({
-				name: text(form, "name") || undefined,
-				email: text(form, "email"),
-				password: String(form.get("password") ?? ""),
-				locale: LOCALES.find((locale) => locale === form.get("locale")),
-			}),
-		),
+	tokenLogin: (form: FormData) => {
+		const parsed = parseForm(TokenLoginForm, form);
+		if (!parsed.ok) return invalidForm();
+		return startsSession(submitted(api().auth.token.post(parsed.body)));
+	},
+	userLogin: (form: FormData) => {
+		const parsed = parseForm(UserLoginForm, form, passwordAsTyped);
+		if (!parsed.ok) return invalidForm();
+		return startsSession(submitted(api().user.login.post(parsed.body)));
+	},
+	userRegister: (form: FormData) => {
+		const parsed = parseForm(UserRegisterForm, form, passwordAsTyped);
+		if (!parsed.ok) return invalidForm();
+		return submitted(api().user.register.post(parsed.body));
+	},
 	resend: (email: string) => submitted(api().user.resend.post({ email })),
-	forgot: (form: FormData) =>
-		submitted(api().user.forgot.post({ email: text(form, "email") })),
-	reset: (form: FormData) =>
-		submitted(
-			api().user.reset.post({
-				token: text(form, "token"),
-				password: String(form.get("password") ?? ""),
-			}),
-		),
+	forgot: (form: FormData) => {
+		const parsed = parseForm(ForgotForm, form);
+		if (!parsed.ok) return invalidForm();
+		return submitted(api().user.forgot.post(parsed.body));
+	},
+	reset: (form: FormData) => {
+		const parsed = parseForm(ResetForm, form, passwordAsTyped);
+		if (!parsed.ok) return invalidForm();
+		return submitted(api().user.reset.post(parsed.body));
+	},
 	logout: () => submitted(api().auth.logout.post()),
 };
 
+/** A blank name is allowed (the server falls back to the email), so it is sent as "" instead of being "required". */
+export const adminOverrides = { name: (form: FormData) => text(form, "name") };
+
 export const adminActions = {
-	create: (form: FormData) =>
-		submitted(
-			api().admins.post({
-				name: text(form, "name"),
-				email: text(form, "email"),
-			}),
-		),
-	edit: (form: FormData) =>
-		submitted(
-			api()
-				.admins({ id: text(form, "id") })
-				.patch({ name: text(form, "name"), email: text(form, "email") }),
-		),
+	create: (form: FormData) => {
+		const parsed = parseForm(CreateAdminInput, form, adminOverrides);
+		if (!parsed.ok) return invalidForm();
+		return submitted(api().admins.post(parsed.body));
+	},
+	edit: (form: FormData) => {
+		const parsed = parseForm(EditAdminForm, form, adminOverrides);
+		if (!parsed.ok) return invalidForm();
+		const { id, ...body } = parsed.body;
+		return submitted(api().admins({ id }).patch(body));
+	},
 	rotateToken: (form: FormData) =>
 		submitted(
 			api()
@@ -152,28 +170,31 @@ export const adminActions = {
 
 /** The signed-in customer's own account (`/api/user/me*`). */
 export const meActions = {
-	rename: (form: FormData) =>
-		submitted(api().user.me.patch({ name: text(form, "name") })),
-	changeEmail: (form: FormData) =>
-		submitted(api().user.me.email.post({ email: text(form, "email") })),
+	rename: (form: FormData) => {
+		const parsed = parseForm(UpdateMeInput, form);
+		if (!parsed.ok) return invalidForm();
+		return submitted(api().user.me.patch(parsed.body));
+	},
+	changeEmail: (form: FormData) => {
+		const parsed = parseForm(ChangeEmailInput, form);
+		if (!parsed.ok) return invalidForm();
+		return submitted(api().user.me.email.post(parsed.body));
+	},
 	/** The server re-checks `confirmEmail`; the sessions die with the account, so there is no sign-out call. */
-	remove: (form: FormData) =>
-		submitted(
-			api().user.me.delete({ confirmEmail: text(form, "confirmEmail") }),
-		),
+	remove: (form: FormData) => {
+		const parsed = parseForm(DeleteMeInput, form);
+		if (!parsed.ok) return invalidForm();
+		return submitted(api().user.me.delete(parsed.body));
+	},
 };
 
 /** Polar checkout and customer portal; both answer `{ url }` to go to. */
 export const billingActions = {
-	checkout: (form: FormData) => {
-		const kind = form.get("kind") === "credits" ? "credits" : "plan";
-		return submitted(
-			api().billing.checkout.post({
-				kind,
-				amountUsd:
-					kind === "credits" ? Number(form.get("amountUsd")) : undefined,
-			}),
-		);
+	subscribe: () => submitted(api().billing.checkout.post({ kind: "plan" })),
+	topUp: (form: FormData) => {
+		const parsed = parseForm(TopUpForm, form);
+		if (!parsed.ok) return invalidForm();
+		return submitted(api().billing.checkout.post(parsed.body));
 	},
 	portal: () => submitted(api().billing.portal.post()),
 };
@@ -230,64 +251,63 @@ export const visitorActions = {
 		submitted(api().visitors({ id }).messages.delete()),
 };
 
-const INTENT_STATUSES = ["pending", "approved", "rejected"] as const;
-
 /** A person's verdict on a learned example: approve, reject, or a corrected intent (which approves it). */
 export const intentActions = {
-	judge: (form: FormData) =>
-		submitted(
+	judge: (form: FormData) => {
+		const parsed = parseForm(IntentVerdictInput, form);
+		if (!parsed.ok) return invalidForm();
+		return submitted(
 			api()
 				.intents({ id: text(form, "id") })
-				.patch({
-					status: INTENT_STATUSES.find(
-						(status) => status === form.get("status"),
-					),
-					intent: REQUEST_INTENTS.find(
-						(intent) => intent === form.get("intent"),
-					),
-				}),
+				.patch(parsed.body),
+		);
+	},
+};
+
+/** UI vs wire: origins are typed as text (one per line or comma-separated), and only a form that has the field sends it. */
+export const channelOverrides: FieldOverrides = {
+	allowedOrigins: (form) =>
+		form.has("allowedOrigins")
+			? parseOrigins(form.get("allowedOrigins"))
+			: undefined,
+};
+
+/** UI vs wire: an empty persona field is a real value ("not set"), not a missing one; topics are a text, one per line. */
+export const personaOverrides: FieldOverrides = {
+	...Object.fromEntries(
+		["botName", "tone", "defaultLang", "greeting", "handoffContact"].map(
+			(name) => [name, (form: FormData) => text(form, name)],
 		),
+	),
+	instructions: (form) => String(form.get("instructions") ?? ""),
+	forbiddenTopics: (form) => lines(form.get("forbiddenTopics")),
+};
+
+const run = <T extends TObject>(
+	schema: T,
+	form: FormData,
+	send: (body: Static<T>) => Parameters<typeof submitted>[0],
+	overrides = channelOverrides,
+) => {
+	const parsed = parseForm(schema, form, overrides);
+	return parsed.ok ? submitted(send(parsed.body)) : invalidForm();
 };
 
 export const channelActions = {
 	create: async (form: FormData) =>
 		withSecret(
-			await submitted(
-				api().channels.post({
-					slug: text(form, "slug"),
-					name: text(form, "name"),
-					accessMode: accessMode(form),
-					allowedOrigins: parseOrigins(form.get("allowedOrigins")),
-					catalogLanguage: text(form, "catalogLanguage") || undefined,
-				}),
-			),
+			await run(CreateChannelForm, form, (body) => api().channels.post(body)),
 		),
 	update: (form: FormData) =>
-		submitted(
-			api()
-				.channels({ id: text(form, "id") })
-				.patch({
-					name: text(form, "name") || undefined,
-					accessMode: accessMode(form),
-					allowedOrigins: form.has("allowedOrigins")
-						? parseOrigins(form.get("allowedOrigins"))
-						: undefined,
-					catalogLanguage: text(form, "catalogLanguage") || undefined,
-				}),
+		run(UpdateChannelForm, form, ({ id, ...body }) =>
+			api().channels({ id }).patch(body),
 		),
 	savePersona: (form: FormData) =>
-		submitted(
-			api()
-				.channels({ id: text(form, "id") })
-				.persona.put({
-					botName: text(form, "botName"),
-					tone: text(form, "tone"),
-					instructions: String(form.get("instructions") ?? ""),
-					defaultLang: text(form, "defaultLang"),
-					greeting: text(form, "greeting"),
-					forbiddenTopics: lines(form.get("forbiddenTopics")),
-					handoffContact: text(form, "handoffContact"),
-				}),
+		run(
+			PersonaForm,
+			form,
+			({ id, ...body }) => api().channels({ id }).persona.put(body),
+			personaOverrides,
 		),
 	toggle: (form: FormData) =>
 		submitted(
@@ -306,15 +326,11 @@ export const channelActions = {
 };
 
 export const blockedIpActions = {
-	create: (form: FormData) =>
-		submitted(
-			api()["blocked-ips"].post({
-				ip: text(form, "ip"),
-				reason: text(form, "reason"),
-				expiresInHours: Number(form.get("expiresInHours")),
-				channelId: text(form, "channelId") || undefined,
-			}),
-		),
+	create: (form: FormData) => {
+		const parsed = parseForm(CreateBlockedIpInput, form);
+		if (!parsed.ok) return invalidForm();
+		return submitted(api()["blocked-ips"].post(parsed.body));
+	},
 	remove: (form: FormData) =>
 		submitted(
 			api()
@@ -323,17 +339,26 @@ export const blockedIpActions = {
 		),
 };
 
-const invalidJson = () =>
-	Promise.resolve<ActionResult>({ ok: false, data: { error: "invalid_json" } });
+/** Only for a handler run without `useActionEnhance({ schema })` validating first. */
+const invalidForm = () =>
+	Promise.resolve<ActionResult>({ ok: false, data: { error: "invalid_form" } });
+
+/** The select's value is "<provider>\t<model id>" (a model id may hold "/" or ":"); the wire body is { provider, model }. */
+const pickPart = (index: 0 | 1) => (form: FormData) =>
+	text(form, "model").split("\t")[index] ?? "";
+export const agentPickOverrides: FieldOverrides = {
+	provider: pickPart(0),
+	model: pickPart(1),
+};
 
 export const agentActions = {
-	/** `model` = "<provider>\t<model id>" (a model id may hold "/" or ":"). */
 	save: (form: FormData) => {
-		const [provider = "", model = ""] = text(form, "model").split("\t");
+		const parsed = parseForm(AgentPick, form, agentPickOverrides);
+		if (!parsed.ok) return invalidForm();
 		return submitted(
 			api()
 				.agents({ id: text(form, "id") })
-				.model.put({ provider, model }),
+				.model.put(parsed.body),
 		);
 	},
 	/** The call itself can fail with a 200 (`ok: false`); that is a failure for the panel too. */
@@ -355,19 +380,12 @@ export const agentActions = {
 /** providers.toml through its forms and its editor. */
 export const providerActions = {
 	/** An empty key field keeps the saved key. */
+	/** Left-out key / decisions URL keep the saved ones (empty inputs are omitted by `parseForm`). */
 	save: (form: FormData) => {
-		const apiKey = text(form, "apiKey");
-		const decisionsUrl = text(form, "decisionsUrl");
-		return submitted(
-			api()
-				.providers({ id: text(form, "id") })
-				.put({
-					name: text(form, "name"),
-					baseUrl: text(form, "baseUrl"),
-					...(decisionsUrl ? { decisionsUrl } : {}),
-					...(apiKey ? { apiKey } : {}),
-				}),
-		);
+		const parsed = parseForm(ProviderForm, form);
+		if (!parsed.ok) return invalidForm();
+		const { id, ...body } = parsed.body;
+		return submitted(api().providers({ id }).put(body));
 	},
 	remove: (form: FormData) =>
 		submitted(
@@ -376,8 +394,9 @@ export const providerActions = {
 				.delete(),
 		),
 	saveModel: async (form: FormData) => {
-		const model = providerModelFromForm(form);
-		if (!model) return invalidJson();
+		const parsed = parseForm(ProviderModel, form);
+		if (!parsed.ok) return invalidForm();
+		const model = parsed.body;
 		const result = await submitted(
 			api()
 				.providers({ id: text(form, "provider") })

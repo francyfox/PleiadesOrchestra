@@ -1,6 +1,7 @@
 <script lang="ts">
+	import { ResetForm } from "admin-api/forms";
 	import { useIntlayer } from "svelte-intlayer";
-	import { authActions } from "#lib/actions.js";
+	import { authActions, passwordAsTyped } from "#lib/actions.js";
 	import {
 		authErrorText,
 		useAuthForm,
@@ -8,10 +9,15 @@
 	import FormField from "#lib/components/form-field.svelte";
 	import { Button } from "#lib/components/ui/button/index.js";
 	import * as Card from "#lib/components/ui/card/index.js";
+	import { useFieldErrorText } from "#lib/forms/use-field-error-text.js";
 	import { page } from "$app/state";
 
 	const content = useIntlayer("auth");
-	const form = useAuthForm(authActions.reset);
+	const form = useAuthForm(authActions.reset, undefined, {
+		schema: ResetForm,
+		overrides: passwordAsTyped,
+	});
+	const errorText = useFieldErrorText();
 	const error = $derived(
 		form.failure ? authErrorText($content.errors, form.failure) : null,
 	);
@@ -29,9 +35,9 @@
 		{:else if !token}
 			<p class="text-sm text-destructive">{$content.reset.noToken.value}</p>
 		{:else}
-			<form onsubmit={form.submit} class="grid gap-4">
+			<form onsubmit={form.submit} oninput={form.clear} novalidate class="grid gap-4">
 				<input type="hidden" name="token" value={token} />
-				<FormField id="password" label={$content.fields.newPassword.value} type="password" autocomplete="new-password" minlength={12} required />
+				<FormField id="password" label={$content.fields.newPassword.value} type="password" autocomplete="new-password" required error={$errorText(form.errors?.password)} />
 				{#if error}
 					<p class="text-sm text-destructive">{error}</p>
 				{/if}

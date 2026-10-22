@@ -1,13 +1,16 @@
 <script lang="ts">
+	import { DeleteMeInput } from "admin-api/forms";
 	import { useIntlayer } from "svelte-intlayer";
 	import { meActions } from "#lib/actions.js";
 	import type { Me } from "#lib/api-types.js";
 	import ConfirmDialog from "#lib/components/confirm-dialog.svelte";
 	import { Button } from "#lib/components/ui/button/index.js";
 	import * as Card from "#lib/components/ui/card/index.js";
+	import { FieldError } from "#lib/components/ui/field-error/index.js";
 	import { Input } from "#lib/components/ui/input/index.js";
 	import { Label } from "#lib/components/ui/label/index.js";
 	import { confirmEmailMatches } from "#lib/confirm-email.js";
+	import { useFieldErrorText } from "#lib/forms/use-field-error-text.js";
 	import { queryClient } from "#lib/query/client.js";
 	import { useSettingsEnhance } from "./use-settings-enhance";
 
@@ -17,7 +20,9 @@
 
 	let open = $state(false);
 	let typed = $state("");
+	const errorText = useFieldErrorText();
 	const remove = useSettingsEnhance(meActions.remove, {
+		schema: DeleteMeInput,
 		quietSuccess: () => true,
 		// The sessions died with the account: a full load drops every trace of it.
 		onSuccess: () => {
@@ -26,6 +31,7 @@
 		},
 		onSettled: () => (typed = ""),
 	});
+	const errors = remove.errors;
 </script>
 
 <Card.Root class="border-destructive/50">
@@ -46,8 +52,9 @@
 >
 	{#snippet fields()}
 		<div class="grid gap-2">
-			<Label for="confirmEmail">{$content.danger.confirmLabel({ email: me.email })}</Label>
-			<Input id="confirmEmail" name="confirmEmail" type="email" autocomplete="off" bind:value={typed} />
+			<Label for="confirmEmail" required>{$content.danger.confirmLabel({ email: me.email })}</Label>
+			<Input id="confirmEmail" name="confirmEmail" type="email" autocomplete="off" bind:value={typed} aria-invalid={!!$errors?.confirmEmail} />
+			{#if $errors?.confirmEmail}<FieldError>{$errorText($errors.confirmEmail)}</FieldError>{/if}
 		</div>
 	{/snippet}
 </ConfirmDialog>

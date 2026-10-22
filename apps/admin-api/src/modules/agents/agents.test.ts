@@ -39,7 +39,7 @@ describe("agents and providers (proxied)", () => {
 		const model = {
 			id: "qwen/qwen3:1.7b",
 			name: "Qwen",
-			type: "language",
+			types: ["language"],
 			temperature: 0,
 			extraBody: {},
 		};

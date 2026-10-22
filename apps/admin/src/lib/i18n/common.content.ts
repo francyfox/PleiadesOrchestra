@@ -74,6 +74,43 @@ const commonContent = {
 			identified: t({ ru: "известный", en: "identified", kk: "танылған" }),
 			anonymous: t({ ru: "анонимный", en: "anonymous", kk: "анонимді" }),
 		},
+		fieldError: {
+			required: t({
+				ru: "Обязательное поле",
+				en: "This field is required",
+				kk: "Міндетті өріс",
+			}),
+			tooShort: t({
+				ru: insert("Минимум символов: {{count}}"),
+				en: insert("At least {{count}} characters"),
+				kk: insert("Кемінде {{count}} таңба"),
+			}),
+			tooLong: t({
+				ru: insert("Максимум символов: {{count}}"),
+				en: insert("At most {{count}} characters"),
+				kk: insert("Көбі {{count}} таңба"),
+			}),
+			pattern: t({
+				ru: "Неверный формат",
+				en: "Wrong format",
+				kk: "Пішімі қате",
+			}),
+			tooSmall: t({
+				ru: insert("Не меньше {{count}}"),
+				en: insert("At least {{count}}"),
+				kk: insert("Кемінде {{count}}"),
+			}),
+			tooBig: t({
+				ru: insert("Не больше {{count}}"),
+				en: insert("At most {{count}}"),
+				kk: insert("Көбі {{count}}"),
+			}),
+			invalid: t({
+				ru: "Неверное значение",
+				en: "Invalid value",
+				kk: "Мән қате",
+			}),
+		},
 		callKind: {
 			generate: t({ ru: "Генерация", en: "Generation", kk: "Генерация" }),
 			ingest: t({ ru: "Ingest", en: "Ingest", kk: "Ingest" }),

@@ -2,14 +2,17 @@
 	import ActivityIcon from "@lucide/svelte/icons/activity";
 	import SaveIcon from "@lucide/svelte/icons/save";
 	import { createQuery } from "@tanstack/svelte-query";
+	import { AgentPick } from "admin-api/forms";
 	import { get } from "svelte/store";
 	import { useIntlayer } from "svelte-intlayer";
-	import { agentActions } from "#lib/actions.js";
+	import { agentActions, agentPickOverrides } from "#lib/actions.js";
 	import type { Agent } from "#lib/api-types.js";
 	import { Button } from "#lib/components/ui/button/index.js";
 	import * as Dialog from "#lib/components/ui/dialog/index.js";
+	import { FieldError } from "#lib/components/ui/field-error/index.js";
 	import { Label } from "#lib/components/ui/label/index.js";
 	import { useActionEnhance } from "#lib/components/use-action-enhance.js";
+	import { useFieldErrorText } from "#lib/forms/use-field-error-text.js";
 	import { useFormat } from "#lib/i18n/use-format.js";
 	import { queries } from "#lib/query/queries.js";
 
@@ -31,8 +34,12 @@
 
 	const save = useActionEnhance({
 		run: agentActions.save,
+		schema: AgentPick,
+		overrides: agentPickOverrides,
 		onSuccess: () => (open = false),
 	});
+	const errors = save.errors;
+	const errorText = useFieldErrorText();
 	let answer = $state("");
 	const test = useActionEnhance({
 		run: agentActions.test,
@@ -61,16 +68,16 @@
 		</Dialog.Header>
 		{#if query.data && providers.data}
 			{@const view = query.data}
-			<form id="agent-settings-form" use:save class="grid gap-2">
+			<form id="agent-settings-form" use:save novalidate class="grid gap-2">
 				<input type="hidden" name="id" value={agent.id} />
-				<Label for="agent-model">{$content.settings.model.value}</Label>
+				<Label for="agent-model" required>{$content.settings.model.value}</Label>
 				<!-- "<provider>\t<model id>": a model id may hold "/" or ":" -->
-				<select id="agent-model" name="model" required value={view.provider ? `${view.provider}\t${view.model}` : ""} class={selectClass}>
+				<select id="agent-model" name="model" required aria-invalid={!!($errors?.model ?? $errors?.provider)} value={view.provider ? `${view.provider}\t${view.model}` : ""} class={selectClass}>
 					{#if !view.provider}
 						<option value="" disabled>{view.model} ({$content.settings.envServer.value})</option>
 					{/if}
 					{#each providers.data.items as p (p.id)}
-						{@const models = p.models.filter((m) => m.type === (agent.role === "decision" ? "decision" : "language"))}
+						{@const models = p.models.filter((m) => m.types.includes(agent.role === "decision" ? "decision" : "language"))}
 						{#if models.length}
 							<optgroup label={p.name}>
 								{#each models as m (m.id)}
@@ -80,6 +87,7 @@
 						{/if}
 					{/each}
 				</select>
+				{#if $errors?.model ?? $errors?.provider}<FieldError>{$errorText($errors?.model ?? $errors?.provider)}</FieldError>{/if}
 				<p class="font-mono text-xs text-muted-foreground">{view.baseUrl}</p>
 			</form>
 			<div class="flex flex-wrap items-center gap-2 border-t pt-3">

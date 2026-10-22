@@ -1,14 +1,19 @@
 <script lang="ts">
+	import { ProviderModel as ProviderModelSchema } from "admin-api/forms";
 	import { useIntlayer } from "svelte-intlayer";
 	import { providerActions } from "#lib/actions.js";
 	import type { Provider, ProviderModel } from "#lib/api-types.js";
 	import FormField from "#lib/components/form-field.svelte";
 	import { Button } from "#lib/components/ui/button/index.js";
 	import * as Dialog from "#lib/components/ui/dialog/index.js";
+	import { FieldError } from "#lib/components/ui/field-error/index.js";
 	import { Input } from "#lib/components/ui/input/index.js";
 	import { Label } from "#lib/components/ui/label/index.js";
+	import { SearchMultiSelect } from "#lib/components/ui/search-multi-select/index.js";
 	import { Textarea } from "#lib/components/ui/textarea/index.js";
-	import { MODEL_TYPES } from "#lib/provider-model-form.js";
+	import { useFieldErrorText } from "#lib/forms/use-field-error-text.js";
+	import { MODEL_TYPE_ICONS } from "#lib/model-type-icons.js";
+	import { MODEL_TYPES, typeLabel } from "#lib/model-types.js";
 	import { useModelsEnhance } from "./use-models-enhance";
 
 	/** Adds a model to a provider, or edits one (`editing` set; the id stays, the provider can change). */
@@ -27,8 +32,26 @@
 	const submitted = useModelsEnhance(
 		providerActions.saveModel,
 		() => (open = false),
+		ProviderModelSchema,
 	);
+	const errors = submitted.errors;
+	const errorText = useFieldErrorText();
 	const model = $derived(editing?.model);
+	// What the model can do (several for a multimodal one); reset with the dialog's content.
+	let types = $state<string[]>(["language"]);
+	$effect(() => {
+		types = [...(model?.types ?? ["language"])];
+	});
+	// The multi-select has no input event of its own.
+	$effect(() => {
+		types;
+		submitted.clear("types");
+	});
+	const typeOptions = MODEL_TYPES.map((type) => ({
+		value: type,
+		label: typeLabel(type),
+		icon: MODEL_TYPE_ICONS[type],
+	}));
 
 	const selectClass =
 		"h-9 rounded-md border border-input bg-background px-2 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring";
@@ -38,9 +61,9 @@
 	<Dialog.Content class="max-h-[90vh] overflow-y-auto">
 		<Dialog.Header><Dialog.Title>{$content.form.modelTitle.value}</Dialog.Title></Dialog.Header>
 		{#key `${editing?.provider}\t${model?.id}`}
-			<form use:submitted class="grid gap-3">
+			<form use:submitted novalidate class="grid gap-3">
 				<div class="grid gap-2">
-					<Label for="model-provider">{$content.form.provider.value}</Label>
+					<Label for="model-provider" required>{$content.form.provider.value}</Label>
 					<select id="model-provider" name="provider" required value={editing?.provider} class={selectClass}>
 						{#each providers as p (p.id)}
 							<option value={p.id}>{p.name}</option>
@@ -52,18 +75,26 @@
 					<input type="hidden" name="id" value={model.id} />
 					<p class="font-mono text-sm">{model.id}</p>
 				{:else}
-					<FormField id="model-id" name="id" label={$content.form.modelId.value} placeholder="google/gemini-2.5-flash" required />
+					<FormField id="model-id" name="id" label={$content.form.modelId.value} placeholder="google/gemini-2.5-flash" required error={$errorText($errors?.id)} />
 					<p class="-mt-2 text-xs text-muted-foreground">{$content.form.modelIdHint.value}</p>
 				{/if}
 				<div class="grid gap-2">
-					<Label for="model-type">{$content.form.type.value}</Label>
-					<select id="model-type" name="type" value={model?.type ?? "language"} class={selectClass}>
-						{#each MODEL_TYPES as type (type)}
-							<option value={type}>{$content.types[type].value}</option>
-						{/each}
-					</select>
+					<Label for="model-types" required>{$content.form.types.value}</Label>
+					<SearchMultiSelect
+						bind:values={types}
+						name="types"
+						options={typeOptions}
+						ariaLabel={$content.form.types.value}
+						searchPlaceholder={$content.form.typesSearch.value}
+						emptyText={$content.form.typesEmpty.value}
+						clearLabel={$content.form.typesClear.value}
+						removeLabel={(label) => $content.form.typesRemove({ label })}
+						required
+						invalid={!!$errors?.types}
+					/>
+					{#if $errors?.types}<FieldError>{$errorText($errors.types)}</FieldError>{/if}
 				</div>
-				<FormField id="model-name" name="name" label={$content.form.name.value} value={model?.name ?? ""} />
+				<FormField id="model-name" name="name" label={$content.form.name.value} value={model?.name ?? ""} required error={$errorText($errors?.name)} />
 				<div class="grid gap-2">
 					<Label for="model-temperature">{$content.form.temperature.value}</Label>
 					<Input
@@ -75,7 +106,9 @@
 						max="2"
 						value={model?.temperature ?? ""}
 						placeholder={$content.form.unset.value}
+						aria-invalid={!!$errors?.temperature}
 					/>
+					{#if $errors?.temperature}<FieldError>{$errorText($errors.temperature)}</FieldError>{/if}
 				</div>
 				<div class="grid gap-2">
 					<Label for="model-effort">{$content.form.effort.value}</Label>
@@ -94,8 +127,10 @@
 						name="extraBody"
 						rows={3}
 						class="font-mono text-xs"
+						aria-invalid={!!$errors?.extraBody}
 						value={model && Object.keys(model.extraBody).length ? JSON.stringify(model.extraBody) : ""}
 					/>
+					{#if $errors?.extraBody}<FieldError>{$errorText($errors.extraBody)}</FieldError>{/if}
 					<p class="text-xs text-muted-foreground">{$content.form.extraBodyHint.value}</p>
 				</div>
 				<Dialog.Footer>

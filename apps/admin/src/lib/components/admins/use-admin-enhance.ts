@@ -1,7 +1,10 @@
 import { get } from "svelte/store";
 import { useIntlayer } from "svelte-intlayer";
 import type { ActionResult } from "#lib/api/result.js";
-import { useActionEnhance } from "#lib/components/use-action-enhance.js";
+import {
+	type ActionEnhanceOptions,
+	useActionEnhance,
+} from "#lib/components/use-action-enhance.js";
 
 /** Admin account actions: validation/policy codes localized, forms reset on success. */
 export function useAdminEnhance(
@@ -9,9 +12,12 @@ export function useAdminEnhance(
 	onSettled?: () => void,
 	/** Only after a successful call (e.g. close the create dialog; a failed one stays open with its input). */
 	onDone?: (data: Record<string, unknown>) => void,
+	/** Field validation (see `useActionEnhance`). */
+	validation?: Pick<ActionEnhanceOptions, "schema" | "overrides">,
 ) {
 	const content = useIntlayer("admins");
 	return useActionEnhance({
+		...validation,
 		run,
 		onSettled,
 		onSuccess: (data) => onDone?.(data),

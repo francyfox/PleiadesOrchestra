@@ -1,14 +1,17 @@
 <script lang="ts">
 	import LockIcon from "@lucide/svelte/icons/lock";
 	import { createQuery } from "@tanstack/svelte-query";
+	import { PersonaForm as PersonaSchema } from "admin-api/forms";
 	import { useIntlayer } from "svelte-intlayer";
-	import { channelActions } from "#lib/actions.js";
+	import { channelActions, personaOverrides } from "#lib/actions.js";
 	import type { Channel, Persona } from "#lib/api-types.js";
 	import { Button } from "#lib/components/ui/button/index.js";
 	import * as Dialog from "#lib/components/ui/dialog/index.js";
+	import { FieldError } from "#lib/components/ui/field-error/index.js";
 	import { Input } from "#lib/components/ui/input/index.js";
 	import { Label } from "#lib/components/ui/label/index.js";
 	import { Textarea } from "#lib/components/ui/textarea/index.js";
+	import { useFieldErrorText } from "#lib/forms/use-field-error-text.js";
 	import { queries } from "#lib/query/queries.js";
 	import { type PersonaForm, toForm, toPersona } from "./persona-draft";
 	import { useChannelEnhance } from "./use-channel-enhance";
@@ -29,7 +32,11 @@
 		channelActions.savePersona,
 		undefined,
 		() => (open = false),
+		PersonaSchema,
+		personaOverrides,
 	);
+	const errors = submitted.errors;
+	const errorText = useFieldErrorText();
 
 	// The form starts as the channel's values (standard ones where it never customized) and is dropped on close.
 	let form = $state<PersonaForm | null>(null);
@@ -96,7 +103,7 @@
 			<Dialog.Description>{$content.persona.hint.value}</Dialog.Description>
 		</Dialog.Header>
 		{#if form}
-			<form use:submitted class="grid gap-3">
+			<form use:submitted novalidate class="grid gap-3">
 				<input type="hidden" name="id" value={channel.id} />
 				<div class="grid gap-2">
 					<div class="flex items-center justify-between gap-2">
@@ -110,7 +117,8 @@
 						<Label for="persona-instructions">{$content.persona.instructions.value}</Label>
 						{@render reset("instructions")}
 					</div>
-					<Textarea id="persona-instructions" name="instructions" rows={4} maxlength={2000} bind:value={form.instructions} />
+					<Textarea id="persona-instructions" name="instructions" rows={4} bind:value={form.instructions} aria-invalid={!!$errors?.instructions} />
+					{#if $errors?.instructions}<FieldError>{$errorText($errors.instructions)}</FieldError>{/if}
 					<p class="text-xs text-muted-foreground">{$content.persona.instructionsHint.value}</p>
 				</div>
 				<div class="grid gap-2">

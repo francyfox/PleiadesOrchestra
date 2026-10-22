@@ -39,15 +39,7 @@ export const Credentials = t.Object({
 	password: t.String(),
 });
 
-export const CreateAdminInput = t.Object({
-	name: t.String(),
-	email: t.String(),
-});
-
-export const EditAdminInput = t.Object({
-	name: t.String(),
-	email: t.String(),
-});
+export { CreateAdminInput, EditAdminInput } from "../../forms/forms.ts";
 
 /** Shown once: only its SHA-256 is stored. */
 export const AdminToken = t.Object({

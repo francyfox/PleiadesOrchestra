@@ -3,6 +3,7 @@
 	import EyeOffIcon from "@lucide/svelte/icons/eye-off";
 	import type { FullAutoFill, HTMLInputTypeAttribute } from "svelte/elements";
 	import { useIntlayer } from "svelte-intlayer";
+	import { FieldError } from "#lib/components/ui/field-error/index.js";
 	import { Input } from "#lib/components/ui/input/index.js";
 	import { Label } from "#lib/components/ui/label/index.js";
 
@@ -22,6 +23,7 @@
 		required = false,
 		minlength,
 		min,
+		error,
 	}: {
 		id: string;
 		label: string;
@@ -33,6 +35,8 @@
 		required?: boolean;
 		minlength?: number;
 		min?: number;
+		/** Localized message under the input (see `useFieldErrorText`); also marks the input invalid. */
+		error?: string;
 	} = $props();
 
 	const common = useIntlayer("common");
@@ -42,10 +46,10 @@
 </script>
 
 <div class="grid gap-2">
-	<Label for={id}>{label}</Label>
+	<Label for={id} {required}>{label}</Label>
 	{#if secret}
 		<div class="relative">
-			<Input {id} {name} type={shown ? "text" : "password"} {value} {placeholder} {autocomplete} {required} {minlength} {min} class="pr-9" />
+			<Input {id} {name} type={shown ? "text" : "password"} {value} {placeholder} {autocomplete} {required} {minlength} {min} aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} class="pr-9" />
 			<button
 				type="button"
 				class="absolute inset-y-0 right-0 flex w-9 items-center justify-center rounded-r-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -58,6 +62,7 @@
 			</button>
 		</div>
 	{:else}
-		<Input {id} {name} {type} {value} {placeholder} {autocomplete} {required} {minlength} {min} />
+		<Input {id} {name} {type} {value} {placeholder} {autocomplete} {required} {minlength} {min} aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} />
 	{/if}
+	{#if error}<FieldError id="{id}-error">{error}</FieldError>{/if}
 </div>

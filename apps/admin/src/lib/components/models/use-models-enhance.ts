@@ -1,5 +1,4 @@
-import { get } from "svelte/store";
-import { useIntlayer } from "svelte-intlayer";
+import type { TObject } from "@sinclair/typebox";
 import type { ActionResult } from "#lib/api/result.js";
 import { useActionEnhance } from "#lib/components/use-action-enhance.js";
 
@@ -7,14 +6,11 @@ import { useActionEnhance } from "#lib/components/use-action-enhance.js";
 export function useModelsEnhance(
 	run: (form: FormData) => Promise<ActionResult>,
 	onDone?: () => void,
+	schema?: TObject,
 ) {
-	const content = useIntlayer("models");
 	return useActionEnhance({
 		run,
+		schema,
 		onSuccess: () => onDone?.(),
-		errorText: (code) =>
-			code === "invalid_json"
-				? get(content).errors.invalid_json.value
-				: undefined,
 	});
 }

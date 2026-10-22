@@ -4,7 +4,7 @@
 	import { useIntlayer } from "svelte-intlayer";
 
 	/**
-	 * Sentry's "report a problem" button, bottom left (toasts own the right).
+	 * Sentry's "report a problem" button, bottom right (the sidebar's sign-out sits bottom left).
 	 * Rebuilt on a locale switch: the widget takes its texts once. Renders
 	 * nothing without a DSN (hooks.client.ts didn't start Sentry).
 	 */
@@ -40,7 +40,7 @@
 <svelte:head>
 	<style>
 		#sentry-feedback {
-			--actor-inset: auto auto 1rem 1rem;
+			--actor-inset: auto 1rem 1rem auto;
 		}
 	</style>
 </svelte:head>

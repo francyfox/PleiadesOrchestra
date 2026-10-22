@@ -6,6 +6,7 @@
 	"type": "module",
 	"exports": {
 		".": "./src/app.ts",
+		"./forms": "./src/forms/forms.ts",
 		"./types": "./src/types.ts"
 	},
 	"scripts": {

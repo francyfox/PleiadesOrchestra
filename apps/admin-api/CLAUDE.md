@@ -18,6 +18,8 @@ Migrations: after editing the schema, `bun --cwd apps/admin-api run auth:schema`
 
 Follows the root "Code style" convention. Specific here: `src/app.types.ts` (`AdminApiDeps`/`RouteDeps`) next to `src/app.ts` (`createApp(deps: AdminApiDeps)`). Test helpers: `app.testing.ts` (`testApp()` with real in-memory DB + stub orchestrator) and `app.harness.testing.ts` (`useHarness()` + `setRespond()` to script the fake orchestrator).
 
+`src/forms/` (`admin-api/forms`): TypeBox schemas of form bodies, the single source for route bodies and for the admin's form validation. Browser-importable: import only `@sinclair/typebox`, never elysia or server code.
+
 `apps/admin` imports only two paths: `admin-api` (the `App` type from `src/app.ts`) and `admin-api/types` (`src/types.ts`, re-exports from modules) — keep both paths stable.
 
 Modules: `admin-policy`, `accounts`, `admins`, `agents`, `auth`, `billing`, `blocked-ips`, `channels`, `common`, `config`, `customers`, `dashboard`, `database`, `live`, `live-hub`, `live-topics`, `mail`, `mcp`, `orchestrator`, `origin-guard`, `performance`, `plan-runs`, `requests`, `sentry-tunnel`, `session`, `staff-token`, `stats`, `subscriptions`, `system`, `system-feed`, `usage`, `visitors`.

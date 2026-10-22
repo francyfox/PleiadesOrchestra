@@ -56,6 +56,6 @@
 <!-- Dev only, and imported on demand so a production build doesn't contain it. -->
 {#if import.meta.env.DEV}
 	{#await import("@tanstack/svelte-query-devtools") then { SvelteQueryDevtools }}
-		<SvelteQueryDevtools client={queryClient} buttonPosition="bottom-left" />
+		<SvelteQueryDevtools client={queryClient} buttonPosition="top-right" />
 	{/await}
 {/if}

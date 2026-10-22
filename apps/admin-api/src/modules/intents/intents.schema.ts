@@ -1,23 +1,8 @@
 import { type Static, t } from "elysia";
-import { nullable, oneOf, PageQuery } from "../common/common.schema.ts";
+import { IntentStatus, IntentVerdictInput } from "../../forms/forms.ts";
+import { nullable, PageQuery } from "../common/common.schema.ts";
 
-export const INTENT_VALUES = [
-	"chat",
-	"chooseStore",
-	"navigate",
-	"search",
-	"filter",
-	"select",
-	"addToCart",
-	"removeFromCart",
-	"checkout",
-	"paginate",
-	"compare",
-	"other",
-] as const;
-
-export const IntentStatus = oneOf(["pending", "approved", "rejected"]);
-export const IntentLabel = oneOf(INTENT_VALUES);
+export { IntentVerdictInput };
 
 /** One message the classifier has learned about, and what a person decided about it. */
 export const IntentExample = t.Object({
@@ -57,13 +42,6 @@ export const IntentsQuery = t.Composite([
 	}),
 ]);
 
-/** A verdict: approve/reject, or correct the intent (which approves it). */
-export const IntentVerdictInput = t.Object({
-	status: t.Optional(IntentStatus),
-	intent: t.Optional(IntentLabel),
-});
-
 export type IntentExample = Static<typeof IntentExample>;
 export type IntentsPage = Static<typeof IntentsPage>;
 export type IntentsQuery = Static<typeof IntentsQuery>;
-export type IntentVerdictInput = Static<typeof IntentVerdictInput>;

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { TokenLoginForm } from "admin-api/forms";
 	import { useIntlayer } from "svelte-intlayer";
 	import { authActions } from "#lib/actions.js";
 	import {
@@ -8,15 +9,19 @@
 	import FormField from "#lib/components/form-field.svelte";
 	import { Button } from "#lib/components/ui/button/index.js";
 	import * as Card from "#lib/components/ui/card/index.js";
+	import { useFieldErrorText } from "#lib/forms/use-field-error-text.js";
 	import { goto } from "$app/navigation";
 
 	let { data } = $props();
 
 	const content = useIntlayer("auth");
 	// Reloads the session in the root layout, which lets us past /login.
-	const form = useAuthForm(authActions.tokenLogin, () =>
-		goto("/", { refreshAll: true }),
+	const form = useAuthForm(
+		authActions.tokenLogin,
+		() => goto("/", { refreshAll: true }),
+		{ schema: TokenLoginForm },
 	);
+	const errorText = useFieldErrorText();
 	const error = $derived(
 		form.failure ? authErrorText($content.errors, form.failure) : null,
 	);
@@ -31,8 +36,8 @@
 		{#if data.setupRequired}
 			<p class="rounded-md border p-3 font-mono text-xs break-words">{$content.login.setup.value}</p>
 		{/if}
-		<form onsubmit={form.submit} class="grid gap-4">
-			<FormField id="token" label={$content.fields.token.value} type="password" autocomplete="off" required />
+		<form onsubmit={form.submit} oninput={form.clear} novalidate class="grid gap-4">
+			<FormField id="token" label={$content.fields.token.value} type="password" autocomplete="off" required error={$errorText(form.errors?.token)} />
 			{#if error}
 				<p class="text-sm text-destructive">{error}</p>
 			{/if}
