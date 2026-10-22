@@ -10,7 +10,7 @@
 	import { Textarea } from "#lib/components/ui/textarea/index.js";
 	import { useModelsEnhance } from "./use-models-enhance";
 
-	/** Adds a model to a provider, or edits one (`editing` set; provider and id stay). */
+	/** Adds a model to a provider, or edits one (`editing` set; the id stays, the provider can change). */
 	let {
 		open = $bindable(false),
 		providers,
@@ -38,19 +38,19 @@
 		<Dialog.Header><Dialog.Title>{$content.form.modelTitle.value}</Dialog.Title></Dialog.Header>
 		{#key `${editing?.provider}\t${model?.id}`}
 			<form use:submitted class="grid gap-3">
+				<div class="grid gap-2">
+					<Label for="model-provider">{$content.form.provider.value}</Label>
+					<select id="model-provider" name="provider" required value={editing?.provider} class={selectClass}>
+						{#each providers as p (p.id)}
+							<option value={p.id}>{p.name}</option>
+						{/each}
+					</select>
+				</div>
 				{#if editing && model}
-					<input type="hidden" name="provider" value={editing.provider} />
+					<input type="hidden" name="fromProvider" value={editing.provider} />
 					<input type="hidden" name="id" value={model.id} />
-					<p class="font-mono text-sm">{editing.provider} · {model.id}</p>
+					<p class="font-mono text-sm">{model.id}</p>
 				{:else}
-					<div class="grid gap-2">
-						<Label for="model-provider">{$content.form.provider.value}</Label>
-						<select id="model-provider" name="provider" required class={selectClass}>
-							{#each providers as p (p.id)}
-								<option value={p.id}>{p.name}</option>
-							{/each}
-						</select>
-					</div>
 					<FormField id="model-id" name="id" label={$content.form.modelId.value} placeholder="google/gemini-2.5-flash" required />
 					<p class="-mt-2 text-xs text-muted-foreground">{$content.form.modelIdHint.value}</p>
 				{/if}

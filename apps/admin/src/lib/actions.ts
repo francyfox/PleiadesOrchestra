@@ -373,13 +373,21 @@ export const providerActions = {
 				.providers({ id: text(form, "id") })
 				.delete(),
 		),
-	saveModel: (form: FormData) => {
+	saveModel: async (form: FormData) => {
 		const model = providerModelFromForm(form);
 		if (!model) return invalidJson();
-		return submitted(
+		const result = await submitted(
 			api()
 				.providers({ id: text(form, "provider") })
 				.models.put(model),
+		);
+		// An edit that picked another provider moves the model: drop it from the old one.
+		const from = text(form, "fromProvider");
+		if (!result.ok || !from || from === text(form, "provider")) return result;
+		return submitted(
+			api()
+				.providers({ id: from })
+				.models.delete({}, { query: { model: model.id } }),
 		);
 	},
 	removeModel: (form: FormData) =>

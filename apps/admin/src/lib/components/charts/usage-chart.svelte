@@ -36,7 +36,8 @@
 {:else}
 	<Chart.Container {config} class="h-64 w-full">
 		<BarChart
-			props={{ yAxis: { format: (value: number) => metric === "cost" ? $format.usd(value) : $format.number(value) } }}
+			padding={{ top: 8, right: 12, bottom: 28, left: 56 }}
+			props={{ yAxis: { format: (value: number) => metric === "cost" ? $format.usd(value) : $format.compact(value) } }}
 			data={rows}
 			x="day"
 			seriesLayout="stack"

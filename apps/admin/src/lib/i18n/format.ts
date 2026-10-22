@@ -31,6 +31,8 @@ export function createFormat(locale: string) {
 		minimumFractionDigits: 1,
 	});
 	const seconds = unit("second", 1);
+	const SUFFIXES = ["", "K", "M", "B", "T"];
+	const scaled = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
 	// Token spend is often a fraction of a cent: show up to 4 decimals.
 	const dollars = new Intl.NumberFormat(locale, {
 		style: "currency",
@@ -56,6 +58,17 @@ export function createFormat(locale: string) {
 		money,
 		number: (value: number | null | undefined, missing = "—") =>
 			value === null || value === undefined ? missing : integer.format(value),
+		/** 1.9K / 12.3M / 2.5B: one decimal, always rounded down; the exact value goes in a tooltip. */
+		compact: (value: number | null | undefined, missing = "—") => {
+			if (value === null || value === undefined) return missing;
+			const abs = Math.abs(value);
+			let step = 0;
+			while (abs >= 1000 ** (step + 1) && step < SUFFIXES.length - 1) step++;
+			if (step === 0) return integer.format(value);
+			// Whole tenths of the unit by integer division: scaling by 1000 first loses the last digit (4.35 * 10).
+			const down = Math.floor(abs / 10 ** (3 * step - 1)) / 10;
+			return `${value < 0 ? "-" : ""}${scaled.format(down)}${SUFFIXES[step]}`;
+		},
 		date: (ms: number | null | undefined) => (ms ? dateTime.format(ms) : "—"),
 		/** Bytes as GB (binary GiB, labelled the way people say it). */
 		gb: (bytes: number | null | undefined) =>

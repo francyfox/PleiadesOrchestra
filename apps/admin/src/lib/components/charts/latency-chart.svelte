@@ -37,6 +37,7 @@
 				{ key: "p90", label: config.p90.label, color: config.p90.color },
 				{ key: "p99", label: config.p99.label, color: config.p99.color },
 			]}
+			padding={{ top: 8, right: 12, bottom: 28, left: 56 }}
 			props={{
 				spline: { strokeWidth: 2 },
 				xAxis: { format: "day" },

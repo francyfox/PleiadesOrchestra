@@ -47,3 +47,17 @@ test("trenni keep two decimals; an overdraft stays negative", () => {
 test("order amounts are cents in the order's currency", () => {
 	expect(createFormat("en").money(1999, "usd")).toBe("$19.99");
 });
+
+test("compact numbers: K/M/B/T suffixes, rounded down, plain below 1000", () => {
+	const { compact } = createFormat("en");
+	expect(compact(999)).toBe("999");
+	expect(compact(1000)).toBe("1K");
+	expect(compact(1999)).toBe("1.9K");
+	expect(compact(999_999)).toBe("999.9K");
+	expect(compact(12_345_678)).toBe("12.3M");
+	expect(compact(2_500_000_000)).toBe("2.5B");
+	expect(compact(7e12)).toBe("7T");
+	expect(compact(-1500)).toBe("-1.5K");
+	expect(createFormat("ru").compact(1500)).toBe("1,5K");
+	expect(compact(null, "no data")).toBe("no data");
+});

@@ -7,6 +7,7 @@
 	} from "@tanstack/svelte-table";
 	import { useIntlayer } from "svelte-intlayer";
 	import type { UsageRow } from "#lib/api-types.js";
+	import CompactNumber from "#lib/components/compact-number.svelte";
 	import DataTable from "#lib/components/data-table.svelte";
 	import { useFormat } from "#lib/i18n/use-format.js";
 
@@ -32,11 +33,11 @@
 		}),
 		helper.accessor("inputTokens", {
 			header: () => $content.columns.input.value,
-			cell: (ctx) => $format.number(ctx.getValue()),
+			cell: (ctx) => renderSnippet(numberCell, ctx.getValue()),
 		}),
 		helper.accessor("outputTokens", {
 			header: () => $content.columns.output.value,
-			cell: (ctx) => $format.number(ctx.getValue()),
+			cell: (ctx) => renderSnippet(numberCell, ctx.getValue()),
 		}),
 		helper.accessor("costUsd", {
 			header: () => $content.columns.spend.value,
@@ -60,7 +61,7 @@
 			: []),
 		helper.accessor("calls", {
 			header: () => $content.columns.calls.value,
-			cell: (ctx) => $format.number(ctx.getValue()),
+			cell: (ctx) => renderSnippet(numberCell, ctx.getValue()),
 		}),
 		helper.accessor("avgLatencyMs", {
 			header: () => $content.columns.avgLatency.value,
@@ -79,10 +80,14 @@
 
 {#snippet labelCell(row: UsageRow)}
 	{#if groupBy === "visitor" && row.key && row.label !== row.key}
-		<a class="underline-offset-4 hover:underline" href={`/visitors/${encodeURIComponent(row.key)}`}>{row.label}</a>
+		<a class="block max-w-48 truncate underline-offset-4 hover:underline" title={row.label} href={`/visitors/${encodeURIComponent(row.key)}`}>{row.label}</a>
 	{:else}
-		{row.label}
+		<span class="block max-w-48 truncate" title={row.label}>{row.label}</span>
 	{/if}
+{/snippet}
+
+{#snippet numberCell(value: number)}
+	<CompactNumber {value} />
 {/snippet}
 
 <DataTable {table} />

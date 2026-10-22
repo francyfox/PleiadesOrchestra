@@ -38,17 +38,17 @@
 {/if}
 
 <div class="grid gap-4 lg:grid-cols-2">
-	<section class="grid gap-2">
+	<section class="grid min-w-0 gap-2">
 		<h2 class="font-medium">{$content.topVisitors.value}</h2>
 		<UsageTable rows={dashboard.topVisitors} groupBy="visitor" />
 	</section>
-	<section class="grid gap-2">
+	<section class="grid min-w-0 gap-2">
 		<h2 class="font-medium">{$content.byChannel.value}</h2>
 		<UsageTable rows={dashboard.byChannel} groupBy="channel" />
 	</section>
 </div>
 
-<section class="grid gap-2">
+<section class="grid min-w-0 gap-2">
 	<h2 class="font-medium">{$content.byModel.value}</h2>
 	<UsageTable rows={dashboard.byModel} groupBy="model" />
 	<p class="text-xs text-muted-foreground">{$content.pricesNote.value}</p>
