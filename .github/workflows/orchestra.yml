@@ -2,7 +2,7 @@ name: orchestra
 # Manual deploy of the VPS backend (alpha-orchestrator + admin-api) and the admin panel
 # (pleiades-panel.shalotts.site). Builds both images (`docker save`, CTranslate2 included: the
 # VPS can't compile it) and the panel's static build, then publishes them on a single rolling
-# prerelease (tag `orchestra`). ~/pleiades-orchestra/poll.py on the VPS loads them and restarts
+# prerelease (tag `orchestra`) pointing at them in R2. ~/pleiades-orchestra/poll.py on the VPS loads them and restarts
 # the stack; nothing pushes to the server.
 on:
   workflow_dispatch:
@@ -56,13 +56,36 @@ jobs:
           VITE_SENTRY_DSN: https://1b3cd38e6690dc1c18560242c7683984@o450533.ingest.us.sentry.io/4512288711311360
       - run: tar -czf panel.tar.gz -C apps/admin/build .
 
+      # The VPS reaches GitHub downloads at ~50-250 KB/s but Cloudflare at ~10 MB/s, so the big
+      # files go to R2 (public bucket, see the R2_* secrets/vars) and the release below only
+      # carries their URL + sha256, which the poller verifies after download.
+      - name: Upload to R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+        run: |
+          prefix="orchestra/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          for f in images.tar.gz panel.tar.gz; do
+            aws s3 cp "$f" "s3://${{ vars.R2_DEPLOY_BUCKET }}/$prefix/$f" --endpoint-url "$R2_ENDPOINT"
+          done
+          {
+            echo "DL_URL=${{ vars.R2_PUBLIC_URL }}/$prefix"
+            echo "IMAGES_SHA256=$(sha256sum images.tar.gz | cut -d' ' -f1)"
+            echo "PANEL_SHA256=$(sha256sum panel.tar.gz | cut -d' ' -f1)"
+          } >> "$GITHUB_ENV"
+
       - name: Replace the rolling `orchestra` release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete orchestra --cleanup-tag --yes || true
-          gh release create orchestra images.tar.gz panel.tar.gz \
+          gh release create orchestra \
             --target "$GITHUB_SHA" --prerelease --latest=false \
             --title "orchestra (${GITHUB_SHA::7})" \
             --notes "Built from $GITHUB_SHA. Deployed to the VPS (albedo / pleiades-panel.shalotts.site) by its poller.
+          dl=$DL_URL
+          images.tar.gz-sha256=$IMAGES_SHA256
+          panel.tar.gz-sha256=$PANEL_SHA256
           ci-start=$CI_START"
