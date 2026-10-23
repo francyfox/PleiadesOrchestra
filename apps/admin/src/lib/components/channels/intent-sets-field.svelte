@@ -13,10 +13,7 @@
 	let values = $state([...selected]);
 	// Set ids are the names (`shop`, `shop:dress`): English, short, not translated.
 	const options = $derived(
-		INTENT_SET_IDS.map((id) => ({
-			value: id,
-			label: $content.intentSets.names[id].value,
-		})),
+		INTENT_SET_IDS.map((id) => ({ value: id, label: id })),
 	);
 </script>
 
