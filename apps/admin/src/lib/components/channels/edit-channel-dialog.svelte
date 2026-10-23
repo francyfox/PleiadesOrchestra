@@ -10,6 +10,7 @@
 	import { Textarea } from "#lib/components/ui/textarea/index.js";
 	import { useFieldErrorText } from "#lib/forms/use-field-error-text.js";
 	import AccessModeSelect from "./access-mode-select.svelte";
+	import IntentSetsField from "./intent-sets-field.svelte";
 	import { useChannelEnhance } from "./use-channel-enhance";
 
 	/** Open while `channel` is set; `onClose` clears it. */
@@ -49,6 +50,9 @@
 						error={$errorText($errors?.catalogLanguage)}
 					/>
 					<p class="-mt-2 text-xs text-muted-foreground">{$content.catalogLanguageHint.value}</p>
+					{#key channel.id}
+						<IntentSetsField selected={channel.intentSets} />
+					{/key}
 					<div class="grid gap-2">
 						<Label for="edit-origins">{$content.allowedOrigins.value}</Label>
 						<Textarea id="edit-origins" name="allowedOrigins" value={channel.allowedOrigins.join("\n")} />

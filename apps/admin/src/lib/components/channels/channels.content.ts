@@ -196,6 +196,38 @@ const channelsContent = {
 			en: "Language code of the product names on the site (en, ru, kk…). The search query reaches the site's tool in exactly that language, whatever the shopper typed.",
 			kk: "Сайттағы тауар атаулары жазылған тілдің коды (en, ru, kk…). Іздеу сұрауы сатып алушы не жазса да, сайт тулына дәл осы тілде жіберіледі.",
 		}),
+		intentSets: {
+			label: t({
+				ru: "Наборы намерений",
+				en: "Intent sets",
+				kk: "Ниет жиынтықтары",
+			}),
+			search: t({
+				ru: "Поиск набора…",
+				en: "Search sets…",
+				kk: "Жиынтықты іздеу…",
+			}),
+			empty: t({
+				ru: "Нет такого набора",
+				en: "No such set",
+				kk: "Мұндай жиынтық жоқ",
+			}),
+			clear: t({
+				ru: "Очистить наборы",
+				en: "Clear sets",
+				kk: "Жиынтықтарды тазалау",
+			}),
+			remove: t({
+				ru: insert("Убрать {{label}}"),
+				en: insert("Remove {{label}}"),
+				kk: insert("{{label}} алып тастау"),
+			}),
+			hint: t({
+				ru: "По умолчанию набора нет: сообщение выбирает инструмент сайта. Набор только добавляет порядок шагов и защиту опасных действий, ничего не скрывает.",
+				en: "No set by default: the message picks one of the site's tools. A set only adds the order of steps and a guard on dangerous actions, it hides nothing.",
+				kk: "Әдепкіде жиынтық жоқ: хабарлама сайттың құралын таңдайды. Жиынтық тек қадамдар тәртібін және қауіпті әрекеттерден қорғауды қосады, ештеңені жасырмайды.",
+			}),
+		},
 		persona: {
 			action: t({ ru: "Персона бота", en: "Bot persona", kk: "Бот персонасы" }),
 			title: t({

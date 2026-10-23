@@ -72,6 +72,41 @@ const intentsContent = {
 				kk: "Сұрауды ашу",
 			}),
 		},
+		sets: {
+			open: t({
+				ru: "Наборы намерений",
+				en: "Intent sets",
+				kk: "Ниет жиынтықтары",
+			}),
+			title: t({
+				ru: "Наборы намерений",
+				en: "Intent sets",
+				kk: "Ниет жиынтықтары",
+			}),
+			description: t({
+				ru: "Набор только добавляет порядок шагов и защиту опасных действий, инструменты сайта он не скрывает. Подключается к каналу при создании или правке.",
+				en: "A set only adds the order of steps and a guard on dangerous actions, it hides none of the site's tools. It is attached to a channel when you create or edit it.",
+				kk: "Жиынтық тек қадамдар тәртібін және қауіпті әрекеттерден қорғауды қосады, сайт құралдарын жасырмайды. Арнаны құрғанда немесе өзгерткенде қосылады.",
+			}),
+			search: t({
+				ru: "Поиск набора…",
+				en: "Search sets…",
+				kk: "Жиынтықты іздеу…",
+			}),
+			empty: t({
+				ru: "Нет такого набора",
+				en: "No such set",
+				kk: "Мұндай жиынтық жоқ",
+			}),
+			showCode: t({ ru: "Показать код", en: "Show code", kk: "Кодты көрсету" }),
+			descriptions: {
+				shop: t({
+					ru: "Интернет-магазин: поиск, выбор, корзина, оформление. Порядок шагов (поиск перед добавлением) и защита: оформление и удаление только по явным словам покупателя.",
+					en: "Online shop: search, pick, cart, checkout. The order of steps (a search before an add) and a guard: checkout and removal only on the shopper's explicit words.",
+					kk: "Интернет-дүкен: іздеу, таңдау, себет, рәсімдеу. Қадамдар тәртібі (қосудан бұрын іздеу) және қорғау: рәсімдеу мен жою тек сатып алушының анық сөздерімен.",
+				}),
+			},
+		},
 		correctDialog: {
 			title: t({
 				ru: "Исправить намерение",

@@ -10,6 +10,7 @@
 	import { Textarea } from "#lib/components/ui/textarea/index.js";
 	import { useFieldErrorText } from "#lib/forms/use-field-error-text.js";
 	import AccessModeSelect from "./access-mode-select.svelte";
+	import IntentSetsField from "./intent-sets-field.svelte";
 	import { useChannelEnhance } from "./use-channel-enhance";
 
 	/** The "+ Add" button of the channels page and the dialog with the new-channel form. */
@@ -56,6 +57,7 @@
 				error={$errorText($errors?.catalogLanguage)}
 			/>
 			<p class="-mt-2 text-xs text-muted-foreground">{$content.catalogLanguageHint.value}</p>
+			<IntentSetsField />
 			<div class="grid gap-2">
 				<Label for="allowedOrigins">{$content.create.origins.value}</Label>
 				<Textarea id="allowedOrigins" name="allowedOrigins" placeholder="https://example.com" />

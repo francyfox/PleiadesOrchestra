@@ -270,6 +270,11 @@ export const channelOverrides: FieldOverrides = {
 		form.has("allowedOrigins")
 			? parseOrigins(form.get("allowedOrigins"))
 			: undefined,
+	// Unticked boxes send nothing, so a form that shows the field says so: no ticks then means an empty list.
+	intentSets: (form) =>
+		form.has("intentSetsShown")
+			? form.getAll("intentSets").map(String)
+			: undefined,
 };
 
 /** UI vs wire: an empty persona field is a real value ("not set"), not a missing one; topics are a text, one per line. */

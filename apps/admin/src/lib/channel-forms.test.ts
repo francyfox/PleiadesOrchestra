@@ -78,3 +78,24 @@ test("persona: empty fields are values, topics become a list, long instructions 
 	);
 	expect(long.ok).toBe(false);
 });
+
+test("intent sets: ticked boxes become the list, and a form that shows the field but ticks none sends an empty list", () => {
+	const ticked = new FormData();
+	ticked.set("id", "c");
+	ticked.set("intentSetsShown", "1");
+	ticked.append("intentSets", "shop");
+	ticked.append("intentSets", "shop:dress");
+	const none = new FormData();
+	none.set("id", "c");
+	none.set("intentSetsShown", "1");
+	const absent = new FormData();
+	absent.set("id", "c");
+	const bodyOf = (data: FormData) => {
+		const parsed = parseForm(UpdateChannelForm, data, channelOverrides);
+		return parsed.ok ? parsed.body : parsed.errors;
+	};
+	expect(bodyOf(ticked)).toMatchObject({ intentSets: ["shop", "shop:dress"] });
+	expect(bodyOf(none)).toMatchObject({ intentSets: [] });
+	// A form without the field leaves the channel's sets alone.
+	expect(bodyOf(absent)).not.toHaveProperty("intentSets");
+});

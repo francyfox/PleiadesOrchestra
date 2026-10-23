@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { createQuery } from "@tanstack/svelte-query";
 	import { useIntlayer } from "svelte-intlayer";
+	import IntentSetCatalogDialog from "#lib/components/intents/intent-set-catalog-dialog.svelte";
 	import IntentsFilters from "#lib/components/intents/intents-filters.svelte";
 	import IntentsTable from "#lib/components/intents/intents-table.svelte";
 	import { useLiveQuery } from "#lib/live/use-live-query.svelte.js";
@@ -36,9 +37,12 @@
 	}
 </script>
 
-<div>
-	<h1 class="text-2xl font-semibold">{$content.title.value}</h1>
-	<p class="mt-1 text-sm text-muted-foreground">{$content.hint.value}</p>
+<div class="flex flex-wrap items-start justify-between gap-3">
+	<div>
+		<h1 class="text-2xl font-semibold">{$content.title.value}</h1>
+		<p class="mt-1 text-sm text-muted-foreground">{$content.hint.value}</p>
+	</div>
+	<IntentSetCatalogDialog />
 </div>
 
 <IntentsFilters
