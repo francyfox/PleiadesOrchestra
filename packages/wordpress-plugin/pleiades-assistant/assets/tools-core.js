@@ -156,6 +156,15 @@
 			in_stock: p.is_in_stock,
 			link: p.permalink,
 		};
+		// A list already says what add_to_cart's `variation` needs, so one search is enough to add.
+		if (!full && p.type === "variable") {
+			out.variation_attributes = (p.attributes ?? [])
+				.filter((a) => a.has_variations)
+				.map((a) => ({
+					name: a.name,
+					values: (a.terms ?? []).map((t) => t.name),
+				}));
+		}
 		if (!full) return out;
 		const attrs = (p.attributes ?? []).map((a) => ({
 			name: a.name,

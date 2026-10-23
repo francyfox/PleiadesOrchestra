@@ -134,6 +134,28 @@ test("get_product shows variation attributes as name + allowed values", () => {
 	expect(out.summary).toBe("Warm & soft");
 });
 
+test("a variable product in a list says which attributes add_to_cart needs, a simple one does not", () => {
+	const variable = core.shapeProduct({
+		id: 9,
+		name: "Hoodie",
+		type: "variable",
+		attributes: [
+			{
+				name: "Size",
+				has_variations: true,
+				terms: [{ name: "S" }, { name: "M" }],
+			},
+			{ name: "Material", has_variations: false, terms: [{ name: "Cotton" }] },
+		],
+	});
+	expect(variable.variation_attributes).toEqual([
+		{ name: "Size", values: ["S", "M"] },
+	]);
+	expect(
+		core.shapeProduct({ id: 1, name: "Milk", type: "simple", attributes: [] }),
+	).not.toHaveProperty("variation_attributes");
+});
+
 test("htmlToText strips tags and decodes entities", () => {
 	expect(
 		core.htmlToText("<h1>A</h1><p>b &amp; c&nbsp;d</p><script>x()</script>"),

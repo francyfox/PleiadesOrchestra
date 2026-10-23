@@ -36,6 +36,8 @@ docker compose -f compose.wp.yml up -d
 
 PHP lint (no PHP on the host): `docker run --rm -v $PWD/packages/wordpress-plugin/pleiades-assistant:/p php:8.3-cli sh -c 'for f in $(find /p -name "*.php"); do php -l $f; done'`.
 
+Copy the wasmer demo shop (202 products with variations, kits, recipes; no images): `bun packages/wordpress-plugin/dev/pull-demo.ts [site]`, then `docker compose -f compose.wp.yml run --rm -T -v $PWD/packages/wordpress-plugin/dev:/dev-data:ro --entrypoint wp wordpress-setup eval-file /dev-data/import-demo.php` (~80 s, idempotent by SKU; the WooCommerce sample products stay next to it).
+
 Theme: `WORDPRESS_THEME=storefront` (classic: cart and checkout pages become `[woocommerce_cart]`/`[woocommerce_checkout]`) or `twentytwentyfive` (block, default: WooCommerce's block pages are recreated); rerun `wordpress-setup` to switch. Both checked in a real browser (header, /cart/, /checkout/ update without reload after every cart tool). Not tested yet: caching plugins.
 
 ## Showing cart writes (`refreshCart` in `tools.js`)
