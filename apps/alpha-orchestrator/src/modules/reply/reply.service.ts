@@ -276,8 +276,8 @@ export async function prepareNewMessage(
 			deps.onError?.(error);
 		}
 	}
-	// «Now buy them» names nothing: the product the last search found is bought,
-	// and that search is not repeated.
+	// «Now buy them» names nothing: the product the last search found is bought
+	// (searched for again: the add tool may need the id from that answer).
 	const remembered =
 		intent === "addToCart" ? reuseLastProduct(state) : undefined;
 	// A message that says one of a tool's own options («… Weeknight Beef Tacos»)

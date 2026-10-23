@@ -23,6 +23,7 @@ import {
 } from "./modules/translate/translate.instance.ts";
 import { usageRecorder } from "./modules/usage-recorder/usage-recorder.instance.ts";
 import { backfillVisitorNames } from "./modules/visitors/visitors.service.ts";
+import { startWaitingRunsJob } from "./modules/waiting-runs/waiting-runs.ts";
 import { SqliteWorldStateStore } from "./modules/world-state/world-state.ts";
 
 // Migrations already ran when database.instance.ts opened the database.
@@ -158,6 +159,11 @@ const stopRetentionJobs = startRetentionJobs(db, {
 	onError: reportError,
 });
 
+const stopWaitingRunsJob = startWaitingRunsJob(
+	db,
+	reportError("waiting_runs_failed"),
+);
+
 serve(app, {
 	port: config.PORT,
 	maxRequestBodySize: config.HTTP_MAX_BODY_BYTES,
@@ -165,6 +171,7 @@ serve(app, {
 	onShutdown: () => {
 		translator?.close();
 		stopRetentionJobs();
+		stopWaitingRunsJob();
 		usageRecorder.flush();
 		db.$client.close();
 	},

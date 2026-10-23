@@ -335,7 +335,7 @@ describe("namesNoProduct", () => {
 });
 
 describe("reuseLastProduct", () => {
-	test("takes the product from the earlier search and skips the search step", () => {
+	test("takes the product from the earlier search and searches for it again (the add tool may need the id from that answer)", () => {
 		expect(
 			reuseLastProduct({
 				lastProduct: "Butter Croissants",
@@ -347,7 +347,6 @@ describe("reuseLastProduct", () => {
 			query: "Butter Croissants",
 			quantity: 3,
 			requestParsed: true,
-			catalogSearched: true,
 		});
 	});
 

@@ -221,10 +221,10 @@ describe("prepareNewMessage: «now buy them» after a search", () => {
 		expect(prepared.state).toMatchObject({
 			messageIntent: "addToCart",
 			product: "Butter Croissants",
-			catalogSearched: true,
 			requestParsed: true,
 			quantity: 1,
 		});
+		expect(prepared.state.catalogSearched).toBeUndefined();
 	});
 
 	test("a message that names a product searches for it as before", async () => {

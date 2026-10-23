@@ -86,7 +86,7 @@ Known weaknesses: «купить творог» → "buy some cottage", «офо
 
 `extractProductRequest` peels verbs/politeness/containers from the English text (rules, no model). Used only for `en` catalogs + available translation. Uses the rules only when `isSimpleRequest` (≤3 words, or a command verb with no clause words, ≤12 words); otherwise `query` fact is left unset and delta reads the whole English text.
 
-**`SESSION_FACTS` includes `lastProduct`** (first in-stock product of the last successful search). `reuseLastProduct(state)` (intent `addToCart` only) fires when `namesNoProduct` (all words are filler: purchase verbs, politeness, «now/теперь», pronouns, digits — lists `FILLER_EN`/`FILLER_RU` in `product-request.ts`). It copies `product`, `query`, `quantity`, `requestParsed`, `catalogSearched` into initial state so the plan skips search.
+**`SESSION_FACTS` includes `lastProduct`** (first in-stock product of the last successful search). `reuseLastProduct(state)` (intent `addToCart` only) fires when `namesNoProduct` (all words are filler: purchase verbs, politeness, «now/теперь», pronouns, digits — lists `FILLER_EN`/`FILLER_RU` in `product-request.ts`). It copies `product`, `query`, `quantity`, `requestParsed` into initial state; the search still runs (an id-based add tool such as WooCommerce `add_to_cart(id)` can only get the id from a search answer, otherwise the small model invents `id: 1`).
 
 ## Users, access, channels
 

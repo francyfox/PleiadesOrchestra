@@ -22,6 +22,9 @@ function numberOrUndefined(value: WorldState[string]): number | undefined {
 /** Checkpoint fact: the tool the run is waiting on. Together with the run id (the `callId`) it is what `prepareResume` checks an answer against. */
 export const AWAITED_TOOL_FACT = "awaitedTool";
 
+/** How long a run waits for the browser to run its tool and answer; then the request counts as abandoned and its checkpoint is released (`waiting-runs`). */
+export const BROWSER_WAIT_TIMEOUT_MS = 60_000;
+
 /** The tool a WebMCP wait names; `undefined` for any other wait. */
 export function awaitedTool(waiting: WaitingOn): string | undefined {
 	return waiting.kind === "webmcp_tool_call"

@@ -1,6 +1,7 @@
 import type { ActiveRuns } from "../active-runs/active-runs.ts";
 import type { Db } from "../database/database.ts";
 import { toEventRow } from "../plan-runs/plan-runs.service.ts";
+import { BROWSER_WAIT_TIMEOUT_MS } from "../run-stream/run-stream.service.ts";
 import { ownedVisitors } from "../visitors/visitors.sql.ts";
 import type {
 	RequestDetails,
@@ -12,7 +13,7 @@ import type {
 } from "./requests.types.ts";
 
 /** A run that stopped for the browser and was not resumed within this is not coming back. */
-export const WAITING_STALE_MS = 5 * 60_000;
+export const WAITING_STALE_MS = BROWSER_WAIT_TIMEOUT_MS;
 const LIST_PROMPT_CHARS = 200;
 
 interface RunRow {

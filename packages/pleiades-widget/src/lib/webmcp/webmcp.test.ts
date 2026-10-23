@@ -121,6 +121,42 @@ describe("createDocumentWebMcpProvider", () => {
 		expect(outcome?.isError).toBe(true);
 	});
 
+	test("a tool that throws still answers: the error text, flagged, so the server's run goes on instead of waiting for ever", async () => {
+		(globalThis as { document?: unknown }).document = {
+			modelContext: {
+				async getTools() {
+					return [{ name: "add_to_cart" }];
+				},
+				async executeTool() {
+					throw new Error("No product with this id");
+				},
+			},
+		};
+		const outcome = await createDocumentWebMcpProvider()?.callTool(
+			"add_to_cart",
+			{ id: 1 },
+		);
+		expect(outcome).toEqual({
+			result: "No product with this id",
+			isError: true,
+		});
+	});
+
+	test("a tool that never answers is cut off after the timeout and reported as a failed call", async () => {
+		(globalThis as { document?: unknown }).document = {
+			modelContext: {
+				async getTools() {
+					return [{ name: "add_to_cart" }];
+				},
+				executeTool: () => new Promise(() => {}),
+			},
+		};
+		const provider = createDocumentWebMcpProvider({ toolTimeoutMs: 20 });
+		const outcome = await provider?.callTool("add_to_cart", { id: 1 });
+		expect(outcome?.isError).toBe(true);
+		expect(String(outcome?.result)).toContain("did not answer in 20 ms");
+	});
+
 	test("callTool reports a clean error instead of throwing when the tool isn't registered (page state changed)", async () => {
 		(globalThis as { document?: unknown }).document = {
 			modelContext: {

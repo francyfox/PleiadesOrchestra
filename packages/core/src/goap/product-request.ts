@@ -428,10 +428,12 @@ export function namesNoProduct(state: {
 
 /**
  * «Buy them» after a search: the message names no product, so the product the
- * last search found (`lastProduct`, a session fact) is the one to buy and the
- * search is not repeated (`catalogSearched`). Absent when the message names
- * a product itself, or nothing was found before (`lastProduct` is empty after
- * a failed search).
+ * last search found (`lastProduct`, a session fact) is the one to buy. The
+ * search IS repeated (`catalogSearched` is not set): `lastProduct` is only a
+ * name, and a shop whose add tool wants an id (WooCommerce: `add_to_cart(id)`)
+ * can only get it from a search answer; without one the small model invents
+ * `id: 1`. Absent when the message names a product itself, or nothing was
+ * found before (`lastProduct` is empty after a failed search).
  */
 export function reuseLastProduct(state: {
 	lastProduct?: unknown;
@@ -448,7 +450,6 @@ export function reuseLastProduct(state: {
 		query: product,
 		quantity: clampQuantity(firstNumber(text)),
 		requestParsed: true,
-		catalogSearched: true,
 	};
 }
 

@@ -96,6 +96,9 @@ function parseToolResult(raw: unknown): WebMcpCallResult {
 	return { result: value, isError };
 }
 
+/** How long a page tool may take before the call counts as failed. */
+export const TOOL_TIMEOUT_MS = 30_000;
+
 /**
  * Best-effort binding to the in-page WebMCP tool registry on
  * `document.modelContext` (the spec moved it off `navigator`; the legacy
@@ -104,7 +107,10 @@ function parseToolResult(raw: unknown): WebMcpCallResult {
  * `getTools`/`executeTool` pair, so the whole feature degrades to a no-op
  * like any missing optional capability.
  */
-export function createDocumentWebMcpProvider(): WebMcpProvider | undefined {
+export function createDocumentWebMcpProvider(
+	options: { toolTimeoutMs?: number } = {},
+): WebMcpProvider | undefined {
+	const toolTimeoutMs = options.toolTimeoutMs ?? TOOL_TIMEOUT_MS;
 	const host = globalThis as {
 		document?: { modelContext?: RawModelContext };
 	};
@@ -134,15 +140,39 @@ export function createDocumentWebMcpProvider(): WebMcpProvider | undefined {
 			return () => raw.removeEventListener?.("toolchange", listener);
 		},
 		async callTool(name, args) {
-			const tools = (await getTools()) ?? [];
-			const tool = tools.find((candidate) => candidate.name === name);
-			if (!tool) {
+			// The server's run waits for this answer: a tool that throws or hangs must
+			// still answer, as a failed call, or the run waits for ever.
+			let timer: ReturnType<typeof setTimeout> | undefined;
+			const timeout = new Promise<never>((_, reject) => {
+				timer = setTimeout(
+					() =>
+						reject(
+							new Error(`tool "${name}" did not answer in ${toolTimeoutMs} ms`),
+						),
+					toolTimeoutMs,
+				);
+			});
+			const run = async (): Promise<WebMcpCallResult> => {
+				const tools = (await getTools()) ?? [];
+				const tool = tools.find((candidate) => candidate.name === name);
+				if (!tool) {
+					return {
+						result: `no tool named "${name}" is currently registered`,
+						isError: true,
+					};
+				}
+				return parseToolResult(await executeTool(tool, JSON.stringify(args)));
+			};
+			try {
+				return await Promise.race([run(), timeout]);
+			} catch (error) {
 				return {
-					result: `no tool named "${name}" is currently registered`,
+					result: error instanceof Error ? error.message : String(error),
 					isError: true,
 				};
+			} finally {
+				clearTimeout(timer);
 			}
-			return parseToolResult(await executeTool(tool, JSON.stringify(args)));
 		},
 	};
 }
