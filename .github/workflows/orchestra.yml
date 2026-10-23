@@ -2,8 +2,9 @@ name: orchestra
 # Manual deploy of the VPS backend (alpha-orchestrator + admin-api) and the admin panel
 # (pleiades-panel.shalotts.site). Builds both images (`docker save`, CTranslate2 included: the
 # VPS can't compile it) and the panel's static build, then publishes them on a single rolling
-# prerelease (tag `orchestra`) pointing at them in R2. ~/pleiades-orchestra/poll.py on the VPS loads them and restarts
-# the stack; nothing pushes to the server.
+# prerelease (tag `orchestra`) pointing at them in a private R2 bucket.
+# ~/pleiades-orchestra/poll.py on the VPS loads them and restarts the stack; nothing pushes to
+# the server.
 on:
   workflow_dispatch:
 
@@ -57,24 +58,26 @@ jobs:
       - run: tar -czf panel.tar.gz -C apps/admin/build .
 
       # The VPS reaches GitHub downloads at ~50-250 KB/s but Cloudflare at ~10 MB/s, so the big
-      # files go to R2 (public bucket, see the R2_* secrets/vars) and the release below only
-      # carries their URL + sha256, which the poller verifies after download.
+      # files go to a private R2 bucket (R2_* secrets / R2_DEPLOY_BUCKET var) and the release
+      # below only carries 24h presigned GET links + sha256, which the poller verifies.
       - name: Upload to R2
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: auto
           R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+          R2_BUCKET: ${{ vars.R2_DEPLOY_BUCKET }}
         run: |
           prefix="orchestra/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           for f in images.tar.gz panel.tar.gz; do
-            aws s3 cp "$f" "s3://${{ vars.R2_DEPLOY_BUCKET }}/$prefix/$f" --endpoint-url "$R2_ENDPOINT"
+            aws s3 cp "$f" "s3://$R2_BUCKET/$prefix/$f" --endpoint-url "$R2_ENDPOINT"
+            url=$(aws s3 presign "s3://$R2_BUCKET/$prefix/$f" --expires-in 86400 --endpoint-url "$R2_ENDPOINT")
+            echo "::add-mask::$url"
+            {
+              echo "URL_${f%%.*}=$url"
+              echo "SHA256_${f%%.*}=$(sha256sum "$f" | cut -d' ' -f1)"
+            } >> "$GITHUB_ENV"
           done
-          {
-            echo "DL_URL=${{ vars.R2_PUBLIC_URL }}/$prefix"
-            echo "IMAGES_SHA256=$(sha256sum images.tar.gz | cut -d' ' -f1)"
-            echo "PANEL_SHA256=$(sha256sum panel.tar.gz | cut -d' ' -f1)"
-          } >> "$GITHUB_ENV"
 
       - name: Replace the rolling `orchestra` release
         env:
@@ -85,7 +88,8 @@ jobs:
             --target "$GITHUB_SHA" --prerelease --latest=false \
             --title "orchestra (${GITHUB_SHA::7})" \
             --notes "Built from $GITHUB_SHA. Deployed to the VPS (albedo / pleiades-panel.shalotts.site) by its poller.
-          dl=$DL_URL
-          images.tar.gz-sha256=$IMAGES_SHA256
-          panel.tar.gz-sha256=$PANEL_SHA256
+          images.tar.gz-url=$URL_images
+          images.tar.gz-sha256=$SHA256_images
+          panel.tar.gz-url=$URL_panel
+          panel.tar.gz-sha256=$SHA256_panel
           ci-start=$CI_START"
