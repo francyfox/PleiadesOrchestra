@@ -34,6 +34,13 @@ export const channels = sqliteTable(
 		catalogLanguage: text("catalog_language").notNull().default("en"),
 		// admin-api account id of the owner (another database, so no FK); NULL = staff-owned.
 		ownerId: text("owner_id"),
+		// Ids of the intent sets that add dependencies and guards to the site's own tools
+		// (`shop` = the built-in online-shop taxonomy). Empty = the tool itself is the goal.
+		// Rows from before sets existed read `["shop"]`, so their behaviour does not change.
+		intentSets: text("intent_sets", { mode: "json" })
+			.$type<string[]>()
+			.notNull()
+			.default(["shop"]),
 	},
 	(table) => [index("channels_owner_idx").on(table.ownerId)],
 );

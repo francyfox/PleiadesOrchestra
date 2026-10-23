@@ -78,8 +78,9 @@ export class ReplyService implements WidgetReply {
 	registerWebMcpTools(
 		threadId: string,
 		tools: WebMcpToolDescriptor[],
+		channelId?: string,
 	): Promise<void> {
-		const work = this.classifyTools(threadId, tools);
+		const work = this.classifyTools(threadId, tools, channelId);
 		const tracked = work.catch((error) => this.deps.onError?.(error));
 		this.pending.set(threadId, tracked);
 		void tracked.then(() => {
@@ -91,6 +92,7 @@ export class ReplyService implements WidgetReply {
 	private async classifyTools(
 		threadId: string,
 		tools: WebMcpToolDescriptor[],
+		channelId?: string,
 	): Promise<void> {
 		const {
 			webmcpCatalog,
@@ -104,7 +106,9 @@ export class ReplyService implements WidgetReply {
 		}
 		// The same catalog (a panel opened again, another visitor of the same
 		// page) was classified already: classifying costs one Laya call per tool.
-		const hash = hashTools(tools);
+		// The presets are part of what a tool means: the same tools of two channels classify apart.
+		const taxonomy = channelId ? this.deps.taxonomy?.(channelId) : undefined;
+		const hash = `${hashTools(tools)}:${taxonomy?.presets.join(",") ?? ""}`;
 		const cached = this.classified.get(hash);
 		if (cached) {
 			this.classified.delete(hash);
@@ -117,6 +121,7 @@ export class ReplyService implements WidgetReply {
 			toolActions = await createWebMcpActions({
 				tools,
 				decisionAgent,
+				...(taxonomy ? { taxonomy } : {}),
 				functionCallAgent,
 				onError: this.deps.onError,
 			});

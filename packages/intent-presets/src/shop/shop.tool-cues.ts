@@ -1,5 +1,3 @@
-import type { ToolIntent } from "./intent-taxonomy";
-
 /**
  * What a WebMCP tool does, read from its NAME. Laya, sorting tools by name and
  * description, called `get_cart`, `get_order_status`, `update_cart_item` and
@@ -49,7 +47,7 @@ const STORE = ["store", "shop", "market"];
 export function intentFromToolCues(tool: {
 	name: string;
 	description?: string;
-}): ToolIntent | undefined {
+}): string | undefined {
 	const words = tokens(tool.name);
 	if (words.length === 0) return undefined;
 
@@ -82,7 +80,7 @@ export function intentFromToolCues(tool: {
 }
 
 /** The words that already say what an intent's plain tool does; anything else in a name narrows it. */
-const CORE_WORDS: Partial<Record<ToolIntent, readonly string[]>> = {
+const CORE_WORDS: Record<string, readonly string[]> = {
 	addToCart: [
 		"add",
 		"to",
@@ -159,7 +157,7 @@ const MAX_SPECIALIST_PENALTY = 3;
  * a specialist is for the special case, so for «купи 1 сыр» the plain tool must
  * win the tie. One point per extra word, at most three.
  */
-export function specialistPenalty(name: string, intent: ToolIntent): number {
+export function specialistPenalty(name: string, intent: string): number {
 	const core = CORE_WORDS[intent];
 	if (!core) return 0;
 	const extra = tokens(name).filter((word) => !core.includes(word));

@@ -21,6 +21,7 @@
 	},
 	"dependencies": {
 		"@repo/elysia-kit": "workspace:*",
+		"@repo/intent-presets": "workspace:*",
 		"@repo/mail-templates": "workspace:*",
 		"@sinclair/typebox": "catalog:",
 		"@t3-oss/env-core": "catalog:",

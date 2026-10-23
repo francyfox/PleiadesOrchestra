@@ -1,21 +1,18 @@
+import { intentFromMessageCues, SHOP_TAXONOMY } from "@repo/intent-presets";
 import { decideInRounds } from "../choice-rounds";
 import type { DecisionAgent } from "../decision-types";
 import type { IntentHit } from "./intent-memory";
 import {
-	EFFECTS_BY_INTENT,
-	LAYA_INTENT_DESCRIPTIONS,
-	TOOL_INTENTS,
+	effectsOf,
+	layaDescriptions,
+	needsTheWords,
+	type Taxonomy,
 	type ToolIntent,
 } from "./intent-taxonomy";
-import { intentFromCues } from "./message-cues";
 import type { GoapAction, WorldState } from "./types";
 
+/** `chat`, or an intent id of the channel's presets. */
 export type MessageIntent = "chat" | ToolIntent;
-
-const MESSAGE_INTENTS: readonly MessageIntent[] = [
-	"chat",
-	...TOOL_INTENTS.filter((intent) => intent !== "readState"),
-];
 
 /** Where an intent came from — shown in the admin's graph, and what decides whether to learn from it. */
 export type IntentSource = "words" | "memory" | "laya" | "fallback";
@@ -34,6 +31,8 @@ export interface IntentVerdict {
 
 export interface ClassifyMessageIntentConfig {
 	decisionAgent: DecisionAgent;
+	/** The channel's merged presets; the shop's when unset. */
+	taxonomy?: Taxonomy;
 	/**
 	 * `all` (default): every word rule is taken first, then Laya. `guarded`:
 	 * only the words of checkout and removal are rules — everything else goes to
@@ -50,26 +49,32 @@ export const MESSAGE_INTENT_INSTRUCTIONS =
 	"Is the user just chatting, or asking to do something in an online shop? " +
 	"Pick the single closest match; when unsure, pick chat.";
 
-/** Intents with a side effect the shopper must have asked for in so many words. */
-export const NEEDS_THE_WORDS: ReadonlySet<MessageIntent> = new Set([
-	"checkout",
-	"removeFromCart",
-]);
+/** Intents with a side effect the shopper must have asked for in so many words (the shop's). */
+export const NEEDS_THE_WORDS: ReadonlySet<MessageIntent> = needsTheWords();
 
 /**
- * `chat` first, then the rest — minus the intents only the words decide (Laya's
- * answer for them would be refused anyway). That leaves 10 options: one Laya
- * call, inside its 192-token option budget and calibrated temperature. A
- * second round per message measured no better as shipped, so keep it at 10.
+ * `chat` first, then the intents of the taxonomy the visitor can ask for,
+ * minus the ones only the words decide (Laya's answer for them would be refused
+ * anyway). For the shop that leaves 10 options: one Laya call, inside its
+ * 192-token option budget and calibrated temperature. A second round per
+ * message measured no better as shipped, so keep it at 10.
  */
-export const MESSAGE_INTENT_CRITERIA: Record<string, string> = {
-	chat: "greeting, thanks or small talk, nothing to do with shopping",
-	...Object.fromEntries(
-		Object.entries(LAYA_INTENT_DESCRIPTIONS).filter(
-			([intent]) => !NEEDS_THE_WORDS.has(intent as MessageIntent),
+export function messageIntentCriteria(
+	taxonomy: Taxonomy = SHOP_TAXONOMY,
+): Record<string, string> {
+	const guarded = needsTheWords(taxonomy);
+	return {
+		chat: "greeting, thanks or small talk, nothing to do with shopping",
+		...Object.fromEntries(
+			Object.entries(layaDescriptions(taxonomy)).filter(
+				([intent]) => !guarded.has(intent),
+			),
 		),
-	),
-};
+	};
+}
+
+export const MESSAGE_INTENT_CRITERIA: Record<string, string> =
+	messageIntentCriteria();
 
 /**
  * One cheap Laya `choice` call that decides whether a turn needs the WebMCP/
@@ -98,10 +103,14 @@ function intentByWords(
 	english: string | undefined,
 ): MessageIntent | undefined {
 	if (config.cues === false) return undefined;
+	const taxonomy = config.taxonomy ?? SHOP_TAXONOMY;
 	const found =
-		intentFromCues(message) ?? (english ? intentFromCues(english) : undefined);
+		intentFromMessageCues(taxonomy, message) ??
+		(english ? intentFromMessageCues(taxonomy, english) : undefined);
 	// Guarded: the words only decide what must never come from a model.
-	return config.rules === "guarded" && found && !NEEDS_THE_WORDS.has(found)
+	return config.rules === "guarded" &&
+		found &&
+		!needsTheWords(taxonomy).has(found)
 		? undefined
 		: found;
 }
@@ -117,6 +126,7 @@ export async function classifyMessageIntentDetailed(
 	message: string,
 	english?: string,
 ): Promise<IntentVerdict> {
+	const taxonomy = config.taxonomy ?? SHOP_TAXONOMY;
 	const byWords = intentByWords(config, message, english);
 	if (byWords) return { intent: byWords, source: "words" };
 
@@ -142,7 +152,7 @@ export async function classifyMessageIntentDetailed(
 			{
 				questionKey: "intent",
 				instructions: MESSAGE_INTENT_INSTRUCTIONS,
-				criteria: MESSAGE_INTENT_CRITERIA,
+				criteria: messageIntentCriteria(taxonomy),
 			},
 		));
 	} catch {
@@ -150,20 +160,18 @@ export async function classifyMessageIntentDetailed(
 		const rescue =
 			config.cues === false
 				? undefined
-				: (intentFromCues(message) ??
-					(english ? intentFromCues(english) : undefined));
+				: (intentFromMessageCues(taxonomy, message) ??
+					(english ? intentFromMessageCues(taxonomy, english) : undefined));
 		return { intent: rescue ?? "chat", source: "fallback" };
 	}
-	if (!choice || !(MESSAGE_INTENTS as readonly string[]).includes(choice)) {
+	if (!choice || !(choice in messageIntentCriteria(taxonomy))) {
 		return { intent: "chat", source: "laya" };
 	}
 	// Laya was measured to call «оформи заказ» `compare` and «удали сыр»
 	// `addToCart`; paying or emptying the cart by mistake is not recoverable by
 	// a replan, so those two are only ever taken from the words themselves.
 	return {
-		intent: NEEDS_THE_WORDS.has(choice as MessageIntent)
-			? "chat"
-			: (choice as MessageIntent),
+		intent: needsTheWords(taxonomy).has(choice) ? "chat" : choice,
 		source: "laya",
 		confidence: probability,
 	};
@@ -182,13 +190,14 @@ export function goalForIntent(
 	intent: MessageIntent,
 	baseGoal: Partial<WorldState>,
 	actions: GoapAction[],
+	taxonomy: Taxonomy = SHOP_TAXONOMY,
 ): Partial<WorldState> {
 	if (intent === "chat") return baseGoal;
 
 	// The fact AND its value: `inCart: false` is not produced by tools that only
 	// put things into the cart (`inCart: true`); asking for it made "remove X"
 	// unplannable (`no_plan`) on a site with no tool that removes.
-	const extra = Object.entries(EFFECTS_BY_INTENT[intent]).filter(
+	const extra = Object.entries(effectsOf(intent, taxonomy)).filter(
 		([key, value]) => actions.some((action) => action.effects[key] === value),
 	);
 	return extra.length > 0

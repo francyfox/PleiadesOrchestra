@@ -8,6 +8,7 @@ import {
 	reportTokens,
 	UntranslatableError,
 } from "@repo/core";
+import { type IntentPreset, mergePresets } from "@repo/intent-presets";
 import { createWebChannel } from "../channels/channels.service.ts";
 import { testDb } from "../database/database.testing.ts";
 import { withEnglishOnly } from "../english-only/english-only.ts";
@@ -615,5 +616,193 @@ describe("a reply waits for its thread's catalog still being classified", () => 
 		await Bun.sleep(0);
 		expect(webmcpCatalog.has("t1")).toBe(true);
 		expect(pending.has("t1")).toBe(false);
+	});
+});
+
+describe("prepareNewMessage: a channel without intent sets", () => {
+	const tool = (name: string, description: string): GoapAction => ({
+		...action(name),
+		effects: { [`toolResult:${name}`]: true },
+		description,
+	});
+
+	async function prepare(
+		text: string,
+		pick: string,
+		options: {
+			sets?: string[];
+			probability?: number;
+			extra?: GoapAction[];
+		} = {},
+	) {
+		const asked: string[][] = [];
+		const deps = {
+			worldStateStore: new InMemoryWorldStateStore(),
+			webmcpCatalog: new Map([
+				[
+					"t1",
+					[
+						tool("get_cart", "Read what is in the cart."),
+						tool("set_pizza_size", "Change the size of a pizza."),
+						...(options.extra ?? []),
+					],
+				],
+			]),
+			actions: [],
+			intentSets: () => options.sets ?? [],
+			decisionAgent: {
+				async decide(_state: unknown, questions: Record<string, unknown>) {
+					const [key, question] = Object.entries(questions)[0] as [
+						string,
+						{ criteria: Record<string, string> },
+					];
+					asked.push(Object.keys(question.criteria));
+					return {
+						[key]: {
+							type: "choice",
+							choice: pick,
+							probabilities: { [pick]: options.probability ?? 0.9 },
+						},
+					};
+				},
+			},
+			now: () => 0,
+		} as unknown as ReplyDeps;
+		const visitor = { id: "u", channelId: "c" } as VisitorRow;
+		const prepared = await prepareNewMessage(
+			deps,
+			visitor,
+			"t1",
+			"run-1",
+			text,
+			{},
+		);
+		return { prepared, asked };
+	}
+
+	test("the tool Laya picks is the goal, whatever shop intent it would have had", async () => {
+		const { prepared, asked } = await prepare(
+			"make the pizza bigger",
+			"set_pizza_size",
+		);
+		expect(prepared.goal).toMatchObject({ "toolResult:set_pizza_size": true });
+		expect(asked[0]).toContain("set_pizza_size");
+		expect(asked[0]).toContain("other");
+	});
+
+	test("an unclear message is not given a random tool: the reply asks, listing what the site can do", async () => {
+		const { prepared } = await prepare("hmm, that thing", "other");
+		expect(
+			Object.keys(prepared.goal).some((k) => k.startsWith("toolResult:")),
+		).toBe(false);
+		expect(String(prepared.state.clarifyOptions)).toContain("set_pizza_size");
+	});
+
+	test("a message that says a tool's own option goes to that tool without asking Laya", async () => {
+		const kit: GoapAction = {
+			...tool("add_kit_to_cart", "Add every product of a kit to the cart."),
+			bindToRequest: (state) =>
+				String(state.userMessage).includes("Gym Starter")
+					? { facts: { kit: "Gym Starter" }, score: 11 }
+					: undefined,
+		};
+		const { prepared, asked } = await prepare(
+			"add the Gym Starter kit to my cart",
+			"get_cart",
+			{ extra: [kit] },
+		);
+		expect(prepared.goal).toMatchObject({ "toolResult:add_kit_to_cart": true });
+		expect(prepared.state).toMatchObject({ kit: "Gym Starter" });
+		expect(asked).toHaveLength(0);
+	});
+
+	test("checkout words are still taken from the words, never from the tool choice", async () => {
+		const { asked } = await prepare("checkout now please", "get_cart");
+		expect(asked).toHaveLength(0);
+	});
+
+	test("a channel with the shop set keeps the intent flow", async () => {
+		const { asked } = await prepare("show my cart", "get_cart", {
+			sets: ["shop"],
+		});
+		expect(asked.every((round) => !round.includes("set_pizza_size"))).toBe(
+			true,
+		);
+	});
+});
+
+describe("a channel's presets decide how its tools and messages are read", () => {
+	// A preset with nothing of a shop in it.
+	const bookings: IntentPreset = {
+		id: "bookings",
+		intents: {
+			reserve: {
+				description: "book a table",
+				preconditions: { venueChosen: true },
+				effects: { booked: true },
+			},
+			other: { description: "anything else", preconditions: {}, effects: {} },
+		},
+		toolCues: (tool) =>
+			tool.name.startsWith("reserve") ? "reserve" : undefined,
+	};
+	const tool = {
+		name: "reserve_table",
+		description: "Book a table",
+		inputSchema: { type: "object" as const, properties: {} },
+	};
+
+	test("the same tools classify apart per channel, and a channel's catalog is not served to another", async () => {
+		const webmcpCatalog = new Map<string, GoapAction[]>();
+		const service = new ReplyService({
+			decisionAgent: { decide: async () => ({}) },
+			webmcpCatalog,
+			taxonomy: (channelId: string) =>
+				channelId === "venue" ? mergePresets([bookings]) : undefined,
+		} as unknown as ReplyDeps);
+
+		await service.registerWebMcpTools("t-venue", [tool], "venue");
+		await service.registerWebMcpTools("t-other", [tool], "other");
+		const venue = webmcpCatalog
+			.get("t-venue")
+			?.find((a) => a.name === "reserve_table");
+		const other = webmcpCatalog
+			.get("t-other")
+			?.find((a) => a.name === "reserve_table");
+		expect(venue?.effects).toMatchObject({ booked: true });
+		// A precondition nothing in the catalog can give is dropped (`pruneUnproducibleFacts`).
+		expect(venue?.preconditions).toEqual({});
+		expect(other?.effects).not.toHaveProperty("booked");
+	});
+
+	test("Laya is asked the intents of the channel's presets for a message", async () => {
+		const asked: string[][] = [];
+		const deps = {
+			worldStateStore: new InMemoryWorldStateStore(),
+			webmcpCatalog: new Map([["t1", [action("reserve_table")]]]),
+			actions: [],
+			taxonomy: () => mergePresets([bookings]),
+			decisionAgent: {
+				async decide(_state: unknown, questions: Record<string, unknown>) {
+					const [key, question] = Object.entries(questions)[0] as [
+						string,
+						{ criteria: Record<string, string> },
+					];
+					asked.push(Object.keys(question.criteria));
+					return { [key]: { type: "choice", choice: "reserve" } };
+				},
+			},
+			now: () => 0,
+		} as unknown as ReplyDeps;
+		const prepared = await prepareNewMessage(
+			deps,
+			{ id: "u", channelId: "venue" } as VisitorRow,
+			"t1",
+			"run-1",
+			"a table for two",
+			{},
+		);
+		expect(asked[0]).toEqual(["chat", "reserve", "other"]);
+		expect(prepared.state.messageIntent).toBe("reserve");
 	});
 });

@@ -7,11 +7,13 @@ import type {
 } from "@repo/core";
 import {
 	bindListScope,
+	chooseTool,
 	classifyMessageIntentDetailed,
 	collectTokens,
 	goalForIntent,
 	MAX_TOOL_TEXT_CHARS,
 	matchSpecialist,
+	needsTheWords,
 	PAGE_FACT,
 	PAGE_LANG_FACT,
 	parsePage,
@@ -20,6 +22,7 @@ import {
 	reuseLastProduct,
 	scopeFacts,
 } from "@repo/core";
+import { intentFromMessageCues, SHOP_TAXONOMY } from "@repo/intent-presets";
 import {
 	customerFacts,
 	REPLY_ACTION,
@@ -234,11 +237,22 @@ export async function prepareNewMessage(
 	const english =
 		typeof state.userMessageEn === "string" ? state.userMessageEn : undefined;
 	const original = String(state.userMessage ?? "");
+	if (deps.intentSets?.(visitor.channelId).length === 0) {
+		const byTool = await prepareByTool(
+			deps,
+			visitor,
+			{ threadId, planRunId, state, actions, dynamicActions },
+			{ original, english },
+		);
+		if (byTool) return byTool;
+	}
+	const taxonomy = deps.taxonomy?.(visitor.channelId) ?? SHOP_TAXONOMY;
 	const startedAt = performance.now();
 	const { value: verdict, tokens } = await collectTokens(() =>
 		classifyMessageIntentDetailed(
 			{
 				decisionAgent: deps.decisionAgent,
+				taxonomy,
 				// A new site has no hand-written words: only checkout and removal are
 				// taken from words; the rest comes from what the site has been taught,
 				// then from Laya.
@@ -288,11 +302,118 @@ export async function prepareNewMessage(
 	const scope = scopeFacts(withIntent);
 	const prepared = { ...withIntent, ...specialist, ...scope };
 	const scoped = bindListScope(actions, prepared);
-	const goal = goalForIntent(intent, REPLY_GOAL, scoped);
+	const goal = goalForIntent(intent, REPLY_GOAL, scoped, taxonomy);
 	return {
 		state: prepared,
 		goal,
 		actions: replyAfterTask(preferSpecialist(scoped, prepared), goal),
+	};
+}
+
+/** Longest list of the site's actions handed to the reply model when it has to ask what the visitor means. */
+const CLARIFY_TOOLS = 12;
+
+/**
+ * A channel without intent sets: the message picks one of the site's own tools
+ * and that tool's result is the goal; the tool's preconditions still come from
+ * its (shop-taxonomy) intent, so a search precedes an id-based add. `undefined`
+ * when the words of checkout/removal decide: those keep the guarded intent flow.
+ */
+async function prepareByTool(
+	deps: ReplyDeps,
+	visitor: VisitorRow,
+	run: {
+		threadId: string;
+		planRunId: string;
+		state: WorldState;
+		actions: GoapAction[];
+		dynamicActions: GoapAction[];
+	},
+	message: { original: string; english?: string },
+): Promise<PreparedRun | undefined> {
+	const taxonomy = deps.taxonomy?.(visitor.channelId) ?? SHOP_TAXONOMY;
+	const words =
+		intentFromMessageCues(taxonomy, message.original) ??
+		(message.english
+			? intentFromMessageCues(taxonomy, message.english)
+			: undefined);
+	if (words && needsTheWords(taxonomy).has(words)) return undefined;
+
+	// A message that buys one of a tool's own options («add the Gym Starter kit») asks for that
+	// tool; a tool binds only to the intent it was classified with, and buying is the one
+	// whose words are rules.
+	const specialist =
+		words === "addToCart"
+			? matchSpecialist(run.dynamicActions, {
+					...run.state,
+					messageIntent: "addToCart",
+				})
+			: undefined;
+	if (typeof specialist?.specialistTool === "string") {
+		const state = { ...run.state, ...specialist, messageIntent: "other" };
+		const goal = {
+			...REPLY_GOAL,
+			[`toolResult:${specialist.specialistTool}`]: true,
+		};
+		return {
+			state,
+			goal,
+			actions: replyAfterTask(preferSpecialist(run.actions, state), goal),
+		};
+	}
+	// Only the site's tools: the catalog also holds helper steps (`choose:<tool>.<parameter>`).
+	const tools = run.dynamicActions
+		.filter((action) => action.effects[`toolResult:${action.name}`] === true)
+		.map((action) => ({
+			name: action.name,
+			description: action.description,
+		}));
+	const startedAt = performance.now();
+	const { value: choice, tokens } = await collectTokens(() =>
+		chooseTool(
+			{ decisionAgent: deps.decisionAgent, tools, taxonomy },
+			message.english ?? message.original,
+		),
+	);
+	reportIntent(
+		deps,
+		{
+			intent: choice.kind === "tool" ? "other" : "chat",
+			source: "laya",
+			confidence: choice.confidence,
+		},
+		{
+			...tokens,
+			threadId: run.threadId,
+			userId: visitor.id,
+			planRunId: run.planRunId,
+			latencyMs: Math.round(performance.now() - startedAt),
+		},
+	);
+	if (choice.kind === "tool") {
+		const goal = { ...REPLY_GOAL, [`toolResult:${choice.tool}`]: true };
+		return {
+			state: { ...run.state, messageIntent: "other" },
+			goal,
+			actions: replyAfterTask(run.actions, goal),
+		};
+	}
+	const clarify =
+		choice.kind === "unclear"
+			? {
+					clarifyOptions: tools
+						.slice(0, CLARIFY_TOOLS)
+						.map(
+							(tool) =>
+								`${tool.name}${tool.description ? ` (${tool.description.split(/(?<=[.!?])\s/)[0]})` : ""}`,
+						)
+						.join("; "),
+				}
+			: {};
+	return {
+		state: { ...run.state, messageIntent: "chat", ...clarify },
+		goal: REPLY_GOAL,
+		actions: run.actions,
 	};
 }
 

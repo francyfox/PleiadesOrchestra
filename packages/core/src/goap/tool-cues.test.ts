@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { intentFromToolCues, specialistPenalty } from "./tool-cues.ts";
+import { intentFromToolCues, specialistPenalty } from "@repo/intent-presets";
 
 describe("intentFromToolCues", () => {
 	test("reads the intent from the tool's name", () => {

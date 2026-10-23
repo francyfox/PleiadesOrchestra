@@ -111,5 +111,7 @@ export interface WidgetReply {
 	registerWebMcpTools(
 		threadId: string,
 		tools: WebMcpToolDescriptor[],
+		/** The channel whose presets classify the tools; the shop's when left out. */
+		channelId?: string,
 	): Promise<void>;
 }

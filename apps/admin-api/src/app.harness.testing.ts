@@ -59,6 +59,7 @@ export const CHANNEL = {
 	accessMode: "open",
 	allowedOrigins: [],
 	catalogLanguage: "en",
+	intentSets: [],
 	publishableKey: "pk",
 	disabledAt: null,
 	createdAt: 1,

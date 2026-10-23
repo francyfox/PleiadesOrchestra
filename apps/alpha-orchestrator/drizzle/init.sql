@@ -30,7 +30,7 @@ CREATE TABLE `channels` (
 	`allowed_origins` text DEFAULT '[]' NOT NULL,
 	`disabled_at` integer,
 	`created_at` integer NOT NULL
-, `catalog_language` text DEFAULT 'en' NOT NULL, `owner_id` text);
+, `catalog_language` text DEFAULT 'en' NOT NULL, `owner_id` text, `intent_sets` text DEFAULT '["shop"]' NOT NULL);
 CREATE UNIQUE INDEX `channels_slug_unique` ON `channels` (`slug`);
 CREATE UNIQUE INDEX `channels_publishable_key_unique` ON `channels` (`publishable_key`);
 CREATE TABLE `llm_calls` (
@@ -253,6 +253,7 @@ INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '2
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'a57c22bfc049d04bfae0dbff53a41dee9259181e53636b895316dad53c2fcfca', 1792487367347);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '6a89ddd783b8155e61bd7d78539cb7e0f3fa1ad8148922445e7b64f3a7c45ed0', 1792490643768);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'db4b68f84e07adb1fa993054f23e2f676a11bbc4d94047db081351b6f3c31c52', 1792559642677);
-INSERT INTO "channels" ("id", "slug", "kind", "name", "access_mode", "publishable_key", "secret_key_hash", "allowed_origins", "disabled_at", "created_at", "catalog_language", "owner_id") VALUES ('ch_telegram', 'telegram', 'telegram', 'Telegram', 'whitelist', NULL, NULL, '[]', NULL, CAST(strftime('%s', 'now') AS INTEGER) * 1000, 'en', NULL);
-INSERT INTO "channels" ("id", "slug", "kind", "name", "access_mode", "publishable_key", "secret_key_hash", "allowed_origins", "disabled_at", "created_at", "catalog_language", "owner_id") VALUES ('ch_cli', 'cli', 'cli', 'CLI', 'open', NULL, NULL, '[]', NULL, CAST(strftime('%s', 'now') AS INTEGER) * 1000, 'en', NULL);
+INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '9c755ee69d557b8c2509c3ec35cae90f75593d422cb9cd693c3a6cce295d1349', 1792749311631);
+INSERT INTO "channels" ("id", "slug", "kind", "name", "access_mode", "publishable_key", "secret_key_hash", "allowed_origins", "disabled_at", "created_at", "catalog_language", "owner_id", "intent_sets") VALUES ('ch_telegram', 'telegram', 'telegram', 'Telegram', 'whitelist', NULL, NULL, '[]', NULL, CAST(strftime('%s', 'now') AS INTEGER) * 1000, 'en', NULL, '["shop"]');
+INSERT INTO "channels" ("id", "slug", "kind", "name", "access_mode", "publishable_key", "secret_key_hash", "allowed_origins", "disabled_at", "created_at", "catalog_language", "owner_id", "intent_sets") VALUES ('ch_cli', 'cli', 'cli', 'CLI', 'open', NULL, NULL, '[]', NULL, CAST(strftime('%s', 'now') AS INTEGER) * 1000, 'en', NULL, '["shop"]');
 COMMIT;

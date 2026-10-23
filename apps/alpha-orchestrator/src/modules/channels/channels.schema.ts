@@ -38,6 +38,8 @@ export const Channel = t.Object({
 	createdAt: t.Number(),
 	/** admin-api account id of the owner; null = staff-owned. */
 	ownerId: t.Nullable(t.String()),
+	/** Intent sets in force, in order (later ones win); empty = no set, the site's tools are the goals. */
+	intentSets: t.Array(t.String()),
 });
 
 export const ChannelsQuery = t.Composite([
@@ -57,6 +59,7 @@ export const CreateChannelBody = t.Object({
 	accessMode: AccessModeSchema,
 	allowedOrigins: t.Array(t.String()),
 	catalogLanguage: t.Optional(LanguageSchema),
+	intentSets: t.Optional(t.Array(t.String())),
 	/** admin-api account id; left out = staff-owned. */
 	ownerId: t.Optional(t.String({ minLength: 1 })),
 });
@@ -66,6 +69,7 @@ export const UpdateChannelBody = t.Object({
 	accessMode: t.Optional(AccessModeSchema),
 	allowedOrigins: t.Optional(t.Array(t.String())),
 	catalogLanguage: t.Optional(LanguageSchema),
+	intentSets: t.Optional(t.Array(t.String())),
 	disabled: t.Optional(t.Boolean()),
 });
 

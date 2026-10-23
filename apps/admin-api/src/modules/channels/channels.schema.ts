@@ -32,6 +32,7 @@ export const Channel = t.Composite([
 		allowedOrigins: t.Array(t.String()),
 		/** Language the site's catalog is written in; search queries are sent in it. */
 		catalogLanguage: t.String(),
+		intentSets: t.Array(t.String()),
 		publishableKey: nullable(t.String()),
 		disabledAt: nullable(t.Number()),
 		createdAt: t.Number(),

@@ -1,3 +1,4 @@
+export { intentFromCues } from "@repo/intent-presets";
 export { pruneUnproducibleFacts } from "./catalog";
 export type { DecisionActionConfig } from "./decision-action";
 export { createDecisionAction } from "./decision-action";
@@ -5,11 +6,16 @@ export type { RunPlanOptions, RunPlanResult } from "./executor";
 export { runPlan } from "./executor";
 export type { IntentExample, IntentHit, IntentModel } from "./intent-memory";
 export { createIntentModel, normalizeIntentText } from "./intent-memory";
-export type { ToolIntent } from "./intent-taxonomy";
+export type { Taxonomy, ToolIntent } from "./intent-taxonomy";
 export {
 	EFFECTS_BY_INTENT,
+	effectsOf,
 	INTENT_DESCRIPTIONS,
+	intentIds,
+	layaDescriptions,
+	needsTheWords,
 	PRECONDITIONS_BY_INTENT,
+	preconditionsOf,
 	SESSION_FACTS,
 	TOOL_INTENTS,
 } from "./intent-taxonomy";
@@ -68,6 +74,8 @@ export type {
 	TextActionMeta,
 } from "./text-action";
 export { createTextAction } from "./text-action";
+export type { ToolChoice, ToolOption } from "./tool-choice";
+export { chooseTool } from "./tool-choice";
 export type {
 	McpCallToolResult,
 	McpClient,

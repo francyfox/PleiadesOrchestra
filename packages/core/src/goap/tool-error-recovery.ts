@@ -1,4 +1,4 @@
-import { EFFECTS_BY_INTENT, type ToolIntent } from "./intent-taxonomy";
+import { effectsOf, type Taxonomy, type ToolIntent } from "./intent-taxonomy";
 import type { WorldState } from "./types";
 
 export interface KnownTool {
@@ -30,6 +30,7 @@ export function recoveryFromToolError(
 	errorText: string,
 	failedTool: string,
 	tools: readonly KnownTool[],
+	taxonomy?: Taxonomy,
 ): ToolErrorRecovery | undefined {
 	let best: { tool: KnownTool; at: number } | undefined;
 	for (const tool of tools) {
@@ -40,7 +41,7 @@ export function recoveryFromToolError(
 		if (hit && (!best || hit.index < best.at)) best = { tool, at: hit.index };
 	}
 	if (!best) return undefined;
-	const effects = Object.keys(EFFECTS_BY_INTENT[best.tool.intent]);
+	const effects = Object.keys(effectsOf(best.tool.intent, taxonomy));
 	if (effects.length === 0) return undefined;
 	return {
 		tool: best.tool.name,

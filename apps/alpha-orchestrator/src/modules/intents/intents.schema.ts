@@ -1,8 +1,8 @@
-import { TOOL_INTENTS } from "@repo/core";
+import { ALL_INTENT_IDS } from "@repo/intent-presets";
 import { t } from "elysia";
 import { oneOf, PageQuery } from "../http/http.ts";
 
-export const INTENTS = ["chat", ...TOOL_INTENTS] as const;
+export const INTENTS = ALL_INTENT_IDS;
 
 export const IntentStatusSchema = oneOf(["pending", "approved", "rejected"]);
 

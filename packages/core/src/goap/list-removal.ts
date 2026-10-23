@@ -1,7 +1,6 @@
-import { asksForAll } from "./message-cues";
+import { asksForAll, tokens } from "@repo/intent-presets";
 import type { ListItem } from "./shopping-list";
 import { findListParameter } from "./shopping-list";
-import { tokens } from "./tool-cues";
 import type { GoapAction, WorldState } from "./types";
 
 // «Remove everything» is the same fan-out as «buy A, B, C», only the list does

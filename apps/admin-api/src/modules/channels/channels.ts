@@ -80,6 +80,7 @@ export function channelsRoutes({ auth, orchestrator }: RouteDeps) {
 							...(body.catalogLanguage
 								? { catalogLanguage: body.catalogLanguage }
 								: {}),
+							...(body.intentSets ? { intentSets: body.intentSets } : {}),
 							...(ownerId ? { ownerId } : {}),
 						});
 					},

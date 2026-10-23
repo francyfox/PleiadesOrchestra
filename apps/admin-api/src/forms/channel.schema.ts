@@ -1,3 +1,4 @@
+import { PRESET_IDS } from "@repo/intent-presets/ids";
 import { type Static, Type } from "@sinclair/typebox";
 
 // Browser-importable (the admin validates forms with these): import only `@sinclair/typebox`, never elysia or server code.
@@ -13,6 +14,9 @@ export const AccessMode = Type.Union([
 	Type.Literal("open"),
 ]);
 
+/** The intent sets (presets) a channel can use, from `@repo/intent-presets`; none picked = the site's own tools are the goals. */
+export const INTENT_SET_IDS = PRESET_IDS;
+
 /** Wire input of `POST /channels` (before the handler's slug/name check). */
 export const CreateChannelInput = Type.Object({
 	slug: Type.String(),
@@ -20,6 +24,8 @@ export const CreateChannelInput = Type.Object({
 	accessMode: Type.Optional(AccessMode),
 	allowedOrigins: Type.Optional(Type.Array(Type.String())),
 	catalogLanguage: Type.Optional(Type.String()),
+	/** Ids of the intent sets, later ones win; left out or empty = none. */
+	intentSets: Type.Optional(Type.Array(Type.String())),
 	/** Staff only: the account that will own the channel. A user's channel is always theirs. */
 	ownerId: Type.Optional(Type.String({ minLength: 1 })),
 });
@@ -29,6 +35,7 @@ export const UpdateChannelInput = Type.Object({
 	accessMode: Type.Optional(AccessMode),
 	allowedOrigins: Type.Optional(Type.Array(Type.String())),
 	catalogLanguage: Type.Optional(Type.String()),
+	intentSets: Type.Optional(Type.Array(Type.String())),
 	disabled: Type.Optional(Type.Boolean()),
 });
 
@@ -47,6 +54,7 @@ export const UpdateChannelForm = Type.Object({
 	accessMode: Type.Optional(AccessMode),
 	allowedOrigins: UpdateChannelInput.properties.allowedOrigins,
 	catalogLanguage: CreateChannelForm.properties.catalogLanguage,
+	intentSets: UpdateChannelInput.properties.intentSets,
 });
 
 /** What the visitor meets: the bot's name, tone and limits. Empty string / list = not set. */

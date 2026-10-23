@@ -291,7 +291,11 @@ export function widgetRoutes(deps: WidgetDeps) {
 					// Classifying a new catalog takes a model call per tool: answer now,
 					// the thread's next reply waits for it (`ReplyService.pending`).
 					reply
-						.registerWebMcpTools(body.threadId, body.webmcpTools)
+						.registerWebMcpTools(
+							body.threadId,
+							body.webmcpTools,
+							auth.channel.id,
+						)
 						.catch(() => {});
 					return emptyResponse(204, auth.origin);
 				},

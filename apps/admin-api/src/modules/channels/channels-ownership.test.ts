@@ -9,6 +9,7 @@ const channel = (id: string, ownerId: string | null) => ({
 	accessMode: "open",
 	allowedOrigins: [],
 	catalogLanguage: "en",
+	intentSets: [],
 	publishableKey: "pk",
 	disabledAt: null,
 	createdAt: 1,

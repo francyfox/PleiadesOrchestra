@@ -19,6 +19,7 @@
 		"bench:plan": "bun eval/plan-bench.ts"
 	},
 	"dependencies": {
+		"@repo/intent-presets": "workspace:*",
 		"@ai-sdk/openai-compatible": "catalog:",
 		"@ai-sdk/typesafe-ai": "catalog:",
 		"@modelcontextprotocol/client": "^2.0.0",

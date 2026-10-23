@@ -1,0 +1,24 @@
+{
+	"name": "@repo/intent-presets",
+	"version": "0.0.0",
+	"license": "AGPL-3.0-only",
+	"author": "Danil Golota",
+	"module": "src/index.ts",
+	"type": "module",
+	"private": true,
+	"exports": {
+		".": "./src/index.ts",
+		"./ids": "./src/ids.ts"
+	},
+	"scripts": {
+		"check-types": "bun check",
+		"lint": "biome check .",
+		"test": "bun test"
+	},
+	"devDependencies": {
+		"@types/bun": "catalog:"
+	},
+	"peerDependencies": {
+		"typescript": "^5 || ^6"
+	}
+}

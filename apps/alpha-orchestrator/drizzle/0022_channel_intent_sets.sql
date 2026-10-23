@@ -1,0 +1,1 @@
+ALTER TABLE `channels` ADD `intent_sets` text DEFAULT '["shop"]' NOT NULL;

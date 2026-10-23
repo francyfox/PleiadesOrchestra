@@ -4,6 +4,7 @@ import type {
 	FunctionCallAgent,
 	GoapAction,
 	RunLock,
+	Taxonomy,
 	UsageRecorder,
 	WorldStateStore,
 } from "@repo/core";
@@ -20,6 +21,16 @@ export interface ReplyDeps {
 	productRequestAgent?: Agent;
 	/** The language the channel's site writes its catalog in (`en` when unknown). */
 	catalogLanguage?: (channelId: string) => string | undefined;
+	/**
+	 * The intent sets a channel runs with. Empty: the message picks one of the site's
+	 * own tools (`chooseTool`). Unset (tests, old callers): the built-in intent flow.
+	 */
+	intentSets?: (channelId: string) => string[];
+	/**
+	 * What a channel's presets merge into: the intents Laya picks from, what a tool
+	 * of each needs and gives, the word rules and the guards. The shop's when unset.
+	 */
+	taxonomy?: (channelId: string) => Taxonomy;
 	/** What each site's classifier has been taught; asked before Laya. */
 	intentMemory?: IntentMemory;
 	/**

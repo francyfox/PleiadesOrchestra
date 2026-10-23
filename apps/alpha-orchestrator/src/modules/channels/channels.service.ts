@@ -21,6 +21,7 @@ export function toChannel(row: ChannelRow) {
 		disabledAt: row.disabledAt,
 		createdAt: row.createdAt,
 		ownerId: row.ownerId,
+		intentSets: row.intentSets,
 	};
 }
 
@@ -70,6 +71,8 @@ export interface NewWebChannel {
 	allowedOrigins: string[];
 	/** Defaults to `en`. */
 	catalogLanguage?: string;
+	/** Defaults to none: a new channel works from the site's own tools. */
+	intentSets?: string[];
 	/** admin-api account id; left out = staff-owned. */
 	ownerId?: string;
 }
@@ -94,6 +97,7 @@ export function createWebChannel(db: Db, input: NewWebChannel, now: number) {
 			accessMode: input.accessMode,
 			allowedOrigins: input.allowedOrigins,
 			catalogLanguage: input.catalogLanguage ?? "en",
+			intentSets: input.intentSets ?? [],
 			publishableKey,
 			secretKeyHash,
 			createdAt: now,
@@ -109,6 +113,7 @@ export interface ChannelPatch {
 	accessMode?: AccessMode;
 	allowedOrigins?: string[];
 	catalogLanguage?: string;
+	intentSets?: string[];
 	disabled?: boolean;
 }
 
@@ -137,6 +142,7 @@ export function updateChannel(
 			accessMode: patch.accessMode ?? existing.accessMode,
 			allowedOrigins: patch.allowedOrigins ?? existing.allowedOrigins,
 			catalogLanguage: patch.catalogLanguage ?? existing.catalogLanguage,
+			intentSets: patch.intentSets ?? existing.intentSets,
 			disabledAt: nextDisabledAt(existing.disabledAt, patch.disabled, now),
 		})
 		.where(eq(channels.id, id))

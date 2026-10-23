@@ -146,4 +146,23 @@ describe("channels (proxied)", () => {
 		expect(await bad.json()).toEqual({ error: "invalid_language" });
 		expect(upstream).toHaveLength(3);
 	});
+
+	test("intent sets travel to the orchestrator when given and are left out otherwise", async () => {
+		const cookie = await signedIn();
+		setRespond(() => json({ channel: CHANNEL, secretKey: "sk" }));
+
+		await call("/api/channels", {
+			method: "POST",
+			cookie,
+			body: { slug: "with-sets", name: "S", intentSets: ["shop"] },
+		});
+		expect(upstream[0]?.body).toMatchObject({ intentSets: ["shop"] });
+
+		await call("/api/channels", {
+			method: "POST",
+			cookie,
+			body: { slug: "bare", name: "B" },
+		});
+		expect(upstream[1]?.body).not.toHaveProperty("intentSets");
+	});
 });

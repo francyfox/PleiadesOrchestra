@@ -240,4 +240,37 @@ describe("admin channels", () => {
 				.catalogLanguage,
 		).toBe("kk");
 	});
+
+	test("intentSets: a new channel has none, a patch sets the list, other patches leave it", async () => {
+		const { app } = setupAdminApp();
+		const post = async (body: Record<string, unknown>) =>
+			json(
+				await app.handle(
+					admin("/channels", {
+						method: "POST",
+						body: {
+							name: "Shop",
+							kind: "web",
+							accessMode: "open",
+							allowedOrigins: [],
+							...body,
+						},
+					}),
+				),
+			);
+		const plain = await post({ slug: "no-sets" });
+		expect(plain.channel.intentSets).toEqual([]);
+
+		const withSets = await post({ slug: "with-sets", intentSets: ["shop"] });
+		expect(withSets.channel.intentSets).toEqual(["shop"]);
+
+		const patch = (id: string, body: Record<string, unknown>) =>
+			app.handle(admin(`/channels/${id}`, { method: "PATCH", body }));
+		const patched = await json(
+			await patch(plain.channel.id, { intentSets: ["shop", "shop:dress"] }),
+		);
+		expect(patched.channel.intentSets).toEqual(["shop", "shop:dress"]);
+		const renamed = await json(await patch(plain.channel.id, { name: "X" }));
+		expect(renamed.channel.intentSets).toEqual(["shop", "shop:dress"]);
+	});
 });

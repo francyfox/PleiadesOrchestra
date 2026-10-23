@@ -5,7 +5,8 @@ import type {
 	WorldState,
 	WorldStateStore,
 } from "@repo/core";
-import { runPlan, SESSION_FACTS } from "@repo/core";
+import { runPlan } from "@repo/core";
+import { ALL_SESSION_FACTS } from "@repo/intent-presets";
 import type { ActiveRuns } from "../active-runs/active-runs.ts";
 import type { StoredStep } from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
@@ -263,10 +264,13 @@ async function saveCheckpoint(
 	}
 }
 
-/** The facts that outlive one request (see `SESSION_FACTS`). */
+/**
+ * The facts that outlive one request: those of any preset (a run is not tied to
+ * one channel's presets here; a fact a channel never sets is just absent).
+ */
 export function sessionFacts(state: WorldState): WorldState {
 	const kept: WorldState = {};
-	for (const key of SESSION_FACTS) {
+	for (const key of ALL_SESSION_FACTS) {
 		if (state[key] !== undefined) kept[key] = state[key];
 	}
 	return kept;

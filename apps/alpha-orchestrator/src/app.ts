@@ -15,6 +15,7 @@ import {
 	type Observability,
 	onRequestGuard,
 } from "@repo/elysia-kit";
+import { resolveTaxonomy } from "@repo/intent-presets";
 import { Elysia } from "elysia";
 import { accessRoutes } from "./modules/access/access.ts";
 import { accountBillingRoutes } from "./modules/account-billing/account-billing.ts";
@@ -147,6 +148,17 @@ export function createApp(deps: AppDeps) {
 		layaAutoApproveConfidence: deps.layaAutoApproveConfidence,
 		catalogLanguage: (channelId) =>
 			deps.channels.byId(channelId)?.catalogLanguage,
+		intentSets: (channelId) =>
+			deps.channels.byId(channelId)?.intentSets ?? ["shop"],
+		// shortcut: a channel with no set still takes its tools' dependencies (a search
+		// before an id-based add) from the shop preset; read them from the tools' schemas
+		// instead when a second domain needs it.
+		taxonomy: (channelId) =>
+			resolveTaxonomy(
+				deps.channels.byId(channelId)?.intentSets.length
+					? (deps.channels.byId(channelId)?.intentSets ?? [])
+					: ["shop"],
+			),
 		functionCallAgent: deps.functionCallAgent,
 		actions,
 		runs: deps.runs,

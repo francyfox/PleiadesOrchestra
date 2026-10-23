@@ -83,6 +83,7 @@ function setup(
 			name: "Shop",
 			accessMode: "open",
 			allowedOrigins: [ORIGIN],
+			intentSets: ["shop"],
 		},
 		clock.now,
 	);

@@ -76,6 +76,8 @@ export interface GoapAction {
 	 * action found. Text is user-facing, not a log line.
 	 */
 	describe?(state: WorldState, phase: StepPhase): string | undefined;
+	/** What the action does, in the site's own words (a WebMCP tool's description): the options of `chooseTool`. */
+	description?: string;
 	/**
 	 * For an action built once per catalog but wanted only by some requests: does
 	 * THIS request ask for it by name (a tool's option spoken in the message)?

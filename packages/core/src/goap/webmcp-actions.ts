@@ -1,3 +1,8 @@
+import {
+	intentFromToolNameCues,
+	SHOP_TAXONOMY,
+	type Taxonomy,
+} from "@repo/intent-presets";
 import { decideInRounds } from "../choice-rounds";
 import type { DecisionAgent } from "../decision-types";
 import type { FunctionCallAgent } from "../function-call-agent";
@@ -5,10 +10,10 @@ import { UntranslatableError } from "../untranslatable-error";
 import { validateArguments } from "../validate-arguments";
 import { cursorFact, fanOutFor } from "./fan-out";
 import {
-	EFFECTS_BY_INTENT,
-	LAYA_INTENT_DESCRIPTIONS,
-	PRECONDITIONS_BY_INTENT,
-	TOOL_INTENTS,
+	effectsOf,
+	layaDescriptions,
+	needsTheWords,
+	preconditionsOf,
 	type ToolIntent,
 } from "./intent-taxonomy";
 import {
@@ -35,7 +40,6 @@ import {
 	writeItems,
 } from "./shopping-list";
 import { bindEnumValues, SPECIALIST_FACT } from "./specialist";
-import { intentFromToolCues, specialistPenalty } from "./tool-cues";
 import { recoveryFromToolError } from "./tool-error-recovery";
 import { buildArguments } from "./tool-source";
 import type {
@@ -70,6 +74,8 @@ export interface WebMcpToolCallPayload {
 export interface CreateWebMcpActionsConfig {
 	tools: WebMcpToolDescriptor[];
 	decisionAgent: DecisionAgent;
+	/** The channel's merged presets: what a tool's intent gives and needs. The shop's when unset. */
+	taxonomy?: Taxonomy;
 	/**
 	 * Writes each tool call's arguments as JSON (`delta-function-call`). Laya
 	 * still picks WHICH tool runs; this only fills in its parameters. Without
@@ -95,15 +101,16 @@ export const TOOL_INTENT_INSTRUCTIONS =
 	"Which online-shop action does this tool most likely perform?";
 
 /**
- * The tool's name decides when it can (`intentFromToolCues`); Laya sorts the
+ * The tool's name decides when it can (the presets' tool cues); Laya sorts the
  * rest. Laya never starts a checkout or empties the cart on its own account:
- * a tool gets those intents only when its name says so.
+ * a tool gets the intents that need the visitor's words only when its name says so.
  */
 export async function classifyToolIntent(
 	decisionAgent: DecisionAgent,
 	tool: WebMcpToolDescriptor,
+	taxonomy: Taxonomy = SHOP_TAXONOMY,
 ): Promise<ToolIntent> {
-	const byName = intentFromToolCues(tool);
+	const byName = intentFromToolNameCues(taxonomy, tool);
 	// An edit tool whose schema says that 0 removes («quantity … 0 removes it»)
 	// is how this site removes: the name («update_cart_item») cannot say it.
 	if ((byName === undefined || byName === "other") && removesAtZero(tool)) {
@@ -116,15 +123,11 @@ export async function classifyToolIntent(
 		{
 			questionKey: "intent",
 			instructions: TOOL_INTENT_INSTRUCTIONS,
-			criteria: LAYA_INTENT_DESCRIPTIONS,
+			criteria: layaDescriptions(taxonomy),
 		},
 	);
-	if (!choice || !(TOOL_INTENTS as readonly string[]).includes(choice)) {
-		return "other";
-	}
-	return choice === "checkout" || choice === "removeFromCart"
-		? "other"
-		: (choice as ToolIntent);
+	if (!choice || !(choice in taxonomy.intents)) return "other";
+	return needsTheWords(taxonomy).has(choice) ? "other" : choice;
 }
 
 // --- reading what the tool answered ------------------------------------
@@ -480,6 +483,7 @@ export async function createWebMcpActions(
 	config: CreateWebMcpActionsConfig,
 ): Promise<GoapAction[]> {
 	const costFor = config.costFor ?? (() => DEFAULT_WEBMCP_TOOL_COST);
+	const taxonomy = config.taxonomy ?? SHOP_TAXONOMY;
 
 	/** Tools classified as searches: their answers are what later calls copy names from. */
 	const searchTools = new Set<string>();
@@ -488,7 +492,11 @@ export async function createWebMcpActions(
 
 	const perTool = await Promise.all(
 		config.tools.map(async (tool): Promise<GoapAction[]> => {
-			const intent = await classifyToolIntent(config.decisionAgent, tool);
+			const intent = await classifyToolIntent(
+				config.decisionAgent,
+				tool,
+				taxonomy,
+			);
 			if (intent === "search") searchTools.add(tool.name);
 			intentOf.set(tool.name, intent);
 			const toolResultKey = `toolResult:${tool.name}`;
@@ -510,10 +518,14 @@ export async function createWebMcpActions(
 			const action: GoapAction = {
 				name: tool.name,
 				// A specialist (add_recipe_to_cart) costs more than the plain tool of its intent (add_to_cart).
-				cost: costFor(tool) + specialistPenalty(tool.name, intent),
-				preconditions: { ...PRECONDITIONS_BY_INTENT[intent], ...needsChoices },
-				effects: { ...EFFECTS_BY_INTENT[intent], [toolResultKey]: true },
+				cost: costFor(tool) + taxonomy.specialistPenalty(tool.name, intent),
+				preconditions: {
+					...preconditionsOf(intent, taxonomy),
+					...needsChoices,
+				},
+				effects: { ...effectsOf(intent, taxonomy), [toolResultKey]: true },
 				describe: describeTool(tool, intent),
+				description: tool.description,
 				// «Remove everything» through a tool that removes one named thing:
 				// the list is read first (`bindListScope`). A tool that needs no
 				// item (clear_cart) has no such wait.
@@ -532,7 +544,10 @@ export async function createWebMcpActions(
 					if (intent === "removeFromCart" && ctx.state[SCOPE_ALL] === true) {
 						if (ctx.state[LIST_READ] === true) {
 							if (ctx.state[LIST_EMPTY] === true) {
-								return { ...EFFECTS_BY_INTENT[intent], [toolResultKey]: true };
+								return {
+									...effectsOf(intent, taxonomy),
+									[toolResultKey]: true,
+								};
 							}
 							if (readItems(ctx.state, LISTED_ITEMS).length === 0) {
 								return { [toolResultKey]: false };
@@ -558,7 +573,7 @@ export async function createWebMcpActions(
 							return step.failed
 								? { [toolResultKey]: false, ...step.facts }
 								: {
-										...EFFECTS_BY_INTENT[intent],
+										...effectsOf(intent, taxonomy),
 										[toolResultKey]: true,
 										...step.facts,
 									};
@@ -579,7 +594,7 @@ export async function createWebMcpActions(
 						// A search that found nothing did not do its job.
 						if (failed) return { [toolResultKey]: false, ...facts };
 						return {
-							...EFFECTS_BY_INTENT[intent],
+							...effectsOf(intent, taxonomy),
 							[toolResultKey]: true,
 							...(intent === "navigate" ? { pageAlreadyOpen: false } : {}),
 							...facts,
@@ -675,7 +690,7 @@ export async function createWebMcpActions(
 						)
 					) {
 						return {
-							...EFFECTS_BY_INTENT[intent],
+							...effectsOf(intent, taxonomy),
 							[toolResultKey]: true,
 							pageAlreadyOpen: true,
 						};

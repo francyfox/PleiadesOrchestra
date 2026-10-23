@@ -70,6 +70,8 @@ export interface NewChannel {
 	allowedOrigins: string[];
 	/** Left out = the orchestrator's default, English. */
 	catalogLanguage?: string;
+	/** Intent sets, in order; left out = none. */
+	intentSets?: string[];
 	/** Account that owns the channel; left out = staff-owned. */
 	ownerId?: string;
 }

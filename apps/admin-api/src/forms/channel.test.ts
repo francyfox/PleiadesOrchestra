@@ -39,3 +39,16 @@ test("UpdateChannelForm needs only the id; PersonaForm caps instructions", () =>
 		true,
 	);
 });
+
+test("intentSets is a list of set ids, optional on both forms", () => {
+	const body = { slug: "a", name: "N" };
+	expect(
+		Value.Check(CreateChannelForm, { ...body, intentSets: ["shop"] }),
+	).toBe(true);
+	expect(Value.Check(CreateChannelForm, { ...body, intentSets: "shop" })).toBe(
+		false,
+	);
+	expect(Value.Check(UpdateChannelForm, { id: "c", intentSets: [] })).toBe(
+		true,
+	);
+});

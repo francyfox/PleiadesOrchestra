@@ -998,7 +998,13 @@ describe("createApp — the intent is decided by memory first, then Laya, and wh
 		const recorded: LlmCallRecord[] = [];
 		const { channel } = createWebChannel(
 			db,
-			{ slug: "shop", name: "Shop", accessMode: "open", allowedOrigins: [] },
+			{
+				slug: "shop",
+				name: "Shop",
+				accessMode: "open",
+				allowedOrigins: [],
+				intentSets: ["shop"],
+			},
 			1,
 		);
 		const action: GoapAction = {
