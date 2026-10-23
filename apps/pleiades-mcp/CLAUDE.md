@@ -4,9 +4,9 @@ See root `CLAUDE.md` for monorepo commands, workflow, code style and repo-wide l
 
 ## Overview
 
-Stdio MCP server (`@modelcontextprotocol/sdk`) that exposes the orchestrator to Claude Code as two read-only tools: `pleiades_list_sites` and `pleiades_site_task` (experimental; one plain-language question to a connected site's assistant, returns `{ status: "done" | "not_applicable" | "failed", answer, data? }`, falling back to browser tools on the latter two). Not a compose service.
+Stdio MCP server (`@modelcontextprotocol/sdk`) that exposes the orchestrator to Claude Code as three read-only tools: `pleiades_list_sites`, `pleiades_decide` (one choice among 2+ `{key: description}` options through `POST /v1/decisions` / Laya, rounds via `decideInRounds` from `@repo/core`; returns `{status, choice, probability}`) and `pleiades_site_task` (experimental; one plain-language question to a connected site's assistant, returns `{ status: "done" | "not_applicable" | "failed", answer, data? }`, falling back to browser tools on the latter two). Not a compose service.
 
-Files (flat): `index.ts` (wiring over `StdioServerTransport`), `server.ts` (`createPleiadesServer({ sites, harness, userId })`, tool descriptions are exported constants), `harness.ts` (orchestrator client, `ask`), `sites.ts` (`parseSites`, `findSite` by slug/host/URL), `config.ts` (`buildConfig`) + `env.ts` (singleton).
+Files (flat): `index.ts` (wiring over `StdioServerTransport`), `server.ts` (`createPleiadesServer({ sites, harness, userId })`, tool descriptions are exported constants), `harness.ts` (orchestrator client: `ask` never throws, `decide` throws and is a `DecisionAgent`), `sites.ts` (`parseSites`, `findSite` by slug/host/URL), `config.ts` (`buildConfig`) + `env.ts` (singleton).
 
 ## Commands and config
 
@@ -16,3 +16,4 @@ Files (flat): `index.ts` (wiring over `StdioServerTransport`), `server.ts` (`cre
 
 - stdout is the MCP channel — log to stderr only.
 - A site not in `PLEIADES_SITES` yields `not_applicable`, never an error.
+- The skill `.claude/skills/pleiades-site-assistant` makes the client the planner and `pleiades_decide` the only chooser. A `pleiades_say` (beta-text wording) is not built: no direct text endpoint exists in the orchestrator yet.

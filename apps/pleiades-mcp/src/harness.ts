@@ -1,3 +1,5 @@
+import type { DecisionAgent } from "@repo/core";
+
 export type FetchLike = (url: string, init: RequestInit) => Promise<Response>;
 
 export interface AskInput {
@@ -17,7 +19,8 @@ export type AskResult =
 	| { ok: true; answer: string; usage: Usage }
 	| { ok: false; message: string };
 
-export interface Harness {
+/** `decide` throws on any failure (unlike `ask`): `decideInRounds` takes a plain `DecisionAgent`. */
+export interface Harness extends DecisionAgent {
 	ask(input: AskInput): Promise<AskResult>;
 }
 
@@ -41,6 +44,22 @@ export function createHarness(config: HarnessConfig): Harness {
 	const send: FetchLike = config.fetch ?? ((url, init) => fetch(url, init));
 
 	return {
+		async decide(state, questions) {
+			const response = await send(`${config.baseURL}/v1/decisions`, {
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+					authorization: `Bearer ${config.apiKey}`,
+				},
+				body: JSON.stringify({ state, questions }),
+			});
+			if (!response.ok) throw new Error(`harness: HTTP ${response.status}`);
+			return (
+				(await response.json()) as {
+					answers: Awaited<ReturnType<DecisionAgent["decide"]>>;
+				}
+			).answers;
+		},
 		async ask(input) {
 			try {
 				const response = await send(`${config.baseURL}/v1/messages`, {

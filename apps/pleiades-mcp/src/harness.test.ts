@@ -118,3 +118,41 @@ describe("createHarness().ask", () => {
 		expect(result.ok === false && result.message).toContain("ECONNREFUSED");
 	});
 });
+
+describe("createHarness().decide", () => {
+	test("posts the questions to /v1/decisions and returns the answers", async () => {
+		let seen: { url: string; init: RequestInit } | undefined;
+		const harness = harnessWith(async (url, init) => {
+			seen = { url, init };
+			return Response.json({
+				answers: { choice: { type: "choice", choice: "a" } },
+			});
+		});
+		const questions = {
+			choice: {
+				type: "choice" as const,
+				instructions: "q",
+				criteria: { a: "A", b: "B" },
+			},
+		};
+		expect(await harness.decide({}, questions)).toEqual({
+			choice: { type: "choice", choice: "a" },
+		});
+		if (!seen) throw new Error("harness never called fetch");
+		expect(seen.url).toBe("http://orch:3000/v1/decisions");
+		expect((seen.init.headers as Record<string, string>).authorization).toBe(
+			"Bearer secret",
+		);
+		expect(JSON.parse(String(seen.init.body))).toEqual({
+			state: {},
+			questions,
+		});
+	});
+
+	test("an HTTP error throws, so the caller can report a failure", async () => {
+		const harness = harnessWith(
+			async () => new Response("no", { status: 502 }),
+		);
+		await expect(harness.decide({}, {})).rejects.toThrow("harness: HTTP 502");
+	});
+});

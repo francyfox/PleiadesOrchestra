@@ -6,13 +6,17 @@ import { createPleiadesServer } from "./server";
 
 const sites = [{ slug: "shop-a", host: "shop.example.com" }];
 
-function fakeHarness(reply: Awaited<ReturnType<Harness["ask"]>>) {
+function fakeHarness(
+	reply: Awaited<ReturnType<Harness["ask"]>>,
+	decide: Harness["decide"] = async () => ({}),
+) {
 	const calls: Parameters<Harness["ask"]>[0][] = [];
 	const harness: Harness = {
 		async ask(input) {
 			calls.push(input);
 			return reply;
 		},
+		decide,
 	};
 	return { harness, calls };
 }
@@ -39,12 +43,13 @@ async function callJson(
 }
 
 describe("pleiades MCP server", () => {
-	test("exposes the two tools, and their descriptions say when to fall back to the browser", async () => {
+	test("exposes the tools, and their descriptions say when to fall back to the browser", async () => {
 		const client = await connect(
 			fakeHarness({ ok: true, answer: "", usage: {} }).harness,
 		);
 		const { tools } = await client.listTools();
 		expect(tools.map((tool) => tool.name).sort()).toEqual([
+			"pleiades_decide",
 			"pleiades_list_sites",
 			"pleiades_site_task",
 		]);
@@ -115,6 +120,69 @@ describe("pleiades MCP server", () => {
 			task: "anything",
 		});
 		expect(body).toEqual({ status: "failed", answer: "harness: 502" });
+		expect(isError).toBe(true);
+	});
+
+	test("pleiades_decide asks the decision model and returns the winner with its probability", async () => {
+		const asked: unknown[] = [];
+		const client = await connect(
+			fakeHarness(
+				{ ok: true, answer: "", usage: {} },
+				async (state, questions) => {
+					asked.push({ state, questions });
+					return {
+						choice: {
+							type: "choice",
+							choice: "red",
+							probabilities: { red: 0.8, blue: 0.2 },
+						},
+					};
+				},
+			).harness,
+		);
+		const { body, isError } = await callJson(client, "pleiades_decide", {
+			question: "Which jacket fits 'warm and red'?",
+			options: { red: "Red parka", blue: "Blue windbreaker" },
+		});
+		expect(body).toEqual({ status: "done", choice: "red", probability: 0.8 });
+		expect(isError).toBe(false);
+		expect(asked).toEqual([
+			{
+				state: {},
+				questions: {
+					choice: {
+						type: "choice",
+						instructions: "Which jacket fits 'warm and red'?",
+						criteria: { red: "Red parka", blue: "Blue windbreaker" },
+					},
+				},
+			},
+		]);
+	});
+
+	test("pleiades_decide that gets no usable answer or fails is status failed", async () => {
+		const empty = await connect(
+			fakeHarness({ ok: true, answer: "", usage: {} }).harness,
+		);
+		expect(
+			(
+				await callJson(empty, "pleiades_decide", {
+					question: "q",
+					options: { a: "A", b: "B" },
+				})
+			).body.status,
+		).toBe("failed");
+
+		const broken = await connect(
+			fakeHarness({ ok: true, answer: "", usage: {} }, async () => {
+				throw new Error("harness: HTTP 502");
+			}).harness,
+		);
+		const { body, isError } = await callJson(broken, "pleiades_decide", {
+			question: "q",
+			options: { a: "A", b: "B" },
+		});
+		expect(body).toEqual({ status: "failed", answer: "harness: HTTP 502" });
 		expect(isError).toBe(true);
 	});
 });

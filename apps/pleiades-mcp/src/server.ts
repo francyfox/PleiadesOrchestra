@@ -1,4 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { decideInRounds } from "@repo/core";
 import { z } from "zod";
 import type { Harness } from "./harness";
 import { findSite, type Site } from "./sites";
@@ -18,6 +19,16 @@ cart changes, or reading arbitrary pages.
 Input: site (slug, host or URL of a listed site), task (one plain sentence).
 Output JSON: { status: "done" | "not_applicable" | "failed", answer, data? }.
 If status is "not_applicable" or "failed", use the browser tools instead.`;
+
+export const DECIDE_DESCRIPTION = `Pick ONE option out of several with the site assistant's decision model (Laya).
+Use it for every choice between candidates (which product fits, which tool, which
+variant): do not choose yourself. Put what the user wants in "question" and give
+each candidate a short key and a one-line description (name, price, key traits).
+More than 10 options are asked in rounds automatically.
+
+Input: question (the user's need in one sentence), options ({ key: description }, at least 2).
+Output JSON: { status: "done", choice, probability } or { status: "failed", answer }.
+A low probability (under about 0.6) means the options are too alike: ask the user.`;
 
 interface Deps {
 	sites: Site[];
@@ -80,6 +91,58 @@ export function createPleiadesServer({
 				answer: result.answer,
 				data: { usage: result.usage },
 			});
+		},
+	);
+
+	server.registerTool(
+		"pleiades_decide",
+		{
+			description: DECIDE_DESCRIPTION,
+			inputSchema: {
+				question: z
+					.string()
+					.min(1)
+					.describe("What the user wants, one sentence"),
+				options: z
+					.record(z.string(), z.string())
+					.refine((o) => Object.keys(o).length >= 2, "at least 2 options")
+					.describe("Short key to a one-line description"),
+			},
+			annotations: { readOnlyHint: true },
+		},
+		async ({ question, options }) => {
+			try {
+				const result = await decideInRounds(
+					harness,
+					{},
+					{
+						instructions: question,
+						criteria: options,
+					},
+				);
+				if (result.choice === undefined) {
+					return json(
+						{
+							status: "failed",
+							answer: "the decision model gave no usable answer",
+						},
+						true,
+					);
+				}
+				return json({
+					status: "done",
+					choice: result.choice,
+					probability: result.probability,
+				});
+			} catch (error) {
+				return json(
+					{
+						status: "failed",
+						answer: error instanceof Error ? error.message : String(error),
+					},
+					true,
+				);
+			}
 		},
 	);
 
