@@ -33,3 +33,7 @@ Commands: `bun --cwd packages/core test`; evals `bun run eval:intents`, `eval:to
 - **A failed GOAP run must not keep its full WorldState as checkpoint** — only a WAITING run keeps it; every other end keeps just `SESSION_FACTS` (stale `webmcp:*:result = "error"` once infected the next message). Enforced orchestrator-side.
 - **IronClaw won't work with small local models** — ~15k token system prompt + 30s timeout. Use this custom core/adapter setup instead.
 - Laya can't load in `llama-server`; see `apps/gamma-decision/CLAUDE.md`.
+
+## Task decomposition
+
+`goap/task-decomposition.ts`: `decomposeMessage` (delta, `{intent, text, after?}`), `looksLikeSeveralTasks` / `hasOrderWord` (language cues, no product words), `runnableTasks` (words confirm guarded intents, no-op and repeated `select` dropped), `mustAskOrder` (`tasksConflict` of `@repo/intent-presets`). The queue that runs the tasks is in alpha-orchestrator. `bun run eval:decompose`.

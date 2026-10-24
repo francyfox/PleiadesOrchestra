@@ -13,6 +13,8 @@ const REQUEST_STATUSES = [
 	"succeeded",
 	"failed",
 	"abandoned",
+	"interrupted",
+	"cancelled",
 ] as const;
 
 export const RequestStatus = t.UnionEnum(REQUEST_STATUSES);

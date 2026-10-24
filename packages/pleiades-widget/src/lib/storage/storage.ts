@@ -1,11 +1,10 @@
+import { isLang, type Lang } from "@/lib/i18n/i18n.ts";
+
 export interface StoredSession {
 	visitorToken?: string;
 	expiresAt?: number;
 	threadId?: string;
 }
-
-/** WebMCP: the browser exposes the host page's own tools directly (`document.modelContext`) — needs a recent Chrome. MCP: the site's tools are reached through a server-side MCP connection instead, no browser support required. */
-export type ToolMode = "webmcp" | "mcp";
 
 interface StoreOptions {
 	agentUrl: string;
@@ -33,9 +32,9 @@ export function createSessionStore({
 	storage = defaultStorage(),
 }: StoreOptions) {
 	const name = `pleiades-widget:${agentUrl}:${publishableKey}`;
-	// Separate key, deliberately not part of `StoredSession`: a UI preference
-	// must survive the visitor token expiring, not be wiped along with it.
-	const modeKey = `${name}:mode`;
+	// Separate key, deliberately not part of `StoredSession`: the visitor's language
+	// pick must survive the visitor token expiring, not be wiped along with it.
+	const langKey = `${name}:lang`;
 	let memory: StoredSession = {};
 	let usable = storage !== undefined;
 
@@ -87,21 +86,21 @@ export function createSessionStore({
 				}
 			}
 		},
-		loadToolMode(): ToolMode | undefined {
+		loadLang(): Lang | undefined {
 			if (!usable || !storage) return undefined;
 			try {
-				const raw = storage.getItem(modeKey);
-				return raw === "webmcp" || raw === "mcp" ? raw : undefined;
+				const raw = storage.getItem(langKey);
+				return isLang(raw) ? raw : undefined;
 			} catch {
 				return undefined;
 			}
 		},
-		saveToolMode(mode: ToolMode) {
+		saveLang(lang: Lang) {
 			if (!usable || !storage) return;
 			try {
-				storage.setItem(modeKey, mode);
+				storage.setItem(langKey, lang);
 			} catch {
-				// Best-effort — a lost preference just falls back to the default next time.
+				// Best-effort — a lost pick just falls back to the page's language next time.
 			}
 		},
 	};

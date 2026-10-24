@@ -8,6 +8,7 @@ import { upsertIdentifiedVisitor } from "../visitors/visitors.service.ts";
 import {
 	finishPlanRun,
 	joinRequest,
+	markInterruptedRuns,
 	startPlanRun,
 	toEventRow,
 	truncateStrings,
@@ -212,5 +213,47 @@ describe("a request is a chain of runs", () => {
 		start("a");
 		joinRequest(db, "a", "gone");
 		expect(row("a")?.rootRunId).toBe("a");
+	});
+});
+
+describe("markInterruptedRuns", () => {
+	test("marks the run that never wrote its trace, leaves finished ones alone, and does it once", () => {
+		const db = testDb();
+		const visitor = upsertIdentifiedVisitor(db, "ch_cli", "u", undefined, 1);
+		const thread = resolveThreadId(db, "ch_cli", visitor.id, "t", 1);
+		for (const id of ["lost", "done"]) {
+			startPlanRun(db, {
+				id,
+				visitorId: visitor.id,
+				threadId: thread,
+				goal: {},
+				createdAt: 5,
+			});
+		}
+		// Finished within the same millisecond: its trace is what tells it ended.
+		finishPlanRun(db, "done", {
+			succeeded: true,
+			durationMs: 0,
+			events: [
+				{
+					type: "finished",
+					succeeded: true,
+					attempts: 1,
+					durationMs: 0,
+					at: 6,
+				},
+			],
+		});
+
+		expect(markInterruptedRuns(db)).toBe(1);
+		expect(markInterruptedRuns(db)).toBe(0);
+		const flags = Object.fromEntries(
+			db
+				.select()
+				.from(planRuns)
+				.all()
+				.map((run) => [run.id, run.interrupted]),
+		);
+		expect(flags).toEqual({ lost: true, done: false });
 	});
 });

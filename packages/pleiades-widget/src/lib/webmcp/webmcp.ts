@@ -12,8 +12,7 @@ export interface WebMcpCallResult {
 /**
  * Thin abstraction over however the browser ends up exposing WebMCP tool
  * calls — deliberately not hard-coupled to `document.modelContext`'s exact
- * shape, which is still an experimental, in-flux API (see the "webmcp" mode
- * tooltip in `ui/mode-switch.tsx` and apps/docs/content/en/drafts/laya-autonomous-webmcp.md). Lets
+ * shape, which is still an experimental, in-flux API (see apps/docs/content/en/drafts/laya-autonomous-webmcp.md). Lets
  * `chat.ts`'s round-trip loop and its tests depend on a stable, narrow
  * interface instead of the real browser API directly.
  */

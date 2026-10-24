@@ -325,9 +325,10 @@ describe("the flow, told to the user", () => {
 			"купи 1 сыр",
 		);
 		expect(steps).toEqual([
+			// parse and choose-store are independent: one wave, so both start first
 			"running: Разбираю запрос…",
-			"done: Понял: 1 × «cheese»",
 			"running: Выбираю магазин…",
+			"done: Понял: 1 × «cheese»",
 			"done: Выбран магазин: Greenleaf Market",
 			"running: Открываю магазин Greenleaf Market…",
 			"done: Магазин открыт: Greenleaf Market",

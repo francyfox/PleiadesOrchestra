@@ -1,3 +1,4 @@
+import type { Pending } from "@/lib/chat/pending.ts";
 import type { CustomerContext } from "@/lib/config/config.ts";
 import type { WebMcpToolDescriptor } from "@/lib/webmcp/webmcp.ts";
 
@@ -22,6 +23,19 @@ export type StreamEvent =
 			phase: "running" | "done" | "failed";
 			text: string;
 	  }
+	/**
+	 * A message of several tasks: `done` of `total` finished, `current` = the one
+	 * running. `startedAt` is the server's clock — the widget times with its own.
+	 */
+	| {
+			type: "progress";
+			done: number;
+			total: number;
+			current: string;
+			startedAt: number;
+	  }
+	/** Answer to a Cancel: the request ended here and nothing was said or claimed. */
+	| { type: "cancelled" }
 	/** The run is waiting on a browser-side WebMCP tool call — resume via `sendToolResult`. */
 	| {
 			type: "tool_call";
@@ -54,6 +68,8 @@ export interface WidgetApi {
 		visitorToken: string,
 		threadId: string,
 	): Promise<{ items: HistoryItem[] }>;
+	/** What the server still holds for the thread: a call it waits on, a lost run, an expired wait. */
+	pending(visitorToken: string, threadId: string): Promise<Pending>;
 	streamMessage(
 		visitorToken: string,
 		threadId: string,
@@ -74,6 +90,8 @@ export interface WidgetApi {
 		signal?: AbortSignal,
 		/** The page after the tool ran — a tool may have navigated. */
 		page?: string,
+		/** The visitor gave up on the call: `result` is not read, the run ends as cancelled. */
+		cancelled?: boolean,
 	): AsyncGenerator<StreamEvent>;
 	/**
 	 * Registers this thread's current WebMCP tool catalog — called once when
@@ -108,6 +126,8 @@ interface ApiOptions {
 	agentUrl: string;
 	publishableKey: string;
 	fetch?: FetchLike;
+	/** The widget's UI language and whether the visitor picked it; read at every request and sent with every message and tool result. */
+	language?: () => { lang: string; chosen: boolean };
 }
 
 /**
@@ -120,6 +140,7 @@ export function createWidgetApi({
 	agentUrl,
 	publishableKey,
 	fetch: fetchImpl,
+	language,
 }: ApiOptions): WidgetApi {
 	const send: FetchLike = fetchImpl ?? ((url, init) => fetch(url, init));
 
@@ -142,6 +163,14 @@ export function createWidgetApi({
 		if (!response.ok) throw new ApiError(response.status);
 		return response;
 	}
+
+	/** `lang` and whether the visitor chose it: the server writes its steps and reply in it. */
+	const languageFields = () => {
+		const ui = language?.();
+		return ui
+			? { lang: ui.lang, ...(ui.chosen ? { langChosen: true } : {}) }
+			: {};
+	};
 
 	const withToken = (
 		visitorToken: string,
@@ -211,6 +240,14 @@ export function createWidgetApi({
 			return (await response.json()) as { items: HistoryItem[] };
 		},
 
+		async pending(visitorToken, threadId) {
+			const response = await request(
+				`/v1/widget/threads/${encodeURIComponent(threadId)}/pending`,
+				{ method: "GET", headers: withToken(visitorToken) },
+			);
+			return (await response.json()) as Pending;
+		},
+
 		async *streamMessage(
 			visitorToken,
 			threadId,
@@ -228,6 +265,7 @@ export function createWidgetApi({
 					threadId,
 					text,
 					...(page ? { page } : {}),
+					...languageFields(),
 					...(customerContext ? { customerContext } : {}),
 				}),
 				signal,
@@ -244,6 +282,7 @@ export function createWidgetApi({
 			isError,
 			signal,
 			page,
+			cancelled,
 		) {
 			const response = await request("/v1/widget/tool-results", {
 				method: "POST",
@@ -256,7 +295,9 @@ export function createWidgetApi({
 					tool,
 					result,
 					...(page ? { page } : {}),
+					...languageFields(),
 					...(isError ? { isError: true } : {}),
+					...(cancelled ? { cancelled: true } : {}),
 				}),
 				signal,
 			});

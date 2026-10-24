@@ -108,41 +108,25 @@ describe("createSessionStore", () => {
 		expect(store.load(0)).toEqual({ visitorToken: "tok", expiresAt: 1000 });
 	});
 
-	describe("tool mode", () => {
-		test("starts unset", () => {
-			expect(
-				createSessionStore({
-					...scope,
-					storage: memoryStorage(),
-				}).loadToolMode(),
-			).toBeUndefined();
-		});
+	describe("language pick", () => {
+		const key =
+			"pleiades-widget:https://agent.example.com:pk_abcdefghijklmnop:lang";
 
-		test("remembers the chosen mode across instances", () => {
-			const storage = memoryStorage();
-			createSessionStore({ ...scope, storage }).saveToolMode("mcp");
-			expect(createSessionStore({ ...scope, storage }).loadToolMode()).toBe(
-				"mcp",
-			);
-		});
-
-		test("survives the visitor token expiring — a UI preference, not session state", () => {
+		test("starts unset, is remembered across instances and survives the token expiring", () => {
 			const storage = memoryStorage();
 			const store = createSessionStore({ ...scope, storage });
+			expect(store.loadLang()).toBeUndefined();
 			store.save({ visitorToken: "tok", expiresAt: 1000 });
-			store.saveToolMode("mcp");
+			store.saveLang("kk");
 			expect(store.load(2000)).toEqual({});
-			expect(store.loadToolMode()).toBe("mcp");
+			expect(createSessionStore({ ...scope, storage }).loadLang()).toBe("kk");
 		});
 
-		test("garbage in the mode key is ignored, not thrown", () => {
+		test("garbage in the key is ignored", () => {
 			const storage = memoryStorage();
-			storage.setItem(
-				"pleiades-widget:https://agent.example.com:pk_abcdefghijklmnop:mode",
-				"nonsense",
-			);
+			storage.setItem(key, "klingon");
 			expect(
-				createSessionStore({ ...scope, storage }).loadToolMode(),
+				createSessionStore({ ...scope, storage }).loadLang(),
 			).toBeUndefined();
 		});
 	});

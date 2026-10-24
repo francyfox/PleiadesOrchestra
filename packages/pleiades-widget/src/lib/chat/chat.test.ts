@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { ApiError, type StreamEvent, type WidgetApi } from "@/lib/api/api.ts";
-import { type ChatState, createChat, pickToolMode } from "@/lib/chat/chat.ts";
+import { type ChatState, createChat } from "@/lib/chat/chat.ts";
+import type { Pending } from "@/lib/chat/pending.ts";
 import type { CustomerContext } from "@/lib/config/config.ts";
 import { createSessionStore } from "@/lib/storage/storage.ts";
 import type {
@@ -43,7 +44,10 @@ interface Script {
 		result: unknown,
 		isError: boolean,
 		signal?: AbortSignal,
+		cancelled?: boolean,
 	) => AsyncGenerator<StreamEvent>;
+	/** What the server says it still holds; nothing by default. */
+	pending?: () => Pending;
 	history?: (
 		token: string,
 		threadId: string,
@@ -64,9 +68,9 @@ function harness(
 		idleTimeoutMs?: number;
 		pingIntervalMs?: number;
 		webmcp?: WebMcpProvider;
-		mcpAvailable?: boolean;
 		page?: () => string | undefined;
 		toolChangeDebounceMs?: number;
+		now?: () => number;
 	} = {},
 ) {
 	const log: string[] = [];
@@ -90,6 +94,9 @@ function harness(
 			log.push(`history:${threadId}@${token}`);
 			return script.history ? script.history(token, threadId) : { items: [] };
 		},
+		async pending() {
+			return script.pending?.() ?? { state: "none" };
+		},
 		async *streamMessage(token, threadId, text, signal, customerContext, page) {
 			pages.push(page);
 			log.push(`send:${threadId}@${token}:${text}`);
@@ -109,6 +116,7 @@ function harness(
 			isError,
 			signal,
 			page,
+			cancelled,
 		) {
 			pages.push(page);
 			log.push(`tool-result:${threadId}@${token}:${tool}`);
@@ -121,6 +129,7 @@ function harness(
 						result,
 						isError,
 						signal,
+						cancelled,
 					)
 				: (async function* () {
 						yield { type: "done", elapsedMs: 1 } as StreamEvent;
@@ -607,20 +616,6 @@ describe("createChat empty catalog", () => {
 
 		expect(log.some((line) => line.startsWith("webmcp-register"))).toBe(false);
 	});
-
-	test("tools that were announced are cleared when they are gone", async () => {
-		tools.push({ name: "set_pizza_size" });
-		const { chat, log } = harness({}, 1000, { webmcp: page });
-		await chat.init();
-		tools.length = 0;
-		chat.setToolMode("mcp");
-		await new Promise((resolve) => setTimeout(resolve, 0));
-
-		expect(log.filter((line) => line.startsWith("webmcp-register"))).toEqual([
-			"webmcp-register:t1@tok1:set_pizza_size",
-			"webmcp-register:t1@tok1:",
-		]);
-	});
 });
 
 describe("createChat.resetSession", () => {
@@ -688,73 +683,9 @@ describe("createChat.resetSession", () => {
 	});
 });
 
-describe("createChat tool mode", () => {
-	test("defaults to webmcp when nothing was chosen before", () => {
-		const { chat } = harness();
-		expect(chat.state.toolMode).toBe("webmcp");
-	});
-
-	test("setToolMode updates state and persists across a fresh createChat", () => {
-		const { chat, store, api } = harness();
-		chat.setToolMode("mcp");
-		expect(chat.state.toolMode).toBe("mcp");
-
-		const again = createChat({ api, store, now: () => 1000, maxChars: 20 });
-		expect(again.state.toolMode).toBe("mcp");
-	});
-});
-
-describe("createChat available tool modes", () => {
-	const provider: WebMcpProvider = {
-		listTools: async () => [],
-		callTool: async () => ({ result: "", isError: false }),
-	};
-
-	test("reports which modes can be used", () => {
-		expect(harness().chat.state.available).toEqual({
-			webmcp: false,
-			mcp: false,
-		});
-		expect(
-			harness({}, 1000, { webmcp: provider, mcpAvailable: true }).chat.state
-				.available,
-		).toEqual({ webmcp: true, mcp: true });
-	});
-
-	test("starts in the mode that exists: MCP when only MCP does", () => {
-		const { chat } = harness({}, 1000, { mcpAvailable: true });
-		expect(chat.state.toolMode).toBe("mcp");
-		expect(chat.state.noTools).toBe(false);
-	});
-
-	test("a saved preference for a mode that is gone is not kept", () => {
-		const { chat, store, api } = harness();
-		chat.setToolMode("mcp");
-		const again = createChat({
-			api,
-			store,
-			webmcp: provider,
-			now: () => 1000,
-			maxChars: 20,
-		});
-		expect(again.state.toolMode).toBe("webmcp");
-	});
-
-	test("with neither mode the chat says there is nothing to use", () => {
-		const { chat } = harness();
-		expect(chat.state.noTools).toBe(true);
-	});
-
-	test("pickToolMode prefers the saved mode, then WebMCP, then MCP", () => {
-		const both = { webmcp: true, mcp: true };
-		expect(pickToolMode("mcp", both)).toBe("mcp");
-		expect(pickToolMode(undefined, both)).toBe("webmcp");
-		expect(pickToolMode("webmcp", { webmcp: false, mcp: true })).toBe("mcp");
-		expect(pickToolMode("mcp", { webmcp: true, mcp: false })).toBe("webmcp");
-		expect(pickToolMode("mcp", { webmcp: false, mcp: false })).toBe("mcp");
-		expect(pickToolMode(undefined, { webmcp: false, mcp: false })).toBe(
-			"webmcp",
-		);
+describe("createChat without a WebMCP provider", () => {
+	test("says there is nothing to use", () => {
+		expect(harness().chat.state.noTools).toBe(true);
 	});
 });
 
@@ -928,35 +859,15 @@ describe("createChat WebMCP round trip", () => {
 		expect(log.some((entry) => entry.startsWith("tool-result"))).toBe(false);
 	});
 
-	test("the tool catalog is registered once when the panel opens, and again on setToolMode — never per message", async () => {
+	test("the tool catalog is registered once when the panel opens — never per message", async () => {
 		const webmcp: WebMcpProvider = {
 			listTools: async () => [searchTool],
 			callTool: async () => ({ result: {} }),
 		};
 		const { chat, log, registeredTools } = harness({}, 1000, { webmcp });
-		// `setToolMode` fires its registration call without awaiting it (a UI
-		// toggle shouldn't block on the network) — flush pending microtasks
-		// before asserting on it.
-		const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
-
-		// Before any session exists: nothing to register yet, `open()` reads
-		// the now-updated mode on its own once it runs.
-		chat.setToolMode("mcp");
-		await flush();
-		expect(registeredTools).toEqual([]);
-
-		// First send() triggers init()/open(): toolMode is "mcp", so the
-		// catalog is empty and nothing was announced on this thread yet —
-		// no call at all; this send's own message goes out on its own.
 		await chat.send("hi");
-		expect(registeredTools).toEqual([]);
-
-		// Switching mode while already open registers again, directly.
-		chat.setToolMode("webmcp");
-		await flush();
 		expect(registeredTools).toEqual([[searchTool]]);
 
-		// A second message doesn't register again.
 		await chat.send("hi again");
 		expect(registeredTools).toEqual([[searchTool]]);
 		expect(
@@ -1211,5 +1122,234 @@ describe("createChat send() result", () => {
 			status: "error",
 			error: "not connected",
 		});
+	});
+});
+
+describe("message times", () => {
+	test("history keeps the server's time, new messages get the client's", async () => {
+		const { chat, store } = harness(
+			{
+				history: async () => ({
+					items: [{ id: "1", role: "user", content: "hi", createdAt: 42 }],
+				}),
+			},
+			5000,
+		);
+		store.save({ visitorToken: "old", expiresAt: 9999, threadId: "tOld" });
+		await chat.send("again");
+		expect(chat.state.messages.map((m) => m.createdAt)).toEqual([
+			42, 5000, 5000,
+		]);
+	});
+});
+
+describe("progress of several tasks", () => {
+	const progress = (done: number, serverStart = 777) =>
+		({
+			type: "progress",
+			done,
+			total: 2,
+			current: `task ${done}`,
+			startedAt: serverStart,
+		}) as StreamEvent;
+
+	test("keeps the client's own start across lines, freezes the end, and a single-task turn has none", async () => {
+		let clock = 10_000;
+		const { chat } = harness(
+			{
+				stream: (_t, _th, text) =>
+					text === "two"
+						? (async function* () {
+								yield progress(0);
+								clock = 13_000;
+								yield progress(1);
+								clock = 17_000;
+								yield progress(2);
+								yield { type: "done", elapsedMs: 1 } as StreamEvent;
+							})()
+						: replies({ type: "delta", text: "ok" }, { type: "done" }),
+			},
+			1000,
+			{ now: () => clock },
+		);
+		await chat.send("two");
+		expect(chat.state.progress).toEqual({
+			done: 2,
+			total: 2,
+			current: "task 2",
+			startedAt: 10_000,
+			endedAt: 17_000,
+		});
+		clock = 20_000;
+		await chat.send("one");
+		expect(chat.state.progress).toBeUndefined();
+	});
+
+	test("a stream that ends before the last task still freezes the time", async () => {
+		const { chat } = harness({
+			stream: () =>
+				replies(progress(0), { type: "error", message: "boom" } as StreamEvent),
+		});
+		await chat.send("two");
+		expect(chat.state.progress).toMatchObject({ done: 0, endedAt: 1000 });
+	});
+});
+
+describe("unfinished work the server holds (pending)", () => {
+	const waiting = (tool: string): Pending => ({
+		state: "waiting",
+		callId: "call-9",
+		tool,
+		arguments: { q: "milk" },
+		tasksLeft: 1,
+	});
+	const finishing = async function* () {
+		yield { type: "delta", text: "continued" } as StreamEvent;
+		yield { type: "done", elapsedMs: 1 } as StreamEvent;
+	};
+	/** Lets the background `checkPending` and its stream settle. */
+	const settle = async (done: () => boolean) => {
+		for (let i = 0; i < 200 && !done(); i++) await Bun.sleep(1);
+	};
+	function provider(names: string[]) {
+		const called: string[] = [];
+		const webmcp: WebMcpProvider = {
+			listTools: async () => names.map((name) => ({ name })),
+			async callTool(name) {
+				called.push(name);
+				return { result: "ok" };
+			},
+		};
+		return { webmcp, called };
+	}
+
+	test("after a reload, a read tool the page has is run and the stream goes on", async () => {
+		const { webmcp, called } = provider(["get_cart"]);
+		const { chat, log } = harness(
+			{ pending: () => waiting("get_cart"), toolResult: finishing },
+			1000,
+			{ webmcp },
+		);
+		await chat.init();
+		await settle(() => chat.state.messages.length > 0 && !chat.state.busy);
+
+		expect(called).toEqual(["get_cart"]);
+		expect(log).toContain("tool-result:t1@tok1:get_cart");
+		expect(chat.state.messages.at(-1)).toMatchObject({
+			role: "assistant",
+			content: "continued",
+		});
+		expect(chat.state.notice).toBeUndefined();
+	});
+
+	test("a write tool is never run by itself: Continue runs it", async () => {
+		const { webmcp, called } = provider(["add_to_cart"]);
+		const results: boolean[] = [];
+		const { chat } = harness(
+			{
+				pending: () => waiting("add_to_cart"),
+				toolResult: (_t, _th, _c, _tool, _r, isError) => {
+					results.push(isError);
+					return finishing();
+				},
+			},
+			1000,
+			{ webmcp },
+		);
+		await chat.init();
+		await settle(() => chat.state.notice !== undefined);
+		expect(chat.state.notice).toEqual({ kind: "resume", tasksLeft: 1 });
+		expect(called).toEqual([]);
+
+		await chat.continuePending();
+
+		expect(called).toEqual(["add_to_cart"]);
+		expect(results).toEqual([false]);
+		expect(chat.state.notice).toBeUndefined();
+	});
+
+	test("Cancel does not run the tool and is not an error: the server is told it was cancelled, the chat shows a neutral notice", async () => {
+		const { webmcp, called } = provider(["add_to_cart"]);
+		const seen: { isError: boolean; cancelled?: boolean }[] = [];
+		const { chat } = harness(
+			{
+				pending: () => waiting("add_to_cart"),
+				toolResult: async function* (
+					_t,
+					_th,
+					_c,
+					_tool,
+					_r,
+					isError,
+					_s,
+					cancelled,
+				) {
+					seen.push({ isError, cancelled });
+					yield { type: "cancelled" } as StreamEvent;
+				},
+			},
+			1000,
+			{ webmcp },
+		);
+		await chat.init();
+		await settle(() => chat.state.notice !== undefined);
+
+		await chat.cancelPending();
+
+		expect(called).toEqual([]);
+		expect(seen).toEqual([{ isError: false, cancelled: true }]);
+		expect(chat.state.notice).toEqual({ kind: "cancelled" });
+		expect(chat.state.error).toBeUndefined();
+		// No empty reply bubble is left behind.
+		expect(chat.state.messages).toEqual([]);
+	});
+
+	test("a lost request shows a retry notice; Retry sends its prompt as a new message", async () => {
+		const { chat, log } = harness({
+			pending: () => ({
+				state: "interrupted",
+				runId: "r1",
+				prompt: "buy milk",
+				tasksLeft: 2,
+			}),
+		});
+		await chat.init();
+		await settle(() => chat.state.notice !== undefined);
+		expect(chat.state.notice).toEqual({
+			kind: "retry",
+			prompt: "buy milk",
+			tasksLeft: 2,
+		});
+
+		await chat.retryPending();
+
+		expect(log).toContain("send:t1@tok1:buy milk");
+		expect(chat.state.notice).toBeUndefined();
+	});
+
+	test("a connection lost mid-stream: once back, the held read tool is resumed", async () => {
+		const { webmcp, called } = provider(["search_products"]);
+		let held = false;
+		const { chat } = harness(
+			{
+				stream: async function* () {
+					held = true;
+					yield { type: "delta", text: "hm" } as StreamEvent;
+					throw new ApiError(0);
+				},
+				pending: () => (held ? waiting("search_products") : { state: "none" }),
+				toolResult: finishing,
+			},
+			1000,
+			{ webmcp },
+		);
+
+		await chat.send("find milk");
+		expect(chat.state.error).toBe("network");
+		await settle(() => called.length > 0 && !chat.state.busy);
+
+		expect(called).toEqual(["search_products"]);
+		expect(chat.state.connection).toBe("online");
+		expect(chat.state.messages.at(-1)?.content).toBe("continued");
 	});
 });

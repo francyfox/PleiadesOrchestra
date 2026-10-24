@@ -14,8 +14,11 @@ import { REPLY_ACTION, REPLY_GOAL } from "../goap/goap.service.ts";
 import { finishPlanRun } from "../plan-runs/plan-runs.service.ts";
 import type { RunBinding } from "../run-binding/run-binding.ts";
 import { encodeNdjsonLine } from "../streaming/streaming.service.ts";
+import { hasQueuedTasks, progressOf } from "../tasks/tasks.service.ts";
 import {
+	AWAITED_ARGS_FACT,
 	AWAITED_TOOL_FACT,
+	awaitedArgs,
 	awaitedTool,
 	errorMessage,
 	outcomeEvent,
@@ -52,6 +55,18 @@ export interface RunStreamInput {
 	 * happens *inside* the stream, after the response has already started.
 	 */
 	prepare: () => Promise<PreparedRun>;
+	/**
+	 * A run with tasks queued behind it (`hasQueuedTasks`) ends without a
+	 * terminal line when it finishes (or fails) and `next` makes the run of the
+	 * following task, streamed on in the same response. A run that waits on a
+	 * browser tool ends the stream as always; the resume continues the chain.
+	 */
+	next?: (finished: {
+		run: RunContext;
+		prepared: PreparedRun;
+		finalState: WorldState;
+		succeeded: boolean;
+	}) => Promise<Pick<RunStreamInput, "run" | "prepare">>;
 }
 
 /** What is known about a run once it ends, however it ends. */
@@ -61,8 +76,12 @@ interface RunOutcome {
 	waiting: boolean;
 	/** The tool the run waits on (set with `waiting`). */
 	awaitedTool?: string;
+	/** JSON arguments of that call. */
+	awaitedArgs?: string;
 	finalState: WorldState;
 	prepared: PreparedRun | undefined;
+	/** The queue goes on: no terminal line was sent. */
+	continues: boolean;
 	/** The flow lines sent to the visitor, one per step id in its last phase (kept so a reload shows them). */
 	steps: Map<string, StoredStep>;
 }
@@ -86,33 +105,70 @@ export function streamPlanRun(
 		async start(controller) {
 			const send = (event: StreamEvent) =>
 				controller.enqueue(encodeNdjsonLine(event));
-			const startedAt = deps.now();
-			const trace: PlanTraceEvent[] = [];
-			deps.activeRuns?.start(input.run.planRunId, startedAt);
-			const outcome: RunOutcome = {
-				succeeded: false,
-				waiting: false,
-				finalState: {},
-				prepared: undefined,
-				steps: new Map(),
-			};
-
+			let current: Pick<RunStreamInput, "run" | "prepare"> = input;
 			try {
-				await executeRun(deps, input, outcome, trace, send, startedAt);
-			} catch (error) {
-				send({ type: "error", message: errorMessage(error) });
+				for (;;) {
+					const outcome = await streamOneRun(deps, input, current, send);
+					if (!outcome.continues || !input.next || !outcome.prepared) break;
+					try {
+						current = await input.next({
+							run: current.run,
+							prepared: outcome.prepared,
+							finalState: outcome.finalState,
+							succeeded: outcome.succeeded,
+						});
+					} catch (error) {
+						send({ type: "error", message: errorMessage(error) });
+						break;
+					}
+				}
 			} finally {
-				// The terminal line is already sent, so the client has its answer; the
-				// work below only delays the end of the stream, which keeps
-				// "response finished ⇒ persisted".
-				deps.runs.unbind(input.run.threadId);
-				await persistRun(deps, input.run, outcome, trace, startedAt);
-				// After the trace is stored: a reader always finds the run in one of the two.
-				deps.activeRuns?.finish(input.run.planRunId);
 				controller.close();
 			}
 		},
 	});
+}
+
+/** One run of the stream: executes it, then saves its trace and checkpoint. */
+async function streamOneRun(
+	deps: RunStreamDeps,
+	input: RunStreamInput,
+	current: Pick<RunStreamInput, "run" | "prepare">,
+	send: (event: StreamEvent) => void,
+): Promise<RunOutcome> {
+	const startedAt = deps.now();
+	const trace: PlanTraceEvent[] = [];
+	deps.activeRuns?.start(current.run.planRunId, startedAt);
+	const outcome: RunOutcome = {
+		succeeded: false,
+		waiting: false,
+		continues: false,
+		finalState: {},
+		prepared: undefined,
+		steps: new Map(),
+	};
+	try {
+		await executeRun(
+			deps,
+			{ ...input, ...current },
+			outcome,
+			trace,
+			send,
+			startedAt,
+		);
+	} catch (error) {
+		outcome.continues = false;
+		send({ type: "error", message: errorMessage(error) });
+	} finally {
+		// The terminal line is already sent, so the client has its answer; the
+		// work below only delays the end of the stream, which keeps
+		// "response finished ⇒ persisted".
+		deps.runs.unbind(current.run.threadId);
+		await persistRun(deps, current.run, outcome, trace, startedAt);
+		// After the trace is stored: a reader always finds the run in one of the two.
+		deps.activeRuns?.finish(current.run.planRunId);
+	}
+	return outcome;
 }
 
 async function executeRun(
@@ -126,6 +182,8 @@ async function executeRun(
 	const prepared = await input.prepare();
 	outcome.prepared = prepared;
 	outcome.finalState = prepared.state;
+	const started = progressOf(prepared.state, false);
+	if (started) send(started);
 
 	const runOptions = {
 		signal: input.signal,
@@ -168,7 +226,12 @@ async function executeRun(
 				actions: prepared.actions,
 				...runOptions,
 			});
-			if (result.succeeded || result.waiting || result.killed) {
+			if (
+				result.succeeded ||
+				result.waiting ||
+				result.killed ||
+				hasQueuedTasks(prepared.state)
+			) {
 				return { result, explained: undefined };
 			}
 			// The task could not be done. Rather than a bare error line, the text
@@ -193,7 +256,23 @@ async function executeRun(
 	outcome.awaitedTool = result.waiting
 		? awaitedTool(result.waiting)
 		: undefined;
+	outcome.awaitedArgs = result.waiting
+		? awaitedArgs(result.waiting)
+		: undefined;
 	outcome.finalState = explained?.finalState ?? result.finalState;
+	// More tasks follow: no terminal line yet (a failed task is told in the final reply).
+	if (
+		hasQueuedTasks(prepared.state) &&
+		!outcome.waiting &&
+		!result.killed &&
+		!input.signal?.aborted
+	) {
+		outcome.continues = true;
+		return;
+	}
+	// The queue's last task ended: 2 of 2 before the final line (a tool wait is not the end).
+	const ended = outcome.waiting ? undefined : progressOf(prepared.state, true);
+	if (ended) send(ended);
 	// The run still counts as failed (the task wasn't done); the visitor got an answer.
 	send(
 		explained
@@ -247,11 +326,23 @@ async function persistRun(
 async function saveCheckpoint(
 	store: WorldStateStore,
 	threadId: string,
-	{ waiting, finalState, prepared, awaitedTool: tool }: RunOutcome,
+	{
+		waiting,
+		finalState,
+		prepared,
+		awaitedTool: tool,
+		awaitedArgs: args,
+	}: RunOutcome,
 ): Promise<void> {
 	if (waiting && prepared) {
 		await store.save(threadId, {
-			state: tool ? { ...finalState, [AWAITED_TOOL_FACT]: tool } : finalState,
+			state: tool
+				? {
+						...finalState,
+						[AWAITED_TOOL_FACT]: tool,
+						[AWAITED_ARGS_FACT]: args,
+					}
+				: finalState,
 			goal: prepared.goal,
 		});
 		return;

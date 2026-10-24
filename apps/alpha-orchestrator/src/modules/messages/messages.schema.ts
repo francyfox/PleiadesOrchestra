@@ -16,4 +16,5 @@ export const NDJSON_LINES = `Streams application/x-ndjson (gzip if accepted), on
 then exactly one terminal line:
 {"type":"done","elapsedMs":123,"inputTokens":1,"outputTokens":2,"totalInputTokens":1,"totalOutputTokens":2} (token fields optional),
 {"type":"tool_call","tool":"...","arguments":{},"callId":"..."} the browser must run the tool and POST /v1/widget/tool-results (widget only),
+{"type":"cancelled"} the visitor gave up on a pending tool call (answer to a tool-results POST with cancelled: true; nothing was said),
 {"type":"error","message":"...","code":"task_failed","hint":"..."} (code and hint optional).`;

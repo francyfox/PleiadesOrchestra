@@ -12,6 +12,8 @@
 		succeeded: "outline",
 		failed: "destructive",
 		abandoned: "destructive",
+		interrupted: "destructive",
+		cancelled: "secondary",
 	} as const;
 </script>
 

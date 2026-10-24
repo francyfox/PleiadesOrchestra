@@ -151,6 +151,44 @@
 		color: var(--accent-fg);
 	}
 
+	.tools {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	/* The icon with the native select laid transparently over it: the click opens the platform's listbox. */
+	.lang {
+		position: relative;
+		display: inline-grid;
+		place-items: center;
+		/* The size of the × next to it. */
+		width: var(--font-size-icon);
+		height: var(--font-size-icon);
+		border-radius: calc(var(--radius) * 1.67);
+		cursor: pointer;
+
+		svg {
+			width: 80%;
+			height: 80%;
+			pointer-events: none;
+		}
+
+		select {
+			position: absolute;
+			inset: 0;
+			width: 100%;
+			height: 100%;
+			opacity: 0;
+			cursor: pointer;
+		}
+
+		&:focus-within {
+			outline: 2px solid currentColor;
+			outline-offset: 2px;
+		}
+	}
+
 	.close {
 		border: 0;
 		background: none;
@@ -275,6 +313,87 @@
 		display: inline-flex;
 	}
 
+	/* Time under a bubble's text; the title holds the exact local time. */
+	.stamp {
+		align-self: flex-end;
+		margin-top: 2px;
+		font-size: var(--font-size-2xs);
+		line-height: 1.2;
+		opacity: 0.7;
+	}
+
+	/* Unfinished work after a reload: the question and its buttons, above the composer. */
+	.notice {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		padding: 6px 16px;
+		border-top: 1px solid var(--border);
+		font-size: var(--font-size-sm);
+	}
+
+	.notice-actions {
+		display: flex;
+		gap: 8px;
+
+		button {
+			padding: 4px 10px;
+			border: 1px solid var(--border);
+			border-radius: var(--radius);
+			background: var(--bg);
+			color: inherit;
+			font: inherit;
+			cursor: pointer;
+		}
+	}
+
+	/* Progress of a message of several tasks, above the composer. */
+	.progress {
+		padding: 6px 16px;
+		border-top: 1px solid var(--border);
+		font-size: var(--font-size-sm);
+	}
+
+	.progress-head {
+		display: flex;
+		justify-content: space-between;
+		gap: 8px;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.progress-task {
+		overflow: hidden;
+		color: var(--muted-fg);
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.progress-track {
+		height: 3px;
+		margin-top: 4px;
+		border-radius: 2px;
+		background: var(--muted);
+		overflow: hidden;
+
+		i {
+			display: block;
+			height: 100%;
+			background: var(--accent);
+			transition: width 0.3s;
+		}
+	}
+
+	.sr {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
 	.error {
 		margin: 0;
 		padding: 6px 16px;
@@ -359,91 +478,6 @@
 		}
 	}
 
-	/* Tool integration switch: WebMCP (default) vs MCP. */
-	.mode {
-		/* The tooltip is anchored to this row, not to the "?" — so it always fits inside the panel. */
-		position: relative;
-		display: flex;
-		align-items: center;
-		gap: 14px;
-		padding: 6px 12px;
-		border-top: 1px solid var(--border);
-		font-size: var(--font-size-sm);
-
-		.group {
-			display: flex;
-			align-items: center;
-			gap: 2px;
-		}
-
-		label {
-			display: inline-flex;
-			align-items: center;
-			gap: 4px;
-			cursor: pointer;
-		}
-
-		input {
-			margin: 0;
-			accent-color: var(--accent);
-		}
-
-		label:has(input:disabled) {
-			opacity: 0.45;
-			cursor: not-allowed;
-
-			input {
-				cursor: not-allowed;
-			}
-		}
-	}
-
-	.tooltip {
-		position: absolute;
-		bottom: calc(100% + 6px);
-		right: 12px;
-		left: 12px;
-		z-index: 10;
-		padding: 6px 8px;
-		border-radius: calc(var(--radius) * 1.67);
-		background: var(--fg);
-		color: var(--bg);
-		font-size: var(--font-size-xs);
-		line-height: 1.35;
-		text-align: left;
-		visibility: hidden;
-		opacity: 0;
-		transition: opacity 0.15s;
-	}
-
-	.tooltip a {
-		color: inherit;
-		text-decoration: underline;
-		overflow-wrap: anywhere;
-	}
-
-	.tooltip[data-open="true"] {
-		visibility: visible;
-		opacity: 1;
-	}
-
-	/* The "?" hint next to WebMCP. */
-	.hint {
-		display: inline-grid;
-		flex: none;
-		place-items: center;
-		width: 1.4em;
-		height: 1.4em;
-		padding: 0;
-		border: 1px solid var(--border);
-		border-radius: 50%;
-		background: none;
-		color: var(--muted-fg);
-		font-size: var(--font-size-2xs);
-		line-height: 1;
-		cursor: pointer;
-	}
-
 	footer {
 		display: flex;
 		align-items: center;
@@ -494,5 +528,9 @@
 @media (prefers-reduced-motion: reduce) {
 	.widget .step.running::before {
 		animation: none;
+	}
+
+	.widget .progress-track i {
+		transition: none;
 	}
 }

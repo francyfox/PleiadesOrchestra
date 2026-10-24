@@ -31,6 +31,14 @@ export const messagesTemplate = (scope: string) =>
 						</template>
 					</span>
 					<span x-text="message.content" />
+					<time
+						class="stamp"
+						aria-live="off"
+						x-show="message.time"
+						x-bind:datetime="message.iso"
+						x-bind:title="message.title"
+						x-text="message.time"
+					/>
 					<span class="dots" aria-hidden="true">
 						<i />
 						<i />

@@ -4,7 +4,11 @@ export type RequestStatus =
 	| "waiting"
 	| "succeeded"
 	| "failed"
-	| "abandoned";
+	| "abandoned"
+	/** The server stopped while the run executed (`markInterruptedRuns`). */
+	| "interrupted"
+	/** The visitor gave up on a pending browser call. */
+	| "cancelled";
 
 /** One row of the requests table. */
 export interface RequestSummary {

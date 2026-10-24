@@ -19,6 +19,7 @@ export interface IncomingMessage {
 	 * What to keep in the conversation history as the user's turn, when it
 	 * isn't the chunks — the user's own words with their line breaks, while the
 	 * model was given a normalized or rewritten prompt. Defaults to the chunks.
+	 * `""` = the user's turn was stored already (when the run began): only the reply is stored.
 	 */
 	historyText?: string;
 	/** Replaces the agent's own system prompt for this message (a channel's persona, built by the caller). */

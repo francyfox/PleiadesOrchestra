@@ -668,3 +668,271 @@ describe("runPlan onStep", () => {
 		expect(result.succeeded).toBe(true);
 	});
 });
+
+describe("runPlan waves", () => {
+	function deferred() {
+		let resolve!: () => void;
+		const promise = new Promise<void>((r) => {
+			resolve = r;
+		});
+		return { promise, resolve };
+	}
+	const tick = () => new Promise((r) => setTimeout(r, 0));
+	const waitingOn = { kind: "webmcp_tool_call", payload: {} } as never;
+
+	test("two independent actions both start before either finishes", async () => {
+		const started: string[] = [];
+		const gate = deferred();
+		const make = (name: string) =>
+			action(name, 1, {}, { [name]: true }, async () => {
+				started.push(name);
+				await gate.promise;
+				return { [name]: true };
+			});
+		const events: PlanTraceEvent[] = [];
+		const run = runPlan({
+			state: {},
+			goal: { a: true, b: true },
+			actions: [make("a"), make("b")],
+			ctx: {},
+			tracer: (e) => events.push(e),
+		});
+		await tick();
+		expect(started.sort()).toEqual(["a", "b"]);
+		gate.resolve();
+		const result = await run;
+		expect(result.succeeded).toBe(true);
+		expect(events.filter((e) => e.type.startsWith("action_group")).length).toBe(
+			2,
+		);
+	});
+
+	test("actions sharing an effect key run in separate waves, in plan order", async () => {
+		const order: string[] = [];
+		const make = (name: string) =>
+			action(name, 1, {}, { shared: name, [name]: true }, async () => {
+				order.push(`${name}:start`);
+				await tick();
+				order.push(`${name}:end`);
+				return { shared: name, [name]: true };
+			});
+		const events: PlanTraceEvent[] = [];
+		await runPlan({
+			state: {},
+			goal: { x: true, y: true },
+			actions: [make("x"), make("y")],
+			ctx: {},
+			tracer: (e) => events.push(e),
+		});
+		const planned = events.find((e) => e.type === "planned");
+		const names =
+			planned?.type === "planned" ? planned.plan.map((p) => p.name) : [];
+		expect(names.length).toBe(2);
+		expect(order).toEqual([
+			`${names[0]}:start`,
+			`${names[0]}:end`,
+			`${names[1]}:start`,
+			`${names[1]}:end`,
+		]);
+		expect(events.some((e) => e.type === "action_group_started")).toBe(false);
+	});
+
+	test("an action writing another's precondition key is not co-scheduled", async () => {
+		const order: string[] = [];
+		const writer = action("writer", 1, {}, { flag: true }, async () => {
+			order.push("writer:start");
+			await tick();
+			order.push("writer:end");
+			return { flag: true };
+		});
+		const reader = action(
+			"reader",
+			1,
+			{ flag: true },
+			{ done: true },
+			async () => {
+				order.push("reader:start");
+				return { done: true };
+			},
+		);
+		const other = action("other", 1, {}, { o: true }, async () => {
+			order.push("other:start");
+			return { o: true };
+		});
+		await runPlan({
+			state: { flag: true },
+			goal: { done: true, o: true },
+			actions: [writer, reader, other],
+			ctx: {},
+		});
+		// reader is ready (flag already true) but writer touches its precondition.
+		expect(order.indexOf("reader:start")).toBeGreaterThan(
+			order.indexOf("writer:end"),
+		);
+	});
+
+	test("waiting in a wave keeps the facts of finished neighbours", async () => {
+		const tool = action(
+			"tool",
+			1,
+			{},
+			{ "toolResult:tool": true },
+			async () => ({
+				waiting: waitingOn,
+				facts: { cursor: 1 },
+			}),
+		);
+		const side = action("side", 1, {}, { side: true });
+		const result = await runPlan({
+			state: {},
+			goal: { "toolResult:tool": true, side: true },
+			actions: [tool, side],
+			ctx: {},
+		});
+		expect(result.waiting).toBeDefined();
+		expect(result.finalState.side).toBe(true);
+		expect(result.finalState.cursor).toBe(1);
+		expect(result.executedActions).toEqual(["side"]);
+	});
+
+	test("a throw lets the rest of the wave finish, then rethrows", async () => {
+		let finished = false;
+		const boom = action("boom", 1, {}, { a: true }, async () => {
+			throw new Error("boom");
+		});
+		const slow = action("slow", 1, {}, { b: true }, async () => {
+			await tick();
+			finished = true;
+			return { b: true };
+		});
+		const events: PlanTraceEvent[] = [];
+		await expect(
+			runPlan({
+				state: {},
+				goal: { a: true, b: true },
+				actions: [boom, slow],
+				ctx: {},
+				tracer: (e) => events.push(e),
+			}),
+		).rejects.toThrow("boom");
+		expect(finished).toBe(true);
+		expect(events.some((e) => e.type === "action_failed")).toBe(true);
+	});
+
+	test("effects merge in plan order even when the later action finishes first", async () => {
+		const gate = deferred();
+		const events: PlanTraceEvent[] = [];
+		const make = (name: string) =>
+			action(name, 1, {}, { [name]: true }, async () => {
+				if (name === lastName) gate.resolve();
+				else await gate.promise;
+				return { [name]: true };
+			});
+		let lastName = "";
+		const actions = [make("p"), make("q")];
+		await runPlan({
+			state: {},
+			goal: { p: true, q: true },
+			actions,
+			ctx: {},
+			tracer: (e) => {
+				events.push(e);
+				if (e.type === "planned") lastName = e.plan[1]?.name ?? "";
+			},
+		});
+		const finished = events.flatMap((e) =>
+			e.type === "action_finished" ? [e.action] : [],
+		);
+		const planned = events.find((e) => e.type === "planned");
+		expect(finished).toEqual(
+			planned?.type === "planned" ? planned.plan.map((p) => p.name) : [],
+		);
+	});
+
+	test("at most one waiting-capable action per wave", async () => {
+		const started: string[] = [];
+		const make = (name: string) =>
+			action(name, 1, {}, { [`toolResult:${name}`]: true }, async () => {
+				started.push(name);
+				await tick();
+				return { [`toolResult:${name}`]: true };
+			});
+		const events: PlanTraceEvent[] = [];
+		await runPlan({
+			state: {},
+			goal: { "toolResult:t1": true, "toolResult:t2": true },
+			actions: [make("t1"), make("t2")],
+			ctx: {},
+			tracer: (e) => events.push(e),
+		});
+		expect(events.some((e) => e.type === "action_group_started")).toBe(false);
+		expect(started.sort()).toEqual(["t1", "t2"]);
+	});
+
+	test("a reply with no preconditions runs alone, after the tools", async () => {
+		const order: string[] = [];
+		const tool = action("search", 1, {}, { found: true }, async () => {
+			order.push("search:start");
+			await tick();
+			order.push("search:end");
+			return { found: true };
+		});
+		const reply = action(
+			"generateReply",
+			5,
+			{},
+			{ replied: true },
+			async () => {
+				order.push("reply");
+				return { replied: true };
+			},
+		);
+		await runPlan({
+			state: {},
+			goal: { found: true, replied: true },
+			actions: [tool, reply],
+			ctx: {},
+		});
+		expect(order).toEqual(["search:start", "search:end", "reply"]);
+	});
+
+	test("a search and its parameter choice share a wave", async () => {
+		const started: string[] = [];
+		const gate = deferred();
+		const search = action(
+			"search_products",
+			1,
+			{},
+			{ "toolResult:search_products": true },
+			async () => {
+				started.push("search_products");
+				await gate.promise;
+				return { "toolResult:search_products": true };
+			},
+		);
+		const choose = action(
+			"choose:search_products.department",
+			1,
+			{},
+			{ "param:search_products.department": true },
+			async () => {
+				started.push("choose");
+				await gate.promise;
+				return { "param:search_products.department": true };
+			},
+		);
+		const run = runPlan({
+			state: {},
+			goal: {
+				"toolResult:search_products": true,
+				"param:search_products.department": true,
+			},
+			actions: [search, choose],
+			ctx: {},
+		});
+		await tick();
+		expect(started.sort()).toEqual(["choose", "search_products"]);
+		gate.resolve();
+		expect((await run).succeeded).toBe(true);
+	});
+});

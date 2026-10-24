@@ -3,6 +3,7 @@ import type {
 	DecisionAgent,
 	FunctionCallAgent,
 	GoapAction,
+	HistoryStore,
 	RunLock,
 	Taxonomy,
 	UsageRecorder,
@@ -43,6 +44,10 @@ export interface ReplyDeps {
 	translate?: (text: string) => string | Promise<string>;
 	/** `delta-function-call`: fills in WebMCP tool arguments as JSON; unset = built from facts. */
 	functionCallAgent?: FunctionCallAgent;
+	/** The channel persona's fixed answer language (ISO code); "" or unset = the visitor's. */
+	personaLang?: (channelId: string) => string | undefined;
+	/** Where the visitor's message is stored when the run starts (so a reload mid-run still shows it). */
+	history?: HistoryStore;
 	/** The static GOAP catalog (`buildActions`). */
 	actions: GoapAction[];
 	/** Shared with the history store / usage recorder so their writes get linked to the running plan. */

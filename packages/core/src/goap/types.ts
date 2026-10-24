@@ -116,7 +116,16 @@ export type PlanTraceEvent =
 			unmetPreconditions: Partial<WorldState>;
 			at: number;
 	  }
+	/** The visitor gave up on the call the run waited on; written by the orchestrator, not by `runPlan`. */
+	| { type: "cancelled"; at: number }
 	| { type: "action_started"; attempt: number; action: string; at: number }
+	/** Only for a wave of 2+ actions run together. */
+	| {
+			type: "action_group_started" | "action_group_finished";
+			attempt: number;
+			actions: string[];
+			at: number;
+	  }
 	/** An action can't complete on the server — see `WaitingOn` — so the run stops here; the caller persists state and resumes later. */
 	| {
 			type: "waiting";

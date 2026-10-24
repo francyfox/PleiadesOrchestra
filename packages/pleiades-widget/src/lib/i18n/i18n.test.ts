@@ -15,6 +15,14 @@ describe("pickLang", () => {
 	});
 });
 
+describe("pickLang priority", () => {
+	test("takes the first candidate the widget supports, in order", () => {
+		expect(pickLang("kk", "ru", "en")).toBe("kk");
+		expect(pickLang(undefined, "", "de-DE", "ru-RU")).toBe("ru");
+		expect(pickLang("de", "fr")).toBe("en");
+	});
+});
+
 describe("strings", () => {
 	test("every language has every key (no half-translated widget)", () => {
 		const keys = Object.keys(strings.en).sort();

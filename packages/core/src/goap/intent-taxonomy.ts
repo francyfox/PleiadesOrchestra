@@ -56,6 +56,14 @@ export const layaDescriptions = (
 			.map(([id, def]) => [id, def.description]),
 	);
 
+/** What delta may split a message into: every intent, `toolRole` ones too («show me the cart» is a read). */
+export const decompositionDescriptions = (
+	taxonomy: Taxonomy = DEFAULT,
+): Record<string, string> =>
+	Object.fromEntries(
+		Object.entries(taxonomy.intents).map(([id, def]) => [id, def.description]),
+	);
+
 // The shop's views, for the callers that run without a channel taxonomy (evals, tests, the default).
 export const TOOL_INTENTS: readonly ToolIntent[] = intentIds();
 export const INTENT_DESCRIPTIONS: Record<string, string> = Object.fromEntries(

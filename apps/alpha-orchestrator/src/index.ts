@@ -13,6 +13,7 @@ import { decisionAgent } from "./modules/decisions/decisions.instance.ts";
 import { withEnglishOnly } from "./modules/english-only/english-only.ts";
 import { functionCallAgent } from "./modules/function-calls/function-calls.instance.ts";
 import { historyStore } from "./modules/history/history.instance.ts";
+import { markInterruptedRuns } from "./modules/plan-runs/plan-runs.service.ts";
 import { priceBook } from "./modules/prices/prices.instance.ts";
 import { assertRetentionCoversHistory } from "./modules/retention/retention.service.ts";
 import { startRetentionJobs } from "./modules/retention/retention.ts";
@@ -158,6 +159,8 @@ const stopRetentionJobs = startRetentionJobs(db, {
 	worldStateRetentionHours: config.WORLD_STATE_RETENTION_HOURS,
 	onError: reportError,
 });
+
+markInterruptedRuns(db);
 
 const stopWaitingRunsJob = startWaitingRunsJob(
 	db,

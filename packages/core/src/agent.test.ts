@@ -289,6 +289,27 @@ describe("createAgent", () => {
 		);
 	});
 
+	test("an empty historyText means the user's turn is stored already: not stored twice, not sent twice", async () => {
+		const { agent, llm, historyStore } = setup();
+		await historyStore.append({ threadId: "t1", userId: "u1" }, [
+			{ role: "user", content: "one two" },
+		]);
+
+		await collect(
+			agent.handleMessageStream(
+				message({ chunks: ["wrapped: one two"], historyText: "" }),
+			),
+		);
+
+		expect(await historyStore.get("t1", 10)).toEqual([
+			{ role: "user", content: "one two" },
+			{ role: "assistant", content: "Hi" },
+		]);
+		const sent = JSON.stringify(llm.requests.at(-1)?.messages);
+		expect(sent).toContain("wrapped: one two");
+		expect(sent.match(/one two/g)).toHaveLength(1);
+	});
+
 	test("with a history window of 0 the model sees only the current message, yet the exchange is still stored", async () => {
 		const { agent, llm, historyStore } = setup({}, { maxHistoryMessages: 0 });
 

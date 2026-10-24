@@ -8,6 +8,7 @@ import { admin, json, setupAdminApp } from "../http/http.testing.ts";
 import {
 	finishPlanRun,
 	joinRequest,
+	markInterruptedRuns,
 	startPlanRun,
 } from "../plan-runs/plan-runs.service.ts";
 import { resolveThreadId } from "../threads/threads.service.ts";
@@ -200,6 +201,21 @@ describe("listRequests", () => {
 		});
 		// Nobody answered the browser for over 5 minutes: it is not coming back.
 		expect(byId(T0 + 10 * 60_000).waits).toBe("abandoned");
+	});
+
+	test("a run the server stopped in the middle of is interrupted, not failed or running", () => {
+		const s = setup();
+		s.run("lost", T0, { prompt: "a" });
+		s.run("done", T0 + 10, { prompt: "b" });
+		s.finish("done", true, 5, [ended(T0 + 15, true)]);
+		markInterruptedRuns(s.db);
+		const statuses = listRequests(s.db, s.active, {}, T0 + 100).items.map(
+			(item) => [item.id, item.status],
+		);
+		expect(statuses).toEqual([
+			["done", "succeeded"],
+			["lost", "interrupted"],
+		]);
 	});
 
 	test("filters by status and intent, and counts and pages only what matches", () => {

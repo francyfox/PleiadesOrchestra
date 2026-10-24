@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { testDb } from "../database/database.testing.ts";
-import { BROWSER_WAIT_TIMEOUT_MS } from "../run-stream/run-stream.service.ts";
+import {
+	BROWSER_WAIT_TIMEOUT_MS,
+	EXPIRED_FACT,
+} from "../run-stream/run-stream.service.ts";
 import { resolveThreadId } from "../threads/threads.service.ts";
 import { upsertIdentifiedVisitor } from "../visitors/visitors.service.ts";
 import { SqliteWorldStateStore } from "../world-state/world-state.ts";
@@ -29,7 +32,12 @@ const WAITING = {
 	store: "shop",
 	lastProduct: "iPhone 5s",
 	userMessage: "бери",
+	userMessageRaw: "бери и ещё сыр",
+	taskQueue: JSON.stringify([{ intent: "search", text: "cheese" }]),
 };
+
+const marker = (state?: Record<string, unknown>) =>
+	JSON.parse(String(state?.[EXPIRED_FACT]));
 
 describe("expireStaleWaits", () => {
 	test("a run that waited for the browser past the limit drops its checkpoint, keeping only the conversation's facts", async () => {
@@ -41,22 +49,34 @@ describe("expireStaleWaits", () => {
 		const expired = expireStaleWaits(db, 1_000 + BROWSER_WAIT_TIMEOUT_MS + 1);
 
 		expect(expired).toBe(1);
+		const kept = await store.load(t);
+		expect(kept?.state).toMatchObject({
+			store: "shop",
+			lastProduct: "iPhone 5s",
+		});
+		expect(kept?.state.awaitedTool).toBeUndefined();
+		expect(marker(kept?.state)).toEqual({
+			prompt: "бери и ещё сыр",
+			tasksLeft: 1,
+		});
+		expect(kept?.goal).toEqual({});
+	});
+
+	test("a marker nobody read goes after a day, the conversation's facts stay", async () => {
+		const { db, thread, store, at } = setup();
+		const t = thread("a");
+		at(1_000);
+		await store.save(t, { state: WAITING, goal: {} });
+		const expiredAt = 1_000 + BROWSER_WAIT_TIMEOUT_MS + 1;
+		expireStaleWaits(db, expiredAt);
+		expect((await store.load(t))?.state[EXPIRED_FACT]).toBeDefined();
+
+		expireStaleWaits(db, expiredAt + 24 * 60 * 60 * 1000 + 1);
+
 		expect(await store.load(t)).toEqual({
 			state: { store: "shop", lastProduct: "iPhone 5s" },
 			goal: {},
 		});
-	});
-
-	test("nothing left to keep: the row goes", async () => {
-		const { db, thread, store, at } = setup();
-		const t = thread("a");
-		at(1_000);
-		await store.save(t, {
-			state: { planRunId: "run-1", awaitedTool: "add_to_cart" },
-			goal: {},
-		});
-		expireStaleWaits(db, 1_000 + BROWSER_WAIT_TIMEOUT_MS + 1);
-		expect(await store.load(t)).toBeUndefined();
 	});
 
 	test("a wait inside the limit and a checkpoint that waits for nothing are left alone", async () => {

@@ -3,6 +3,7 @@ import type {
 	CollectedTokens,
 	GoapAction,
 	IntentVerdict,
+	Taxonomy,
 	WorldState,
 } from "@repo/core";
 import {
@@ -10,9 +11,13 @@ import {
 	chooseTool,
 	classifyMessageIntentDetailed,
 	collectTokens,
+	decomposeMessage,
+	decompositionDescriptions,
 	goalForIntent,
+	looksLikeSeveralTasks,
 	MAX_TOOL_TEXT_CHARS,
 	matchSpecialist,
+	mustAskOrder,
 	needsTheWords,
 	PAGE_FACT,
 	PAGE_LANG_FACT,
@@ -20,19 +25,44 @@ import {
 	preferSpecialist,
 	recordCall,
 	reuseLastProduct,
+	runnableTasks,
 	scopeFacts,
 } from "@repo/core";
 import { intentFromMessageCues, SHOP_TAXONOMY } from "@repo/intent-presets";
 import {
 	customerFacts,
+	lastToolAnswer,
+	REMOVAL_REPLY_ACTION,
 	REPLY_ACTION,
 	REPLY_GOAL,
+	TEMPLATE_REPLY_ACTION,
 } from "../goap/goap.service.ts";
+import {
+	LANG_CHOSEN_FACT,
+	PERSONA_LANG_FACT,
+	USER_STORED_FACT,
+} from "../goap/goap.types.ts";
 import { learnIntent } from "../intents/intents.service.ts";
-import { joinRequest } from "../plan-runs/plan-runs.service.ts";
-import { AWAITED_TOOL_FACT } from "../run-stream/run-stream.service.ts";
+import {
+	finishPlanRun,
+	joinRequest,
+	startPlanRun,
+} from "../plan-runs/plan-runs.service.ts";
+import {
+	AWAITED_ARGS_FACT,
+	AWAITED_TOOL_FACT,
+} from "../run-stream/run-stream.service.ts";
 import { sessionFacts } from "../run-stream/run-stream.ts";
 import type { PreparedRun } from "../run-stream/run-stream.types.ts";
+import {
+	chainFacts,
+	outcomeOf,
+	type QueuedTask,
+	readOutcomes,
+	readQueue,
+	TASKS_STARTED_FACT,
+	turnFacts,
+} from "../tasks/tasks.service.ts";
 import { normalizeText } from "../text/text.service.ts";
 import { translateAroundLatin } from "../translate/translate.service.ts";
 import type { VisitorRow } from "../visitors/visitors.types.ts";
@@ -61,12 +91,17 @@ export async function resolveDynamicActions(
  * uses them to skip steps that would only take the visitor where they already
  * are. Empty when the client sent no page.
  */
-export function pageFacts(page: string | undefined): WorldState {
+export function pageFacts(
+	page: string | undefined,
+	/** The widget's own UI language (and whether the visitor picked it): it wins over the URL's. */
+	ui?: { lang?: string; langChosen?: boolean },
+): WorldState {
 	const parsed = page ? parsePage(page) : undefined;
-	if (!page || !parsed) return {};
+	const lang = ui?.lang ?? parsed?.lang;
 	return {
-		[PAGE_FACT]: page,
-		...(parsed.lang ? { [PAGE_LANG_FACT]: parsed.lang } : {}),
+		...(page && parsed ? { [PAGE_FACT]: page } : {}),
+		...(lang ? { [PAGE_LANG_FACT]: lang } : {}),
+		...(ui?.lang && ui.langChosen ? { [LANG_CHOSEN_FACT]: true } : {}),
 	};
 }
 
@@ -85,6 +120,15 @@ async function initialState(
 	options: ReplyOptions,
 ): Promise<WorldState> {
 	const userMessage = normalizeText.apply(text);
+	const personaLang = deps.personaLang?.(visitor.channelId);
+	// Stored now, not when the run ends: a reload mid-run (or a run that never
+	// ends) still shows what the visitor said. The reply stores only itself.
+	if (deps.history) {
+		await deps.history.append(
+			{ threadId, userId: visitor.id, planRunId, actionName: "user" },
+			[{ role: "user", content: typedText(text) }],
+		);
+	}
 	const english = await translateMessage(deps, userMessage, {
 		threadId,
 		userId: visitor.id,
@@ -106,7 +150,9 @@ async function initialState(
 		channelId: visitor.channelId,
 		planRunId,
 		...customerFacts(options.customerContext),
-		...pageFacts(options.page),
+		...pageFacts(options.page, options),
+		...(deps.history ? { [USER_STORED_FACT]: true } : {}),
+		...(personaLang ? { [PERSONA_LANG_FACT]: personaLang } : {}),
 	};
 	const checkpoint = await deps.worldStateStore.load(threadId);
 	return checkpoint ? { ...sessionFacts(checkpoint.state), ...turn } : turn;
@@ -237,6 +283,24 @@ export async function prepareNewMessage(
 	const english =
 		typeof state.userMessageEn === "string" ? state.userMessageEn : undefined;
 	const original = String(state.userMessage ?? "");
+	const taxonomy = deps.taxonomy?.(visitor.channelId) ?? SHOP_TAXONOMY;
+	// Several tasks in one message run one after another. shortcut: a channel
+	// that picks the site's own tools (no intent sets) is not decomposed, there is no tool-level queue yet.
+	const messageEn =
+		english ?? (NOT_ENGLISH.test(original) ? undefined : original);
+	if (
+		deps.functionCallAgent &&
+		messageEn !== undefined &&
+		deps.intentSets?.(visitor.channelId).length !== 0 &&
+		looksLikeSeveralTasks(messageEn)
+	) {
+		const several = await prepareSeveralTasks(
+			deps,
+			{ visitor, threadId, planRunId, state, actions, taxonomy },
+			messageEn,
+		);
+		if (several) return several;
+	}
 	if (deps.intentSets?.(visitor.channelId).length === 0) {
 		const byTool = await prepareByTool(
 			deps,
@@ -246,7 +310,6 @@ export async function prepareNewMessage(
 		);
 		if (byTool) return byTool;
 	}
-	const taxonomy = deps.taxonomy?.(visitor.channelId) ?? SHOP_TAXONOMY;
 	const startedAt = performance.now();
 	const { value: verdict, tokens } = await collectTokens(() =>
 		classifyMessageIntentDetailed(
@@ -290,6 +353,20 @@ export async function prepareNewMessage(
 			deps.onError?.(error);
 		}
 	}
+	return planIntent(state, actions, intent, taxonomy, REPLY_GOAL);
+}
+
+/**
+ * The plan for one task of a known intent: the usual flow after classification.
+ * `baseGoal` is the reply goal, or nothing for a task with more behind it.
+ */
+function planIntent(
+	state: WorldState,
+	actions: GoapAction[],
+	intent: string,
+	taxonomy: Taxonomy,
+	baseGoal: Partial<WorldState>,
+): PreparedRun {
 	// «Now buy them» names nothing: the product the last search found is bought
 	// (searched for again: the add tool may need the id from that answer).
 	const remembered =
@@ -302,12 +379,144 @@ export async function prepareNewMessage(
 	const scope = scopeFacts(withIntent);
 	const prepared = { ...withIntent, ...specialist, ...scope };
 	const scoped = bindListScope(actions, prepared);
-	const goal = goalForIntent(intent, REPLY_GOAL, scoped, taxonomy);
+	const goal = goalForIntent(intent, baseGoal, scoped, taxonomy);
 	return {
 		state: prepared,
 		goal,
 		actions: replyAfterTask(preferSpecialist(scoped, prepared), goal),
 	};
+}
+
+/**
+ * One task of a queue as an ordinary single-intent run. The tasks behind it
+ * are in the state (`taskQueue`), so the run neither replies nor ends the
+ * stream; the last task replies, and the reply reads every outcome. Its model
+ * reads only the task's own words (`userMessageEn`). The template replies speak
+ * of the last task only, so after earlier tasks the text model answers.
+ */
+function planTask(
+	base: WorldState,
+	actions: GoapAction[],
+	taxonomy: Taxonomy,
+	task: QueuedTask,
+	queue: QueuedTask[],
+	outcomes: ReturnType<typeof readOutcomes>,
+): PreparedRun {
+	const usable =
+		outcomes.length > 0
+			? actions.filter(
+					(action) =>
+						action.name !== TEMPLATE_REPLY_ACTION &&
+						action.name !== REMOVAL_REPLY_ACTION,
+				)
+			: actions;
+	return planIntent(
+		{ ...base, userMessageEn: task.text, ...chainFacts(queue, outcomes) },
+		usable,
+		task.intent,
+		taxonomy,
+		queue.length > 0 ? {} : REPLY_GOAL,
+	);
+}
+
+/**
+ * Asks delta for the tasks of the message; `undefined` keeps today's single
+ * path (no usable answer, one task, or nothing the site can do). Tasks that
+ * the words do not confirm or the site cannot do are dropped first
+ * (`runnableTasks`); an order the message does not give for tasks that
+ * conflict is asked, nothing runs.
+ */
+async function prepareSeveralTasks(
+	deps: ReplyDeps,
+	run: {
+		visitor: VisitorRow;
+		threadId: string;
+		planRunId: string;
+		state: WorldState;
+		actions: GoapAction[];
+		taxonomy: Taxonomy;
+	},
+	messageEn: string,
+): Promise<PreparedRun | undefined> {
+	const { visitor, threadId, planRunId, state, actions, taxonomy } = run;
+	const found = await decomposeMessage(
+		deps.functionCallAgent as NonNullable<ReplyDeps["functionCallAgent"]>,
+		decompositionDescriptions(taxonomy),
+		messageEn,
+		{ threadId, userId: visitor.id, planRunId },
+	);
+	if (!found || found.length < 2) return undefined;
+	const tasks = runnableTasks(found, taxonomy, actions);
+	if (tasks.length === 0) return undefined;
+	if (mustAskOrder(taxonomy, tasks, messageEn)) {
+		return {
+			state: {
+				...state,
+				messageIntent: "chat",
+				conflictingTasks: tasks.map((task) => `«${task.text}»`).join(", "),
+			},
+			goal: REPLY_GOAL,
+			actions,
+		};
+	}
+	const [first, ...rest] = tasks.map(
+		(task): QueuedTask => ({ intent: task.intent, text: task.text ?? "" }),
+	);
+	return planTask(
+		{ ...state, [TASKS_STARTED_FACT]: deps.now() },
+		actions,
+		taxonomy,
+		first as QueuedTask,
+		rest,
+		[],
+	);
+}
+
+/**
+ * The run after a finished task of a queue: the site's catalog is read again
+ * (a tool may have opened another page, and the widget announces that catalog
+ * anew), the facts of the turn and the conversation come along, the rest of
+ * the finished run does not.
+ */
+export async function prepareNextTask(
+	deps: ReplyDeps,
+	visitor: VisitorRow,
+	threadId: string,
+	planRunId: string,
+	finished: {
+		prepared: PreparedRun;
+		finalState: WorldState;
+		succeeded: boolean;
+	},
+): Promise<PreparedRun> {
+	const [task, ...rest] = readQueue(finished.prepared.state);
+	if (!task) throw new Error("no task is queued");
+	const outcomes = [
+		...readOutcomes(finished.prepared.state),
+		outcomeOf(
+			finished.prepared.state,
+			finished.finalState,
+			// A goal that shrank to the reply alone (the catalog changed) did nothing.
+			finished.succeeded &&
+				Object.keys(finished.prepared.goal).some((key) => !(key in REPLY_GOAL)),
+			lastToolAnswer(finished.finalState),
+		),
+	];
+	const dynamicActions = await resolveDynamicActions(deps, threadId);
+	const taxonomy = deps.taxonomy?.(visitor.channelId) ?? SHOP_TAXONOMY;
+	const base = {
+		...turnFacts(finished.finalState),
+		...sessionFacts(finished.finalState),
+		planRunId,
+	};
+	return planTask(
+		base,
+		[...deps.actions, ...dynamicActions],
+		taxonomy,
+		task,
+		rest,
+		outcomes,
+	);
 }
 
 /** Longest list of the site's actions handed to the reply model when it has to ask what the visitor means. */
@@ -419,13 +628,22 @@ async function prepareByTool(
 
 /** The state without the awaited-tool marker: the answer it waited for has arrived. */
 function withoutAwaited(state: WorldState): WorldState {
-	const { [AWAITED_TOOL_FACT]: _awaited, ...rest } = state;
+	const {
+		[AWAITED_TOOL_FACT]: _awaited,
+		[AWAITED_ARGS_FACT]: _args,
+		...rest
+	} = state;
 	return rest;
 }
 
 /** The state without the page facts (they are replaced, never merged: a missing language must not survive). */
 function withoutPage(state: WorldState): WorldState {
-	const { [PAGE_FACT]: _path, [PAGE_LANG_FACT]: _lang, ...rest } = state;
+	const {
+		[PAGE_FACT]: _path,
+		[PAGE_LANG_FACT]: _lang,
+		[LANG_CHOSEN_FACT]: _chosen,
+		...rest
+	} = state;
 	return rest;
 }
 
@@ -487,17 +705,12 @@ function boundedJson(value: unknown): string {
 	);
 }
 
-/**
- * Plan inputs for resuming a run that stopped on a browser-side WebMCP tool:
- * the exact checkpointed state and goal, plus the tool's outcome as
- * `webmcp:<tool>:result` (read back by the action that asked to wait).
- */
-export async function prepareResume(
+/** The checkpoint a tool result answers; throws (in-band error) for a stale or foreign one. */
+async function awaitedCheckpoint(
 	deps: ReplyDeps,
 	threadId: string,
-	planRunId: string,
 	toolResult: ToolOutcome,
-): Promise<PreparedRun> {
+) {
 	const checkpoint = await deps.worldStateStore.load(threadId);
 	if (!checkpoint) {
 		// Stale or bogus resume (expired checkpoint, thread that never waited).
@@ -514,6 +727,55 @@ export async function prepareResume(
 	) {
 		throw new Error("unexpected tool result for this thread");
 	}
+	return checkpoint;
+}
+
+/**
+ * The visitor gave up on the call the run waits on. The tool may have run
+ * already, so nothing is claimed either way: the request ends as `cancelled`
+ * (a run row with a `cancelled` trace event, for /flow), the rest of the task
+ * queue goes with the checkpoint, and the conversation keeps its own facts.
+ */
+export async function cancelWait(
+	deps: ReplyDeps,
+	visitor: VisitorRow,
+	threadId: string,
+	toolResult: ToolOutcome,
+): Promise<void> {
+	const checkpoint = await awaitedCheckpoint(deps, threadId, toolResult);
+	const id = crypto.randomUUID();
+	const at = deps.now();
+	startPlanRun(deps.db, {
+		id,
+		visitorId: visitor.id,
+		threadId,
+		goal: {},
+		createdAt: at,
+	});
+	joinRequest(deps.db, id, String(checkpoint.state.planRunId));
+	finishPlanRun(deps.db, id, {
+		succeeded: false,
+		durationMs: 1,
+		events: [{ type: "cancelled", at }],
+	});
+	const session = sessionFacts(checkpoint.state);
+	if (Object.keys(session).length > 0)
+		await deps.worldStateStore.save(threadId, { state: session, goal: {} });
+	else await deps.worldStateStore.clear(threadId);
+}
+
+/**
+ * Plan inputs for resuming a run that stopped on a browser-side WebMCP tool:
+ * the exact checkpointed state and goal, plus the tool's outcome as
+ * `webmcp:<tool>:result` (read back by the action that asked to wait).
+ */
+export async function prepareResume(
+	deps: ReplyDeps,
+	threadId: string,
+	planRunId: string,
+	toolResult: ToolOutcome,
+): Promise<PreparedRun> {
+	const checkpoint = await awaitedCheckpoint(deps, threadId, toolResult);
 	// The checkpoint still names the run that stopped to wait: this one
 	// continues its request.
 	if (typeof checkpoint.state.planRunId === "string") {
@@ -524,7 +786,7 @@ export async function prepareResume(
 		state: {
 			...withoutAwaited(withoutPage(checkpoint.state)),
 			// Where the visitor is now — the tool may have navigated.
-			...pageFacts(toolResult.page),
+			...pageFacts(toolResult.page, toolResult),
 			// The resumed run is its own `plan_runs` row; usage made by what runs
 			// next (e.g. `generateReply`) links to it, not to the run that waited.
 			planRunId,

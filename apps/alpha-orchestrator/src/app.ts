@@ -45,6 +45,7 @@ import { LruMap } from "./modules/lru-map/lru-map.ts";
 import { mcpRoutes } from "./modules/mcp/mcp.ts";
 import { messagesRoutes } from "./modules/messages/messages.ts";
 import { performanceRoutes } from "./modules/performance/performance.ts";
+import { getPersona } from "./modules/persona/persona.service.ts";
 import { personaRoutes } from "./modules/persona/persona.ts";
 import type { PriceBook } from "./modules/prices/prices.service.ts";
 import { ReplyService } from "./modules/reply/reply.ts";
@@ -160,6 +161,8 @@ export function createApp(deps: AppDeps) {
 					: ["shop"],
 			),
 		functionCallAgent: deps.functionCallAgent,
+		personaLang: (channelId) => getPersona(deps.db, channelId).defaultLang,
+		history: deps.historyStore,
 		actions,
 		runs: deps.runs,
 		worldStateStore: deps.worldStateStore ?? new InMemoryWorldStateStore(),

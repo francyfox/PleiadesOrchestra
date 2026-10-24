@@ -15,6 +15,7 @@
 		"test": "bun test",
 		"eval:intents": "bun eval/intents.ts",
 		"calibrate": "bun eval/calibrate.ts",
+		"eval:decompose": "bun eval/decompose.ts",
 		"eval:tools": "bun eval/tools.ts",
 		"bench:plan": "bun eval/plan-bench.ts"
 	},

@@ -4,6 +4,7 @@ import {
 	intentFromMessageCues,
 	intentFromToolNameCues,
 	mergePresets,
+	tasksConflict,
 } from "./preset.ts";
 
 const intent = (description: string, effects = {}) => ({
@@ -63,5 +64,34 @@ describe("mergePresets", () => {
 		const merged = mergePresets([]);
 		expect(merged.intents).toEqual({});
 		expect(intentFromMessageCues(merged, "x")).toBeUndefined();
+	});
+});
+
+describe("tasksConflict", () => {
+	const booking = mergePresets([
+		{
+			id: "booking",
+			intents: {
+				reserve: intent("reserve"),
+				cancel: intent("cancel"),
+				pay: intent("pay"),
+			},
+			taskConflicts: { pairs: [["reserve", "cancel"]], lastOnly: ["pay"] },
+		},
+	]);
+
+	test("a conflicting pair, in any order", () => {
+		expect(tasksConflict(booking, ["reserve", "cancel"])).toBe(true);
+		expect(tasksConflict(booking, ["cancel", "x", "reserve"])).toBe(true);
+		expect(tasksConflict(booking, ["reserve", "reserve"])).toBe(false);
+	});
+
+	test("a last-only intent conflicts unless it is last", () => {
+		expect(tasksConflict(booking, ["pay", "reserve"])).toBe(true);
+		expect(tasksConflict(booking, ["reserve", "pay"])).toBe(false);
+	});
+
+	test("a preset without rules never conflicts", () => {
+		expect(tasksConflict(mergePresets([base]), ["find", "buy"])).toBe(false);
 	});
 });

@@ -18,6 +18,21 @@ export type StreamEvent =
 	 * finished). Not a terminal line — more follow.
 	 */
 	| { type: "step"; id: string; phase: StepPhase; text: string }
+	/**
+	 * A message of several tasks runs as a queue: `done` of `total` finished,
+	 * `current` the task running (its words), `startedAt` epoch ms of the first.
+	 * Sent when each task starts and when the last one ends; never for one task.
+	 * Not a terminal line.
+	 */
+	| {
+			type: "progress";
+			done: number;
+			total: number;
+			current: string;
+			startedAt: number;
+	  }
+	/** The visitor gave up on a pending browser call: the request ends here, nothing was said or claimed. Terminal. */
+	| { type: "cancelled" }
 	| { type: "tool_call"; tool: string; arguments: unknown; callId: string }
 	/**
 	 * A run that ended badly. With `code: "task_failed"` the server worked and

@@ -69,9 +69,10 @@ export const SHOP_INTENTS: Record<string, IntentDef> = {
 		effects: {},
 	},
 	// A tool's role (read the current list, so a request about «every item» knows the items),
-	// recognised by the tool's name; a shopper never asks for it.
+	// recognised by the tool's name; never offered to Laya, but delta splits «show me the cart» into it.
 	readState: {
-		description: "only read what the site holds now: the cart, bookings",
+		description:
+			"show or read what the site holds now: the cart, orders, bookings",
 		preconditions: { storeOpen: true },
 		effects: { listRead: true },
 		toolRole: true,

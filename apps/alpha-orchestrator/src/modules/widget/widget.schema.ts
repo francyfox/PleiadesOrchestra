@@ -34,3 +34,25 @@ export const ThreadMessagesResult = t.Object({ items: t.Array(ThreadMessage) });
 export const SuspendedResult = t.Object({
 	code: t.Literal("channel_suspended"),
 });
+
+export const PendingResult = t.Union([
+	t.Object({ state: t.Literal("none") }),
+	t.Object({
+		state: t.Literal("waiting"),
+		callId: t.String(),
+		tool: t.String(),
+		arguments: t.Record(t.String(), t.Unknown()),
+		tasksLeft: t.Number(),
+	}),
+	t.Object({
+		state: t.Literal("interrupted"),
+		runId: t.String(),
+		prompt: t.String(),
+		tasksLeft: t.Number(),
+	}),
+	t.Object({
+		state: t.Literal("expired"),
+		prompt: t.String(),
+		tasksLeft: t.Number(),
+	}),
+]);

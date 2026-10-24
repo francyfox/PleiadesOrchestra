@@ -18,8 +18,14 @@ import {
 	readItems,
 	SCOPE_ALL,
 } from "@repo/core";
+import { outcomeLines, readOutcomes } from "../tasks/tasks.service.ts";
 import { chunkText } from "../text/text.service.ts";
 import type { CustomerContext } from "../widget/widget.types.ts";
+import {
+	LANG_CHOSEN_FACT,
+	PERSONA_LANG_FACT,
+	USER_STORED_FACT,
+} from "./goap.types.ts";
 
 /**
  * Base goal of every reply — chat or task. A message classified as a task
@@ -32,8 +38,13 @@ export const REPLY_GOAL = { replied: true };
 /** Name of the action that writes the reply to the user. */
 export const REPLY_ACTION = "generateReply";
 
-/** The user's turn for the history: the message as typed (line breaks kept), else the normalized one. */
+/**
+ * The user's turn for the history: the message as typed (line breaks kept),
+ * else the normalized one; `""` when it was stored at the start of the run
+ * (the agent then stores only the reply).
+ */
 export function userTurn(state: WorldState): string {
+	if (state[USER_STORED_FACT] === true) return "";
 	return String(state.userMessageRaw ?? state.userMessage ?? "");
 }
 
@@ -44,14 +55,41 @@ const CYRILLIC = /\p{Script=Cyrillic}/u;
 
 type ReplyLanguage = "ru" | "kk" | "en";
 
-/** The language to answer in: the page's, else the message's script. */
+/** The language a template reply is written in, by the same rule as `answerLine`; the message's own language is told by its script. */
 function replyLanguage(state: WorldState): ReplyLanguage {
-	const lang = state[PAGE_LANG_FACT];
-	if (lang === "kk") return "kk";
-	const message = String(state.userMessage ?? "");
-	return lang === "ru" || (lang === undefined && CYRILLIC.test(message))
-		? "ru"
-		: "en";
+	const fixed =
+		state[PERSONA_LANG_FACT] ||
+		(state[LANG_CHOSEN_FACT] === true ? state[PAGE_LANG_FACT] : undefined);
+	const code = typeof fixed === "string" ? fixed.slice(0, 2).toLowerCase() : "";
+	if (code === "ru" || code === "kk" || code === "en") return code;
+	if (fixed) return "en";
+	if (!CYRILLIC.test(String(state.userMessage ?? ""))) return "en";
+	return state[PAGE_LANG_FACT] === "kk" ? "kk" : "ru";
+}
+
+/** English name of a language code for the reply model ("ru" -> "Russian"); the code itself when unknown. */
+function languageName(code: string): string {
+	try {
+		return new Intl.DisplayNames(["en"], { type: "language" }).of(code) ?? code;
+	} catch {
+		return code;
+	}
+}
+
+/**
+ * The closing line of every wrapper handed to the reply model: the persona's
+ * language if the channel fixes one, else the language the visitor picked in
+ * the widget, else the language of the quoted message (the model reads it; no
+ * script guessing here).
+ */
+function answerLine(state: WorldState): string {
+	const persona = state[PERSONA_LANG_FACT];
+	const chosen =
+		state[LANG_CHOSEN_FACT] === true ? state[PAGE_LANG_FACT] : undefined;
+	const code = typeof persona === "string" && persona ? persona : chosen;
+	return typeof code === "string" && code
+		? `Answer in ${languageName(code)}.`
+		: "Answer in the language of the visitor's message quoted above.";
 }
 
 /** What was taken out of the cart (or that it was empty already), from the facts the removing steps wrote. */
@@ -73,7 +111,7 @@ function removalReplyText(state: WorldState): string {
 	}[language];
 }
 
-/** What was put in the cart, in the language the shopper writes in (the page's, else the message's script). */
+/** What was put in the cart, in the reply language (`replyLanguage`). */
 function cartReplyText(state: WorldState): string {
 	const quantity = typeof state.quantity === "number" ? state.quantity : 1;
 	const found = readItems(state, FOUND_ITEMS);
@@ -86,12 +124,11 @@ function cartReplyText(state: WorldState): string {
 		.map((item) => item.name)
 		.join(", ");
 	const store = typeof state.store === "string" ? ` (${state.store})` : "";
-	const lang = state[PAGE_LANG_FACT];
-	const message = String(state.userMessage ?? "");
-	if (lang === "kk") {
+	const language = replyLanguage(state);
+	if (language === "kk") {
 		return `Себетке қосылды: ${what}${store}.${missing ? ` Табылмады: ${missing}.` : ""}`;
 	}
-	if (lang === "ru" || (lang === undefined && CYRILLIC.test(message))) {
+	if (language === "ru") {
 		return `Добавил в корзину: ${what}${store}.${missing ? ` Не нашёл: ${missing}.` : ""}`;
 	}
 	return `Added to your cart: ${what}${store}.${missing ? ` Not found: ${missing}.` : ""}`;
@@ -170,7 +207,9 @@ function templateReply(
 					actionName: name,
 				},
 				[
-					{ role: "user", content: userTurn(state) },
+					...(userTurn(state)
+						? [{ role: "user" as const, content: userTurn(state) }]
+						: []),
 					{ role: "assistant", content: text },
 				],
 			);
@@ -245,7 +284,7 @@ export function customerFacts(
 const REPLY_TOOL_TEXT_CHARS = 800;
 
 /** The newest answer a site tool gave (`webmcp:<tool>:text`), if any — facts keep the order they were written in. */
-function lastToolAnswer(state: WorldState): string | undefined {
+export function lastToolAnswer(state: WorldState): string | undefined {
 	const keys = Object.keys(state).filter(
 		(key) => key.startsWith("webmcp:") && key.endsWith(":text"),
 	);
@@ -279,12 +318,29 @@ function failedTool(state: WorldState): string | undefined {
  * answering the request as if nothing had been done: an item put in a cart,
  * what a search found, or that a step failed. (The message alone made the
  * model say it "can't find apples" right after the site had listed them.)
+ * Always English, always quoting the visitor's ORIGINAL message and ending with
+ * `answerLine`: the model must not read the wrapper's language as the visitor's.
  */
 export function replyChunks(
 	state: WorldState,
 	maxChunkChars: number,
 ): string[] {
 	const message = String(state.userMessage ?? "");
+	const note = taskNote(state);
+	const outcomes = readOutcomes(state);
+	if (outcomes.length === 0) {
+		return note
+			? [`The visitor wrote: "${message}". ${note} ${answerLine(state)}`]
+			: chunkText(message, maxChunkChars);
+	}
+	// The last task of several: the reply covers every task, the earlier ones from what they recorded.
+	return [
+		`The visitor wrote several requests in one message: "${message}". Done so far: ${outcomeLines(outcomes)}. ${note ? `The last request: ${note}` : ""} Answer with ONE short message about all the requests at once. Say honestly which ones were not done; invent nothing. ${answerLine(state)}`,
+	];
+}
+
+/** What happened to the task (or what to ask), as an instruction to the reply model; `undefined` = a plain chat message. */
+function taskNote(state: WorldState): string | undefined {
 	const task =
 		typeof state.messageIntent === "string" && state.messageIntent !== "chat";
 	if (state.inCart === true && typeof state.product === "string") {
@@ -296,47 +352,39 @@ export function replyChunks(
 			.map((item) => item.name)
 			.join(", ");
 		const store =
-			typeof state.store === "string" ? `, магазин ${state.store}` : "";
-		return [
-			`Пользователь написал: «${message}». Это уже сделано на сайте: в корзину добавлено ${what}${store}.${missing ? ` Не нашлось: ${missing}.` : ""} Коротко сообщи ему об этом, не отказывайся.`,
-		];
+			typeof state.store === "string" ? `, store ${state.store}` : "";
+		return `This is already done on the site: ${what}${store} was added to the cart.${missing ? ` Not found: ${missing}.` : ""} Tell the visitor briefly; do not refuse.`;
+	}
+	if (typeof state.conflictingTasks === "string") {
+		return `The message holds several requests that depend on their order: ${state.conflictingTasks}. The order was not stated, so NOTHING was done on the site. Ask ONE short question: in which order to do them (or which of them is really wanted). Claim nothing about what is on the site now.`;
 	}
 	if (typeof state.clarifyOptions === "string") {
-		return [
-			`Пользователь написал: «${message}». Непонятно, какое действие на сайте ему нужно. Сайт умеет: ${state.clarifyOptions}. Задай ОДИН короткий уточняющий вопрос на языке сообщения пользователя и предложи 2-3 подходящих варианта из этого списка. Ничего не утверждай о том, что сейчас на сайте.`,
-		];
+		return `It is unclear which action on the site the visitor wants. The site can: ${state.clarifyOptions}. Ask ONE short clarifying question and offer 2-3 fitting options from this list. Claim nothing about what is on the site now.`;
 	}
-	if (task) {
-		const failed = failedTool(state);
-		if (failed) {
-			// What the site said about it (e.g. «nothing matched, try a broader word»)
-			// is the advice the reply passes on — in the user's language, in persona.
-			const said = lastToolAnswer(state);
-			return [
-				`Пользователь написал: «${message}». Выполнить это на сайте не удалось (шаг ${failed}).${
-					said
-						? ` Сайт ответил: «${said}». Передай его совет пользователю.`
-						: ""
-				} Коротко и честно скажи об этом на языке сообщения пользователя и предложи, что можно попробовать вместо этого.`,
-			];
-		}
-		const answer = lastToolAnswer(state);
-		if (
-			!answer &&
-			NEEDS_THE_WORDS.has(String(state.messageIntent)) &&
-			!ranATool(state)
-		) {
-			// No step ran (no tool on the site does it, or no plan): the model has
-			// seen nothing of the site, so it must not describe the site's state.
-			return [
-				`Пользователь написал: «${message}». На сайте это сделать не удалось: ни один шаг не выполнялся. Коротко и честно скажи об этом на языке сообщения пользователя и не утверждай ничего о том, что сейчас на сайте (в корзине, в заказах), — ты этого не видел.`,
-			];
-		}
-		if (answer) {
-			return [
-				`Пользователь написал: «${message}». Сайт уже ответил на запрос: «${answer}». Коротко перескажи пользователю результат на языке его сообщения (названия, имена и числа из ответа сайта оставь как есть), не говори, что не можешь этого сделать.`,
-			];
-		}
+	if (!task) return undefined;
+	const failed = failedTool(state);
+	if (failed) {
+		// What the site said about it (e.g. «nothing matched, try a broader word»)
+		// is the advice the reply passes on.
+		const said = lastToolAnswer(state);
+		return `Doing this on the site failed (step ${failed}).${
+			said
+				? ` The site answered: "${said}". Pass its advice on to the visitor.`
+				: ""
+		} Say so briefly and honestly and suggest what to try instead.`;
 	}
-	return chunkText(message, maxChunkChars);
+	const answer = lastToolAnswer(state);
+	if (
+		!answer &&
+		NEEDS_THE_WORDS.has(String(state.messageIntent)) &&
+		!ranATool(state)
+	) {
+		// No step ran (no tool on the site does it, or no plan): the model has
+		// seen nothing of the site, so it must not describe the site's state.
+		return "This could not be done on the site: no step was run. Say so briefly and honestly, and claim nothing about what is on the site now (cart, orders): you have not seen it.";
+	}
+	if (answer) {
+		return `The site already answered the request: "${answer}". Retell the result to the visitor briefly (keep names and numbers from the site's answer as they are); do not say you cannot do it.`;
+	}
+	return undefined;
 }

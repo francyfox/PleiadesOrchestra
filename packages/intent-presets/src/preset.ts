@@ -34,6 +34,14 @@ export interface IntentPreset {
 	}) => string | undefined;
 	/** Extra planner cost of a tool whose name is narrower than its intent's plain tool (`add_recipe_to_cart` next to `add_to_cart`). */
 	specialistPenalty?: (name: string, intent: string) => number;
+	/** Tasks of one message that must not run in a guessed order (see `tasksConflict`). */
+	taskConflicts?: TaskConflicts;
+}
+
+/** Intent pairs that undo or depend on each other, and intents that only make sense as the last task. */
+export interface TaskConflicts {
+	pairs: [string, string][];
+	lastOnly: string[];
 }
 
 /** Several presets merged: what the classifier, the planner and the guards read. */
@@ -47,6 +55,8 @@ export interface Taxonomy {
 	toolCues: NonNullable<IntentPreset["toolCues"]>[];
 	/** The latest preset's that has one; no extra cost otherwise. */
 	specialistPenalty: NonNullable<IntentPreset["specialistPenalty"]>;
+	/** The union of the presets'. */
+	taskConflicts: TaskConflicts;
 }
 
 /** Later presets win: an intent they define replaces the earlier one whole; their rules are asked first. */
@@ -58,6 +68,7 @@ export function mergePresets(presets: IntentPreset[]): Taxonomy {
 		messageCues: [],
 		toolCues: [],
 		specialistPenalty: () => 0,
+		taskConflicts: { pairs: [], lastOnly: [] },
 	};
 	for (const preset of presets) {
 		Object.assign(taxonomy.intents, preset.intents);
@@ -69,6 +80,10 @@ export function mergePresets(presets: IntentPreset[]): Taxonomy {
 		if (preset.toolCues) taxonomy.toolCues.unshift(preset.toolCues);
 		if (preset.specialistPenalty)
 			taxonomy.specialistPenalty = preset.specialistPenalty;
+		if (preset.taskConflicts) {
+			taxonomy.taskConflicts.pairs.push(...preset.taskConflicts.pairs);
+			taxonomy.taskConflicts.lastOnly.push(...preset.taskConflicts.lastOnly);
+		}
 	}
 	return taxonomy;
 }
@@ -94,4 +109,18 @@ export function intentFromToolNameCues(
 		if (found !== undefined) return found;
 	}
 	return undefined;
+}
+
+/**
+ * Tasks of one message (intent ids in the order said) whose order matters: a
+ * conflicting pair, or a `lastOnly` intent that is not last. Without an order
+ * word in the message the caller must ask instead of guessing.
+ */
+export function tasksConflict(taxonomy: Taxonomy, intents: string[]): boolean {
+	const { pairs, lastOnly } = taxonomy.taskConflicts;
+	const has = (id: string) => intents.includes(id);
+	return (
+		pairs.some(([a, b]) => has(a) && has(b)) ||
+		lastOnly.some((id) => intents.slice(0, -1).includes(id))
+	);
 }

@@ -18,10 +18,13 @@ import {
 	keyShortcuts,
 	parseHotkey,
 } from "@/lib/hotkey/hotkey.ts";
-import { pickLang, strings } from "@/lib/i18n/i18n.ts";
+import { type Lang, pickLang, strings } from "@/lib/i18n/i18n.ts";
 import { currentPage } from "@/lib/page/page.ts";
 import { createDictation, speechLang } from "@/lib/speech/speech.ts";
-import { createSessionStore } from "@/lib/storage/storage.ts";
+import {
+	createSessionStore,
+	type SessionStore,
+} from "@/lib/storage/storage.ts";
 import { createDocumentWebMcpProvider } from "@/lib/webmcp/webmcp.ts";
 import "@/components/styles.css";
 import { createWidget, type Widget } from "@/components/widget/widget.ts";
@@ -83,6 +86,9 @@ export class PleiadesChat extends HTMLElement {
 	#root = this.attachShadow({ mode: "open" });
 	#chat?: Chat;
 	#scope = "";
+	#store?: SessionStore;
+	/** The language the visitor picked in the header (kept per site in the widget's storage). */
+	#chosen?: Lang;
 	#ui?: Widget;
 	#off?: () => void;
 	#pending = false;
@@ -201,7 +207,7 @@ export class PleiadesChat extends HTMLElement {
 		this.#ui?.destroy();
 		if (!config.ok) {
 			this.#chat?.dispose();
-			this.#chat = this.#ui = this.#off = undefined;
+			this.#chat = this.#ui = this.#off = this.#store = undefined;
 			this.#scope = "";
 			this.#root.replaceChildren();
 			// Reported on the next tick so half-set attributes don't log a transient error.
@@ -229,13 +235,19 @@ export class PleiadesChat extends HTMLElement {
 			// Switched to another channel: the old chat would keep announcing
 			// the page's tools to the channel it was made for.
 			this.#chat?.dispose();
+			this.#store = createSessionStore(config.config);
+			this.#chosen = this.#store.loadLang();
 			this.#chat = createChat({
-				api: createWidgetApi(config.config),
-				store: createSessionStore(config.config),
-				// Absent in every real browser today (see `webmcp.ts`) — `chat.ts`
-				// itself only actually uses this while `toolMode === "webmcp"`,
-				// checked per `send()`, not just here, so the mode toggle needs no
-				// `#mount()` beyond what already runs for any attribute change.
+				api: createWidgetApi({
+					...config.config,
+					// Read at every request: the picker can change it any time.
+					language: () => ({
+						lang: this.#lang(),
+						chosen: this.#chosen !== undefined,
+					}),
+				}),
+				store: this.#store,
+				// Absent in every real browser today (see `webmcp.ts`).
 				webmcp,
 				// Read at every request: the page changes under a single-page app.
 				page: () => currentPage(),
@@ -243,16 +255,34 @@ export class PleiadesChat extends HTMLElement {
 			});
 			this.#scope = scope;
 		}
-		const chat = this.#chat;
-		const customerContext = parseCustomerContext(attr("customerContext"));
-		this.#customerContext = customerContext;
-		const lang = pickLang(
-			attr("lang") || document.documentElement.lang || navigator.language,
+		this.#customerContext = parseCustomerContext(attr("customerContext"));
+		this.#renderUi();
+	}
+
+	/** The widget's language: the visitor's pick, else the `lang` attribute, the page's, the browser's. */
+	#lang(): Lang {
+		return pickLang(
+			this.#chosen,
+			this.getAttribute(ATTRIBUTES.lang),
+			document.documentElement.lang,
+			navigator.language,
 		);
+	}
+
+	/** Builds the widget UI over the running chat; a language switch calls it again, the chat and its thread stay. */
+	#renderUi() {
+		const chat = this.#chat;
+		if (!chat) return;
+		const attr = (prop: Prop) => this.getAttribute(ATTRIBUTES[prop]) ?? "";
+		const customerContext = this.#customerContext;
+		this.#off?.();
+		this.#ui?.destroy();
+		const lang = this.#lang();
 		const s = strings[lang];
 		const toggleSpec = this.#hotkey("hotkey", DEFAULT_HOTKEY);
 		const ui = createWidget({
 			s,
+			lang,
 			position: normalizePosition(attr("position")),
 			heading: attr("heading") || s.title,
 			greeting: attr("greeting") || s.hello,
@@ -269,10 +299,17 @@ export class PleiadesChat extends HTMLElement {
 			onClose: () => {
 				this.open = false;
 			},
+			onLang: (picked) => {
+				this.#chosen = picked;
+				this.#store?.saveLang(picked);
+				this.#renderUi();
+				this.#ui?.focusLang();
+			},
 			onSend: (text) => void chat.send(text, customerContext),
 			onStop: () => chat.stop(),
-			onModeChange: (mode) => chat.setToolMode(mode),
-			available: chat.state.available,
+			onContinue: () => void chat.continuePending(),
+			onCancel: () => void chat.cancelPending(),
+			onRetry: () => void chat.retryPending(customerContext),
 		});
 		this.#ui = ui;
 		this.#off = chat.subscribe(ui.render);

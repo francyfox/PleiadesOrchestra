@@ -4,7 +4,7 @@ See root `CLAUDE.md` for monorepo commands, workflow, code style and repo-wide l
 
 ## Overview
 
-Framework-agnostic `<pleiades-chat>` web component: launcher in a corner (default bottom-left) + side panel. **Size budget: 40 kB brotli** (raised from 10 kB when moving to Alpine.js), checked by `size-limit` inside `bun run build` — 35.6 kB now (anime.js dropped; motion is the Web Animations API, `el.animate`, in `components/motion.ts`).
+Framework-agnostic `<pleiades-chat>` web component: launcher in a corner (default bottom-left) + side panel. **Size budget: 40 kB brotli** (raised from 10 kB when moving to Alpine.js), checked by `size-limit` inside `bun run build` — 37.8 kB now (anime.js dropped; motion is the Web Animations API, `el.animate`, in `components/motion.ts`).
 
 Alpine.js **CSP build** (`@alpinejs/csp`) is bundled into the IIFE; PostCSS-compiled nested CSS (`postcss.config.js`). The CSP build is deliberate: third-party sites often forbid `unsafe-eval` which standard Alpine needs. Templates may only use property and method names (no inline logic) — every decision lives in a plain model object, unit-tested without a DOM.
 
@@ -20,7 +20,7 @@ src/element.ts    # attributes → lib + ui
 
 Each component has its own directory: `<name>.model.ts` (pure logic + tests), `<name>.template.ts` (static HTML string with the component's own `x-data` scope), `<name>.motion.ts` (Web Animations API, only where it moves), `<name>.ts` (binds model + template via `defineComponent` from `component.ts`).
 
-Components: `launcher`, `header`, `messages`, `error-line`, `mode-switch`, `composer`, `footer` (static, no model), `panel` (frame + slide). Components never share a model — `widget/widget.ts` assembles them, hands each its slice of chat state in `render(state)`, starts Alpine per widget with `Alpine.initTree(el)` (never `Alpine.start()` which would scan the host page).
+Components: `launcher`, `header` (language picker: a native `<select>` laid transparently over the Lucide "languages" icon, so the listbox, keyboard, outside click and Escape are the platform's), `messages`, `error-line`, `composer`, `footer` (static, no model), `panel` (frame + slide). Components never share a model — `widget/widget.ts` assembles them, hands each its slice of chat state in `render(state)`, starts Alpine per widget with `Alpine.initTree(el)` (never `Alpine.start()` which would scan the host page).
 
 Shared: `motion.ts` (`play`, `reduced`), `icons.ts`.
 
@@ -38,9 +38,18 @@ Security: only `pk_` key accepted (`sk_` refused), `https` only except localhost
 
 **Suspended channel**: `402` (`channel_suspended`, the site owner has no plan or balance) maps to the terminal `ChatError` `suspended`: neutral text (`strings.suspended`, never billing details), composer locked like `forbidden`.
 
+**Language** — the widget owns it: the visitor's pick in the header (`store.loadLang`/`saveLang`, key `<session>:lang`, per site) > the `lang` attribute > `<html lang>` > `navigator.language`, first one the widget supports (en/ru/kk), else en (`pickLang`). `createWidgetApi({ language })` is read at every request and adds `lang` + `langChosen` (true only for a pick) to every message and tool result; the server writes steps and the reply in it. A switch rebuilds the UI over the same chat (`element.ts` `#renderUi`; the thread stays). Server step lines exist in ru/en only: kk shows Russian steps.
+
+**Tool mode** is fixed to WebMCP (`// shortcut: tool mode fixed to webmcp, upgrade when the channel setting (cabinet/admin) exists` in `chat.ts`); the switch was removed. `noTools` = no WebMCP provider.
+
 **Flow lines** (step events) survive a reload — attached to a reply message via `plan_runs.steps` (JSON), fetched by `GET /v1/widget/threads/:id/messages` (`threadMessages`). Widget maps `item.steps` onto `ChatMessage.steps`. A reply made only of steps must not be dropped (`hasOutput` in `chat.ts`).
 
+**Progress bar and message times**: a message of several tasks streams `{type:"progress", done, total, current, startedAt}` (server: `progressOf` in `modules/tasks`, sent when each task starts and when the last ends, also after tool-results; never for one task). `chat.state.progress` keeps the client's own start time (server clock is only used to tell one queue from the next) and `endedAt` once the turn ends; the `progress` component sits above the composer, its live region speaks done/total only (the ticking time is `aria-hidden`), one 1 s interval runs in `widget.ts` only while it is running. Every message has a `createdAt` (history: server's, new: client's); `messages/stamp.model.ts` writes it («just now», «5m», clock, «yesterday», date) with `Intl` and one shared 60 s timer runs while the panel is open. Old widgets ignore unknown NDJSON types.
+
 ## WebMCP polyfill
+**Unfinished work (`pending`)** — on init and when the connection comes back, `chat.checkPending` asks `GET /threads/:id/pending` (`lib/chat/pending.ts`, pure `decidePending` + `isReadTool`, a name-verb copy of the server's tool cues). A waiting call runs by itself only if its tool only reads and the page has it; any other waiting call becomes `state.notice` `resume` (Continue = run the tool and POST the result, Cancel = POST it with `cancelled: true`: the server ends the request as cancelled, no tool failure, the chat shows the neutral `notice` kind `cancelled`), because the tab may have closed after the tool already ran and a write would add twice. `interrupted`/`expired` (each told once) become a `retry` notice that re-sends the prompt as a new message, never automatically. Component `notice`; both go through `send(text, ctx, resume)` so busy/idle/error handling is shared.
+
+
 
 Lives in `packages/webmcp-polyfill` (`@repo/webmcp-polyfill`, Apache-2.0), imported by `element.ts` as `installWebMcpPolyfill`. It is a **devDependency** (`workspace:*`) on purpose: the widget is published to npm/JSR as a single IIFE and the private package is inlined by Vite, so no `@repo/*` import may remain in `dist/` (check `grep @repo dist/*.js` after a build). The polyfill is installed at mount (a microtask after `connectedCallback`), not at script load: the widget dispatches `pleiades:webmcp-ready` on `document` right after, for pages that register tools (`packages/wordpress-plugin`); such a page also registers at once if `document.modelContext` already exists. `lib/webmcp/webmcp.ts` is separate widget code and does not depend on the polyfill. Polyfill tests/types/lint run in its own package. A tool that throws an error with numeric `status` (100–599) and optional `retryAfter` (seconds, number or numeric string) gets both into `WEBMCP_EXECUTE_TOOL_RESPONSE`; the requesting window re-validates them (`tool-error.ts`) and rethrows a `ToolCallError`.
 

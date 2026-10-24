@@ -10,7 +10,7 @@
 	let { steps, status }: { steps: string[]; status: RequestStatus } = $props();
 
 	const lastVariant = $derived(
-		status === "failed" || status === "abandoned"
+		status === "failed" || status === "abandoned" || status === "interrupted"
 			? "destructive"
 			: status === "running" || status === "waiting"
 				? "default"

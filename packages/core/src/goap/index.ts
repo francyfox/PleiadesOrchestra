@@ -8,6 +8,7 @@ export type { IntentExample, IntentHit, IntentModel } from "./intent-memory";
 export { createIntentModel, normalizeIntentText } from "./intent-memory";
 export type { Taxonomy, ToolIntent } from "./intent-taxonomy";
 export {
+	decompositionDescriptions,
 	EFFECTS_BY_INTENT,
 	effectsOf,
 	INTENT_DESCRIPTIONS,
@@ -68,6 +69,14 @@ export {
 export { matchSpecialist, preferSpecialist } from "./specialist";
 export type { StepLanguage } from "./step-text";
 export { stepLanguage } from "./step-text";
+export type { DecomposedTask } from "./task-decomposition";
+export {
+	decomposeMessage,
+	hasOrderWord,
+	looksLikeSeveralTasks,
+	mustAskOrder,
+	runnableTasks,
+} from "./task-decomposition";
 export type {
 	StreamingContext,
 	TextActionConfig,

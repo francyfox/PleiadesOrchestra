@@ -81,6 +81,43 @@ function unmet(
 	);
 }
 
+/** WebMCP tool actions are the ones that can return `waiting` (they carry a `toolResult:<name>` effect); the visitor's browser runs one call at a time. */
+function canWait(action: GoapAction): boolean {
+	return Object.keys(action.effects).some((key) =>
+		key.startsWith("toolResult:"),
+	);
+}
+
+/** `a` and `b` can run side by side: no shared effect keys, neither writes what the other reads, not both able to wait. */
+function independent(a: GoapAction, b: GoapAction): boolean {
+	const touches = (x: GoapAction, y: GoapAction) =>
+		Object.keys(x.effects).some(
+			(key) => key in y.effects || key in y.preconditions,
+		);
+	return !touches(a, b) && !touches(b, a) && !(canWait(a) && canWait(b));
+}
+
+/** A reply (`generateReply`, `replyFromTemplate`) has no preconditions but reads the tools' answers from the state, so it must run alone and last. */
+function isReply(action: GoapAction): boolean {
+	return "replied" in action.effects;
+}
+
+/** The actions of `pending` (plan order) that are ready in `state` and safe to run together. */
+function pickWave(pending: GoapAction[], state: WorldState): GoapAction[] {
+	const wave: GoapAction[] = [];
+	const onlyReplies = pending.every(isReply);
+	for (const action of pending) {
+		if (isReply(action) && !onlyReplies) continue;
+		if (
+			satisfied(action.preconditions, state) &&
+			wave.every((admitted) => independent(admitted, action))
+		) {
+			wave.push(action);
+		}
+	}
+	return wave;
+}
+
 /** Tells `onStep` about an action, if it has something to say. Never throws. */
 function reportStep(
 	run: Run,
@@ -169,7 +206,8 @@ async function attempt(
 	});
 
 	let nextState = state;
-	for (const action of currentPlan) {
+	let pending = currentPlan;
+	while (pending.length > 0) {
 		if (signal?.aborted) {
 			emit({ type: "killed", attempt: attemptIndex, state: nextState });
 			return {
@@ -180,51 +218,106 @@ async function attempt(
 			};
 		}
 
-		if (!satisfied(action.preconditions, nextState)) {
+		const wave = pickWave(pending, nextState);
+		if (wave.length === 0) {
+			const blocked = pending[0] as GoapAction;
 			emit({
 				type: "action_skipped",
 				attempt: attemptIndex,
-				action: action.name,
-				unmetPreconditions: unmet(action.preconditions, nextState),
+				action: blocked.name,
+				unmetPreconditions: unmet(blocked.preconditions, nextState),
 			});
 			break;
 		}
+		pending = pending.filter((action) => !wave.includes(action));
 
-		emit({
-			type: "action_started",
-			attempt: attemptIndex,
-			action: action.name,
-		});
-		reportStep(run, action, nextState, "running");
-		const actionStartedAt = Date.now();
-		let outcome: Awaited<ReturnType<GoapAction["execute"]>>;
-		try {
-			// Live state as of this specific action, not just what was true when
-			// this attempt started — an earlier action's real effects in this same
-			// loop are already reflected here.
-			outcome = await action.execute({
-				...ctx,
-				state: nextState,
-				signal,
-			});
-		} catch (error) {
-			reportStep(run, action, nextState, "failed");
+		const names = wave.map(({ name }) => name);
+		if (wave.length > 1) {
 			emit({
-				type: "action_failed",
+				type: "action_group_started",
+				attempt: attemptIndex,
+				actions: names,
+			});
+		}
+		const waveState = nextState;
+		const settled = await Promise.allSettled(
+			wave.map(async (action) => {
+				emit({
+					type: "action_started",
+					attempt: attemptIndex,
+					action: action.name,
+				});
+				reportStep(run, action, waveState, "running");
+				const actionStartedAt = Date.now();
+				try {
+					// Live state as of this wave, not just what was true when this
+					// attempt started — earlier waves' real effects are already in it.
+					return {
+						action,
+						outcome: await action.execute({ ...ctx, state: waveState, signal }),
+						actionStartedAt,
+					};
+				} catch (error) {
+					reportStep(run, action, waveState, "failed");
+					emit({
+						type: "action_failed",
+						attempt: attemptIndex,
+						action: action.name,
+						durationMs: Date.now() - actionStartedAt,
+						error: error instanceof Error ? error.message : String(error),
+					});
+					throw error;
+				}
+			}),
+		);
+
+		// Merged in plan order, not completion order, so the result is deterministic.
+		let firstError: unknown;
+		let failed = false;
+		let waiting: { action: GoapAction; on: WaitingOn } | undefined;
+		let giveUp = false;
+		for (const result of settled) {
+			if (result.status === "rejected") {
+				if (!failed) firstError = result.reason;
+				failed = true;
+				continue;
+			}
+			const { action, outcome, actionStartedAt } = result.value;
+			if (isWaitingResult(outcome)) {
+				if (outcome.facts) nextState = { ...nextState, ...outcome.facts };
+				waiting = { action, on: outcome.waiting };
+				continue;
+			}
+			const observedEffects = outcome;
+			emit({
+				type: "action_finished",
 				attempt: attemptIndex,
 				action: action.name,
 				durationMs: Date.now() - actionStartedAt,
-				error: error instanceof Error ? error.message : String(error),
+				expectedEffects: action.effects,
+				observedEffects,
 			});
-			throw error;
+			nextState = { ...nextState, ...observedEffects };
+			executedActions.push(action.name);
+			const ok = satisfied(action.effects, observedEffects);
+			reportStep(run, action, nextState, ok ? "done" : "failed");
+			if (!ok && tooManyFailures(run, action.name)) giveUp = true;
 		}
-		if (isWaitingResult(outcome)) {
-			if (outcome.facts) nextState = { ...nextState, ...outcome.facts };
+		if (wave.length > 1) {
+			emit({
+				type: "action_group_finished",
+				attempt: attemptIndex,
+				actions: names,
+			});
+		}
+
+		if (failed) throw firstError;
+		if (waiting) {
 			emit({
 				type: "waiting",
 				attempt: attemptIndex,
-				action: action.name,
-				waiting: outcome.waiting,
+				action: waiting.action.name,
+				waiting: waiting.on,
 				state: nextState,
 			});
 			return {
@@ -232,31 +325,10 @@ async function attempt(
 				executedActions,
 				succeeded: false,
 				killed: false,
-				waiting: outcome.waiting,
+				waiting: waiting.on,
 			};
 		}
-		const observedEffects = outcome;
-		emit({
-			type: "action_finished",
-			attempt: attemptIndex,
-			action: action.name,
-			durationMs: Date.now() - actionStartedAt,
-			expectedEffects: action.effects,
-			observedEffects,
-		});
-		nextState = { ...nextState, ...observedEffects };
-		executedActions.push(action.name);
-		reportStep(
-			run,
-			action,
-			nextState,
-			satisfied(action.effects, observedEffects) ? "done" : "failed",
-		);
-
-		if (
-			!satisfied(action.effects, observedEffects) &&
-			tooManyFailures(run, action.name)
-		) {
+		if (giveUp) {
 			return {
 				finalState: nextState,
 				executedActions,

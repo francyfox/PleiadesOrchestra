@@ -24,12 +24,13 @@ interface RunRow {
 	prompt: string | null;
 	goal: string;
 	succeeded: number;
+	interrupted: number;
 	durationMs: number;
 	createdAt: number;
 }
 
 const RUN_COLUMNS = `id, COALESCE(root_run_id, id) AS rootId, visitor_id AS visitorId,
-	thread_id AS threadId, prompt, goal, succeeded, duration_ms AS durationMs, created_at AS createdAt`;
+	thread_id AS threadId, prompt, goal, succeeded, interrupted, duration_ms AS durationMs, created_at AS createdAt`;
 
 const marks = (count: number) =>
 	Array.from({ length: count }, () => "?").join(",");
@@ -41,7 +42,7 @@ function chainsOf(db: Db, rootIds: string[]): Map<string, RunRow[]> {
 	const rows = db.$client
 		.query<RunRow, string[]>(
 			`SELECT ${RUN_COLUMNS} FROM plan_runs WHERE COALESCE(root_run_id, id) IN (${marks(rootIds.length)})
-			ORDER BY created_at, id`,
+			ORDER BY created_at, rowid`,
 		)
 		.all(...rootIds);
 	for (const row of rows) {
@@ -58,10 +59,13 @@ const endOf = (run: RunRow) => run.createdAt + run.durationMs;
 function statusOf(
 	last: RunRow,
 	waitedOnBrowser: boolean,
+	cancelled: boolean,
 	active: ActiveRuns,
 	now: number,
 ): RequestStatus {
 	if (active.get(last.id)) return "running";
+	if (last.interrupted === 1) return "interrupted";
+	if (cancelled) return "cancelled";
 	if (waitedOnBrowser) {
 		return now - endOf(last) < WAITING_STALE_MS ? "waiting" : "abandoned";
 	}
@@ -122,7 +126,7 @@ function summarize(
 	const progress = sqlite
 		.query<{ runId: string; type: string; action: string | null }, string[]>(
 			`SELECT run_id AS runId, type, action FROM plan_events
-			WHERE type IN ('action_finished', 'waiting') AND run_id IN (${marks(runIds.length)})
+			WHERE type IN ('action_finished', 'waiting', 'cancelled') AND run_id IN (${marks(runIds.length)})
 			ORDER BY run_id, seq`,
 		)
 		.all(...runIds);
@@ -135,7 +139,13 @@ function summarize(
 		const last = chain.at(-1) as RunRow;
 		const lastEvents = byRun.get(last.id) ?? [];
 		const waitingAction = lastEvents.find((event) => event.type === "waiting");
-		const status = statusOf(last, waitingAction !== undefined, active, now);
+		const status = statusOf(
+			last,
+			waitingAction !== undefined,
+			lastEvents.some((event) => event.type === "cancelled"),
+			active,
+			now,
+		);
 		const steps = chain.flatMap((run) =>
 			(byRun.get(run.id) ?? [])
 				.filter((event) => event.type === "action_finished")
@@ -295,7 +305,8 @@ export function getRequest(
 
 	const lastRun = runs.at(-1) as RequestRun;
 	const waited = lastRun.events.some((event) => event.type === "waiting");
-	const status = statusOf(last, waited, active, now);
+	const cancelled = lastRun.events.some((event) => event.type === "cancelled");
+	const status = statusOf(last, waited, cancelled, active, now);
 
 	const firstPlanned = runs[0]?.events.find(
 		(event) => event.type === "planned",

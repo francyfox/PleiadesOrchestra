@@ -20,4 +20,12 @@ export const shop: IntentPreset = {
 	messageCues: intentFromCues,
 	toolCues: intentFromToolCues,
 	specialistPenalty,
+	// Emptying the cart next to adding, or paying before the rest is done, depends on the order said.
+	taskConflicts: {
+		pairs: [
+			["addToCart", "removeFromCart"],
+			["removeFromCart", "checkout"],
+		],
+		lastOnly: ["checkout"],
+	},
 };

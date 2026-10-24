@@ -1,11 +1,18 @@
 import { type IntentPreset, mergePresets, type Taxonomy } from "./preset.ts";
 import { shop } from "./shop/shop.ts";
 
-export type { Facts, IntentDef, IntentPreset, Taxonomy } from "./preset.ts";
+export type {
+	Facts,
+	IntentDef,
+	IntentPreset,
+	TaskConflicts,
+	Taxonomy,
+} from "./preset.ts";
 export {
 	intentFromMessageCues,
 	intentFromToolNameCues,
 	mergePresets,
+	tasksConflict,
 } from "./preset.ts";
 // The shop's own functions, for the callers that run without a channel taxonomy (evals, tests).
 export { asksForAll, intentFromCues } from "./shop/shop.message-cues.ts";

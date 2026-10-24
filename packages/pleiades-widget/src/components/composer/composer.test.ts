@@ -24,8 +24,6 @@ const state = (patch: Partial<ChatState> = {}): ChatState => ({
 	ready: true,
 	busy: false,
 	connection: "online",
-	toolMode: "webmcp",
-	available: { webmcp: true, mcp: true },
 	noTools: false,
 	...patch,
 });

@@ -47,7 +47,7 @@ describe("replyChunks", () => {
 		expect(chunk).toContain("Penny Pantry");
 		// A small model once answered «купи яблоко» with "as an AI I can't buy":
 		// the prompt says it is already done.
-		expect(chunk).toMatch(/уже/);
+		expect(chunk).toMatch(/already done/);
 	});
 
 	const SEARCH_ANSWER =
@@ -107,7 +107,7 @@ describe("replyChunks", () => {
 		);
 		expect(chunk).toContain("купи яблоко");
 		expect(chunk).toContain("add_to_cart");
-		expect(chunk).toMatch(/не удалось/i);
+		expect(chunk).toMatch(/failed/i);
 	});
 
 	test("a failed task is told together with what the site answered, so the reply can pass its advice on", () => {
@@ -123,7 +123,83 @@ describe("replyChunks", () => {
 		);
 		expect(chunk).toContain("купи французский багет");
 		expect(chunk).toContain('No products matched "french baget"');
-		expect(chunk).toMatch(/совет/i);
+		expect(chunk).toMatch(/advice/i);
+	});
+});
+
+describe("the language of the reply", () => {
+	const note = {
+		userMessage: "find an apple",
+		messageIntent: "search",
+		"webmcp:s:text": "ok",
+	};
+	const last = (state: Record<string, unknown>) =>
+		replyChunks({ ...note, ...state }, 1000)[0]
+			?.split(". ")
+			.at(-1);
+
+	test("wrappers are English and quote the original message", () => {
+		const [chunk] = replyChunks({ ...note, userMessage: "найди яблоко" }, 1000);
+		expect(chunk).toStartWith('The visitor wrote: "найди яблоко".');
+	});
+
+	test("without a fixed language the model is told to follow the quoted message", () => {
+		expect(last({ "page:lang": "ru" })).toBe(
+			"Answer in the language of the visitor's message quoted above.",
+		);
+	});
+
+	test("a language picked in the widget wins over the message", () => {
+		expect(last({ "page:lang": "ru", "ui:langChosen": true })).toBe(
+			"Answer in Russian.",
+		);
+		expect(last({ "page:lang": "kk", "ui:langChosen": true })).toBe(
+			"Answer in Kazakh.",
+		);
+	});
+
+	test("the channel persona's language wins over the pick", () => {
+		expect(
+			last({ "persona:lang": "en", "page:lang": "ru", "ui:langChosen": true }),
+		).toBe("Answer in English.");
+	});
+
+	test("a queue quotes the original message and ends with the same line", () => {
+		const [chunk] = replyChunks(
+			{
+				...note,
+				userMessage: "add milk and show the cart",
+				"ui:langChosen": true,
+				"page:lang": "ru",
+				taskOutcomes: JSON.stringify([
+					{ intent: "addToCart", text: "add milk", ok: true },
+				]),
+			},
+			1000,
+		);
+		expect(chunk).toContain('"add milk and show the cart"');
+		expect(chunk).toEndWith("Answer in Russian.");
+	});
+
+	test("a template reply follows the message's script unless a language is fixed", async () => {
+		const action = createTemplateReplyAction(undefined);
+		const say = async (extra: Record<string, unknown>) =>
+			(
+				(await action.execute({
+					state: {
+						inCart: true,
+						product: "Milk",
+						messageIntent: "addToCart",
+						...extra,
+					},
+				} as never)) as Record<string, unknown>
+			).replyText;
+		expect(await say({ userMessage: "buy milk", "page:lang": "ru" })).toBe(
+			"Added to your cart: 1 × Milk.",
+		);
+		expect(await say({ userMessage: "купи молоко", "page:lang": "en" })).toBe(
+			"Добавил в корзину: 1 × Milk.",
+		);
 	});
 });
 
@@ -181,7 +257,7 @@ describe("the templated reply after a finished purchase", () => {
 			"Added to your cart: 2 × Honeycrisp Apples (Penny Pantry).",
 		);
 		const byPage = await action.execute({
-			state: { ...bought, "page:lang": "en" },
+			state: { ...bought, "ui:langChosen": true, "page:lang": "en" },
 		} as never);
 		expect(String((byPage as Record<string, unknown>).replyText)).toStartWith(
 			"Added to your cart",
@@ -306,13 +382,13 @@ describe("a purchase of several things", () => {
 	test("the template lists everything added, in the page's language", async () => {
 		const action = createTemplateReplyAction(undefined);
 		const en = await action.execute({
-			state: { ...state, "page:lang": "en" },
+			state: { ...state, "ui:langChosen": true, "page:lang": "en" },
 		} as never);
 		expect((en as Record<string, unknown>).replyText).toBe(
 			"Added to your cart: 1 × Keychron K2 Keyboard, 3 × Braided HDMI Cable 2m.",
 		);
 		const ru = await action.execute({
-			state: { ...state, "page:lang": "ru" },
+			state: { ...state, "ui:langChosen": true, "page:lang": "ru" },
 		} as never);
 		expect((ru as Record<string, unknown>).replyText).toBe(
 			"Добавил в корзину: 1 × Keychron K2 Keyboard, 3 × Braided HDMI Cable 2m.",
@@ -322,13 +398,23 @@ describe("a purchase of several things", () => {
 	test("and says what could not be found", async () => {
 		const action = createTemplateReplyAction(undefined);
 		const en = await action.execute({
-			state: { ...state, "page:lang": "en", missingItems: missing },
+			state: {
+				...state,
+				"ui:langChosen": true,
+				"page:lang": "en",
+				missingItems: missing,
+			},
 		} as never);
 		expect((en as Record<string, unknown>).replyText).toBe(
 			"Added to your cart: 1 × Keychron K2 Keyboard, 3 × Braided HDMI Cable 2m. Not found: quantum toaster.",
 		);
 		const ru = await action.execute({
-			state: { ...state, "page:lang": "ru", missingItems: missing },
+			state: {
+				...state,
+				"ui:langChosen": true,
+				"page:lang": "ru",
+				missingItems: missing,
+			},
 		} as never);
 		expect(String((ru as Record<string, unknown>).replyText)).toEndWith(
 			"Не нашёл: quantum toaster.",
@@ -365,25 +451,25 @@ describe("the templated reply after removing every item", () => {
 		).replyText;
 
 	test("it says what was removed in ru, en and kk", async () => {
-		expect(await run({ "page:lang": "en" })).toBe(
+		expect(await run({ "ui:langChosen": true, "page:lang": "en" })).toBe(
 			"Removed from your cart: 1 × Spaghetti, 2 × Sea Salt.",
 		);
-		expect(await run({ "page:lang": "ru" })).toBe(
+		expect(await run({ "ui:langChosen": true, "page:lang": "ru" })).toBe(
 			"Убрал из корзины: 1 × Spaghetti, 2 × Sea Salt.",
 		);
-		expect(await run({ "page:lang": "kk" })).toBe(
+		expect(await run({ "ui:langChosen": true, "page:lang": "kk" })).toBe(
 			"Себеттен алынды: 1 × Spaghetti, 2 × Sea Salt.",
 		);
 	});
 
 	test("a list the site showed empty is reported as already empty, from the site's answer", async () => {
 		const empty = { removedItems: undefined, listEmpty: true };
-		expect(await run({ ...empty, "page:lang": "en" })).toBe(
-			"Your cart is already empty.",
-		);
-		expect(await run({ ...empty, "page:lang": "ru" })).toBe(
-			"В корзине уже пусто.",
-		);
+		expect(
+			await run({ ...empty, "ui:langChosen": true, "page:lang": "en" }),
+		).toBe("Your cart is already empty.");
+		expect(
+			await run({ ...empty, "ui:langChosen": true, "page:lang": "ru" }),
+		).toBe("В корзине уже пусто.");
 	});
 
 	test("the planner uses it only after the list was read, for a removal of everything", () => {
@@ -434,8 +520,8 @@ describe("replyChunks after a removal or checkout no tool carried out", () => {
 			1000,
 		);
 		expect(chunk).toContain("удали все из корзины");
-		expect(chunk).toContain("не удалось");
-		expect(chunk).toContain("не утверждай");
+		expect(chunk).toContain("no step was run");
+		expect(chunk).toContain("claim nothing");
 	});
 
 	test("once a tool ran, the old behaviour stays", () => {

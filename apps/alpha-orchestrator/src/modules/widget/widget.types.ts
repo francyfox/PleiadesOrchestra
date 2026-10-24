@@ -72,6 +72,9 @@ export interface ReplyOptions {
 	customerContext?: CustomerContext;
 	/** Path and query of the page the visitor is on (`/ru/store/a?q=milk`), as their browser shows it. */
 	page?: string;
+	/** The widget's UI language (`en`/`ru`/`kk`) and whether the visitor picked it in the language picker. */
+	lang?: string;
+	langChosen?: boolean;
 }
 
 /** What a browser-side tool reported back. */
@@ -83,6 +86,10 @@ export interface ToolOutcome {
 	result?: unknown;
 	/** The page the visitor is on after the tool ran — a tool may have navigated. */
 	page?: string;
+	lang?: string;
+	langChosen?: boolean;
+	/** The visitor gave up on the call: the run ends as cancelled, nothing is said by the model. */
+	cancelled?: boolean;
 }
 
 /** What the widget needs from the reply machinery (see `modules/reply`). */

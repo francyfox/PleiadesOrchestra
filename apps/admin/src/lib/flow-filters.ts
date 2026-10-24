@@ -6,6 +6,8 @@ export const REQUEST_STATUSES = [
 	"succeeded",
 	"failed",
 	"abandoned",
+	"interrupted",
+	"cancelled",
 ] as const satisfies readonly RequestStatus[];
 
 /**

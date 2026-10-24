@@ -201,10 +201,20 @@ export function createAgent(config: AgentConfig): Agent {
 				};
 
 				// `get(_, 0)` isn't "nothing" for every store (`slice(-0)` is everything), so 0 is handled here.
-				const past =
+				// `historyText: ""`: the caller stored the user's turn when the run began;
+				// it is the newest message, so it is left out of the context (the prompt below replaces it).
+				const stored = message.historyText === "";
+				const fetched =
 					maxHistoryMessages > 0
-						? await history.get(message.threadId, maxHistoryMessages)
+						? await history.get(
+								message.threadId,
+								maxHistoryMessages + (stored ? 1 : 0),
+							)
 						: [];
+				const past =
+					stored && fetched.at(-1)?.role === "user"
+						? fetched.slice(0, -1)
+						: fetched;
 				const generationStartedAt = Date.now();
 				inFlight = { kind: "generate", startedAt: generationStartedAt };
 				const result = streamText({
@@ -234,10 +244,14 @@ export function createAgent(config: AgentConfig): Agent {
 				inFlight = undefined;
 
 				await history.append(callContext, [
-					{
-						role: "user",
-						content: message.historyText ?? message.chunks.join(" "),
-					},
+					...(stored
+						? []
+						: [
+								{
+									role: "user" as const,
+									content: message.historyText ?? message.chunks.join(" "),
+								},
+							]),
 					{ role: "assistant", content: fullText },
 				]);
 

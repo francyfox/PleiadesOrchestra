@@ -16,6 +16,7 @@ import { REPLY_ACTION } from "../goap/goap.service.ts";
 import { listIntentExamples } from "../intents/intents.service.ts";
 import type { VisitorRow } from "../visitors/visitors.types.ts";
 import {
+	pageFacts,
 	prepareNewMessage,
 	prepareResume,
 	replyAfterTask,
@@ -804,5 +805,27 @@ describe("a channel's presets decide how its tools and messages are read", () =>
 		);
 		expect(asked[0]).toEqual(["chat", "reserve", "other"]);
 		expect(prepared.state.messageIntent).toBe("reserve");
+	});
+});
+
+describe("pageFacts", () => {
+	test("the widget's language wins over the URL's, and says whether the visitor picked it", () => {
+		expect(pageFacts("/ru/store", { lang: "en", langChosen: true })).toEqual({
+			"page:path": "/ru/store",
+			"page:lang": "en",
+			"ui:langChosen": true,
+		});
+		expect(pageFacts("/store", { lang: "kk" })).toEqual({
+			"page:path": "/store",
+			"page:lang": "kk",
+		});
+	});
+
+	test("without the widget's language the URL's is used, never as a choice", () => {
+		expect(pageFacts("/ru/store")).toEqual({
+			"page:path": "/ru/store",
+			"page:lang": "ru",
+		});
+		expect(pageFacts(undefined)).toEqual({});
 	});
 });

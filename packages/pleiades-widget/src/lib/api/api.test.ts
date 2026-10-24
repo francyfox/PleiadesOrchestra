@@ -46,6 +46,49 @@ async function collect(stream: AsyncGenerator<StreamEvent>) {
 	return events;
 }
 
+describe("language and cancel", () => {
+	const body = (call?: { init: RequestInit }) =>
+		JSON.parse(String(call?.init.body));
+
+	test("every message and tool result carries the UI language and whether it was picked", async () => {
+		let chosen = false;
+		const calls: { url: string; init: RequestInit }[] = [];
+		const api = createWidgetApi({
+			...scope,
+			language: () => ({ lang: "kk", chosen }),
+			fetch: async (url, init) => {
+				calls.push({ url, init });
+				return ndjson([{ type: "done" }]);
+			},
+		});
+		await collect(api.streamMessage("tok", "t1", "hi"));
+		chosen = true;
+		await collect(api.sendToolResult("tok", "t1", "c1", "tool", "ok", false));
+		expect(body(calls[0])).toMatchObject({ lang: "kk" });
+		expect(body(calls[0]).langChosen).toBeUndefined();
+		expect(body(calls[1])).toMatchObject({ lang: "kk", langChosen: true });
+	});
+
+	test("a cancelled call says so", async () => {
+		const { api, calls } = recorder(() => ndjson([{ type: "cancelled" }]));
+		const events = await collect(
+			api.sendToolResult(
+				"tok",
+				"t1",
+				"c1",
+				"tool",
+				"",
+				false,
+				undefined,
+				undefined,
+				true,
+			),
+		);
+		expect(events).toEqual([{ type: "cancelled" }]);
+		expect(body(calls[0])).toMatchObject({ cancelled: true });
+	});
+});
+
 describe("createWidgetApi", () => {
 	test("createVisitor sends the publishable key, and only there", async () => {
 		const { api, calls } = recorder(() =>
@@ -87,6 +130,17 @@ describe("createWidgetApi", () => {
 			expect(headersOf(call.init)["x-visitor-token"]).toBe("tok");
 			expect(headersOf(call.init)["x-publishable-key"]).toBeUndefined();
 		}
+	});
+
+	test("pending asks the thread's pending route with the visitor token", async () => {
+		const { api, calls } = recorder(() => Response.json({ state: "none" }));
+		expect(await api.pending("tok", "a/b")).toEqual({ state: "none" });
+		expect(calls[0]?.url).toBe(
+			"https://agent.example.com/v1/widget/threads/a%2Fb/pending",
+		);
+		expect(headersOf(calls[0]?.init as RequestInit)["x-visitor-token"]).toBe(
+			"tok",
+		);
 	});
 
 	test("streamMessage posts threadId + text and yields the NDJSON events", async () => {

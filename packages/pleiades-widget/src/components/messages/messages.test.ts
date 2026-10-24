@@ -137,3 +137,46 @@ describe("examples", () => {
 		expect(asked).toEqual(["b"]);
 	});
 });
+
+describe("message times", () => {
+	const now = new Date(2026, 9, 24, 15, 30).getTime();
+	const clock = { lang: "ru" as const, justNow: "только что", now };
+
+	test("a message with a time carries the label, ISO form and exact title", () => {
+		const [bubble] = bubbleViews(
+			[{ id: "u", role: "user", content: "hi", createdAt: now - 5 * 60_000 }],
+			false,
+			clock,
+		);
+		expect(bubble).toMatchObject({
+			time: "5 мин",
+			iso: new Date(now - 5 * 60_000).toISOString(),
+		});
+		expect(bubble?.title).toContain("2026");
+	});
+
+	test("no time without a createdAt, and none on the typing bubble", () => {
+		const views = bubbleViews(
+			[
+				{ id: "u", role: "user", content: "hi" },
+				{ id: "a", role: "assistant", content: "", createdAt: now },
+			],
+			true,
+			clock,
+		);
+		expect(views.map((v) => v.time)).toEqual(["", ""]);
+	});
+
+	test("refresh redraws the relative times against the new clock", () => {
+		let t = now;
+		const model = createMessagesModel("Hi", { lang: "en", now: () => t });
+		model.render(
+			[{ id: "u", role: "user", content: "x", createdAt: now }],
+			false,
+		);
+		expect(model.messages[0]?.time).toBe("just now");
+		t = now + 3 * 60_000;
+		model.refresh();
+		expect(model.messages[0]?.time).toBe("3m");
+	});
+});

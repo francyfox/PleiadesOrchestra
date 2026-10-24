@@ -4,3 +4,6 @@ export const CHAT_ICON = `<svg viewBox="0 0 24 24" width="26" height="26" fill="
 
 /** The Pleiades mark, redrawn as four rhombi around a dot — the full docs/logo.svg is 23 kB. */
 export const LOGO = `<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><rect x="7" y="3" width="10" height="18" fill="#111"/><g fill="#f0663f" stroke="#111" stroke-width=".7"><path d="M12 1l4 5-4 5-4-5zM1 12l5-4 5 4-5 4zM13 12l5-4 5 4-5 4zM12 13l4 5-4 5-4-5z"/><circle cx="12" cy="12" r="1.6"/></g></svg>`;
+
+/** Lucide "languages". */
+export const LANGUAGES_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>`;

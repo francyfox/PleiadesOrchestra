@@ -7,16 +7,24 @@ import {
 } from "@repo/core";
 import { REPLY_GOAL } from "../goap/goap.service.ts";
 import { hashTools } from "../mcp/mcp.service.ts";
-import { startPlanRun } from "../plan-runs/plan-runs.service.ts";
+import { joinRequest, startPlanRun } from "../plan-runs/plan-runs.service.ts";
+import { errorMessage } from "../run-stream/run-stream.service.ts";
 import { streamPlanRun } from "../run-stream/run-stream.ts";
 import type { PreparedRun } from "../run-stream/run-stream.types.ts";
+import { encodeNdjsonLine } from "../streaming/streaming.service.ts";
+import { readQueue } from "../tasks/tasks.service.ts";
 import type { VisitorRow } from "../visitors/visitors.types.ts";
 import type {
 	ReplyOptions,
 	ToolOutcome,
 	WidgetReply,
 } from "../widget/widget.types.ts";
-import { prepareNewMessage, prepareResume } from "./reply.service.ts";
+import {
+	cancelWait,
+	prepareNewMessage,
+	prepareNextTask,
+	prepareResume,
+} from "./reply.service.ts";
 import type { ReplyDeps } from "./reply.types.ts";
 
 /** Catalogs kept classified at once: sites are few, their catalogs rarely change. */
@@ -63,9 +71,36 @@ export class ReplyService implements WidgetReply {
 		toolResult: ToolOutcome,
 		signal?: AbortSignal,
 	): ReadableStream<Uint8Array> {
+		if (toolResult.cancelled)
+			return this.cancelStream(visitor, threadId, toolResult);
 		return this.openStream(visitor, threadId, signal, (planRunId) =>
 			prepareResume(this.deps, threadId, planRunId, toolResult),
 		);
+	}
+
+	/** One `cancelled` line (or an in-band error for a call that is not the awaited one); no model is called. */
+	private cancelStream(
+		visitor: VisitorRow,
+		threadId: string,
+		toolResult: ToolOutcome,
+	): ReadableStream<Uint8Array> {
+		const { deps } = this;
+		return new ReadableStream({
+			async start(controller) {
+				try {
+					await deps.runLock.withLock(threadId, () =>
+						cancelWait(deps, visitor, threadId, toolResult),
+					);
+					controller.enqueue(encodeNdjsonLine({ type: "cancelled" }));
+				} catch (error) {
+					controller.enqueue(
+						encodeNdjsonLine({ type: "error", message: errorMessage(error) }),
+					);
+				} finally {
+					controller.close();
+				}
+			},
+		});
 	}
 
 	/**
@@ -180,6 +215,26 @@ export class ReplyService implements WidgetReply {
 				// The widget does not wait for the catalog's classification.
 				await this.pending.get(threadId);
 				return prepare(planRunId);
+			},
+			// The next task of a queue: its own run of the same request.
+			next: async (finished) => {
+				const nextId = crypto.randomUUID();
+				const task = readQueue(finished.prepared.state)[0];
+				startPlanRun(deps.db, {
+					id: nextId,
+					visitorId: visitor.id,
+					threadId,
+					goal: REPLY_GOAL,
+					createdAt: deps.now(),
+					prompt: task?.text,
+				});
+				joinRequest(deps.db, nextId, finished.run.planRunId);
+				deps.runs.bind(threadId, nextId);
+				return {
+					run: { planRunId: nextId, threadId },
+					prepare: () =>
+						prepareNextTask(deps, visitor, threadId, nextId, finished),
+				};
 			},
 		});
 	}

@@ -4,6 +4,7 @@ import type { ChannelDirectory } from "../channel-directory/channel-directory.ts
 import type { Db } from "../database/database.ts";
 import { recordCatalog } from "../mcp/mcp.service.ts";
 import { NDJSON_LINES } from "../messages/messages.schema.ts";
+import { pendingOf } from "../pending/pending.service.ts";
 import { ndjsonResponse } from "../streaming/streaming.service.ts";
 import {
 	createWidgetThread,
@@ -12,6 +13,7 @@ import {
 } from "../threads/threads.service.ts";
 import { createVisitor } from "../visitors/visitors.service.ts";
 import {
+	PendingResult,
 	SuspendedResult,
 	ThreadMessagesResult,
 	VisitorResult,
@@ -46,6 +48,14 @@ export interface WidgetDeps {
 
 /** `location.pathname + location.search` of the visitor's page; the widget cuts it at this length. */
 const PageField = t.Optional(t.String({ maxLength: MAX_PAGE_CHARS }));
+
+/** The widget's UI language and whether the visitor chose it (sent with every message and tool result). */
+const LangFields = {
+	lang: t.Optional(
+		t.Union([t.Literal("en"), t.Literal("ru"), t.Literal("kk")]),
+	),
+	langChosen: t.Optional(t.Boolean()),
+};
 
 /** Matches `@repo/core`'s `WebMcpToolDescriptor`. */
 const WebMcpToolSchema = t.Object({
@@ -222,6 +232,31 @@ export function widgetRoutes(deps: WidgetDeps) {
 					},
 				},
 			)
+			.get(
+				"/threads/:id/pending",
+				async ({ request, server, params }) => {
+					const auth = guard.authorize(request, server);
+					if (auth instanceof Response) return auth;
+					const foreign = rejectIfForeignThread(auth, params.id);
+					if (foreign) return foreign;
+					return Response.json(await pendingOf(db, params.id), {
+						headers: corsHeaders(auth.origin),
+					});
+				},
+				{
+					response: {
+						200: PendingResult,
+						401: t.Void(),
+						403: t.Void(),
+						404: t.Void(),
+					},
+					detail: {
+						summary: "What the thread still waits for",
+						description:
+							"`none`, `waiting` (the server awaits this browser tool call: `callId`, `tool`, `arguments`), `interrupted` (the server lost the run), or `expired` (a wait timed out; told once). Each with `tasksLeft`. Authenticated by `X-Visitor-Token`. 404 when the thread is not the visitor's.",
+					},
+				},
+			)
 			.post(
 				"/messages",
 				({ request, server, body }) => {
@@ -250,6 +285,8 @@ export function widgetRoutes(deps: WidgetDeps) {
 							signal: request.signal,
 							customerContext: body.customerContext,
 							page: body.page,
+							lang: body.lang,
+							langChosen: body.langChosen,
 						},
 					);
 					return ndjsonResponse(stream, request, corsHeaders(auth.origin));
@@ -263,6 +300,7 @@ export function widgetRoutes(deps: WidgetDeps) {
 						threadId: t.String(),
 						text: t.String(),
 						page: PageField,
+						...LangFields,
 						customerContext: t.Optional(
 							t.Record(
 								t.String(),
@@ -339,6 +377,9 @@ export function widgetRoutes(deps: WidgetDeps) {
 							isError: body.isError ?? false,
 							result: body.result,
 							page: body.page,
+							lang: body.lang,
+							langChosen: body.langChosen,
+							cancelled: body.cancelled,
 						},
 						request.signal,
 					);
@@ -359,6 +400,9 @@ export function widgetRoutes(deps: WidgetDeps) {
 						/** What the tool answered; its text is kept for the next step (e.g. the search hits). */
 						result: t.Unknown(),
 						isError: t.Optional(t.Boolean()),
+						...LangFields,
+						/** The visitor gave up on the call; `result` is not read. */
+						cancelled: t.Optional(t.Boolean()),
 					}),
 				},
 			)

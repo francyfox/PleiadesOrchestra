@@ -11,6 +11,7 @@ import type {
 import { InMemoryWorldStateStore } from "@repo/core";
 import { eq } from "drizzle-orm";
 import { type AppDeps, createApp } from "../../app.ts";
+import { ActiveRuns } from "../active-runs/active-runs.ts";
 import { createBlockedIp } from "../blocked-ips/blocked-ips.service.ts";
 import { ChannelDirectory } from "../channel-directory/channel-directory.ts";
 import { createWebChannel } from "../channels/channels.service.ts";
@@ -23,7 +24,15 @@ import {
 } from "../database/database.schema.ts";
 import { testDb } from "../database/database.testing.ts";
 import { SqliteHistoryStore } from "../history/history.ts";
+import {
+	markInterruptedRuns,
+	startPlanRun,
+} from "../plan-runs/plan-runs.service.ts";
+import { listRequests } from "../requests/requests.service.ts";
 import { RunBinding } from "../run-binding/run-binding.ts";
+import { BROWSER_WAIT_TIMEOUT_MS } from "../run-stream/run-stream.service.ts";
+import { expireStaleWaits } from "../waiting-runs/waiting-runs.service.ts";
+import { SqliteWorldStateStore } from "../world-state/world-state.ts";
 import type { WidgetOptions } from "./widget.types.ts";
 
 const ORIGIN = "https://shop.example";
@@ -48,10 +57,15 @@ function setup(
 			await store.append(
 				{ threadId: message.threadId, userId: message.userId },
 				[
-					{
-						role: "user",
-						content: message.historyText ?? message.chunks.join(" "),
-					},
+					// `historyText: ""` = the turn was stored when the run began.
+					...(message.historyText === ""
+						? []
+						: [
+								{
+									role: "user" as const,
+									content: message.historyText ?? message.chunks.join(" "),
+								},
+							]),
 					{ role: "assistant", content: "reply" },
 				],
 			);
@@ -482,6 +496,38 @@ describe("widget threads and messages", () => {
 			items: { role: string; content: string }[];
 		};
 		expect(body.items[0]).toMatchObject({ role: "user", content: typed });
+	});
+
+	test("the visitor's message is in the history from the start of the run, even if the reply never comes", async () => {
+		const ctx = setup(
+			{},
+			{
+				agent: {
+					// biome-ignore lint/correctness/useYield: the model dies before saying anything
+					async *handleMessageStream() {
+						throw new Error("model down");
+					},
+					async resetThread() {},
+				},
+			},
+		);
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+
+		await (await sendMessage(ctx, token, threadId, "buy 1 bread")).text();
+
+		const history = await ctx.app.handle(
+			widgetRequest(`/v1/widget/threads/${threadId}/messages`, {
+				method: "GET",
+				token,
+			}),
+		);
+		const body = (await history.json()) as {
+			items: { role: string; content: string }[];
+		};
+		expect(body.items.map((item) => [item.role, item.content])).toEqual([
+			["user", "buy 1 bread"],
+		]);
 	});
 
 	test("gzips the NDJSON stream when the client sends accept-encoding: gzip", async () => {
@@ -1209,9 +1255,10 @@ describe("widget shopping flow: «купи 1 сыр»", () => {
 			},
 		]);
 		expect(flow).toEqual([
+			// parse and choose-store are independent: one wave, so both start first
 			"running: Разбираю запрос…",
-			"done: Понял: 1 × «cheese»",
 			"running: Выбираю магазин…",
+			"done: Понял: 1 × «cheese»",
 			"done: Выбран магазин: Penny Pantry",
 			"running: Открываю магазин Penny Pantry…",
 			"done: Магазин открыт: Penny Pantry",
@@ -1346,10 +1393,10 @@ describe("widget shopping flow: «купи 1 сыр»", () => {
 		expect(lines.at(-1)).toMatchObject({ type: "done" });
 		expect(lines.some((line) => line.type === "delta")).toBe(true);
 		const prompt = ctx.calls.at(-1)?.chunks.join(" ") ?? "";
-		expect(prompt).toContain("не удалось");
+		expect(prompt).toContain("failed");
 		expect(prompt).toContain('No products found at Penny Pantry for "cheese".');
-		// The history keeps what the user typed, not that prompt.
-		expect(ctx.calls.at(-1)?.historyText).toBe("купи 1 сыр");
+		// The user's turn was stored when the run began; the reply stores only itself.
+		expect(ctx.calls.at(-1)?.historyText).toBe("");
 	});
 	test("if the text model is down too, the visitor still gets the site's own advice in the error line", async () => {
 		const ctx = setup(
@@ -1713,5 +1760,161 @@ describe("a suspended channel (owner without plan or balance)", () => {
 		const token = await newVisitor(ctx);
 		const threadId = await newThread(ctx, token);
 		expect((await sendMessage(ctx, token, threadId)).status).toBe(200);
+	});
+});
+
+describe("GET /v1/widget/threads/:id/pending", () => {
+	const searchTool: WebMcpToolDescriptor = {
+		name: "search_products",
+		description: "Search the catalog",
+		inputSchema: { type: "object", properties: { query: {} } },
+	};
+
+	/** The app over the real SQLite store, which `pending` reads. */
+	async function pendingSetup() {
+		const holder: { store?: SqliteWorldStateStore } = {};
+		const ctx = setup(
+			{},
+			{
+				decisionAgent: classifyingDecisionAgent("search"),
+				worldStateStore: {
+					load: (id) => holder.store?.load(id) as never,
+					save: (id, checkpoint) => holder.store?.save(id, checkpoint) as never,
+					clear: (id) => holder.store?.clear(id) as never,
+				},
+			},
+		);
+		holder.store = new SqliteWorldStateStore(ctx.db, () => ctx.clock.now);
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+		await registerTools(ctx, token, threadId, [searchTool]);
+		const pending = async (id = threadId, as = token) =>
+			(await ctx.app.handle(
+				widgetRequest(`/v1/widget/threads/${id}/pending`, {
+					method: "GET",
+					token: as,
+				}),
+			)) as Response;
+		return { ctx, token, threadId, pending };
+	}
+
+	test("a thread that waits for nothing: none", async () => {
+		const { pending } = await pendingSetup();
+		expect(await (await pending()).json()).toEqual({ state: "none" });
+	});
+
+	test("a run stopped on a browser tool: waiting, with the call to run; none once answered", async () => {
+		const { ctx, token, threadId, pending } = await pendingSetup();
+		const asked = await askedToolCall(ctx, token, threadId);
+
+		expect(await (await pending()).json()).toEqual({
+			state: "waiting",
+			callId: asked.callId,
+			tool: "search_products",
+			arguments: {},
+			tasksLeft: 0,
+		});
+
+		await sendToolResult(ctx, token, { threadId, ...asked });
+		expect(await (await pending()).json()).toEqual({ state: "none" });
+	});
+
+	test("a run the server lost: interrupted, with the original prompt", async () => {
+		const { ctx, token, threadId, pending } = await pendingSetup();
+		const asked = await askedToolCall(ctx, token, threadId, "find a laptop");
+		await sendToolResult(ctx, token, { threadId, ...asked });
+		const row = ctx.db.select().from(planRuns).get();
+		startPlanRun(ctx.db, {
+			id: "lost",
+			visitorId: row?.visitorId as string,
+			threadId,
+			goal: {},
+			createdAt: ctx.clock.now + 1,
+			prompt: "buy a phone",
+		});
+
+		expect(markInterruptedRuns(ctx.db)).toBe(1);
+
+		expect(await (await pending()).json()).toEqual({
+			state: "interrupted",
+			runId: "lost",
+			prompt: "buy a phone",
+			tasksLeft: 0,
+		});
+		// Told once, like `expired`.
+		expect(await (await pending()).json()).toEqual({ state: "none" });
+	});
+
+	test("Cancel ends the run as cancelled: no model call, no error, the checkpoint is gone, /flow says cancelled", async () => {
+		const { ctx, token, threadId, pending } = await pendingSetup();
+		const asked = await askedToolCall(ctx, token, threadId, "buy 1 bread");
+		const calls = ctx.calls.length;
+
+		const response = await ctx.app.handle(
+			widgetRequest("/v1/widget/tool-results", {
+				token,
+				body: { threadId, ...asked, result: "", cancelled: true },
+			}),
+		);
+		const lines = (await response.text())
+			.trim()
+			.split("\n")
+			.map((line) => JSON.parse(line));
+
+		expect(lines).toEqual([{ type: "cancelled" }]);
+		expect(ctx.calls.length).toBe(calls);
+		expect(await (await pending()).json()).toEqual({ state: "none" });
+		const status = listRequests(
+			ctx.db,
+			new ActiveRuns(),
+			{},
+			ctx.clock.now + 10,
+		).items[0]?.status;
+		expect(status).toBe("cancelled");
+		// Answering the same call again finds nothing to resume.
+		const again = await ctx.app.handle(
+			widgetRequest("/v1/widget/tool-results", {
+				token,
+				body: { threadId, ...asked, result: "", cancelled: true },
+			}),
+		);
+		expect((await again.text()).trim()).toContain('"type":"error"');
+	});
+
+	test("Cancel of a call that is not the awaited one is refused in-band", async () => {
+		const { ctx, token, threadId } = await pendingSetup();
+		const asked = await askedToolCall(ctx, token, threadId, "buy 1 bread");
+		const response = await ctx.app.handle(
+			widgetRequest("/v1/widget/tool-results", {
+				token,
+				body: {
+					threadId,
+					...asked,
+					callId: "other",
+					result: "",
+					cancelled: true,
+				},
+			}),
+		);
+		expect((await response.text()).trim()).toContain('"type":"error"');
+	});
+
+	test("a wait that timed out: expired, told once", async () => {
+		const { ctx, token, threadId, pending } = await pendingSetup();
+		await askedToolCall(ctx, token, threadId, "find a laptop");
+		expireStaleWaits(ctx.db, ctx.clock.now + BROWSER_WAIT_TIMEOUT_MS + 1);
+
+		expect(await (await pending()).json()).toEqual({
+			state: "expired",
+			prompt: "find a laptop",
+			tasksLeft: 0,
+		});
+		expect(await (await pending()).json()).toEqual({ state: "none" });
+	});
+
+	test("another visitor's thread: 404", async () => {
+		const { ctx, threadId, pending } = await pendingSetup();
+		const other = await newVisitor(ctx, "198.51.100.9");
+		expect((await pending(threadId, other)).status).toBe(404);
 	});
 });

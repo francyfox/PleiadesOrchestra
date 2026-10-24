@@ -138,6 +138,11 @@ export const planRuns = sqliteTable(
 		// The flow lines the visitor saw while this run went (✓ Нашёл: …), one per
 		// step id with its last phase — so a reloaded chat shows them again.
 		steps: text("steps", { mode: "json" }).$type<StoredStep[]>(),
+		// The server stopped while this run was executing: no trace was written and
+		// nothing resumes it (`markInterruptedRuns`). The widget offers a retry.
+		interrupted: integer("interrupted", { mode: "boolean" })
+			.notNull()
+			.default(false),
 	},
 	(table) => [
 		index("plan_runs_visitor_idx").on(table.visitorId, table.createdAt),

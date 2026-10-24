@@ -1,0 +1,1 @@
+ALTER TABLE `plan_runs` ADD `interrupted` integer DEFAULT false NOT NULL;

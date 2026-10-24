@@ -16,17 +16,22 @@ export const strings = {
 		no_tools:
 			"No tools available: this browser has no WebMCP and MCP is not connected.",
 		request: "That didn't work out.",
-		mode: "Tool integration",
-		webmcp: "WebMCP",
-		mcp: "MCP",
-		webmcpHint:
-			"Experimental Chrome feature (available since version 149). To enable it, open",
-		copied: "Copied ✓",
 		mic: "Dictate",
 		micStop: "Stop dictation",
 		micBlocked: "Microphone access is blocked in the browser",
 		micUnsupported: "Speech recognition API is not supported by this browser",
 		try: "Try",
+		justNow: "just now",
+		progress: "Done {done} of {total}",
+		unfinished: "The previous request was not finished. Continue?",
+		interrupted: "The request was interrupted",
+		tasksLeft: "tasks left: {n}",
+		continue: "Continue",
+		cancel: "Cancel",
+		retry: "Retry",
+		cancelled:
+			"Request cancelled. The action may already have happened — check the page.",
+		language: "Language",
 		examples: [
 			"What can you help me with here?",
 			"Find something for me",
@@ -50,17 +55,22 @@ export const strings = {
 		no_tools:
 			"Нет доступных инструментов: в этом браузере нет WebMCP, а MCP не подключён.",
 		request: "Не получилось это сделать.",
-		mode: "Режим интеграции",
-		webmcp: "WebMCP",
-		mcp: "MCP",
-		webmcpHint:
-			"Экспериментальная функция Chrome (доступна с версии 149). Для активации перейдите в",
-		copied: "Скопировано ✓",
 		mic: "Диктовать",
 		micStop: "Остановить диктовку",
 		micBlocked: "Доступ к микрофону запрещён в браузере",
 		micUnsupported: "API распознавания речи не поддерживается этим браузером",
 		try: "Попробуйте",
+		justNow: "только что",
+		progress: "Выполнено {done} из {total}",
+		unfinished: "Прошлый запрос не завершён. Продолжить?",
+		interrupted: "Запрос прервался",
+		tasksLeft: "осталось задач: {n}",
+		continue: "Продолжить",
+		cancel: "Отмена",
+		retry: "Повторить",
+		cancelled:
+			"Запрос отменён. Действие могло уже выполниться — проверьте страницу.",
+		language: "Язык",
 		examples: [
 			"С чем ты можешь помочь здесь?",
 			"Найди мне что-нибудь",
@@ -84,17 +94,22 @@ export const strings = {
 		no_tools:
 			"Қолжетімді құралдар жоқ: бұл браузерде WebMCP жоқ, ал MCP қосылмаған.",
 		request: "Бұл орындалмады.",
-		mode: "Құрал интеграциясы",
-		webmcp: "WebMCP",
-		mcp: "MCP",
-		webmcpHint:
-			"Chrome-дың эксперименттік функциясы (149 нұсқасынан бастап қолжетімді). Қосу үшін мына бетке өтіңіз:",
-		copied: "Көшірілді ✓",
 		mic: "Дыбыстап жазу",
 		micStop: "Жазуды тоқтату",
 		micBlocked: "Браузерде микрофонға рұқсат жабық",
 		micUnsupported: "Бұл браузер сөйлеуді тану API-ін қолдамайды",
 		try: "Байқап көріңіз",
+		justNow: "жаңа ғана",
+		progress: "Орындалды: {done} / {total}",
+		unfinished: "Алдыңғы сұрау аяқталмады. Жалғастыру керек пе?",
+		interrupted: "Сұрау үзілді",
+		tasksLeft: "қалған тапсырмалар: {n}",
+		continue: "Жалғастыру",
+		cancel: "Бас тарту",
+		retry: "Қайталау",
+		cancelled:
+			"Сұрау тоқтатылды. Әрекет орындалып қойған болуы мүмкін — бетті тексеріңіз.",
+		language: "Тіл",
 		examples: [
 			"Мұнда қандай көмек бере аласың?",
 			"Маған бірдеңе тауып бер",
@@ -106,8 +121,26 @@ export const strings = {
 export type Lang = keyof typeof strings;
 export type Strings = (typeof strings)[Lang];
 
-/** The widget's language: the `lang` attribute, else the page's, else the browser's; English if unsupported. */
-export function pickLang(value?: string | null): Lang {
-	const code = value?.slice(0, 2).toLowerCase();
-	return code && code in strings ? (code as Lang) : "en";
+/** Each language in its own name, for the picker. */
+export const LANG_NAMES: Record<Lang, string> = {
+	en: "English",
+	ru: "Русский",
+	kk: "Қазақша",
+};
+
+export function isLang(value: unknown): value is Lang {
+	return typeof value === "string" && value in strings;
+}
+
+/**
+ * The widget's language: the first candidate that maps to a supported language
+ * (by its first two letters), in priority order — the visitor's pick, the
+ * `lang` attribute, the page's `<html lang>`, the browser's; English if none.
+ */
+export function pickLang(...candidates: (string | null | undefined)[]): Lang {
+	for (const value of candidates) {
+		const code = value?.slice(0, 2).toLowerCase();
+		if (isLang(code)) return code;
+	}
+	return "en";
 }

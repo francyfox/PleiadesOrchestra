@@ -8,6 +8,8 @@ const RequestStatus = t.Union([
 	t.Literal("succeeded"),
 	t.Literal("failed"),
 	t.Literal("abandoned"),
+	t.Literal("interrupted"),
+	t.Literal("cancelled"),
 ]);
 
 /** Paging plus optional filters (`oneOf`, not `t.UnionEnum`: an omitted field must stay undefined). */

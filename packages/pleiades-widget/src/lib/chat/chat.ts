@@ -1,9 +1,13 @@
-import { ApiError, isAbortError, type WidgetApi } from "@/lib/api/api.ts";
+import {
+	ApiError,
+	isAbortError,
+	type StreamEvent,
+	type WidgetApi,
+} from "@/lib/api/api.ts";
+import { decidePending, type HeldCall } from "@/lib/chat/pending.ts";
 import type { CustomerContext } from "@/lib/config/config.ts";
-import type { SessionStore, ToolMode } from "@/lib/storage/storage.ts";
+import type { SessionStore } from "@/lib/storage/storage.ts";
 import type { WebMcpProvider } from "@/lib/webmcp/webmcp.ts";
-
-export type { ToolMode } from "@/lib/storage/storage.ts";
 
 export type ChatError =
 	| "forbidden"
@@ -28,6 +32,8 @@ export interface ChatMessage {
 	id: string;
 	role: "user" | "assistant";
 	content: string;
+	/** Epoch ms: the server's time for loaded messages, the client's for new ones. */
+	createdAt?: number;
 	/** What the assistant did to produce this reply, in order. Only on replies that used tools. */
 	steps?: ChatStep[];
 }
@@ -53,8 +59,29 @@ export interface SendResult {
 	error?: string;
 }
 
+/** A message of several tasks: how far the queue is. Times are the client's clock. */
+export interface ChatProgress {
+	done: number;
+	total: number;
+	current: string;
+	startedAt: number;
+	/** Set once the turn is over: the time stops here. */
+	endedAt?: number;
+}
+
+/** `resume`: a tool call that only the visitor can let through (Continue / Cancel). `cancelled`: what Cancel left behind. `retry`: the request is lost, send its prompt again (empty prompt = nothing to send). */
+export type ChatNotice =
+	| { kind: "resume"; tasksLeft: number }
+	/** Cancel was taken: the request ended, and the action may have happened already. */
+	| { kind: "cancelled" }
+	| { kind: "retry"; prompt: string; tasksLeft: number };
+
 export interface ChatState {
 	messages: ChatMessage[];
+	/** Only for a turn of two or more tasks; gone when the next message is sent. */
+	progress?: ChatProgress;
+	/** Unfinished work the server told about after a reload or a lost connection; gone when anything is sent. */
+	notice?: ChatNotice;
 	/** A visitor session and thread exist and the history is loaded. */
 	ready: boolean;
 	/** A reply is being generated. */
@@ -70,27 +97,8 @@ export interface ChatState {
 	error?: ChatError;
 	/** For a `request` error: what the site advised (its own last answer), if it said anything. */
 	errorHint?: string;
-	/** Which tool integration the site uses — a standing preference, not tied to any one conversation. Defaults to "webmcp". */
-	toolMode: ToolMode;
-	/** Which tool modes can be used at all: WebMCP needs the browser's provider, MCP a server-side one. */
-	available: { webmcp: boolean; mcp: boolean };
-	/** Neither mode can be used — nothing to do for the visitor; the widget says so and sends nothing. */
+	/** The browser has no WebMCP provider — nothing to do for the visitor; the widget says so and sends nothing. */
 	noTools: boolean;
-}
-
-/**
- * The mode to start in: the saved one while it still exists, else whichever
- * exists (WebMCP first). With neither, the saved one (or WebMCP) stays — the
- * UI shows `noTools` instead.
- */
-export function pickToolMode(
-	preferred: ToolMode | undefined,
-	available: { webmcp: boolean; mcp: boolean },
-): ToolMode {
-	if (preferred && available[preferred]) return preferred;
-	if (available.webmcp) return "webmcp";
-	if (available.mcp) return "mcp";
-	return preferred ?? "webmcp";
 }
 
 interface ChatOptions {
@@ -98,14 +106,9 @@ interface ChatOptions {
 	store: SessionStore;
 	/**
 	 * The in-page WebMCP tool caller, if the browser exposes one (see
-	 * `webmcp.ts`) — undefined in every real browser today, and even when
-	 * present only actually used while `state.toolMode === "webmcp"` (`send`
-	 * checks this on every call, not just once at creation, since the mode
-	 * can change without recreating `Chat`).
+	 * `webmcp.ts`) — undefined in every real browser today.
 	 */
 	webmcp?: WebMcpProvider;
-	/** Whether the server side can reach the site's tools (MCP). Nothing supports it yet, hence false by default. */
-	mcpAvailable?: boolean;
 	/**
 	 * The visitor's current page (`currentPage`), read at the moment of every
 	 * request — never cached: a tool call may navigate, and the next request
@@ -173,15 +176,16 @@ function withStep(steps: ChatStep[] | undefined, step: ChatStep): ChatStep[] {
 }
 
 /** What a finished stream means for the chat's error line: nothing, or what went wrong. */
-function errorOf(result: "ok" | "failed" | "request"): ChatError | undefined {
-	return result === "ok" ? undefined : result;
+function errorOf(
+	result: "ok" | "failed" | "request" | "cancelled",
+): ChatError | undefined {
+	return result === "ok" || result === "cancelled" ? undefined : result;
 }
 
 export function createChat({
 	api,
 	store,
 	webmcp,
-	mcpAvailable = false,
 	page,
 	now = Date.now,
 	maxChars = 2000,
@@ -190,15 +194,12 @@ export function createChat({
 	maxMessages = 10,
 	toolChangeDebounceMs = 300,
 }: ChatOptions) {
-	const available = { webmcp: Boolean(webmcp), mcp: mcpAvailable };
 	const state: ChatState = {
 		messages: [],
 		ready: false,
 		busy: false,
 		connection: "online",
-		toolMode: pickToolMode(store.loadToolMode(), available),
-		available,
-		noTools: !available.webmcp && !available.mcp,
+		noTools: !webmcp,
 	};
 	const listeners = new Set<(state: ChatState) => void>();
 	let session: Session | undefined;
@@ -208,6 +209,8 @@ export function createChat({
 	let counter = 0;
 	/** The first `tool_call` id of the turn in progress = its first plan run id. */
 	let turnRequestId: string | undefined;
+	/** The server took the visitor's Cancel during this turn. */
+	let turnCancelled = false;
 	let pingTimer: ReturnType<typeof setInterval> | undefined;
 	/** The in-flight `send()`, if any — `stop()` flags it before aborting so the abort is told apart from an idle-timeout one. */
 	let activeSend:
@@ -261,6 +264,7 @@ export function createChat({
 				if (!reachable) return;
 				stopPingLoop();
 				update({ connection: "online", error: undefined });
+				void checkPending();
 			});
 		}, pingIntervalMs);
 		const unref = (pingTimer as unknown as { unref?: () => void }).unref;
@@ -316,6 +320,7 @@ export function createChat({
 				id: `h-${item.id}`,
 				role: item.role,
 				content: item.content,
+				createdAt: item.createdAt,
 				...(item.steps ? { steps: item.steps } : {}),
 			}))
 			.slice(-maxMessages);
@@ -326,23 +331,20 @@ export function createChat({
 
 	/**
 	 * Registers this thread's current WebMCP tool catalog with the server —
-	 * once here (panel open) and once more from `setToolMode` (mode switched
-	 * while already open), never per message: a real catalog is several kB
+	 * once here (panel open), never per message: a real catalog is several kB
 	 * on its own, and reclassifying it through Laya on every message was
 	 * both wasteful and, combined with the size, what caused a `413` on the
 	 * very first message. A listing/registration failure (offline, an
 	 * unstable/half-implemented `document.modelContext`) just means no
-	 * tools this session, not a broken open/mode switch.
+	 * tools this session, not a broken open.
 	 */
 	async function syncWebMcpTools(onlyIfChanged = false): Promise<void> {
 		// No provider at all (every real browser today — see webmcp.ts): never
 		// anything to register or clear, so skip the network call entirely
 		// rather than sending an empty catalog on every single panel open.
 		if (!session || !webmcp) return;
-		const tools =
-			state.toolMode === "webmcp"
-				? await webmcp.listTools().catch(() => [])
-				: [];
+		// shortcut: tool mode fixed to webmcp, upgrade when the channel setting (cabinet/admin) exists
+		const tools = await webmcp.listTools().catch(() => []);
 		// A `toolchange` that left the catalog as it was costs no request.
 		const key = `${session.threadId}:${JSON.stringify(tools)}`;
 		if (onlyIfChanged && key === lastAnnounced) return;
@@ -386,7 +388,10 @@ export function createChat({
 
 	function init(): Promise<void> {
 		initPromise ??= open().then(
-			() => update({ ready: true, error: undefined }),
+			() => {
+				update({ ready: true, error: undefined });
+				void checkPending();
+			},
 			(cause) => {
 				initPromise = undefined;
 				const code = errorCodeOf(cause);
@@ -411,20 +416,23 @@ export function createChat({
 		signal: AbortSignal,
 		onEvent: () => void,
 		customerContext?: CustomerContext,
-	): Promise<"ok" | "failed" | "request"> {
-		let stream = api.streamMessage(
-			current.visitorToken,
-			current.threadId,
-			text,
-			signal,
-			customerContext,
-			page?.(),
-		);
+		/** Continue a call the server already waits on instead of sending `text` (`cancel`: answer it as failed). */
+		resume?: HeldCall & { cancel?: boolean },
+	): Promise<"ok" | "failed" | "request" | "cancelled"> {
+		let stream = resume
+			? undefined
+			: api.streamMessage(
+					current.visitorToken,
+					current.threadId,
+					text,
+					signal,
+					customerContext,
+					page?.(),
+				);
+		let toolCall: (HeldCall & { cancel?: boolean }) | undefined = resume;
 		while (true) {
-			let toolCall:
-				| { tool: string; arguments: Record<string, unknown>; callId: string }
-				| undefined;
-			for await (const event of stream) {
+			if (stream) toolCall = undefined;
+			for await (const event of stream ?? []) {
 				onEvent();
 				if (event.type === "delta") {
 					target.content += event.text;
@@ -432,6 +440,12 @@ export function createChat({
 				} else if (event.type === "step") {
 					target.steps = withStep(target.steps, event);
 					emit();
+				} else if (event.type === "progress") {
+					trackProgress(event);
+					emit();
+				} else if (event.type === "cancelled") {
+					turnCancelled = true;
+					return "cancelled";
 				} else if (event.type === "error") {
 					if (event.code === "task_failed") {
 						requestHint = event.hint;
@@ -444,12 +458,14 @@ export function createChat({
 				}
 			}
 			if (!toolCall) return "ok";
-			if (!webmcp) return "failed";
+			if (!webmcp && !toolCall.cancel) return "failed";
 
-			const { result, isError } = await webmcp.callTool(
-				toolCall.tool,
-				toolCall.arguments,
-			);
+			// Cancel is not a failed tool: the tool may have run already, so the server only closes the request.
+			const cancel = toolCall.cancel === true;
+			const { result, isError } =
+				cancel || !webmcp
+					? { result: "", isError: false }
+					: await webmcp.callTool(toolCall.tool, toolCall.arguments);
 			stream = api.sendToolResult(
 				current.visitorToken,
 				current.threadId,
@@ -459,13 +475,29 @@ export function createChat({
 				isError ?? false,
 				signal,
 				page?.(),
+				cancel,
 			);
 		}
+	}
+
+	/** The server's clock may differ from ours: keep our time of the first line (same server `startedAt` = same queue). */
+	let progressServerStart: number | undefined;
+	function trackProgress(event: Extract<StreamEvent, { type: "progress" }>) {
+		const same = progressServerStart === event.startedAt && state.progress;
+		progressServerStart = event.startedAt;
+		state.progress = {
+			done: event.done,
+			total: event.total,
+			current: event.current,
+			startedAt: same ? same.startedAt : now(),
+		};
 	}
 
 	async function send(
 		raw: string,
 		customerContext?: CustomerContext,
+		/** No new message: carry on a call the server waits on (`resumePending`, `checkPending`). */
+		resume?: HeldCall & { cancel?: boolean },
 	): Promise<SendResult> {
 		const text = raw.trim();
 		const refused = (error: string): SendResult => ({
@@ -474,7 +506,7 @@ export function createChat({
 			status: "error",
 			error,
 		});
-		if (!text) return refused("empty");
+		if (!text && !resume) return refused("empty");
 		if (state.busy) return refused("busy");
 		if (state.connection === "offline") return refused("not connected");
 		if (text.length > maxChars) {
@@ -482,6 +514,10 @@ export function createChat({
 			return refused("too_long");
 		}
 		turnRequestId = undefined;
+		turnCancelled = false;
+		state.notice = undefined;
+		state.progress = undefined;
+		progressServerStart = undefined;
 		state.busy = true;
 		state.error = undefined;
 		state.errorHint = undefined;
@@ -494,13 +530,23 @@ export function createChat({
 			return refused(state.error ?? "not connected");
 		}
 
-		const user: ChatMessage = { id: nextId(), role: "user", content: text };
+		const user: ChatMessage = {
+			id: nextId(),
+			role: "user",
+			content: text,
+			createdAt: now(),
+		};
 		const assistant: ChatMessage = {
 			id: nextId(),
 			role: "assistant",
 			content: "",
+			createdAt: now(),
 		};
-		state.messages = [...state.messages, user, assistant].slice(-maxMessages);
+		state.messages = [
+			...state.messages,
+			...(text ? [user] : []),
+			assistant,
+		].slice(-maxMessages);
 		emit();
 
 		const controller = new AbortController();
@@ -524,6 +570,7 @@ export function createChat({
 						controller.signal,
 						resetIdleTimer,
 						customerContext,
+						resume,
 					),
 				);
 			} catch (cause) {
@@ -539,6 +586,7 @@ export function createChat({
 						controller.signal,
 						resetIdleTimer,
 						customerContext,
+						resume,
 					),
 				);
 			}
@@ -568,22 +616,25 @@ export function createChat({
 				text,
 				phase,
 			})),
-			status: cleanStop
-				? "error"
-				: outcome === undefined
-					? "done"
+			status:
+				cleanStop || turnCancelled
+					? "error"
+					: outcome === undefined
+						? "done"
+						: outcome === "request"
+							? "failed"
+							: "error",
+			...(turnCancelled
+				? { error: "cancelled" }
+				: cleanStop
+					? { error: "stopped" }
 					: outcome === "request"
-						? "failed"
-						: "error",
-			...(cleanStop
-				? { error: "stopped" }
-				: outcome === "request"
-					? requestHint
-						? { error: requestHint }
-						: {}
-					: outcome
-						? { error: outcome }
-						: {}),
+						? requestHint
+							? { error: requestHint }
+							: {}
+						: outcome
+							? { error: outcome }
+							: {}),
 		};
 
 		// A reply that is only a flow (a task that failed, say) is still worth showing.
@@ -592,12 +643,69 @@ export function createChat({
 				(message) => message !== assistant,
 			);
 		}
+		// Read through the type: TS thinks `progress` is still the cleared value of the top of `send`.
+		const progress = state.progress as ChatProgress | undefined;
+		if (progress) progress.endedAt = now();
 		update({
 			busy: false,
+			...(turnCancelled ? { notice: { kind: "cancelled" as const } } : {}),
 			error: cleanStop ? undefined : outcome,
 			errorHint: outcome === "request" && !cleanStop ? requestHint : undefined,
 		});
 		return result;
+	}
+
+	/** The call a `resume` notice is about. */
+	let held: HeldCall | undefined;
+
+	/**
+	 * Asks the server what it still holds for this thread — after a reload and
+	 * after a lost connection. Nothing is replayed by itself, except a call
+	 * that only reads and exists on this page; everything else becomes a notice.
+	 * A server without the route (or any failure) means no notice.
+	 */
+	async function checkPending(): Promise<void> {
+		if (!session || state.busy) return;
+		const { visitorToken, threadId } = session;
+		try {
+			const pending = await api.pending(visitorToken, threadId);
+			if (state.busy || session?.threadId !== threadId) return;
+			const onPage =
+				pending.state === "waiting" && webmcp
+					? (await webmcp.listTools()).some(
+							(tool) => tool.name === pending.tool,
+						)
+					: false;
+			const action = decidePending(pending, onPage);
+			if (pending.state === "waiting") {
+				held = {
+					tool: pending.tool,
+					arguments: pending.arguments,
+					callId: pending.callId,
+				};
+			}
+			if (action.do === "run" && held) void send("", undefined, held);
+			else if (action.do === "ask")
+				update({ notice: { kind: "resume", tasksLeft: action.tasksLeft } });
+			else if (action.do === "retry")
+				update({
+					notice: {
+						kind: "retry",
+						prompt: action.prompt,
+						tasksLeft: action.tasksLeft,
+					},
+				});
+		} catch {
+			// No notice: the next open asks again.
+		}
+	}
+
+	/** Continue (`cancel` false) or give up on the held call. */
+	async function resumePending(cancel: boolean): Promise<void> {
+		if (!held) return;
+		const call = held;
+		held = undefined;
+		await send("", undefined, { ...call, cancel });
 	}
 
 	/** Aborts the reply in progress, if any — the partial text already streamed is kept, no error is shown. */
@@ -640,14 +748,6 @@ export function createChat({
 		await syncWebMcpTools();
 	}
 
-	function setToolMode(mode: ToolMode): void {
-		store.saveToolMode(mode);
-		update({ toolMode: mode });
-		// Only meaningful once a session exists — if the panel hasn't opened
-		// yet, `open()` reads the now-updated `state.toolMode` on its own.
-		void syncWebMcpTools();
-	}
-
 	return {
 		api,
 		get state() {
@@ -661,9 +761,23 @@ export function createChat({
 		},
 		init,
 		send,
+		/** Notice buttons: run the held tool and go on, or answer it as failed. */
+		continuePending: () => resumePending(false),
+		cancelPending: () => resumePending(true),
+		/** Notice button: send the lost request's prompt again as a new message. */
+		retryPending(customerContext?: CustomerContext): Promise<SendResult> {
+			const notice = state.notice;
+			return notice?.kind === "retry"
+				? send(notice.prompt, customerContext)
+				: Promise.resolve({
+						reply: "",
+						steps: [],
+						status: "error",
+						error: "nothing to retry",
+					});
+		},
 		stop,
 		resetSession,
-		setToolMode,
 		/** Stops following the page's tool changes (the element left the document). */
 		dispose(): void {
 			clearTimeout(announceTimer);

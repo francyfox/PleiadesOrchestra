@@ -147,3 +147,20 @@ export function finishPlanRun(
 		}
 	})();
 }
+
+/**
+ * At startup: a run row with no trace and no duration was executing when the
+ * server stopped (a run that waits for the browser has its trace). Nothing
+ * resumes it and its side effects are not replayed — the widget offers a retry.
+ * shortcut: a run that failed before its first ms with no events is marked too;
+ * harmless, the label only says "did not finish".
+ */
+export function markInterruptedRuns(db: Db): number {
+	return db.$client
+		.query(
+			`UPDATE plan_runs SET interrupted = 1
+			WHERE interrupted = 0 AND duration_ms = 0
+			AND NOT EXISTS (SELECT 1 FROM plan_events WHERE run_id = plan_runs.id)`,
+		)
+		.run().changes;
+}

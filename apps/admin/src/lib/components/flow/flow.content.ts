@@ -111,6 +111,8 @@ const flowContent = {
 				succeeded: t({ ru: "готово", en: "done", kk: "дайын" }),
 				failed: t({ ru: "ошибка", en: "failed", kk: "қате" }),
 				abandoned: t({ ru: "брошен", en: "abandoned", kk: "тасталған" }),
+				interrupted: t({ ru: "прервался", en: "interrupted", kk: "үзілді" }),
+				cancelled: t({ ru: "отменён", en: "cancelled", kk: "бас тартылды" }),
 			},
 		},
 		graph: {

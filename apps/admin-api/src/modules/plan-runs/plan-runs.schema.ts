@@ -6,6 +6,8 @@ export const TraceEventType = t.UnionEnum([
 	"no_plan",
 	"action_skipped",
 	"action_started",
+	"action_group_started",
+	"action_group_finished",
 	"waiting",
 	"action_finished",
 	"action_failed",

@@ -89,7 +89,7 @@ CREATE TABLE `plan_runs` (
 	`succeeded` integer NOT NULL,
 	`attempts` integer NOT NULL,
 	`duration_ms` integer NOT NULL,
-	`created_at` integer NOT NULL, `root_run_id` text, `prompt` text, `steps` text,
+	`created_at` integer NOT NULL, `root_run_id` text, `prompt` text, `steps` text, `interrupted` integer DEFAULT false NOT NULL,
 	FOREIGN KEY ("visitor_id") REFERENCES "visitors"(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`thread_id`) REFERENCES `threads`(`id`) ON UPDATE no action ON DELETE cascade
 );
@@ -254,6 +254,7 @@ INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'a
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '6a89ddd783b8155e61bd7d78539cb7e0f3fa1ad8148922445e7b64f3a7c45ed0', 1792490643768);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'db4b68f84e07adb1fa993054f23e2f676a11bbc4d94047db081351b6f3c31c52', 1792559642677);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '9c755ee69d557b8c2509c3ec35cae90f75593d422cb9cd693c3a6cce295d1349', 1792749311631);
+INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '555cc4b3858a7c414ba147b6360efacb3c624028bab5af0c6871b6140f09a56a', 1792835818788);
 INSERT INTO "channels" ("id", "slug", "kind", "name", "access_mode", "publishable_key", "secret_key_hash", "allowed_origins", "disabled_at", "created_at", "catalog_language", "owner_id", "intent_sets") VALUES ('ch_telegram', 'telegram', 'telegram', 'Telegram', 'whitelist', NULL, NULL, '[]', NULL, CAST(strftime('%s', 'now') AS INTEGER) * 1000, 'en', NULL, '["shop"]');
 INSERT INTO "channels" ("id", "slug", "kind", "name", "access_mode", "publishable_key", "secret_key_hash", "allowed_origins", "disabled_at", "created_at", "catalog_language", "owner_id", "intent_sets") VALUES ('ch_cli', 'cli', 'cli', 'CLI', 'open', NULL, NULL, '[]', NULL, CAST(strftime('%s', 'now') AS INTEGER) * 1000, 'en', NULL, '["shop"]');
 COMMIT;
