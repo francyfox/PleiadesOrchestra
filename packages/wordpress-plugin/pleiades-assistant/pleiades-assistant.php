@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Pleiades Assistant
  * Description: An AI shop and site assistant (Pleiades chat widget) with WooCommerce tools for search, product cards and the cart.
- * Version: 0.2.0
+ * Version: 0.3.0
  * Requires at least: 6.4
  * Requires PHP: 7.4
  * Author: Danil Golota
@@ -156,7 +156,7 @@ add_action(
 		}
 		$url = plugin_dir_url( __FILE__ ) . 'assets/';
 		// The file times bust browser caches when an asset changes without a version bump.
-		$ver  = '0.2.0.' . filemtime( __DIR__ . '/assets/tools.js' ) . filemtime( __DIR__ . '/assets/pleiades-widget.js' );
+		$ver  = '0.3.0.' . filemtime( __DIR__ . '/assets/tools.js' ) . filemtime( __DIR__ . '/assets/pleiades-widget.js' );
 		$deps = array( 'pleiades-wp-core' );
 		if ( $has_key ) {
 			wp_enqueue_script( 'pleiades-widget', $url . 'pleiades-widget.js', array(), $ver, true );
