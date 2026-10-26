@@ -401,19 +401,15 @@ export const providerActions = {
 	saveModel: async (form: FormData) => {
 		const parsed = parseForm(ProviderModel, form);
 		if (!parsed.ok) return invalidForm();
-		const model = parsed.body;
-		const result = await submitted(
-			api()
-				.providers({ id: text(form, "provider") })
-				.models.put(model),
-		);
-		// An edit that picked another provider moves the model: drop it from the old one.
-		const from = text(form, "fromProvider");
-		if (!result.ok || !from || from === text(form, "provider")) return result;
+		// An edit names the model it was: renamed or moved, the server drops the old one and moves its agents.
+		const fromProvider = text(form, "fromProvider");
+		const fromId = text(form, "fromId");
 		return submitted(
 			api()
-				.providers({ id: from })
-				.models.delete({}, { query: { model: model.id } }),
+				.providers({ id: text(form, "provider") })
+				.models.put(parsed.body, {
+					query: fromProvider && fromId ? { fromProvider, fromId } : {},
+				}),
 		);
 	},
 	removeModel: (form: FormData) =>

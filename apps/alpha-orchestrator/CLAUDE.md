@@ -9,7 +9,7 @@ Follows the root "Code style" convention (`src/index.ts` composition root with c
 - `*.instance.ts` singletons (e.g. `translate.instance.ts`) — only `index.ts` and other `*.instance.ts` import them.
 - Test helpers: `database.testing.ts` -> `testDb()`, `http.testing.ts` -> `setupAdminApp()`/`admin()`/`json()`.
 
-Modules: `access`, `active-runs`, `agent-settings`, `agents`, `auth`, `billing`, `blocked-ips`, `channel-directory`, `channels`, `config`, `database`, `decisions`, `english-only`, `goap`, `history`, `http`, `identify`, `messages`, `performance`, `persona`, `plan-runs`, `prices`, `providers`, `rate-limit`, `reply`, `retention`, `run-binding`, `run-stream`, `security`, `stats`, `streaming`, `subscriptions`, `telegram-whitelist`, `text`, `threads`, `translate`, `usage`, `usage-recorder`, `visitors`, `widget`, `world-state`.
+Modules: `access`, `active-runs`, `agent-settings`, `agents`, `auth`, `billing`, `blocked-ips`, `channel-directory`, `channels`, `completions`, `config`, `database`, `decisions`, `english-only`, `goap`, `history`, `http`, `identify`, `messages`, `performance`, `persona`, `plan-runs`, `prices`, `providers`, `rate-limit`, `reply`, `retention`, `run-binding`, `run-stream`, `security`, `stats`, `streaming`, `subscriptions`, `telegram-whitelist`, `text`, `threads`, `translate`, `usage`, `usage-recorder`, `visitors`, `widget`, `world-state`.
 
 ## Commands
 

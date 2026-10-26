@@ -46,6 +46,8 @@ Registers a channel visitor (if not there yet), updates `lastSeenAt`/`displayNam
 
 `POST /v1/decisions` does not change.
 
+`POST /v1/chat/completions` (`HARNESS_API_KEY`): an OpenAI-compatible pass-through to the reply model in effect (`beta-text` agent settings), no planner. The body is sent as given with `model` replaced by beta's (its key, `reasoning_effort` and extra body added); the upstream status and body, a stream included, come back unchanged. Not in the usage ledger. Used by `apps/benchmark` (`bun efficiency`) to run the same text model without the orchestrator.
+
 ## Admin API (`Authorization: Bearer <ADMIN_API_KEY>`)
 
 Everything is under `/v1/admin/*`. Mutating requests (POST/PATCH/DELETE) must send `X-Admin-Id: <administrator id from better-auth>`, without it → `400`. The `HARNESS_API_KEY` gives no access to `/v1/admin/*` (→ `401`), and vice versa.
@@ -357,7 +359,7 @@ Which model an agent uses, and the providers file it is picked from. Ids: `beta-
 | GET | `/v1/admin/providers` | — | `{ "items": [Provider] }` |
 | PUT | `/v1/admin/providers/:id` | `{ "name", "baseUrl", "apiKey"? }` | `{ "items": [Provider] }` (adds or changes; no `apiKey` keeps the saved key, `""` removes it) |
 | DELETE | `/v1/admin/providers/:id` | — | `{ "items": [Provider] }` (with its models) |
-| PUT | `/v1/admin/providers/:id/models` | `ProviderModel` | `{ "items": [Provider] }` (adds or changes by `id`) |
+| PUT | `/v1/admin/providers/:id/models[?fromProvider=<id>&fromId=<model id>]` | `ProviderModel` | `{ "items": [Provider] }` (adds or changes by `id`; with `from*` naming another id or provider, that model is removed and the agents that picked it pick this one) |
 | DELETE | `/v1/admin/providers/:id/models?model=<id>` | — | `{ "items": [Provider] }` |
 | GET | `/v1/admin/providers-toml` | — | `{ "toml": string }` (keys masked) |
 | PUT | `/v1/admin/providers-toml` | `{ "toml": string }` | `{ "toml": string }`; `400` with the reason if it does not parse or fit |

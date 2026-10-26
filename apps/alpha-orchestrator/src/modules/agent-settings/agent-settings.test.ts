@@ -165,6 +165,57 @@ describe("agent settings", () => {
 		);
 	});
 
+	test("a model saved with ?fromProvider&fromId replaces that one: renamed or moved, the agents that picked it follow", async () => {
+		const { agentSettings, call } = await setup();
+		await call("/providers/openrouter", "PUT", {
+			name: "OpenRouter",
+			baseUrl: "https://openrouter.ai/api/v1",
+			apiKey: "sk-or",
+		});
+		const model = { name: "Gemini", types: ["language"], extraBody: {} };
+		await call("/providers/openrouter/models", "PUT", {
+			...model,
+			id: "google/gemini-2.5-flash-lite",
+		});
+		await call("/agents/beta-text/model", "PUT", {
+			provider: "openrouter",
+			model: "google/gemini-2.5-flash-lite",
+		});
+
+		const renamed = await json(
+			await call(
+				"/providers/openrouter/models?fromProvider=openrouter&fromId=google%2Fgemini-2.5-flash-lite",
+				"PUT",
+				{ ...model, id: "google/gemini-3.5-flash-lite" },
+			),
+		);
+		const ids = (
+			renamed as { items: { id: string; models: { id: string }[] }[] }
+		).items
+			.find((p) => p.id === "openrouter")
+			?.models.map((m) => m.id);
+		expect(ids).toEqual(["google/gemini-3.5-flash-lite"]);
+		expect(agentSettings.effective("beta-text")).toMatchObject({
+			provider: "openrouter",
+			model: "google/gemini-3.5-flash-lite",
+		});
+
+		// Moved to another provider (the old edit dropped the agent to its env server).
+		await call("/providers/other", "PUT", {
+			name: "Other",
+			baseUrl: "https://other.example/v1",
+		});
+		await call(
+			"/providers/other/models?fromProvider=openrouter&fromId=google%2Fgemini-3.5-flash-lite",
+			"PUT",
+			{ ...model, id: "google/gemini-3.5-flash-lite" },
+		);
+		expect(agentSettings.effective("beta-text")).toMatchObject({
+			provider: "other",
+			baseUrl: "https://other.example/v1",
+		});
+	});
+
 	test("bad picks are refused", async () => {
 		const { call } = await setup();
 		const pick = (id: string, body: unknown) =>

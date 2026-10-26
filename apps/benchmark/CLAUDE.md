@@ -9,6 +9,7 @@ Every benchmark of the repo as one bunli CLI (not a service, not in compose). `b
 - `bun tools` — delta (Qwen3-1.7B) argument accuracy on the complex cases: one request per kind of site, filled field by field (`fillOnce` from `@repo/core`, answer budgets 48 tokens for the "which optional fields" step, 128 per field). Shows request -> arguments with source words coloured by kind, then a table (all-fields accuracy, per kind, p50/p90, tokens, delta calls). `--laya` hands enums and booleans to Laya in one pass and delta fills the rest.
 - `bun openrouter` — the same cases on hosted models behind OpenRouter, one column per model (`--models a/b,c/d`, default 4 cheap candidates; `OPENROUTER_API_KEY`). Routes with `provider.require_parameters` (only providers that honour `json_schema`); a model that fails shows 💥. A few cents per run. Hosted p50 was 2.8–5.2 s against ~840 ms of the local Qwen3-1.7B, accuracy tied at 17% on the 6 cases (keywords and query are the weak fields for every model).
 - `bun laya` (module `choices`) — Laya accuracy on enum/boolean decisions alone (given / unsaid / refused), the share of `tools --laya`. `--samples file` saves every raw answer with its right answer (`packages/core/eval/data/laya-choices.json`) for `bun run calibrate` in core.
+- `bun efficiency` — beta alone (the orchestrator's reply model through its `POST /v1/chat/completions` pass-through, so both sides have the same text model; the shop's tools in an AI SDK tool loop, `--max-steps`) against the orchestrator with beta, on a seeded faker mock shop (`efficiency.shop.ts`: the `McpClient` port of `@repo/core`, Basketful-shaped tools, any department) and 7 cases judged by the cart they leave (`efficiency.cases.ts`). The orchestrator is driven as the widget drives it (visitor, thread per case, `/v1/widget/tools`, every `tool_call` run on the mock and posted to `/tool-results`); a warm-up message pays the catalog's one-time classification. Success, time, steps (model + tool calls), tokens, cost (each call at its model's OpenRouter price, `loadPrices`; a model not listed at `--price-in/--price-out` per 1M); plain-text report to `results/efficiency-<date>.txt`. Without `ORCHESTRA_ADMIN_API_KEY` the orchestrator's tokens are the reply model's only (the `done` line); with it, every `llmCalls` row of the request.
 - `bun snake` — Laya latency playing Snake (live board or `--headless`); `--threads 1,2,4` compares onnxruntime threads in-process (`bun sweep`).
 
 All three call Laya through `createDecisionAgent` (AI SDK `experimental_decide`): the server model when `LAYA_BASE_URL` is set, otherwise `laya/laya.model.ts`, an in-process decision model over `@receptron/laya`. Same code path either way; one pass and ignored `--threads` for a server.
@@ -21,12 +22,13 @@ All three call Laya through `createDecisionAgent` (AI SDK `experimental_decide`)
 - `menu`, `report` (`accuracyMark`, `metricTable`, `pct`), `stats` (`summarizeLatency`, `summarizeRuns`, one percentile).
 - `delta` — `DELTA_MODEL` (a test keeps it equal to delta's Dockerfile `MODEL_URL`), llama-server lifecycle in Docker (`startServer`/`connectServer`/`ensureModel`), `createDelta` (per-field filling), prompts (`delta.prompt.ts`, `delta.fields.ts`, `delta.service.ts`).
 - `laya` — `loadLaya` (server or in-process), `createLayaModel` (the adapter; mapping unit-tested with a fake Laya), questions/answers <-> tool arguments (`laya.service.ts`).
-- `tools`, `choices`, `snake` — one folder per command: cases, judging, view, command. `SnakeGame` is the only class (stateful).
+- `tools`, `choices`, `snake`, `efficiency` — one folder per command: cases, judging, view, command. `SnakeGame` is the only class (stateful).
 
 ## Env (`apps/benchmark/.env`, see `.env.example`)
 
 - `DELTA_BASE_URL` — a running Ollama/llama-server (root, with or without `/v1`); unset: `bun tools` starts delta's image in Docker. `DELTA_API_KEY`, `DELTA_MODEL` (Ollama needs the name, e.g. `qwen3:1.7b-q8_0`).
 - `LAYA_BASE_URL` — the server root (client appends `/v1/systemone`), `LAYA_API_KEY`. Empty/unset: Laya loads in-process on CPU.
+- `bun efficiency`: `ORCHESTRA_BASE_URL` + `ORCHESTRA_API_KEY` (HARNESS_API_KEY; beta alone), `ORCHESTRA_PUBLISHABLE_KEY` + `ORCHESTRA_ORIGIN` (a web channel and one of its allowed origins; without them only beta alone runs), optional `ORCHESTRA_ADMIN_API_KEY`.
 
 ## Notes
 

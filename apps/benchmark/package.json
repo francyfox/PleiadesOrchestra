@@ -10,6 +10,7 @@
 		"openrouter": "bun src/index.ts openrouter",
 		"laya": "bun src/index.ts laya",
 		"snake": "bun src/index.ts snake",
+		"efficiency": "bun src/index.ts efficiency",
 		"sweep": "bun src/index.ts snake --headless --steps 100 --threads 0,1,2,4,6,12",
 		"test": "bun test",
 		"check-types": "bun check",
@@ -18,10 +19,11 @@
 	"dependencies": {
 		"@bunli/core": "catalog:",
 		"@bunli/utils": "catalog:",
-		"@t3-oss/env-core": "catalog:",
-		"ai": "catalog:",
+		"@faker-js/faker": "catalog:",
 		"@receptron/laya": "^0.1.0",
 		"@repo/core": "workspace:*",
+		"@t3-oss/env-core": "catalog:",
+		"ai": "catalog:",
 		"zod": "catalog:"
 	},
 	"devDependencies": {

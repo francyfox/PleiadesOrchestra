@@ -33,6 +33,7 @@ import {
 	channelsRoutes,
 	ownerChannelsRoutes,
 } from "./modules/channels/channels.ts";
+import { completionsRoutes } from "./modules/completions/completions.ts";
 import type { Db } from "./modules/database/database.ts";
 import { decisionsRoutes } from "./modules/decisions/decisions.ts";
 import { financeRoutes } from "./modules/finance/finance.ts";
@@ -265,6 +266,14 @@ export function createApp(deps: AppDeps) {
 			.use(messagesRoutes({ db, directory, reply, now }))
 			.use(threadsRoutes({ db, directory, agent: deps.agent }))
 			.use(decisionsRoutes(deps.decisionAgent))
+			.use(
+				deps.agentSettings
+					? completionsRoutes({
+							settings: deps.agentSettings,
+							agent: "beta-text",
+						})
+					: new Elysia(),
+			)
 			// Public widget routes
 			.use(
 				widgetRoutes({

@@ -137,6 +137,11 @@ const modelsContent = {
 				en: "As the server expects it: google/gemini-2.5-flash, qwen3:1.7b.",
 				kk: "Сервер күткендей: google/gemini-2.5-flash, qwen3:1.7b.",
 			}),
+			modelIdEditHint: t({
+				ru: "Как его ждёт сервер. Агенты с этой моделью перейдут на новый id.",
+				en: "As the server expects it. Agents using this model move to the new id.",
+				kk: "Сервер күткендей. Осы модельдегі агенттер жаңа id-ге ауысады.",
+			}),
 			temperature: t({
 				ru: "Температура",
 				en: "Temperature",

@@ -303,10 +303,14 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 					"DELETE",
 					`/v1/admin/providers/${segment(id)}`,
 				),
-			saveModel: (providerId: string, model: ProviderModel) =>
+			saveModel: (
+				providerId: string,
+				model: ProviderModel,
+				from: { fromProvider?: string; fromId?: string } = {},
+			) =>
 				write<{ items: Provider[] }>(
 					"PUT",
-					`/v1/admin/providers/${segment(providerId)}/models`,
+					`/v1/admin/providers/${segment(providerId)}/models${toSearch(from)}`,
 					model,
 				),
 			deleteModel: (providerId: string, modelId: string) =>

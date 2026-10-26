@@ -25,6 +25,19 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			LAYA_API_KEY: z.string().optional(),
 			// `bun openrouter`: delta's candidates on OpenRouter (https://openrouter.ai/settings/keys).
 			OPENROUTER_API_KEY: z.string().optional(),
+			// `bun efficiency`: the orchestrator's root and its HARNESS_API_KEY
+			// (beta alone through /v1/chat/completions), a web channel of it
+			// (publishable key + one of its allowed origins) for the orchestrator
+			// side, and optionally ADMIN_API_KEY: every model call of a request,
+			// not only the reply's.
+			ORCHESTRA_BASE_URL: z
+				.url()
+				.transform((url) => url.replace(/\/+$/, ""))
+				.optional(),
+			ORCHESTRA_API_KEY: z.string().optional(),
+			ORCHESTRA_PUBLISHABLE_KEY: z.string().optional(),
+			ORCHESTRA_ORIGIN: z.string().optional(),
+			ORCHESTRA_ADMIN_API_KEY: z.string().optional(),
 		},
 		runtimeEnv: env,
 		emptyStringAsUndefined: true,

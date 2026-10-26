@@ -63,14 +63,21 @@ describe("agents and providers (proxied)", () => {
 		expect(await saved.json()).toEqual(list);
 		expect(upstream[2]?.body).toEqual(model);
 		await call(
+			"/api/providers/openrouter/models?fromProvider=openrouter&fromId=qwen%2Fold",
+			{ method: "PUT", cookie, body: model },
+		);
+		expect(upstream[3]?.url).toBe(
+			"http://orchestrator/v1/admin/providers/openrouter/models?fromProvider=openrouter&fromId=qwen%2Fold",
+		);
+		await call(
 			`/api/providers/openrouter/models?model=${encodeURIComponent(model.id)}`,
 			{
 				method: "DELETE",
 				cookie,
 			},
 		);
-		expect(upstream[3]?.method).toBe("DELETE");
-		expect(upstream[3]?.url).toBe(
+		expect(upstream[4]?.method).toBe("DELETE");
+		expect(upstream[4]?.url).toBe(
 			"http://orchestrator/v1/admin/providers/openrouter/models?model=qwen%2Fqwen3%3A1.7b",
 		);
 
@@ -80,7 +87,7 @@ describe("agents and providers (proxied)", () => {
 			cookie,
 			body: { toml: "x" },
 		});
-		expect(upstream[4]?.url).toBe(
+		expect(upstream[5]?.url).toBe(
 			"http://orchestrator/v1/admin/providers-toml",
 		);
 
@@ -92,11 +99,11 @@ describe("agents and providers (proxied)", () => {
 			body: { toml: "x" },
 		});
 		expect(await checked.json()).toEqual({ errors });
-		expect(upstream[5]?.method).toBe("POST");
-		expect(upstream[5]?.url).toBe(
+		expect(upstream[6]?.method).toBe("POST");
+		expect(upstream[6]?.url).toBe(
 			"http://orchestrator/v1/admin/providers-toml/check",
 		);
-		expect(upstream[5]?.body).toEqual({ toml: "x" });
+		expect(upstream[6]?.body).toEqual({ toml: "x" });
 		expect(
 			(
 				await call("/api/providers-toml/check", {

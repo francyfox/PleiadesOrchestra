@@ -1,0 +1,1604 @@
+[
+	{
+		"userPrompt": {
+			"message": "купи айфон 5s на 64 гига",
+			"config": {
+				"systemInstruction": [
+					"You are an assistant embedded in a browser tab.",
+					"User prompts typically refer to the current tab unless stated otherwise.",
+					"Use the provided tools to query page content when you need it.",
+					"Today's date is: Friday, October 23, 2026",
+					"CRITICAL RULE: Whenever the user provides a relative date (e.g., \"next Monday\", \"tomorrow\", \"in 3 days\"),  you must calculate the exact calendar date based on today's date.",
+					"CRITICAL RULE: Do not try to use other tools than the available ones."
+				],
+				"tools": [
+					{
+						"functionDeclarations": [
+							{
+								"name": "_0_add_kit_to_cart",
+								"description": "Add every product of a kit to the visitor's cart in one step. Reports what was added and what is missing or out of stock.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"kit": {
+											"type": "string",
+											"enum": [
+												"Gym Starter",
+												"Breakfast Basket",
+												"Kitchen Essentials",
+												"Smartphone Accessories Pack",
+												"Weekend City Outfit",
+												"Skincare Routine",
+												"Picnic Set",
+												"Home Office Starter"
+											],
+											"description": "Name of the kit"
+										}
+									},
+									"required": ["kit"]
+								}
+							},
+							{
+								"name": "_0_add_recipe_to_cart",
+								"description": "Add every product of a recipe to the visitor's cart in one step, scaled to the number of servings. Reports what was added and what is missing or out of stock.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"recipe": {
+											"type": "string",
+											"enum": [
+												"Pepper and Onion Stir-Fry",
+												"Strawberry Ice-Cream Sundae",
+												"Honey-Lemon Tea",
+												"Fish Steak with Lemon and Cucumber Salad",
+												"Beef Steak with Potatoes",
+												"Chicken and Rice",
+												"Fluffy Omelette",
+												"Fruit Salad"
+											],
+											"description": "Name of the recipe"
+										},
+										"servings": {
+											"type": "number",
+											"description": "People to cook for, default as in the recipe"
+										}
+									},
+									"required": ["recipe"]
+								}
+							},
+							{
+								"name": "_0_add_to_cart",
+								"description": "Add a product to the visitor's cart. For a product with variations pass `variation`: each variation attribute name from get_product with one of its allowed values.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"id": {
+											"type": "number",
+											"description": "Product id"
+										},
+										"quantity": {
+											"type": "number",
+											"description": "How many, default 1"
+										},
+										"variation": {
+											"type": "object",
+											"description": "Attribute name to chosen value, e.g. {\"Size\": \"M\"}",
+											"additionalProperties": {
+												"type": "string"
+											}
+										}
+									},
+									"required": ["id"]
+								}
+							},
+							{
+								"name": "_0_get_cart",
+								"description": "The visitor's current cart: items with their keys, quantities, total.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_get_current_product",
+								"description": "The product on the page the visitor is looking at now (id, name, price). Empty when the page is not a product.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_get_page",
+								"description": "Read a page or post of the site as plain text, by id from search_site.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"id": {
+											"type": "number",
+											"description": "Page or post id"
+										}
+									},
+									"required": ["id"]
+								}
+							},
+							{
+								"name": "_0_get_product",
+								"description": "Full card of one product: description, attributes, variation options (attribute name and allowed values), stock, price, rating, link.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"id": {
+											"type": "number",
+											"description": "Product id"
+										}
+									},
+									"required": ["id"]
+								}
+							},
+							{
+								"name": "_0_list_categories",
+								"description": "All product categories of the shop.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_list_kits",
+								"description": "The shop's kits: name, number of products, link.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_list_recipes",
+								"description": "The shop's recipes: name, servings, time, number of products, link.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_open_page",
+								"description": "Open a page of this site in the visitor's browser (product, cart, checkout, article). Same site only. Call it as the very last step: the page reloads.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"url": {
+											"type": "string",
+											"description": "Address on this site"
+										}
+									},
+									"required": ["url"]
+								}
+							},
+							{
+								"name": "_0_remove_cart_item",
+								"description": "Remove an item from the cart (use the key from get_cart).",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"key": {
+											"type": "string",
+											"description": "Cart item key"
+										}
+									},
+									"required": ["key"]
+								}
+							},
+							{
+								"name": "_0_search_products",
+								"description": "Search the shop's catalog by keywords, with optional category, price range and sale filter. Returns up to 10 products per page.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"query": {
+											"type": "string",
+											"description": "Keywords"
+										},
+										"category": {
+											"type": "string",
+											"description": "Category id or slug from list_categories"
+										},
+										"min_price": {
+											"type": "number",
+											"description": "Minimum price in the shop currency"
+										},
+										"max_price": {
+											"type": "number",
+											"description": "Maximum price in the shop currency"
+										},
+										"on_sale": {
+											"type": "boolean",
+											"description": "Only discounted products"
+										},
+										"page": {
+											"type": "number",
+											"description": "Page number, from 1"
+										}
+									},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_search_site",
+								"description": "Search the site's pages and posts by keywords (policies, delivery, FAQ, articles).",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"query": {
+											"type": "string",
+											"description": "Keywords"
+										}
+									},
+									"required": ["query"]
+								}
+							},
+							{
+								"name": "_0_update_cart_item",
+								"description": "Change the quantity of a cart item (use the key from get_cart).",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"key": {
+											"type": "string",
+											"description": "Cart item key"
+										},
+										"quantity": {
+											"type": "number",
+											"description": "New quantity"
+										}
+									},
+									"required": ["key", "quantity"]
+								}
+							}
+						]
+					}
+				]
+			}
+		}
+	},
+	{
+		"response": {
+			"sdkHttpResponse": {
+				"headers": {
+					"access-control-allow-origin": "chrome-extension://gbpdfapgefenggkahomfgkhfehlcenpd",
+					"access-control-expose-headers": "x-gemini-service-tier,vary,vary,vary,content-encoding,date,server,content-length",
+					"alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+					"content-encoding": "gzip",
+					"content-length": "809",
+					"content-type": "application/json; charset=UTF-8",
+					"date": "Fri, 23 Oct 2026 14:02:18 GMT",
+					"server": "scaffolding on HTTPServer2",
+					"server-timing": "gfet4t7; dur=1362",
+					"vary": "Origin, X-Origin, Referer",
+					"x-content-type-options": "nosniff",
+					"x-frame-options": "SAMEORIGIN",
+					"x-gemini-service-tier": "standard",
+					"x-xss-protection": "0"
+				}
+			},
+			"candidates": [
+				{
+					"content": {
+						"parts": [
+							{
+								"functionCall": {
+									"name": "_0_search_products",
+									"args": {
+										"query": "iPhone 5s"
+									},
+									"id": "call_591443"
+								},
+								"thoughtSignature": "EtQCCtECAWkUfRNL9IE5IblpeLfkJDSo9wfyxAyxho669lpgj13WXVfGDX7sri2xnK1WjuGf71LDecuoCn1L4O9Me5FEBvz53CHbc6Na1wFHjOA+u9nk15LOWNb9RCMlhCHMLOhiKr34T4AsWNzGAzNJxqGEYkch70M4Oh9rxCeDNmltIHiURv6IKkzQ274M7dO35keDO31r1ds5DAoAI9olH5HVv968BSQwYK1a/H71CgqERDTD/v4seFvvRc9HnRystGUUmYwFtxY+ibryg9AOoKfPtqVY2uZYtGXWlodh7wwuTMA0VhAjH3dkKpwEaq6zttLe+oCl3l8xYn0c3lXBxuGot7aeZ4OZLf6OpvuycFfWcY8xGnHk1rJxRwtZRnlGXV9LxE53o8xmCQ/4/qvrCTFFcegTpX0RgsYxUwpk1sDPbmH9gyXkpkR2t/Ilz6pajTAyIg=="
+							}
+						],
+						"role": "model"
+					},
+					"finishReason": "STOP",
+					"index": 0
+				}
+			],
+			"modelVersion": "gemini-3.6-flash",
+			"responseId": "6Gjbasi2N6Tdxs0PirDU2QE",
+			"usageMetadata": {
+				"promptTokenCount": 1389,
+				"candidatesTokenCount": 21,
+				"totalTokenCount": 1483,
+				"promptTokensDetails": [
+					{
+						"modality": "TEXT",
+						"tokenCount": 1389
+					}
+				],
+				"thoughtsTokenCount": 73,
+				"serviceTier": "standard"
+			}
+		}
+	},
+	{
+		"userPrompt": {
+			"message": [
+				{
+					"functionResponse": {
+						"name": "_0_search_products",
+						"response": {
+							"result": "{\"content\":[{\"type\":\"text\",\"text\":\"[{\\\"id\\\":383,\\\"name\\\":\\\"iPhone 5s\\\",\\\"type\\\":\\\"variable\\\",\\\"price\\\":\\\"174.17\\\",\\\"regular_price\\\":\\\"199.99\\\",\\\"currency\\\":\\\"USD\\\",\\\"on_sale\\\":true,\\\"in_stock\\\":true,\\\"link\\\":\\\"https://wordpress-fa0a6.wasmer.app/product/iphone-5s/\\\"}]\"}]}"
+						}
+					}
+				}
+			],
+			"config": {
+				"systemInstruction": [
+					"You are an assistant embedded in a browser tab.",
+					"User prompts typically refer to the current tab unless stated otherwise.",
+					"Use the provided tools to query page content when you need it.",
+					"Today's date is: Friday, October 23, 2026",
+					"CRITICAL RULE: Whenever the user provides a relative date (e.g., \"next Monday\", \"tomorrow\", \"in 3 days\"),  you must calculate the exact calendar date based on today's date.",
+					"CRITICAL RULE: Do not try to use other tools than the available ones."
+				],
+				"tools": [
+					{
+						"functionDeclarations": [
+							{
+								"name": "_0_add_kit_to_cart",
+								"description": "Add every product of a kit to the visitor's cart in one step. Reports what was added and what is missing or out of stock.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"kit": {
+											"type": "string",
+											"enum": [
+												"Gym Starter",
+												"Breakfast Basket",
+												"Kitchen Essentials",
+												"Smartphone Accessories Pack",
+												"Weekend City Outfit",
+												"Skincare Routine",
+												"Picnic Set",
+												"Home Office Starter"
+											],
+											"description": "Name of the kit"
+										}
+									},
+									"required": ["kit"]
+								}
+							},
+							{
+								"name": "_0_add_recipe_to_cart",
+								"description": "Add every product of a recipe to the visitor's cart in one step, scaled to the number of servings. Reports what was added and what is missing or out of stock.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"recipe": {
+											"type": "string",
+											"enum": [
+												"Pepper and Onion Stir-Fry",
+												"Strawberry Ice-Cream Sundae",
+												"Honey-Lemon Tea",
+												"Fish Steak with Lemon and Cucumber Salad",
+												"Beef Steak with Potatoes",
+												"Chicken and Rice",
+												"Fluffy Omelette",
+												"Fruit Salad"
+											],
+											"description": "Name of the recipe"
+										},
+										"servings": {
+											"type": "number",
+											"description": "People to cook for, default as in the recipe"
+										}
+									},
+									"required": ["recipe"]
+								}
+							},
+							{
+								"name": "_0_add_to_cart",
+								"description": "Add a product to the visitor's cart. For a product with variations pass `variation`: each variation attribute name from get_product with one of its allowed values.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"id": {
+											"type": "number",
+											"description": "Product id"
+										},
+										"quantity": {
+											"type": "number",
+											"description": "How many, default 1"
+										},
+										"variation": {
+											"type": "object",
+											"description": "Attribute name to chosen value, e.g. {\"Size\": \"M\"}",
+											"additionalProperties": {
+												"type": "string"
+											}
+										}
+									},
+									"required": ["id"]
+								}
+							},
+							{
+								"name": "_0_get_cart",
+								"description": "The visitor's current cart: items with their keys, quantities, total.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_get_current_product",
+								"description": "The product on the page the visitor is looking at now (id, name, price). Empty when the page is not a product.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_get_page",
+								"description": "Read a page or post of the site as plain text, by id from search_site.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"id": {
+											"type": "number",
+											"description": "Page or post id"
+										}
+									},
+									"required": ["id"]
+								}
+							},
+							{
+								"name": "_0_get_product",
+								"description": "Full card of one product: description, attributes, variation options (attribute name and allowed values), stock, price, rating, link.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"id": {
+											"type": "number",
+											"description": "Product id"
+										}
+									},
+									"required": ["id"]
+								}
+							},
+							{
+								"name": "_0_list_categories",
+								"description": "All product categories of the shop.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_list_kits",
+								"description": "The shop's kits: name, number of products, link.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_list_recipes",
+								"description": "The shop's recipes: name, servings, time, number of products, link.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_open_page",
+								"description": "Open a page of this site in the visitor's browser (product, cart, checkout, article). Same site only. Call it as the very last step: the page reloads.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"url": {
+											"type": "string",
+											"description": "Address on this site"
+										}
+									},
+									"required": ["url"]
+								}
+							},
+							{
+								"name": "_0_remove_cart_item",
+								"description": "Remove an item from the cart (use the key from get_cart).",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"key": {
+											"type": "string",
+											"description": "Cart item key"
+										}
+									},
+									"required": ["key"]
+								}
+							},
+							{
+								"name": "_0_search_products",
+								"description": "Search the shop's catalog by keywords, with optional category, price range and sale filter. Returns up to 10 products per page.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"query": {
+											"type": "string",
+											"description": "Keywords"
+										},
+										"category": {
+											"type": "string",
+											"description": "Category id or slug from list_categories"
+										},
+										"min_price": {
+											"type": "number",
+											"description": "Minimum price in the shop currency"
+										},
+										"max_price": {
+											"type": "number",
+											"description": "Maximum price in the shop currency"
+										},
+										"on_sale": {
+											"type": "boolean",
+											"description": "Only discounted products"
+										},
+										"page": {
+											"type": "number",
+											"description": "Page number, from 1"
+										}
+									},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_search_site",
+								"description": "Search the site's pages and posts by keywords (policies, delivery, FAQ, articles).",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"query": {
+											"type": "string",
+											"description": "Keywords"
+										}
+									},
+									"required": ["query"]
+								}
+							},
+							{
+								"name": "_0_update_cart_item",
+								"description": "Change the quantity of a cart item (use the key from get_cart).",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"key": {
+											"type": "string",
+											"description": "Cart item key"
+										},
+										"quantity": {
+											"type": "number",
+											"description": "New quantity"
+										}
+									},
+									"required": ["key", "quantity"]
+								}
+							}
+						]
+					}
+				]
+			}
+		}
+	},
+	{
+		"response": {
+			"sdkHttpResponse": {
+				"headers": {
+					"access-control-allow-origin": "chrome-extension://gbpdfapgefenggkahomfgkhfehlcenpd",
+					"access-control-expose-headers": "x-gemini-service-tier,vary,vary,vary,content-encoding,date,server,content-length",
+					"alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+					"content-encoding": "gzip",
+					"content-length": "733",
+					"content-type": "application/json; charset=UTF-8",
+					"date": "Fri, 23 Oct 2026 14:02:21 GMT",
+					"server": "scaffolding on HTTPServer2",
+					"server-timing": "gfet4t7; dur=2623",
+					"vary": "Origin, X-Origin, Referer",
+					"x-content-type-options": "nosniff",
+					"x-frame-options": "SAMEORIGIN",
+					"x-gemini-service-tier": "standard",
+					"x-xss-protection": "0"
+				}
+			},
+			"candidates": [
+				{
+					"content": {
+						"parts": [
+							{
+								"functionCall": {
+									"name": "_0_get_product",
+									"args": {
+										"id": 383
+									},
+									"id": "call_926949"
+								},
+								"thoughtSignature": "Ep0CCpoCAWkUfRM2GU4gJxvkj7Yf09Zi3MwniA3LfzwdW7F1QTAYMaH20f4MFeGIDNQ+NuQfuf8tI6cFeD5wkasw68jgg+4yyYzVTWuYTt+EJHd6HGauv8iYtFoTZYO0EaZRR2oS0eQH/3xtOj01y4ZE2xjQX/UaDf1h+k1msNnzsIVApJHc45HX75XO2arStIg7bRnIrliV6XpDuXRfPFu3aRpUE5Gycd3tw+4mmDqQXelKDBq9tWgQNzJ3HHOVnJx40FwatbkPRB0zdAHrnh7cCk/MjvywPPcX58j+n+Em1xQEinzbOkImoYnke95bHd2G0/MLeDRQ378KHapwZl0k9Vzez9O/uW9HklwYtB/k078L2gdTIsfIlPDmz4W4"
+							}
+						],
+						"role": "model"
+					},
+					"finishReason": "STOP",
+					"index": 0
+				}
+			],
+			"modelVersion": "gemini-3.6-flash",
+			"responseId": "6mjbaqfDJa-XvdIPxJXC2Ag",
+			"usageMetadata": {
+				"promptTokenCount": 1589,
+				"candidatesTokenCount": 18,
+				"totalTokenCount": 1666,
+				"promptTokensDetails": [
+					{
+						"modality": "TEXT",
+						"tokenCount": 1589
+					}
+				],
+				"thoughtsTokenCount": 59,
+				"serviceTier": "standard"
+			}
+		}
+	},
+	{
+		"userPrompt": {
+			"message": [
+				{
+					"functionResponse": {
+						"name": "_0_get_product",
+						"response": {
+							"result": "{\"content\":[{\"type\":\"text\",\"text\":\"{\\\"id\\\":383,\\\"name\\\":\\\"iPhone 5s\\\",\\\"type\\\":\\\"variable\\\",\\\"price\\\":\\\"174.17\\\",\\\"regular_price\\\":\\\"199.99\\\",\\\"currency\\\":\\\"USD\\\",\\\"on_sale\\\":true,\\\"in_stock\\\":true,\\\"link\\\":\\\"https://wordpress-fa0a6.wasmer.app/product/iphone-5s/\\\",\\\"summary\\\":\\\"Ships in 1 month. Lifetime warranty\\\",\\\"description\\\":\\\"The iPhone 5s is a classic smartphone known for its compact design and advanced features during its release. While it’s an older model, it still provides a reliable user experience.\\\",\\\"rating\\\":\\\"3.67\\\",\\\"variation_attributes\\\":[{\\\"name\\\":\\\"Color\\\",\\\"values\\\":[\\\"Silver\\\",\\\"White\\\"]},{\\\"name\\\":\\\"Storage\\\",\\\"values\\\":[\\\"32 GB\\\",\\\"64 GB\\\"]}],\\\"attributes\\\":[{\\\"name\\\":\\\"Brand\\\",\\\"values\\\":[\\\"Apple\\\"]},{\\\"name\\\":\\\"Warranty\\\",\\\"values\\\":[\\\"Lifetime warranty\\\"]},{\\\"name\\\":\\\"Shipping\\\",\\\"values\\\":[\\\"Ships in 1 month\\\"]},{\\\"name\\\":\\\"Return policy\\\",\\\"values\\\":[\\\"60 days return policy\\\"]},{\\\"name\\\":\\\"RAM\\\",\\\"values\\\":[\\\"1 GB\\\"]},{\\\"name\\\":\\\"Screen size\\\",\\\"values\\\":[\\\"4 in\\\"]},{\\\"name\\\":\\\"Operating system\\\",\\\"values\\\":[\\\"iOS\\\"]},{\\\"name\\\":\\\"Connectivity\\\",\\\"values\\\":[\\\"4G LTE\\\",\\\"Bluetooth\\\",\\\"Wi-Fi\\\"]}],\\\"variations\\\":[{\\\"id\\\":838,\\\"attributes\\\":[{\\\"name\\\":\\\"Color\\\",\\\"value\\\":\\\"white\\\"},{\\\"name\\\":\\\"Storage\\\",\\\"value\\\":\\\"32-gb\\\"}]},{\\\"id\\\":839,\\\"attributes\\\":[{\\\"name\\\":\\\"Color\\\",\\\"value\\\":\\\"silver\\\"},{\\\"name\\\":\\\"Storage\\\",\\\"value\\\":\\\"32-gb\\\"}]},{\\\"id\\\":840,\\\"attributes\\\":[{\\\"name\\\":\\\"Color\\\",\\\"value\\\":\\\"white\\\"},{\\\"name\\\":\\\"Storage\\\",\\\"value\\\":\\\"64-gb\\\"}]},{\\\"id\\\":841,\\\"attributes\\\":[{\\\"name\\\":\\\"Color\\\",\\\"value\\\":\\\"silver\\\"},{\\\"name\\\":\\\"Storage\\\",\\\"value\\\":\\\"64-gb\\\"}]}]}\"}]}"
+						}
+					}
+				}
+			],
+			"config": {
+				"systemInstruction": [
+					"You are an assistant embedded in a browser tab.",
+					"User prompts typically refer to the current tab unless stated otherwise.",
+					"Use the provided tools to query page content when you need it.",
+					"Today's date is: Friday, October 23, 2026",
+					"CRITICAL RULE: Whenever the user provides a relative date (e.g., \"next Monday\", \"tomorrow\", \"in 3 days\"),  you must calculate the exact calendar date based on today's date.",
+					"CRITICAL RULE: Do not try to use other tools than the available ones."
+				],
+				"tools": [
+					{
+						"functionDeclarations": [
+							{
+								"name": "_0_add_kit_to_cart",
+								"description": "Add every product of a kit to the visitor's cart in one step. Reports what was added and what is missing or out of stock.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"kit": {
+											"type": "string",
+											"enum": [
+												"Gym Starter",
+												"Breakfast Basket",
+												"Kitchen Essentials",
+												"Smartphone Accessories Pack",
+												"Weekend City Outfit",
+												"Skincare Routine",
+												"Picnic Set",
+												"Home Office Starter"
+											],
+											"description": "Name of the kit"
+										}
+									},
+									"required": ["kit"]
+								}
+							},
+							{
+								"name": "_0_add_recipe_to_cart",
+								"description": "Add every product of a recipe to the visitor's cart in one step, scaled to the number of servings. Reports what was added and what is missing or out of stock.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"recipe": {
+											"type": "string",
+											"enum": [
+												"Pepper and Onion Stir-Fry",
+												"Strawberry Ice-Cream Sundae",
+												"Honey-Lemon Tea",
+												"Fish Steak with Lemon and Cucumber Salad",
+												"Beef Steak with Potatoes",
+												"Chicken and Rice",
+												"Fluffy Omelette",
+												"Fruit Salad"
+											],
+											"description": "Name of the recipe"
+										},
+										"servings": {
+											"type": "number",
+											"description": "People to cook for, default as in the recipe"
+										}
+									},
+									"required": ["recipe"]
+								}
+							},
+							{
+								"name": "_0_add_to_cart",
+								"description": "Add a product to the visitor's cart. For a product with variations pass `variation`: each variation attribute name from get_product with one of its allowed values.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"id": {
+											"type": "number",
+											"description": "Product id"
+										},
+										"quantity": {
+											"type": "number",
+											"description": "How many, default 1"
+										},
+										"variation": {
+											"type": "object",
+											"description": "Attribute name to chosen value, e.g. {\"Size\": \"M\"}",
+											"additionalProperties": {
+												"type": "string"
+											}
+										}
+									},
+									"required": ["id"]
+								}
+							},
+							{
+								"name": "_0_get_cart",
+								"description": "The visitor's current cart: items with their keys, quantities, total.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_get_current_product",
+								"description": "The product on the page the visitor is looking at now (id, name, price). Empty when the page is not a product.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_get_page",
+								"description": "Read a page or post of the site as plain text, by id from search_site.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"id": {
+											"type": "number",
+											"description": "Page or post id"
+										}
+									},
+									"required": ["id"]
+								}
+							},
+							{
+								"name": "_0_get_product",
+								"description": "Full card of one product: description, attributes, variation options (attribute name and allowed values), stock, price, rating, link.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"id": {
+											"type": "number",
+											"description": "Product id"
+										}
+									},
+									"required": ["id"]
+								}
+							},
+							{
+								"name": "_0_list_categories",
+								"description": "All product categories of the shop.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_list_kits",
+								"description": "The shop's kits: name, number of products, link.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_list_recipes",
+								"description": "The shop's recipes: name, servings, time, number of products, link.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_open_page",
+								"description": "Open a page of this site in the visitor's browser (product, cart, checkout, article). Same site only. Call it as the very last step: the page reloads.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"url": {
+											"type": "string",
+											"description": "Address on this site"
+										}
+									},
+									"required": ["url"]
+								}
+							},
+							{
+								"name": "_0_remove_cart_item",
+								"description": "Remove an item from the cart (use the key from get_cart).",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"key": {
+											"type": "string",
+											"description": "Cart item key"
+										}
+									},
+									"required": ["key"]
+								}
+							},
+							{
+								"name": "_0_search_products",
+								"description": "Search the shop's catalog by keywords, with optional category, price range and sale filter. Returns up to 10 products per page.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"query": {
+											"type": "string",
+											"description": "Keywords"
+										},
+										"category": {
+											"type": "string",
+											"description": "Category id or slug from list_categories"
+										},
+										"min_price": {
+											"type": "number",
+											"description": "Minimum price in the shop currency"
+										},
+										"max_price": {
+											"type": "number",
+											"description": "Maximum price in the shop currency"
+										},
+										"on_sale": {
+											"type": "boolean",
+											"description": "Only discounted products"
+										},
+										"page": {
+											"type": "number",
+											"description": "Page number, from 1"
+										}
+									},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_search_site",
+								"description": "Search the site's pages and posts by keywords (policies, delivery, FAQ, articles).",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"query": {
+											"type": "string",
+											"description": "Keywords"
+										}
+									},
+									"required": ["query"]
+								}
+							},
+							{
+								"name": "_0_update_cart_item",
+								"description": "Change the quantity of a cart item (use the key from get_cart).",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"key": {
+											"type": "string",
+											"description": "Cart item key"
+										},
+										"quantity": {
+											"type": "number",
+											"description": "New quantity"
+										}
+									},
+									"required": ["key", "quantity"]
+								}
+							}
+						]
+					}
+				]
+			}
+		}
+	},
+	{
+		"response": {
+			"sdkHttpResponse": {
+				"headers": {
+					"access-control-allow-origin": "chrome-extension://gbpdfapgefenggkahomfgkhfehlcenpd",
+					"access-control-expose-headers": "x-gemini-service-tier,vary,vary,vary,content-encoding,date,server,content-length",
+					"alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+					"content-encoding": "gzip",
+					"content-length": "1288",
+					"content-type": "application/json; charset=UTF-8",
+					"date": "Fri, 23 Oct 2026 14:02:24 GMT",
+					"server": "scaffolding on HTTPServer2",
+					"server-timing": "gfet4t7; dur=2700",
+					"vary": "Origin, X-Origin, Referer",
+					"x-content-type-options": "nosniff",
+					"x-frame-options": "SAMEORIGIN",
+					"x-gemini-service-tier": "standard",
+					"x-xss-protection": "0"
+				}
+			},
+			"candidates": [
+				{
+					"content": {
+						"parts": [
+							{
+								"functionCall": {
+									"name": "_0_get_cart",
+									"args": {},
+									"id": "call_680534"
+								},
+								"thoughtSignature": "ErUGCrIGAWkUfRNM1rZw5PwL3ttwAXD26nONPSfToiqD9Cea4vl2nAC4qDSa8hU2BAWVahn45SNVAPtgvXa65van61v3SmLm3XSUnbBiOrymEWAS+pTItcNY6nK4r+juILuUtHdecPEX777IwJAKGGD7SGGTCgLPozQh95o90iXrB6A0yoCJ4Pfvctqw99NyNFEV5AC7W7pMYd3Er2x9eLivI8yVoti4E/2aYiyRXWDkLbMsrcG0s9MIkhIrlQbma4hdC8NdZScgEuq8k9jxfL+tdLTB82TzTJiF6ysvLprdbp15E4Z9421bk0o3WtFAsgzlMsHNDFpSvKIAKiyonHlgbM2o5oowwfJpBoVWPzkITXlXUzTBwfrEaOt5jVLCQU/wje+yTF+oN/5LIY6ekCmvTSUDbKp5sBHAKm02MtBnjEbYIkRhNFtM1qFyaL1qLkKS55O05hKphnAFqzmjtGmDD399tpG1GtLNI1CtoUiXhAWft7zZbvx706cwLTm4D3zcKP17KU0qp+DEaVTkcGkNwaYAtHYVl3JGATlcXiVMW1Zs+zQBO0CESKOJm/ImFW7whtktZkupbDTqiDNTcg0+jwHevNZFIeIGGqtyZ/SDXdWEquhdh2l53/pZQuzijXH6n+iOSRzGVQrRMAUQ/lQxdJ/FT0pY0Lilmv3GvLKU+BDuFHkPa6YIV1HKycJ08TU2p40D13raPxFJc4OvcTGzhAJzjtZwFDpafVjd9HJI5cZQQBsfAk556lQVaW8WaqmjStyJ5ZATAllCggzyAk7cyBjWsk8v1fPbsgcrggRPEZgEH067zUO8SB5rc8JYxX+cbcNnT5kbRRfg8iy4dE7nbWnZVOJ+r/1Y4Iliv+bU++LIhqlSwv8fF0DQogEma44UuN0wGNmUHJLi3zU7NWE1Uz0JepoXhRlmoKlbgSpcvrX+aBZox3P3W0ucnLjpwBfdOjFALIrzu7sgBBv8Y/64O8As1Q4SLHviCNpf5GNUjcaDYfn+EcBs46oyyGvSAZLiJd7IeG+rXfD6lLv4KxqcwcH4yCgO3qBUXy2HxtNXx2lkSyGd1z2BR4ddf+q9lZKtNXv/8tg="
+							}
+						],
+						"role": "model"
+					},
+					"finishReason": "STOP",
+					"index": 0
+				}
+			],
+			"modelVersion": "gemini-3.6-flash",
+			"responseId": "7WjbarmTLYXbvdIPi-D20Ac",
+			"usageMetadata": {
+				"promptTokenCount": 2128,
+				"candidatesTokenCount": 12,
+				"totalTokenCount": 2348,
+				"promptTokensDetails": [
+					{
+						"modality": "TEXT",
+						"tokenCount": 2128
+					}
+				],
+				"thoughtsTokenCount": 208,
+				"serviceTier": "standard"
+			}
+		}
+	},
+	{
+		"userPrompt": {
+			"message": [
+				{
+					"functionResponse": {
+						"name": "_0_get_cart",
+						"response": {
+							"result": "{\"content\":[{\"type\":\"text\",\"text\":\"{\\\"count\\\":0,\\\"items\\\":[],\\\"total\\\":\\\"0.00\\\",\\\"currency\\\":\\\"USD\\\"}\"}]}"
+						}
+					}
+				}
+			],
+			"config": {
+				"systemInstruction": [
+					"You are an assistant embedded in a browser tab.",
+					"User prompts typically refer to the current tab unless stated otherwise.",
+					"Use the provided tools to query page content when you need it.",
+					"Today's date is: Friday, October 23, 2026",
+					"CRITICAL RULE: Whenever the user provides a relative date (e.g., \"next Monday\", \"tomorrow\", \"in 3 days\"),  you must calculate the exact calendar date based on today's date.",
+					"CRITICAL RULE: Do not try to use other tools than the available ones."
+				],
+				"tools": [
+					{
+						"functionDeclarations": [
+							{
+								"name": "_0_add_kit_to_cart",
+								"description": "Add every product of a kit to the visitor's cart in one step. Reports what was added and what is missing or out of stock.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"kit": {
+											"type": "string",
+											"enum": [
+												"Gym Starter",
+												"Breakfast Basket",
+												"Kitchen Essentials",
+												"Smartphone Accessories Pack",
+												"Weekend City Outfit",
+												"Skincare Routine",
+												"Picnic Set",
+												"Home Office Starter"
+											],
+											"description": "Name of the kit"
+										}
+									},
+									"required": ["kit"]
+								}
+							},
+							{
+								"name": "_0_add_recipe_to_cart",
+								"description": "Add every product of a recipe to the visitor's cart in one step, scaled to the number of servings. Reports what was added and what is missing or out of stock.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"recipe": {
+											"type": "string",
+											"enum": [
+												"Pepper and Onion Stir-Fry",
+												"Strawberry Ice-Cream Sundae",
+												"Honey-Lemon Tea",
+												"Fish Steak with Lemon and Cucumber Salad",
+												"Beef Steak with Potatoes",
+												"Chicken and Rice",
+												"Fluffy Omelette",
+												"Fruit Salad"
+											],
+											"description": "Name of the recipe"
+										},
+										"servings": {
+											"type": "number",
+											"description": "People to cook for, default as in the recipe"
+										}
+									},
+									"required": ["recipe"]
+								}
+							},
+							{
+								"name": "_0_add_to_cart",
+								"description": "Add a product to the visitor's cart. For a product with variations pass `variation`: each variation attribute name from get_product with one of its allowed values.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"id": {
+											"type": "number",
+											"description": "Product id"
+										},
+										"quantity": {
+											"type": "number",
+											"description": "How many, default 1"
+										},
+										"variation": {
+											"type": "object",
+											"description": "Attribute name to chosen value, e.g. {\"Size\": \"M\"}",
+											"additionalProperties": {
+												"type": "string"
+											}
+										}
+									},
+									"required": ["id"]
+								}
+							},
+							{
+								"name": "_0_get_cart",
+								"description": "The visitor's current cart: items with their keys, quantities, total.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_get_current_product",
+								"description": "The product on the page the visitor is looking at now (id, name, price). Empty when the page is not a product.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_get_page",
+								"description": "Read a page or post of the site as plain text, by id from search_site.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"id": {
+											"type": "number",
+											"description": "Page or post id"
+										}
+									},
+									"required": ["id"]
+								}
+							},
+							{
+								"name": "_0_get_product",
+								"description": "Full card of one product: description, attributes, variation options (attribute name and allowed values), stock, price, rating, link.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"id": {
+											"type": "number",
+											"description": "Product id"
+										}
+									},
+									"required": ["id"]
+								}
+							},
+							{
+								"name": "_0_list_categories",
+								"description": "All product categories of the shop.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_list_kits",
+								"description": "The shop's kits: name, number of products, link.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_list_recipes",
+								"description": "The shop's recipes: name, servings, time, number of products, link.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_open_page",
+								"description": "Open a page of this site in the visitor's browser (product, cart, checkout, article). Same site only. Call it as the very last step: the page reloads.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"url": {
+											"type": "string",
+											"description": "Address on this site"
+										}
+									},
+									"required": ["url"]
+								}
+							},
+							{
+								"name": "_0_remove_cart_item",
+								"description": "Remove an item from the cart (use the key from get_cart).",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"key": {
+											"type": "string",
+											"description": "Cart item key"
+										}
+									},
+									"required": ["key"]
+								}
+							},
+							{
+								"name": "_0_search_products",
+								"description": "Search the shop's catalog by keywords, with optional category, price range and sale filter. Returns up to 10 products per page.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"query": {
+											"type": "string",
+											"description": "Keywords"
+										},
+										"category": {
+											"type": "string",
+											"description": "Category id or slug from list_categories"
+										},
+										"min_price": {
+											"type": "number",
+											"description": "Minimum price in the shop currency"
+										},
+										"max_price": {
+											"type": "number",
+											"description": "Maximum price in the shop currency"
+										},
+										"on_sale": {
+											"type": "boolean",
+											"description": "Only discounted products"
+										},
+										"page": {
+											"type": "number",
+											"description": "Page number, from 1"
+										}
+									},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_search_site",
+								"description": "Search the site's pages and posts by keywords (policies, delivery, FAQ, articles).",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"query": {
+											"type": "string",
+											"description": "Keywords"
+										}
+									},
+									"required": ["query"]
+								}
+							},
+							{
+								"name": "_0_update_cart_item",
+								"description": "Change the quantity of a cart item (use the key from get_cart).",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"key": {
+											"type": "string",
+											"description": "Cart item key"
+										},
+										"quantity": {
+											"type": "number",
+											"description": "New quantity"
+										}
+									},
+									"required": ["key", "quantity"]
+								}
+							}
+						]
+					}
+				]
+			}
+		}
+	},
+	{
+		"response": {
+			"sdkHttpResponse": {
+				"headers": {
+					"access-control-allow-origin": "chrome-extension://gbpdfapgefenggkahomfgkhfehlcenpd",
+					"access-control-expose-headers": "x-gemini-service-tier,vary,vary,vary,content-encoding,date,server,content-length",
+					"alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+					"content-encoding": "gzip",
+					"content-length": "1301",
+					"content-type": "application/json; charset=UTF-8",
+					"date": "Fri, 23 Oct 2026 14:02:29 GMT",
+					"server": "scaffolding on HTTPServer2",
+					"server-timing": "gfet4t7; dur=5058",
+					"vary": "Origin, X-Origin, Referer",
+					"x-content-type-options": "nosniff",
+					"x-frame-options": "SAMEORIGIN",
+					"x-gemini-service-tier": "standard",
+					"x-xss-protection": "0"
+				}
+			},
+			"candidates": [
+				{
+					"content": {
+						"parts": [
+							{
+								"functionCall": {
+									"name": "_0_add_to_cart",
+									"args": {
+										"quantity": 1,
+										"id": 383,
+										"variation": {
+											"Storage": "64 GB",
+											"Color": "Silver"
+										}
+									},
+									"id": "call_950710"
+								},
+								"thoughtSignature": "EoUGCoIGAWkUfRP2U6hoGi7FsHuCn5SrWfScsZ+qAWn8HB1nJPOjy2mp/YVEtZJpDR3EeXVh9rLp15tgyH/pOoB/GrQwOJ/jsC40zhd65mLvUen4i/j5zF5Gd3vnLIRAYSse2XAyBMMZVU4K0KAZVEr6m22mEP2KOgtXC9doqm0ciURrzlBuhT6rSRvXeysh86MDVb4oaeEf9De4VM0aEFGTHe2P4Ut0ARo5bUu7G58Wri+cizoFfoCZ4Z3koImjw5m0MgK+f6/MQzyA8cDnwds+gQdSKV/C2Zz02cV04UMTZfaFZzaTZ/RxgBS+o4FrfAe0H2wy194B0Kaq7/pgfbjUx5Akys5Z1t69Jtu0DdDbi0Aj0Tb4tCkOMa4GbfLB9FOSATohqe0oTk04F1z3em6ppNvthJ69kzI0PkygoGrxN2D6HnH/Z6UceCD96miNdrga3caK/Js1Gtr2tMi8C6+rexNSNT2q5yEvtPL3k+gNHHyW6M6w3YvzinCLjiPWDGNwT4K6EF2+n+Jrkk6nVERAih6ISxxZGeHs3AgTT+q2COTV7KokKGUvrk2h2HA0dlsKkeRdzR59jD0j9LfjjHfmDBAz+Zh/9nfZZYBMvfaQnCqhf/IATLpxA6h+NJqyMMRFkDwRIuA0Cksx4F0vNhvy6mV9iADlSL0S1d5SYWHra7HTKM1Yvy18ZPh762+5U/pn4vsGrwcKu25a3PT+Y4CW3GW8O1pOaSoZHja4/dmtpY+HH6Om3Elyp21E8BMo1hTdoYQDwZphDpXs7zM+o9WgnTPEFpgjAXwiR8xXPUM8F6WydWkYPQiJGz4wUf3+FH3fJdDPpjtY9a5F2xcUCVkfSg2qZeC7KgJcsTXXD/YCpvKMsPA75uFBa7OxFrNoqm6bJSJ9d5X0X47doeyl0WCZgy/DreIl92yHq7wukXrdjcDC+leKC8q/VhJ142rZTfCDkNAYc2yMDcCYl+Jv56JxFD09pinnnuGz3if/G7+5+oW9J6IsWMtHtUlZ70RJkLf6ELunSWY="
+							}
+						],
+						"role": "model"
+					},
+					"finishReason": "STOP",
+					"index": 0
+				}
+			],
+			"modelVersion": "gemini-3.6-flash",
+			"responseId": "8Gjbar2JLqmSvdIPp7q06AY",
+			"usageMetadata": {
+				"promptTokenCount": 2394,
+				"candidatesTokenCount": 40,
+				"totalTokenCount": 2636,
+				"promptTokensDetails": [
+					{
+						"modality": "TEXT",
+						"tokenCount": 2394
+					}
+				],
+				"thoughtsTokenCount": 202,
+				"serviceTier": "standard"
+			}
+		}
+	},
+	{
+		"userPrompt": {
+			"message": [
+				{
+					"functionResponse": {
+						"name": "_0_add_to_cart",
+						"response": {
+							"result": "{\"content\":[{\"type\":\"text\",\"text\":\"{\\\"count\\\":1,\\\"items\\\":[{\\\"key\\\":\\\"9a2e9318b39e16264bcc5890a219199e\\\",\\\"id\\\":841,\\\"name\\\":\\\"iPhone 5s\\\",\\\"quantity\\\":1,\\\"price\\\":\\\"229.99\\\",\\\"variation\\\":[{\\\"raw_attribute\\\":\\\"attribute_pa_color\\\",\\\"attribute\\\":\\\"Color\\\",\\\"value\\\":\\\"Silver\\\"},{\\\"raw_attribute\\\":\\\"attribute_pa_storage\\\",\\\"attribute\\\":\\\"Storage\\\",\\\"value\\\":\\\"64 GB\\\"}]}],\\\"total\\\":\\\"229.99\\\",\\\"currency\\\":\\\"USD\\\"}\"}]}"
+						}
+					}
+				}
+			],
+			"config": {
+				"systemInstruction": [
+					"You are an assistant embedded in a browser tab.",
+					"User prompts typically refer to the current tab unless stated otherwise.",
+					"Use the provided tools to query page content when you need it.",
+					"Today's date is: Friday, October 23, 2026",
+					"CRITICAL RULE: Whenever the user provides a relative date (e.g., \"next Monday\", \"tomorrow\", \"in 3 days\"),  you must calculate the exact calendar date based on today's date.",
+					"CRITICAL RULE: Do not try to use other tools than the available ones."
+				],
+				"tools": [
+					{
+						"functionDeclarations": [
+							{
+								"name": "_0_add_kit_to_cart",
+								"description": "Add every product of a kit to the visitor's cart in one step. Reports what was added and what is missing or out of stock.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"kit": {
+											"type": "string",
+											"enum": [
+												"Gym Starter",
+												"Breakfast Basket",
+												"Kitchen Essentials",
+												"Smartphone Accessories Pack",
+												"Weekend City Outfit",
+												"Skincare Routine",
+												"Picnic Set",
+												"Home Office Starter"
+											],
+											"description": "Name of the kit"
+										}
+									},
+									"required": ["kit"]
+								}
+							},
+							{
+								"name": "_0_add_recipe_to_cart",
+								"description": "Add every product of a recipe to the visitor's cart in one step, scaled to the number of servings. Reports what was added and what is missing or out of stock.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"recipe": {
+											"type": "string",
+											"enum": [
+												"Pepper and Onion Stir-Fry",
+												"Strawberry Ice-Cream Sundae",
+												"Honey-Lemon Tea",
+												"Fish Steak with Lemon and Cucumber Salad",
+												"Beef Steak with Potatoes",
+												"Chicken and Rice",
+												"Fluffy Omelette",
+												"Fruit Salad"
+											],
+											"description": "Name of the recipe"
+										},
+										"servings": {
+											"type": "number",
+											"description": "People to cook for, default as in the recipe"
+										}
+									},
+									"required": ["recipe"]
+								}
+							},
+							{
+								"name": "_0_add_to_cart",
+								"description": "Add a product to the visitor's cart. For a product with variations pass `variation`: each variation attribute name from get_product with one of its allowed values.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"id": {
+											"type": "number",
+											"description": "Product id"
+										},
+										"quantity": {
+											"type": "number",
+											"description": "How many, default 1"
+										},
+										"variation": {
+											"type": "object",
+											"description": "Attribute name to chosen value, e.g. {\"Size\": \"M\"}",
+											"additionalProperties": {
+												"type": "string"
+											}
+										}
+									},
+									"required": ["id"]
+								}
+							},
+							{
+								"name": "_0_get_cart",
+								"description": "The visitor's current cart: items with their keys, quantities, total.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_get_current_product",
+								"description": "The product on the page the visitor is looking at now (id, name, price). Empty when the page is not a product.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_get_page",
+								"description": "Read a page or post of the site as plain text, by id from search_site.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"id": {
+											"type": "number",
+											"description": "Page or post id"
+										}
+									},
+									"required": ["id"]
+								}
+							},
+							{
+								"name": "_0_get_product",
+								"description": "Full card of one product: description, attributes, variation options (attribute name and allowed values), stock, price, rating, link.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"id": {
+											"type": "number",
+											"description": "Product id"
+										}
+									},
+									"required": ["id"]
+								}
+							},
+							{
+								"name": "_0_list_categories",
+								"description": "All product categories of the shop.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_list_kits",
+								"description": "The shop's kits: name, number of products, link.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_list_recipes",
+								"description": "The shop's recipes: name, servings, time, number of products, link.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_open_page",
+								"description": "Open a page of this site in the visitor's browser (product, cart, checkout, article). Same site only. Call it as the very last step: the page reloads.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"url": {
+											"type": "string",
+											"description": "Address on this site"
+										}
+									},
+									"required": ["url"]
+								}
+							},
+							{
+								"name": "_0_remove_cart_item",
+								"description": "Remove an item from the cart (use the key from get_cart).",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"key": {
+											"type": "string",
+											"description": "Cart item key"
+										}
+									},
+									"required": ["key"]
+								}
+							},
+							{
+								"name": "_0_search_products",
+								"description": "Search the shop's catalog by keywords, with optional category, price range and sale filter. Returns up to 10 products per page.",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"query": {
+											"type": "string",
+											"description": "Keywords"
+										},
+										"category": {
+											"type": "string",
+											"description": "Category id or slug from list_categories"
+										},
+										"min_price": {
+											"type": "number",
+											"description": "Minimum price in the shop currency"
+										},
+										"max_price": {
+											"type": "number",
+											"description": "Maximum price in the shop currency"
+										},
+										"on_sale": {
+											"type": "boolean",
+											"description": "Only discounted products"
+										},
+										"page": {
+											"type": "number",
+											"description": "Page number, from 1"
+										}
+									},
+									"required": []
+								}
+							},
+							{
+								"name": "_0_search_site",
+								"description": "Search the site's pages and posts by keywords (policies, delivery, FAQ, articles).",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"query": {
+											"type": "string",
+											"description": "Keywords"
+										}
+									},
+									"required": ["query"]
+								}
+							},
+							{
+								"name": "_0_update_cart_item",
+								"description": "Change the quantity of a cart item (use the key from get_cart).",
+								"parametersJsonSchema": {
+									"type": "object",
+									"properties": {
+										"key": {
+											"type": "string",
+											"description": "Cart item key"
+										},
+										"quantity": {
+											"type": "number",
+											"description": "New quantity"
+										}
+									},
+									"required": ["key", "quantity"]
+								}
+							}
+						]
+					}
+				]
+			}
+		}
+	},
+	{
+		"error": {
+			"name": "ApiError",
+			"status": 429
+		}
+	}
+]

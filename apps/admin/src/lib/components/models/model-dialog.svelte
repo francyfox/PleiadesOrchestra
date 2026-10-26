@@ -16,7 +16,7 @@
 	import { MODEL_TYPES, typeLabel } from "#lib/model-types.js";
 	import { useModelsEnhance } from "./use-models-enhance";
 
-	/** Adds a model to a provider, or edits one (`editing` set; the id stays, the provider can change). */
+	/** Adds a model to a provider, or edits one (`editing` set; the id and the provider can change, the agents that picked it follow). */
 	let {
 		open = $bindable(false),
 		providers,
@@ -72,12 +72,12 @@
 				</div>
 				{#if editing && model}
 					<input type="hidden" name="fromProvider" value={editing.provider} />
-					<input type="hidden" name="id" value={model.id} />
-					<p class="font-mono text-sm">{model.id}</p>
-				{:else}
-					<FormField id="model-id" name="id" label={$content.form.modelId.value} placeholder="google/gemini-2.5-flash" required error={$errorText($errors?.id)} />
-					<p class="-mt-2 text-xs text-muted-foreground">{$content.form.modelIdHint.value}</p>
+					<input type="hidden" name="fromId" value={model.id} />
 				{/if}
+				<FormField id="model-id" name="id" label={$content.form.modelId.value} value={model?.id ?? ""} placeholder="google/gemini-2.5-flash" required error={$errorText($errors?.id)} />
+				<p class="-mt-2 text-xs text-muted-foreground">
+					{editing ? $content.form.modelIdEditHint.value : $content.form.modelIdHint.value}
+				</p>
 				<div class="grid gap-2">
 					<Label for="model-types" required>{$content.form.types.value}</Label>
 					<SearchMultiSelect

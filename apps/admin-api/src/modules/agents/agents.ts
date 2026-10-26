@@ -104,13 +104,22 @@ export function agentsRoutes({ auth, orchestrator }: RouteDeps) {
 				)
 				.put(
 					"/providers/:id/models",
-					({ params, body, admin }) =>
-						orchestrator.as(admin.id).saveModel(params.id, body),
+					({ params, body, query, admin }) =>
+						orchestrator.as(admin.id).saveModel(params.id, body, query),
 					{
 						params: Id,
 						body: ProviderModel,
+						// The model this one was: renamed or moved, its agents follow.
+						query: t.Object({
+							fromProvider: t.Optional(t.String({ minLength: 1 })),
+							fromId: t.Optional(t.String({ minLength: 1 })),
+						}),
 						response: { 200: ProviderList, ...Bad },
-						detail: { summary: "Add or change a model (matched by id)" },
+						detail: {
+							summary: "Add or change a model (matched by id)",
+							description:
+								"`fromProvider` + `fromId`: the model this one replaces (another id or provider); it is removed and the agents that picked it pick this one.",
+						},
 					},
 				)
 				.delete(

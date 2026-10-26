@@ -1,5 +1,5 @@
 import { collectTokens, createDecisionAgent } from "@repo/core";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { publicEndpoint } from "../agents/agents.service.ts";
 import { agentSettings } from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
@@ -211,8 +211,36 @@ export function createAgentSettings(deps: AgentSettingsDeps) {
 					throw new ProvidersConfigError(`no provider "${id}"`);
 				return removeProvider(current, id);
 			}),
-		upsertModel: (providerId: string, model: ProviderModel) =>
-			editProviders((current) => upsertModel(current, providerId, model)),
+		/**
+		 * Adds or changes a model. With `from` (the model it was) under another id
+		 * or provider, that one is removed and the agents that picked it pick
+		 * this one: otherwise they would fall back to their env server.
+		 */
+		async upsertModel(
+			providerId: string,
+			model: ProviderModel,
+			from?: { provider: string; id: string },
+		) {
+			const moved =
+				from && (from.provider !== providerId || from.id !== model.id)
+					? from
+					: undefined;
+			await providers.update((current) => {
+				const next = upsertModel(current, providerId, model);
+				return moved ? removeModel(next, moved.provider, moved.id) : next;
+			});
+			if (moved)
+				db.update(agentSettings)
+					.set({ provider: providerId, model: model.id })
+					.where(
+						and(
+							eq(agentSettings.provider, moved.provider),
+							eq(agentSettings.model, moved.id),
+						),
+					)
+					.run();
+			changed();
+		},
 		deleteModel: (providerId: string, modelId: string) =>
 			editProviders((current) => removeModel(current, providerId, modelId)),
 		/** One plain chat call with the settings in effect (not schema-constrained, even for delta), or one tiny decision for gamma: the answer and the latency. */

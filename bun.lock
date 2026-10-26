@@ -114,6 +114,7 @@
       "dependencies": {
         "@bunli/core": "catalog:",
         "@bunli/utils": "catalog:",
+        "@faker-js/faker": "catalog:",
         "@receptron/laya": "^0.1.0",
         "@repo/core": "workspace:*",
         "@t3-oss/env-core": "catalog:",
@@ -296,7 +297,7 @@
     },
     "packages/pleiades-widget": {
       "name": "@shalotts/pleiades-widget",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "devDependencies": {
         "@alpinejs/csp": "^3.17.4",
         "@repo/webmcp-polyfill": "workspace:*",
@@ -359,6 +360,7 @@
     "@codemirror/state": "6.7.6",
     "@codemirror/view": "6.43.15",
     "@elysiajs/openapi": "^1.4.16",
+    "@faker-js/faker": "^10.6.0",
     "@lezer/highlight": "1.2.5",
     "@paralleldrive/cuid2": "^3.0.6",
     "@sentry/elysia": "11.4.0",
@@ -733,6 +735,8 @@
     "@esbuild/win32-ia32": ["@esbuild/win32-ia32@0.25.12", "", { "os": "win32", "cpu": "ia32" }, "sha512-HkqnmmBoCbCwxUKKNPBixiWDGCpQGVsrQfJoVGYLPT41XWF8lHuE5N6WhVia2n4o5QK5M4tYr21827fNhi4byQ=="],
 
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.25.12", "", { "os": "win32", "cpu": "x64" }, "sha512-alJC0uCZpTFrSL0CCDjcgleBXPnCrEAhTBILpeAp7M/OFgoqtAetfBzX0xM00MUsVVPpVjlPuMbREqnZCXaTnA=="],
+
+    "@faker-js/faker": ["@faker-js/faker@10.6.0", "", {}, "sha512-3RQHgEtvL1Frl/d1cSreo7qhJ3Gk1OdNUai/CtZ8G+wYeRQnJih3s9xJ9/kgYekPQRdwgh0HXRPqMlzWGwivIQ=="],
 
     "@floating-ui/core": ["@floating-ui/core@1.8.0", "", { "dependencies": { "@floating-ui/utils": "^0.2.12" } }, "sha512-0CIZ5itps/8x7BG8dEIhs53BvCUH2PCoogtakwRTut+Arm58sJooJ0AuZhLw2HJYIR5cMLNPBSS728sPho2khQ=="],
 

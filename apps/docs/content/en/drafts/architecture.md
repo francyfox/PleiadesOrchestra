@@ -26,7 +26,7 @@ Every app and package of the monorepo, one line each. Internals live in each one
 - `apps/admin` — Svelte 5 admin SPA; see `apps/admin/CLAUDE.md`.
 - `apps/docs` — SveltePress site: landing, widget playground (same-origin WebMCP demos) and the docs pages from `content/`; see `apps/docs/CLAUDE.md`.
 - `apps/pleiades-mcp` — stdio MCP server exposing the orchestrator to Claude Code; see `apps/pleiades-mcp/CLAUDE.md`.
-- `apps/benchmark` — every benchmark of the repo (bunli CLI: `bun tools`, `bun laya`, `bun snake`); see `apps/benchmark/CLAUDE.md`.
+- `apps/benchmark` — every benchmark of the repo (bunli CLI: `bun tools`, `bun laya`, `bun snake`, `bun efficiency`); see `apps/benchmark/CLAUDE.md`.
 - `apps/e2e` — Playwright tests of the widget in a real browser (`bun run test:e2e`; `REAL_STACK=1` runs them against the live stack). Not part of `bun run test`.
 - `apps/shopping-cart-webmcp` — Basketful demo shop with the widget (nested git repo, its own `package-lock.json`); a fixture, not the product. Setup in `packages/pleiades-widget/CLAUDE.md` (Integration).
 - `apps/memory` — `turingdb` image only; its compose service is commented out (not wired to anything).

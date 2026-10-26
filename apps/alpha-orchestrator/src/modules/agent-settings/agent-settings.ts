@@ -138,18 +138,29 @@ export function agentSettingsRoutes({ settings }: AgentSettingsDeps) {
 		)
 		.put(
 			"/providers/:id/models",
-			({ params, body, status }) =>
+			({ params, body, query, status }) =>
 				guard(status, async () => {
-					await settings.upsertModel(params.id, body);
+					await settings.upsertModel(
+						params.id,
+						body,
+						query.fromProvider && query.fromId
+							? { provider: query.fromProvider, id: query.fromId }
+							: undefined,
+					);
 					return providerList();
 				}),
 			{
 				params: ProviderParams,
 				body: ProviderModel,
+				// The model this one was (renamed or moved); ids may hold "/" or ":", so the query.
+				query: t.Object({
+					fromProvider: t.Optional(t.String({ minLength: 1 })),
+					fromId: t.Optional(t.String({ minLength: 1 })),
+				}),
 				detail: {
 					summary: "Add or change a model",
 					description:
-						"Matched by `id` within the provider. Agents using it get the new parameters at once.",
+						"Matched by `id` within the provider. Agents using it get the new parameters at once. `fromProvider` + `fromId` name the model this one was: when that is another id or provider it is removed, and the agents that picked it pick this one.",
 				},
 				response: { 200: ProviderList, 400: t.String() },
 			},
