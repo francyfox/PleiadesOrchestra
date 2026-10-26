@@ -455,6 +455,8 @@ const CATALOG: Record<string, string> = {
 		"Found 2:\n- Keychron K2 Keyboard — $89.00 — in stock\n- Old Keyboard — $5 — OUT OF STOCK",
 	hub: "Found 1:\n- Anker 7-in-1 USB-C Hub — $39.99 — in stock",
 	cable: "Found 1:\n- Braided HDMI Cable 2m — $12.50 — in stock",
+	shirt:
+		"Found 2:\n- Small Metal Shirt — $12.00 — OUT OF STOCK\n- Oriental Metal Bike — $40.00 — in stock",
 };
 function hardwareAnswer(query: string): string {
 	const hit = Object.keys(CATALOG).find((word) => query.includes(word));
@@ -595,6 +597,30 @@ describe("«buy A, B, C»: one search per thing, then one add", () => {
 			["add_to_cart", { product: "Braided HDMI Cable 2m", quantity: 3 }],
 		]);
 		expect(succeeded).toBe(true);
+	});
+
+	test("a thing named exactly but out of stock is missing, not swapped for the next listed product", async () => {
+		const { calls, state } = await runHardware(
+			ADD_LINES,
+			"x",
+			"buy keyboard, small metal shirt",
+		);
+		expect(calls.at(-1)?.arguments).toEqual({
+			lines: [{ title: "Keychron K2 Keyboard", count: 1 }],
+		});
+		expect(JSON.parse(String(state.missingItems))).toEqual([
+			{ name: "small metal shirt", quantity: 1 },
+		]);
+	});
+
+	test("one thing named exactly but out of stock fails the search and adds nothing", async () => {
+		const { calls, succeeded } = await runHardware(
+			ADD_ONE,
+			"x",
+			"buy small metal shirt",
+		);
+		expect(calls.map((call) => call.tool)).not.toContain("add_to_cart");
+		expect(succeeded).toBe(false);
 	});
 
 	test("a single thing still takes the plain path", async () => {

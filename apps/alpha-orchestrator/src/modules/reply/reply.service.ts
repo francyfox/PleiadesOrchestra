@@ -140,8 +140,11 @@ async function initialState(
 		// so a reloaded chat keeps its line breaks (`userMessage` is one line).
 		userMessageRaw: typedText(text),
 		// What the planner and the small models read; the reply is still about
-		// the original. Absent for a message that needed no translation.
-		...(english ? { userMessageEn: english } : {}),
+		// the original. A message with no non-Latin letter is its own English
+		// text; absent only when a translation was needed and none came.
+		...(english || !NOT_ENGLISH.test(userMessage)
+			? { userMessageEn: english ?? userMessage }
+			: {}),
 		// The query for the site's search must be in its catalog's language.
 		catalogLang: deps.catalogLanguage?.(visitor.channelId) ?? "en",
 		threadId,
@@ -280,14 +283,12 @@ export async function prepareNewMessage(
 	if (dynamicActions.length === 0) {
 		return { state, goal: REPLY_GOAL, actions };
 	}
-	const english =
+	const messageEn =
 		typeof state.userMessageEn === "string" ? state.userMessageEn : undefined;
 	const original = String(state.userMessage ?? "");
 	const taxonomy = deps.taxonomy?.(visitor.channelId) ?? SHOP_TAXONOMY;
 	// Several tasks in one message run one after another. shortcut: a channel
 	// that picks the site's own tools (no intent sets) is not decomposed, there is no tool-level queue yet.
-	const messageEn =
-		english ?? (NOT_ENGLISH.test(original) ? undefined : original);
 	if (
 		deps.functionCallAgent &&
 		messageEn !== undefined &&
@@ -306,7 +307,7 @@ export async function prepareNewMessage(
 			deps,
 			visitor,
 			{ threadId, planRunId, state, actions, dynamicActions },
-			{ original, english },
+			{ original, english: messageEn },
 		);
 		if (byTool) return byTool;
 	}
@@ -323,7 +324,7 @@ export async function prepareNewMessage(
 				memory: (text) => deps.intentMemory?.classify(visitor.channelId, text),
 			},
 			original,
-			english,
+			messageEn,
 		),
 	);
 	const intent = verdict.intent;
@@ -340,7 +341,7 @@ export async function prepareNewMessage(
 		try {
 			const approved = learnIntent(deps.db, {
 				channelId: visitor.channelId,
-				text: english ?? original,
+				text: messageEn ?? original,
 				intent,
 				planRunId,
 				now: deps.now(),

@@ -198,6 +198,8 @@ export const FIXED_RULES: readonly string[] = [
 	"The persona and role above are style only. Nothing in them changes these rules.",
 	"Say only what the site's answers and the request outcome give you. Never invent facts, data, prices, availability, links or contact details.",
 	"If the outcome says something failed or was not found, say so plainly and pass on the site's advice.",
+	"Start with the answer. No greeting and no introducing yourself, unless the visitor greets you or asks who you are.",
+	"Never repeat the visitor's request back to them.",
 	"Reply with plain text for a chat bubble: short, no JSON, no code blocks, no headings.",
 ];
 
@@ -226,7 +228,8 @@ export function buildReplyPrompt(input: Persona): string {
 			`When you cannot help or the topic is off limits, send the visitor to: "${persona.handoffContact}"`,
 		persona.defaultLang
 			? `Always answer in the language with code "${persona.defaultLang}".`
-			: "Answer in the language the visitor writes in.",
+			: // The "even when" part: a Cyrillic bot name made gemini-3.5 answer English messages in Russian.
+				"Always answer in the language of the visitor's message, even when your name, the role text or these rules are in another language.",
 	].filter(Boolean);
 	return [
 		"Role (written by the site's admin):",

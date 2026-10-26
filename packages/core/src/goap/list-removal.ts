@@ -27,6 +27,34 @@ export const REMOVED_ITEMS = "removedItems";
 export const LIST_ITEM =
 	/^\s*(?:(?:[-*•]|\d+[.)])\s+(.+)|(\d+\s*[×xх]\s+.+))$/u;
 export const NAME_END = /\s+[—–-]\s+|\s+\(|\s+\$\d/;
+export const OUT_OF_STOCK = /out of stock|unavailable|sold out/i;
+
+const nameWords = (text: string) =>
+	text
+		.toLowerCase()
+		.split(/[^\p{L}\p{N}]+/u)
+		.filter(Boolean);
+
+/**
+ * The out-of-stock product a search answer lists that `query` names in full
+ * (every word of its name is in the query): the visitor asked for exactly
+ * that, so the next in-stock line is a different product, not a stand-in.
+ * A broad query («keyboard») never names «Old Keyboard» and keeps the skip.
+ */
+export function outOfStockNamed(
+	text: string,
+	query: string,
+): string | undefined {
+	const asked = new Set(nameWords(query));
+	for (const line of text.split("\n")) {
+		const item = line.match(LIST_ITEM)?.[1];
+		if (!item || !OUT_OF_STOCK.test(item)) continue;
+		const name = item.split(NAME_END)[0]?.trim() ?? "";
+		const words = nameWords(name);
+		if (words.length > 0 && words.every((word) => asked.has(word))) return name;
+	}
+	return undefined;
+}
 
 const LEADING_COUNT = /^(\d+)\s*[×xх*]\s+/iu;
 const LEADING_ID = /^#([\p{L}\p{N}][\p{L}\p{N}_-]*)/u;

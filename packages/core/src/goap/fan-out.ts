@@ -1,5 +1,10 @@
 import type { ToolIntent } from "./intent-taxonomy";
-import { LISTED_ITEMS, REMOVED_ITEMS, SCOPE_ALL } from "./list-removal";
+import {
+	LISTED_ITEMS,
+	outOfStockNamed,
+	REMOVED_ITEMS,
+	SCOPE_ALL,
+} from "./list-removal";
 import {
 	FOUND_ITEMS,
 	findListParameter,
@@ -53,9 +58,11 @@ function searchEach(
 			const found = readItems(state, FOUND_ITEMS);
 			const missing = readItems(state, MISSING_ITEMS);
 			if (asked) {
-				const product = firstProduct(answer);
+				// Named exactly but out of stock: missing, never swapped for the next line.
+				const unavailable = outOfStockNamed(answer, asked.name);
+				const product = unavailable ? undefined : firstProduct(answer);
 				if (product) found.push({ name: product, quantity: asked.quantity });
-				else if (NO_RESULTS.test(answer)) missing.push(asked);
+				else if (unavailable || NO_RESULTS.test(answer)) missing.push(asked);
 				// An answer in a format this cannot read: the query stands in for
 				// the name and the site's own matching decides (as for one search).
 				else found.push({ name: asked.name, quantity: asked.quantity });

@@ -932,7 +932,7 @@ describe("createApp — the message is translated as it comes in", () => {
 		expect(translations()).toEqual([]);
 	});
 
-	test("a message already in English is not translated", async () => {
+	test("a message already in English is not translated and is its own English text", async () => {
 		const asked: string[] = [];
 		const { seen, action } = stateRecorder();
 		const app = createTestApp({
@@ -948,7 +948,7 @@ describe("createApp — the message is translated as it comes in", () => {
 		await readNdjson(await post(app, "buy 1 cheese"));
 
 		expect(asked).toEqual([]);
-		expect(seen[0]?.userMessageEn).toBeUndefined();
+		expect(seen[0]?.userMessageEn).toBe("buy 1 cheese");
 	});
 
 	test("a translator that fails costs the translation, not the message", async () => {

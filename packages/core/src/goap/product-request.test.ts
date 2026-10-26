@@ -385,6 +385,35 @@ describe("several products in one message", () => {
 		expect(request.quantity).toBe(1);
 	});
 
+	test("where it goes may come first: «add to my cart: A, B and C»", () => {
+		expect(
+			extractProductRequest(
+				"Add to my cart: Handmade Marble Car, Small Steel Chair and Rustic Wooden Hat.",
+				"x",
+			).items,
+		).toEqual([
+			{ query: "handmade marble car", quantity: 1 },
+			{ query: "small steel chair", quantity: 1 },
+			{ query: "rustic wooden hat", quantity: 1 },
+		]);
+		expect(
+			extractProductRequest("put into the basket 2 lamps", "x"),
+		).toMatchObject({ query: "lamps", quantity: 2 });
+		// What the translator made of «Положи в корзину 3 …» / «Добавь в корзину: …».
+		expect(
+			extractProductRequest(
+				"Put it in basket 3 Handcrafted Marble Gloves.",
+				"x",
+			),
+		).toMatchObject({ query: "handcrafted marble gloves", quantity: 3 });
+		expect(
+			extractProductRequest(
+				"Add it to the basket: Handmade Marble Car, Small Steel Bike and Tasty Granite Salad.",
+				"x",
+			).items?.[0],
+		).toEqual({ query: "handmade marble car", quantity: 1 });
+	});
+
 	test("every item keeps its own count", () => {
 		const request = extractProductRequest(
 			"add 2 hdmi cables, three phone cases and a dozen batteries to my cart",

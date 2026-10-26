@@ -25,6 +25,8 @@ import {
 	LISTED_ITEMS,
 	looksEmpty,
 	NAME_END,
+	OUT_OF_STOCK,
+	outOfStockNamed,
 	parseListedItems,
 	REMOVED_ITEMS,
 	removalArguments,
@@ -132,8 +134,6 @@ export async function classifyToolIntent(
 
 // --- reading what the tool answered ------------------------------------
 
-const OUT_OF_STOCK = /out of stock|unavailable|sold out/i;
-
 /**
  * Name of the first product in a search answer that is a bulleted/numbered
  * list ("- Swiss Cheese — $4.49 (6 oz) — in stock"), skipping lines marked out
@@ -201,6 +201,8 @@ function factsFromAnswer(
 	// `lastProduct` outlives the request (see `SESSION_FACTS`): «buy them» in
 	// the next message buys it. A failed search empties it, so «buy them» never
 	// buys what an older search found.
+	if (outOfStockNamed(text, String(state.query ?? "")))
+		return { facts: { lastProduct: "" }, failed: true };
 	const product = firstListedProductName(text);
 	if (product)
 		return { facts: { product, lastProduct: product }, failed: false };

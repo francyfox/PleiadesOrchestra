@@ -185,6 +185,9 @@ const LEADING =
 /** Where it goes, and the courtesies after it. */
 const TRAILING =
 	/\s*(?:\b(?:to|in|into|from|on)\s+(?:the|my|your)?\s*(?:cart|basket|bag|list|order)\b|\bplease\b|\bfor\s+me\b|\bthanks?\b)\s*$/i;
+/** The same place said before the product: «add to my cart: A, B»; the translator renders «положи в корзину X» as «put it in basket X». */
+const PLACE_FIRST =
+	/^(?:(?:it|them)\s+)?(?:to|in|into|on)\s+(?:the|my|your)?\s*(?:cart|basket|bag|list|order)\b\s*:?\s*/i;
 const DETERMINERS = /^(?:the|a|an|some|any|my|more|another|few|several)\s+/i;
 const CONTAINERS =
 	/^(?:bottles?|loaves|loaf|packs?|packages?|pieces?|cans?|cartons?|boxes|box|bags?|jars?|kg|kilos?|kilograms?|pounds?|lbs?|liters?|litres?|bunch(?:es)?|dozen)\s+of\s+/i;
@@ -208,7 +211,7 @@ export function extractProductRequest(
 		.replace(/[.!?…]+$/g, "")
 		.replace(/\s+/g, " ");
 
-	text = text.replace(LEADING, "").trim();
+	text = text.replace(LEADING, "").trim().replace(PLACE_FIRST, "");
 	for (let i = 0; i < 2; i++) text = text.replace(TRAILING, "").trim();
 
 	const phrases = splitProductList(text, "and", startsEnglishCount);
