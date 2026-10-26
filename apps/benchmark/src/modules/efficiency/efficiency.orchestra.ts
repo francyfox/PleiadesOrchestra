@@ -1,4 +1,10 @@
 import type { McpCallToolResult } from "@repo/core";
+import {
+	asInfra,
+	createInfraFetch,
+	InfraError,
+	type InfraOptions,
+} from "./efficiency.infra.ts";
 import { costUsd } from "./efficiency.service.ts";
 import type { MockShop } from "./efficiency.shop.ts";
 import type { Contender, PriceOf } from "./efficiency.types.ts";
@@ -14,6 +20,12 @@ type Line =
 	  }
 	| { type: "error"; message: string; hint?: string }
 	| { type: "step" | "progress" | "cancelled" };
+
+/** `/v1/admin/requests/:id`: kept whole for the traces, `llmCalls` is what the metrics read. */
+interface Details {
+	llmCalls: LlmCall[];
+	[key: string]: unknown;
+}
 
 interface LlmCall {
 	model: string;
@@ -45,17 +57,24 @@ export function createOrchestraContender(deps: {
 	priceOf: PriceOf;
 	fetch?: typeof fetch;
 	rateLimitWaitMs?: number;
+	/** Timeout and retry delays (tests). */
+	infra?: InfraOptions;
 }): Contender {
-	const http = deps.fetch ?? fetch;
+	// The widget's own 429 is waited out below, the rest is retried here.
+	const http = createInfraFetch({
+		...deps.infra,
+		fetch: deps.fetch,
+		retry429: false,
+	});
 	const rateLimitWaitMs = deps.rateLimitWaitMs ?? RATE_LIMIT_WAIT_MS;
 	let visitorToken: Promise<string> | undefined;
-	// Time spent waiting out a 429: the widget's rate limit, not the orchestrator's speed.
-	let pausedMs = 0;
 
 	async function post(
 		path: string,
 		body: unknown,
 		headers: Record<string, string>,
+		// Time this case spent waiting out a 429: the widget's rate limit, not the orchestrator's speed.
+		paused?: { ms: number },
 	) {
 		for (let attempt = 0; ; attempt++) {
 			const response = await http(`${deps.baseUrl}${path}`, {
@@ -72,31 +91,38 @@ export function createOrchestraContender(deps: {
 					`\n⏸ ${path}: 429, waiting ${rateLimitWaitMs / 1000}s (not timed)\n`,
 				);
 				await Bun.sleep(rateLimitWaitMs);
-				pausedMs += rateLimitWaitMs;
+				if (paused) paused.ms += rateLimitWaitMs;
 				continue;
 			}
-			if (!response.ok) throw new Error(`${path}: HTTP ${response.status}`);
+			if (!response.ok)
+				throw new InfraError("http", `${path}: HTTP ${response.status}`);
 			return response;
 		}
 	}
 
 	const visitor = (token: string) => ({ "x-visitor-token": token });
 
-	async function thread(token: string, shop: MockShop): Promise<string> {
+	async function thread(
+		token: string,
+		shop: MockShop,
+		paused?: { ms: number },
+	): Promise<string> {
 		const { threadId } = (await (
-			await post("/v1/widget/threads", {}, visitor(token))
+			await post("/v1/widget/threads", {}, visitor(token), paused)
 		).json()) as { threadId: string };
 		const { tools } = await shop.listTools();
 		await post(
 			"/v1/widget/tools",
 			{ threadId, webmcpTools: tools },
 			visitor(token),
+			paused,
 		);
 		return threadId;
 	}
 
 	/** One visitor for the whole run; a first message waits out the catalog's one-time classification so case 1 isn't charged for it. */
 	function start(shop: MockShop): Promise<string> {
+		// A failed start is not remembered: the next case tries again.
 		visitorToken ??= (async () => {
 			const response = await post(
 				"/v1/widget/visitors",
@@ -116,7 +142,11 @@ export function createOrchestraContender(deps: {
 			).text();
 			return token;
 		})();
-		return visitorToken;
+		const pending = visitorToken;
+		pending.catch(() => {
+			if (visitorToken === pending) visitorToken = undefined;
+		});
+		return pending;
 	}
 
 	async function lines(response: Response): Promise<Line[]> {
@@ -130,26 +160,27 @@ export function createOrchestraContender(deps: {
 		const response = await http(`${deps.baseUrl}${path}`, {
 			headers: { authorization: `Bearer ${deps.adminApiKey}` },
 		});
-		if (!response.ok) throw new Error(`${path}: HTTP ${response.status}`);
+		if (!response.ok)
+			throw new InfraError("http", `${path}: HTTP ${response.status}`);
 		return (await response.json()) as T;
 	}
 
-	/** Every model call of the thread's request; the usage ledger is flushed in the background, so a few tries. */
-	async function llmCalls(threadId: string): Promise<LlmCall[]> {
+	/** The thread's request with every model call; the usage ledger is flushed in the background, so a few tries. */
+	async function requestDetails(threadId: string): Promise<Details> {
 		for (let attempt = 0; attempt < 5; attempt++) {
 			const { items } = await admin<{
 				items: { id: string; threadId: string }[];
 			}>("/v1/admin/requests?pageSize=20");
 			const request = items.find((item) => item.threadId === threadId);
 			if (request) {
-				const details = await admin<{ llmCalls: LlmCall[] }>(
+				const details = await admin<Details>(
 					`/v1/admin/requests/${request.id}`,
 				);
-				if (details.llmCalls.length) return details.llmCalls;
+				if (details.llmCalls.length) return details;
 			}
 			await Bun.sleep(500);
 		}
-		return [];
+		return { llmCalls: [] };
 	}
 
 	return {
@@ -167,17 +198,19 @@ export function createOrchestraContender(deps: {
 				costUsd: 0,
 			};
 			let started = performance.now();
-			let pausedAtStart = pausedMs;
+			let paused = { ms: 0 };
 			let reply = "";
+			let detail: Details | undefined;
 			try {
 				const token = await start(shop);
-				const threadId = await thread(token, shop);
+				const threadId = await thread(token, shop, paused);
 				started = performance.now();
-				pausedAtStart = pausedMs;
+				paused = { ms: 0 };
 				let response = await post(
 					"/v1/widget/messages",
-					{ threadId, text: test.text, lang: "en" },
+					{ threadId, text: test.text, lang: test.lang },
 					visitor(token),
+					paused,
 				);
 				let done: Extract<Line, { type: "done" }> | undefined;
 				for (let trip = 0; trip < MAX_ROUND_TRIPS; trip++) {
@@ -185,10 +218,13 @@ export function createOrchestraContender(deps: {
 					for (const line of stream)
 						if (line.type === "delta") reply += line.text;
 					const last = stream.at(-1);
-					if (last?.type === "error")
-						throw new Error(
-							`${last.message}${last.hint ? ` (${last.hint})` : ""}`,
-						);
+					if (last?.type === "error") {
+						const message = `${last.message}${last.hint ? ` (${last.hint})` : ""}`;
+						// The provider behind the reply model is gone: not the orchestrator's doing.
+						if (/no endpoints|unavailable|no provider/i.test(message))
+							throw new InfraError("model-unavailable", message);
+						throw new Error(message);
+					}
 					if (last?.type !== "tool_call") {
 						done = last?.type === "done" ? last : undefined;
 						break;
@@ -206,16 +242,17 @@ export function createOrchestraContender(deps: {
 							tool: last.tool,
 							result,
 							isError: result.isError ?? false,
-							lang: "en",
+							lang: test.lang,
 						},
 						visitor(token),
+						paused,
 					);
 				}
-				const latencyMs =
-					performance.now() - started - (pausedMs - pausedAtStart);
+				const latencyMs = performance.now() - started - paused.ms;
 
 				if (deps.adminApiKey) {
-					const calls = await llmCalls(threadId);
+					detail = await requestDetails(threadId);
+					const calls = detail.llmCalls;
 					base.modelCalls = calls.length;
 					base.inputTokens = calls.reduce(
 						(sum, call) => sum + (call.inputTokens ?? 0),
@@ -246,13 +283,21 @@ export function createOrchestraContender(deps: {
 						deps.priceOf(undefined),
 					);
 				}
-				return { ...base, latencyMs, reply };
+				return { ...base, latencyMs, reply, detail };
 			} catch (error) {
+				const infra = asInfra(error);
 				return {
 					...base,
-					latencyMs: performance.now() - started - (pausedMs - pausedAtStart),
+					...(infra && {
+						status: "error" as const,
+						errorCategory: infra.category,
+					}),
+					latencyMs: performance.now() - started - paused.ms,
 					reply,
-					error: error instanceof Error ? error.message : String(error),
+					error:
+						(infra ?? error) instanceof Error
+							? ((infra ?? error) as Error).message
+							: String(error),
 				};
 			}
 		},

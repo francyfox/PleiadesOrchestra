@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import { defineCommand, option } from "@bunli/core";
 import { colors } from "@bunli/utils";
 import { z } from "zod";
@@ -6,6 +6,7 @@ import { config } from "../config/config.service.ts";
 import { layaArguments, layaQuestions } from "../laya/laya.service.ts";
 import { loadLaya } from "../laya/laya.ts";
 import type { LoadedLaya } from "../laya/laya.types.ts";
+import { resultPath } from "../report/report.service.ts";
 import { LAYA_CASES } from "./choices.cases.ts";
 import {
 	calibrationRecords,
@@ -18,7 +19,7 @@ import { renderLayaCase, renderLayaTable } from "./choices.view.ts";
 // How well Laya fills a request's enums and booleans — its share of
 // `tools --laya` (laya.service.ts: same questions, same answer → argument rules).
 //
-//   bun laya [--threads N] [--output results/x.json]
+//   bun laya [--threads N] [--output x.json]  (default results/choices/<timestamp>.json)
 //
 // In this process on CPU, or over HTTP when LAYA_BASE_URL is set (.env).
 
@@ -38,7 +39,7 @@ export default defineCommand({
 				"Save every answer's raw probabilities with its right answer, to fit Laya's temperatures (packages/core/eval/data/laya-choices.json)",
 		}),
 		output: option(z.string().optional(), {
-			description: "Save the results as JSON, e.g. results/x.json",
+			description: "JSON path (default results/choices/<timestamp>.json)",
 		}),
 	},
 	handler: async ({ flags }) => {
@@ -126,10 +127,10 @@ export default defineCommand({
 			process.stderr.write(`\n💾 ${colors.dim(`wrote ${flags.samples}`)}\n`);
 		}
 
-		if (flags.output) {
-			mkdirSync("results", { recursive: true });
+		{
+			const path = resultPath("choices", "json", flags.output);
 			writeFileSync(
-				flags.output,
+				path,
 				JSON.stringify(
 					{
 						at: new Date().toISOString(),
@@ -143,7 +144,7 @@ export default defineCommand({
 					2,
 				),
 			);
-			process.stderr.write(`\n💾 ${colors.dim(`wrote ${flags.output}`)}\n`);
+			process.stderr.write(`\n💾 ${colors.dim(`wrote ${path}`)}\n`);
 		}
 	},
 });

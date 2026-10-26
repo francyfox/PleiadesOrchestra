@@ -5,6 +5,14 @@ import type {
 	McpToolDescriptor,
 } from "@repo/core";
 
+/** One tool call as the shop saw it, for the traces. */
+export interface ShopCall {
+	name: string;
+	arguments: Record<string, unknown>;
+	text: string;
+	isError: boolean;
+}
+
 export interface Product {
 	name: string;
 	department: string;
@@ -102,11 +110,15 @@ function buildCatalog(seed: number): Product[] {
 
 /**
  * A mock MCP server: the `McpClient` port of `@repo/core` over an in-memory
- * shop. Both contenders call the same tools; `cart()` is what the cases judge.
+ * shop. Both contenders call the same tools; `cart()` and `shown()` are what
+ * the cases judge.
  */
 export function createMockShop(seed: number) {
 	const catalog = buildCatalog(seed);
 	const cart = new Map<string, number>();
+	/** Every product a search answer listed: what the site told the visitor about. */
+	const shown = new Set<string>();
+	const log: ShopCall[] = [];
 	const find = (name: unknown) =>
 		catalog.find(
 			(product) =>
@@ -126,6 +138,7 @@ export function createMockShop(seed: number) {
 			.sort((a, b) => b.score - a.score)
 			.slice(0, SEARCH_LIMIT);
 		if (scored.length === 0) return answer(`Nothing found for "${query}".`);
+		for (const { product } of scored) shown.add(product.name);
 		return answer(
 			[
 				`Found ${scored.length}:`,
@@ -181,10 +194,23 @@ export function createMockShop(seed: number) {
 		);
 	}
 
+	function dispatch(
+		name: string,
+		args: Record<string, unknown>,
+	): McpCallToolResult {
+		if (name === "search_products") return search(args.query);
+		if (name === "add_to_cart") return add(args.items);
+		if (name === "get_cart") return readCart();
+		if (name === "update_cart_item") return update(args.product, args.quantity);
+		return answer(`Unknown tool ${name}.`, true);
+	}
+
 	return {
 		catalog,
 		/** Product name → quantity, the state a case is judged on. */
 		cart: () => Object.fromEntries(cart),
+		shown: () => [...shown],
+		calls: () => log,
 		/** Starts a case from a known cart. */
 		fill(items: Record<string, number>) {
 			cart.clear();
@@ -195,12 +221,14 @@ export function createMockShop(seed: number) {
 			return { tools: TOOLS };
 		},
 		async callTool({ name, arguments: args = {} }) {
-			if (name === "search_products") return search(args.query);
-			if (name === "add_to_cart") return add(args.items);
-			if (name === "get_cart") return readCart();
-			if (name === "update_cart_item")
-				return update(args.product, args.quantity);
-			return answer(`Unknown tool ${name}.`, true);
+			const result = dispatch(name, args);
+			log.push({
+				name,
+				arguments: args,
+				text: result.content.map((block) => block.text ?? "").join(""),
+				isError: result.isError ?? false,
+			});
+			return result;
 		},
 	} satisfies McpClient & Record<string, unknown>;
 }

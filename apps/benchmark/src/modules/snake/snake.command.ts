@@ -4,6 +4,7 @@ import { z } from "zod";
 import { config as env } from "../config/config.service.ts";
 import { loadLaya } from "../laya/laya.ts";
 import type { LoadedLaya } from "../laya/laya.types.ts";
+import { resultPath } from "../report/report.service.ts";
 import { summarizeLatency } from "../stats/stats.service.ts";
 import { decide } from "./snake.service.ts";
 import { SnakeGame } from "./snake.ts";
@@ -89,7 +90,8 @@ export default defineCommand({
 				"Live mode pacing cap (default: as fast as inference allows)",
 		}),
 		output: option(z.string().optional(), {
-			description: "Write the JSON report there (refuses to overwrite)",
+			description:
+				"JSON report path in --headless (default results/snake/<timestamp>.json; refuses to overwrite)",
 		}),
 		width: option(count(24), { description: "Board width (>= 4)" }),
 		height: option(count(16), {
@@ -255,10 +257,9 @@ async function runHeadless(config: Config, output: string | undefined) {
 			deaths: r.deaths,
 		})),
 	);
-	if (output) {
-		await Bun.write(output, `${JSON.stringify(report, null, "\t")}\n`);
-		console.log(`report: ${output}`);
-	}
+	const path = resultPath("snake", "json", output);
+	await Bun.write(path, `${JSON.stringify(report, null, "\t")}\n`);
+	console.log(`report: ${path}`);
 }
 
 async function runLive(config: Config) {

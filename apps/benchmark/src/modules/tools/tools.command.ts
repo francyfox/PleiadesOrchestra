@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import { defineCommand, option } from "@bunli/core";
 import { colors } from "@bunli/utils";
 import { z } from "zod";
@@ -8,6 +8,7 @@ import { connectServer, startServer } from "../delta/delta.server.ts";
 import { createDelta } from "../delta/delta.ts";
 import { loadLaya } from "../laya/laya.ts";
 import type { LoadedLaya } from "../laya/laya.types.ts";
+import { resultPath } from "../report/report.service.ts";
 import { progressLine } from "../report/report.view.ts";
 import { COMPLEX_CASES } from "./tools.cases.ts";
 import { runComplex, summarizeComplex } from "./tools.service.ts";
@@ -21,7 +22,7 @@ import { legend, renderComplexCase, renderComplexTable } from "./tools.view.ts";
 // coloured by kind, then one table.
 //
 //   bun tools [--laya] [--laya-threads N] [--threads N] [--gpu]
-//             [--output results/x.json]
+//             [--output x.json]  (default results/tools/<timestamp>.json)
 //
 // --laya: enums and booleans go to Laya (laya.ts), delta fills the rest.
 // In this process on CPU, or over HTTP when LAYA_BASE_URL is set (.env).
@@ -55,7 +56,7 @@ export default defineCommand({
 			"Offload to the GPU (Vulkan); only where the whole model fits in VRAM",
 		),
 		output: option(z.string().optional(), {
-			description: "Save the results as JSON, e.g. results/x.json",
+			description: "JSON path (default results/tools/<timestamp>.json)",
 		}),
 	},
 	handler: async ({ flags }) => {
@@ -129,10 +130,10 @@ export default defineCommand({
 		);
 		console.log(renderComplexTable(id, summary));
 
-		if (output) {
-			mkdirSync("results", { recursive: true });
+		{
+			const path = resultPath("tools", "json", output);
 			writeFileSync(
-				output,
+				path,
 				JSON.stringify(
 					{
 						at: new Date().toISOString(),
@@ -153,7 +154,7 @@ export default defineCommand({
 					2,
 				),
 			);
-			process.stderr.write(`\n💾 ${colors.dim(`wrote ${output}`)}\n`);
+			process.stderr.write(`\n💾 ${colors.dim(`wrote ${path}`)}\n`);
 		}
 	},
 });

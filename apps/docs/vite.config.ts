@@ -71,6 +71,8 @@ export default defineConfig(({ mode }) => ({
 		// prerendering, so the public vars are inlined here.
 		__PUBLIC_ENV__: JSON.stringify(loadEnv(mode, root, "PUBLIC_")),
 	},
+	// packages/ui assets (images) are imported from outside the app root.
+	server: { fs: { allow: [join(root, "../../packages/ui")] } },
 	plugins: [
 		// Docs pages live in content/<locale>/*.md; mirrored into src/routes/{,<locale>/}docs for SveltePress,
 		// plus llms.txt, llms-full.txt and each page's Markdown in static/ (llmstxt.org).

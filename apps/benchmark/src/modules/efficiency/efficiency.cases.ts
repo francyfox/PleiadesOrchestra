@@ -4,7 +4,8 @@ import type { EfficiencyCase } from "./efficiency.types.ts";
 /**
  * The cases, built from the seeded catalog so names and prices are the shop's
  * own: add one / a count / a list, a price question, remove one, remove all,
- * and an out-of-stock product that must not be added.
+ * and an out-of-stock product that must not be added. Each in English and,
+ * with the same carts, in Russian (`-ru`; product names stay the catalog's).
  */
 export function buildCases(catalog: Product[]): EfficiencyCase[] {
 	const inStock = catalog.filter((product) => product.inStock);
@@ -13,7 +14,7 @@ export function buildCases(catalog: Product[]): EfficiencyCase[] {
 	if (!a || !b || !c || !d || !e || !gone)
 		throw new Error("catalog too small for the cases");
 
-	return [
+	const en: EfficiencyCase[] = [
 		{
 			id: "add-one",
 			text: `Add ${a.name} to my cart.`,
@@ -37,7 +38,7 @@ export function buildCases(catalog: Product[]): EfficiencyCase[] {
 			text: `How much does ${e.name} cost?`,
 			start: {},
 			expected: {},
-			replyIncludes: e.price.toFixed(2),
+			lookedUp: e.name,
 		},
 		{
 			id: "remove-one",
@@ -57,5 +58,23 @@ export function buildCases(catalog: Product[]): EfficiencyCase[] {
 			start: {},
 			expected: {},
 		},
+	].map((one) => ({ ...one, lang: "en" as const }));
+	const ru: Record<string, string> = {
+		"add-one": `Добавь ${a.name} в корзину.`,
+		"add-count": `Положи в корзину 3 ${b.name}.`,
+		"add-list": `Добавь в корзину: ${c.name}, ${d.name} и ${e.name}.`,
+		price: `Сколько стоит ${e.name}?`,
+		"remove-one": `Убери ${a.name} из корзины.`,
+		"remove-all": "Удали всё из корзины.",
+		"out-of-stock": `Добавь ${gone.name} в корзину.`,
+	};
+	return [
+		...en,
+		...en.map((one) => ({
+			...one,
+			id: `${one.id}-ru`,
+			text: ru[one.id] ?? one.text,
+			lang: "ru" as const,
+		})),
 	];
 }

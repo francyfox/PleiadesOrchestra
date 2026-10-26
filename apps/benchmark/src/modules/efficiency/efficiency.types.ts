@@ -1,17 +1,20 @@
+import type { InfraCategory } from "./efficiency.infra.ts";
 import type { MockShop } from "./efficiency.shop.ts";
 
 /** Product name → quantity. */
 export type Cart = Record<string, number>;
 
-/** One visitor message against the mock shop, judged by the cart it leaves. */
+/** One visitor message against the mock shop, judged by the state it leaves. */
 export interface EfficiencyCase {
 	id: string;
 	text: string;
+	/** The language of `text` (the widget's `lang`). */
+	lang: "en" | "ru";
 	/** The cart before the message. */
 	start: Cart;
 	expected: Cart;
-	/** The reply must say this too (an answer, not a cart change). */
-	replyIncludes?: string;
+	/** A question, not a cart change: the site must have shown this product. */
+	lookedUp?: string;
 }
 
 /** What one contender did with one case. */
@@ -27,7 +30,14 @@ export interface CaseRun {
 	/** Each call priced by its own model. */
 	costUsd: number;
 	reply: string;
+	/** "error": the infrastructure failed (see `errorCategory`), the case says nothing about the contender; `ok` is false then. */
+	status?: "error";
+	errorCategory?: InfraCategory;
 	error?: string;
+	/** The model the contender named in its responses (beta alone). */
+	model?: string;
+	/** Raw per-case detail for the traces file (beta: its steps; orchestra: the admin request). */
+	detail?: unknown;
 }
 
 /** A way to serve the visitor: beta alone, or the orchestrator with beta. */
@@ -50,7 +60,15 @@ export interface Price {
 export interface ContenderSummary {
 	name: string;
 	tokensNote: string;
+	/** Case runs: cases × iterations. */
 	cases: number;
+	/** Passes over all the cases planned. */
+	iterations: number;
+	/** Passes done so far (a fraction while one is running). */
+	done: number;
+	/** Case runs that ended in an infrastructure error. */
+	errors: number;
+	/** Of the case runs without an infrastructure error. */
 	success: number;
 	p50Ms: number;
 	meanMs: number;
@@ -58,6 +76,7 @@ export interface ContenderSummary {
 	meanSteps: number;
 	meanModelCalls: number;
 	meanToolCalls: number;
+	/** Totals over all iterations. */
 	inputTokens: number;
 	outputTokens: number;
 	costUsd: number;

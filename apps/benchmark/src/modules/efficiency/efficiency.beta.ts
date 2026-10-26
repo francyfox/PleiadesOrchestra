@@ -1,10 +1,15 @@
 import { createFunctionCallModel } from "@repo/core";
-import { APICallError, generateText, jsonSchema, stepCountIs, tool } from "ai";
+import { generateText, jsonSchema, stepCountIs, tool } from "ai";
+import {
+	asInfra,
+	createInfraFetch,
+	type InfraOptions,
+} from "./efficiency.infra.ts";
 import { costUsd } from "./efficiency.service.ts";
 import type { Contender, PriceOf } from "./efficiency.types.ts";
 
 const SYSTEM =
-	"You are a shop assistant. Use the tools to do what the visitor asks, then answer in one or two sentences.";
+	"You are a shop assistant. Use the tools to do what the visitor asks, then answer in one or two sentences, in the language of the visitor's message.";
 
 const textOf = (result: { content: { text?: string }[] }) =>
 	result.content.map((block) => block.text ?? "").join("");
@@ -23,13 +28,15 @@ export function createBetaContender(deps: {
 	maxSteps: number;
 	priceOf: PriceOf;
 	fetch?: typeof fetch;
+	/** Timeout and retry delays (tests). */
+	infra?: InfraOptions;
 }): Contender {
 	// An OpenAI-compatible chat model that sends include_usage; the server replaces `model`.
 	const model = createFunctionCallModel({
 		baseURL: `${deps.baseUrl}/v1`,
 		apiKey: deps.apiKey,
 		model: "beta-text",
-		fetch: deps.fetch,
+		fetch: createInfraFetch({ ...deps.infra, fetch: deps.fetch }),
 	});
 
 	return {
@@ -59,6 +66,8 @@ export function createBetaContender(deps: {
 					tools,
 					stopWhen: stepCountIs(deps.maxSteps),
 					temperature: 0,
+					// createInfraFetch retries; the SDK would retry on top of it.
+					maxRetries: 0,
 				});
 				return {
 					id: test.id,
@@ -78,8 +87,16 @@ export function createBetaContender(deps: {
 						0,
 					),
 					reply: result.text,
+					model: result.steps.at(-1)?.response.modelId,
+					detail: result.steps.map((step) => ({
+						modelId: step.response.modelId,
+						usage: step.usage,
+						toolCalls: step.toolCalls,
+						toolResults: step.toolResults,
+					})),
 				};
 			} catch (error) {
+				const infra = asInfra(error);
 				return {
 					id: test.id,
 					latencyMs: performance.now() - started,
@@ -89,11 +106,13 @@ export function createBetaContender(deps: {
 					outputTokens: 0,
 					costUsd: 0,
 					reply: "",
-					// "Not Found" alone hid that the orchestrator had no such route.
-					error: APICallError.isInstance(error)
-						? `HTTP ${error.statusCode} ${error.url}: ${error.message}`
-						: error instanceof Error
-							? error.message
+					...(infra && {
+						status: "error" as const,
+						errorCategory: infra.category,
+					}),
+					error:
+						(infra ?? error) instanceof Error
+							? ((infra ?? error) as Error).message
 							: String(error),
 				};
 			}

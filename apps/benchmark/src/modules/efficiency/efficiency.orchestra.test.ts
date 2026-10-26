@@ -64,6 +64,7 @@ describe("createOrchestraContender", () => {
 		const run = await contender.run(shop, {
 			id: "add-one",
 			text: `Add ${product.name} to my cart.`,
+			lang: "en",
 			start: {},
 			expected: {},
 		});
@@ -104,11 +105,36 @@ describe("createOrchestraContender", () => {
 		const run = await contender.run(shop, {
 			id: "x",
 			text: "hello",
+			lang: "en",
 			start: {},
 			expected: {},
 		});
 		expect(run.error).toBeUndefined();
 		expect(run.reply).toBe("ok");
 		expect(toolsCalls).toBe(3);
+	});
+
+	test("an orchestrator that is down is an error of the infrastructure after the retries", async () => {
+		let calls = 0;
+		const contender = createOrchestraContender({
+			baseUrl: "http://localhost:3000",
+			publishableKey: "pk",
+			origin: "http://shop.test",
+			priceOf: () => ({ input: 0, output: 0 }),
+			infra: { delaysMs: [1, 1], timeoutMs: 1000 },
+			fetch: (async () => {
+				calls++;
+				throw new TypeError("fetch failed");
+			}) as unknown as typeof fetch,
+		});
+		const run = await contender.run(createMockShop(3), {
+			id: "x",
+			text: "hello",
+			lang: "en",
+			start: {},
+			expected: {},
+		});
+		expect(calls).toBe(3);
+		expect(run).toMatchObject({ status: "error", errorCategory: "network" });
 	});
 });

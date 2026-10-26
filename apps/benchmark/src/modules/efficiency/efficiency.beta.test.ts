@@ -57,6 +57,7 @@ describe("createBetaContender", () => {
 		const run = await contender.run(shop, {
 			id: "add",
 			text: `Add 2 ${product.name}`,
+			lang: "en",
 			start: {},
 			expected: {},
 		});
@@ -75,5 +76,47 @@ describe("createBetaContender", () => {
 		});
 		// 2 × (1000 in × $1 + 100 out × $10) per 1M
 		expect(run.costUsd).toBeCloseTo(0.004);
+	});
+
+	const noTools = {
+		id: "q",
+		text: "hi",
+		lang: "en" as const,
+		start: {},
+		expected: {},
+	};
+	const make = (fetchFn: typeof fetch) =>
+		createBetaContender({
+			baseUrl: "http://localhost:3000",
+			apiKey: "harness",
+			maxSteps: 2,
+			priceOf: () => ({ input: 0, output: 0 }),
+			infra: { delaysMs: [1, 1, 1], timeoutMs: 1000 },
+			fetch: fetchFn,
+		});
+
+	test("a 503 is retried and the case then runs normally", async () => {
+		let calls = 0;
+		const run = await make((async () =>
+			++calls === 1
+				? new Response("down", { status: 503 })
+				: completion(
+						{ role: "assistant", content: "Hi." },
+						"stop",
+					)) as unknown as typeof fetch).run(createMockShop(1), noTools);
+		expect(calls).toBe(2);
+		expect(run.status).toBeUndefined();
+		expect(run.reply).toBe("Hi.");
+	});
+
+	test("an API that keeps failing is an error of the infrastructure, not a failed case", async () => {
+		let calls = 0;
+		const run = await make((async () => {
+			calls++;
+			return new Response("down", { status: 502 });
+		}) as unknown as typeof fetch).run(createMockShop(1), noTools);
+		expect(calls).toBe(4);
+		expect(run).toMatchObject({ status: "error", errorCategory: "http" });
+		expect(run.error).toContain("502");
 	});
 });

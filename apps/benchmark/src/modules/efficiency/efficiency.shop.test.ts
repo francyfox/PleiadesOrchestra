@@ -56,6 +56,38 @@ describe("createMockShop", () => {
 		expect(shop.cart()).toEqual({ [b.name]: 1 });
 	});
 
+	test("remembers every product a search answer showed", async () => {
+		const shop = createMockShop(1);
+		const product = shop.catalog[0];
+		if (!product) throw new Error("empty catalog");
+		expect(shop.shown()).toEqual([]);
+		await shop.callTool({
+			name: "search_products",
+			arguments: { query: product.name },
+		});
+		expect(shop.shown()).toContain(product.name);
+	});
+
+	test("logs every tool call in order with its answer", async () => {
+		const shop = createMockShop(1);
+		await shop.callTool({ name: "get_cart", arguments: {} });
+		await shop.callTool({ name: "fly", arguments: { x: 1 } });
+		expect(shop.calls()).toEqual([
+			{
+				name: "get_cart",
+				arguments: {},
+				text: "The cart is empty.",
+				isError: false,
+			},
+			{
+				name: "fly",
+				arguments: { x: 1 },
+				text: "Unknown tool fly.",
+				isError: true,
+			},
+		]);
+	});
+
 	test("an unknown product or tool is an error answer, not a throw", async () => {
 		const shop = createMockShop(1);
 		const add = await shop.callTool({
