@@ -11,6 +11,9 @@ export const OG_IMAGE = { url: `${SITE_URL}/og.jpg`, width: 1200, height: 630 };
 
 export const PLEIADES_REPO_URL =
 	"https://github.com/francyfox/PleiadesOrchestra";
+/** The hosted admin panel's sign-in. */
+export const PLEIADES_PANEL_LOGIN_URL =
+	"https://pleiades-panel.shalotts.site/user/login";
 export const PLEIADES_TERMS_URL = `${PLEIADES_REPO_URL}/blob/master/COMMERCIAL-LICENSE.md`;
 export const PLEIADES_CONTACT = "francyfox@protonmail.com";
 // Polar checkout link of the commercial license. Empty = the landing falls back to a mailto: request

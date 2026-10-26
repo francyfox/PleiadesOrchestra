@@ -21,32 +21,23 @@ const en = {
 	video: {
 		aria: "PleiadesOrchestra demo",
 		videoAria: "PleiadesOrchestra: prompt, decision, action",
-		lead: "Open-source orchestrator with GOAP for tiny models. A chatbot for your website that works through your site’s own MCP / WebMCP tools — no GPU, no big model.",
+		lead: "Open-source orchestrator with GOAP for small models, with a widget for your website. The widget works with your site’s WebMCP/MCP. Cloud and self-hosted.",
 		early: "Early stage · in active development",
 		get: "get it",
 		github: "source on GitHub",
 		playground: "playground",
 		docs: "docs",
+		panel: "sign in",
 		pause: "pause",
 		play: "play",
 	},
 	history: {
-		heading: "Agents don’t just search anymore. They act.",
+		heading: ["Agents don’t just suggest", "They act!"],
 		lead: "Through MCP, an AI agent can use a product the way a person does: put an item in the cart, buy it, create a deal, log a call. This is how the big platforms got there.",
 		canLabel: "What the agent can do",
+		// %s = the event's number.
+		pageLabel: "Go to event %s",
 		events: [
-			{
-				date: "2025-06-23",
-				title: "Salesforce Agentforce 3: native MCP client",
-				text: "Agents connect to any MCP-compliant server without custom code. A CRM stops being only a database and becomes something an agent works inside.",
-				can: ["call external tools"],
-			},
-			{
-				date: "2025-09",
-				title: "ChatGPT Instant Checkout, then back to the merchant’s own app",
-				text: "OpenAI and Stripe open-source the Agentic Commerce Protocol so an agent can buy inside the chat — US only, starting with Etsy. By March 2026 OpenAI moves checkout to retailers’ own apps: few merchants joined and the buy button converted under 1%.",
-				can: ["buy (US, 2025–26)"],
-			},
 			{
 				date: "2025-12",
 				title: "MCP moves to the Linux Foundation",
@@ -358,33 +349,22 @@ const ru: LandingContent = {
 	video: {
 		aria: "Демо PleiadesOrchestra",
 		videoAria: "PleiadesOrchestra: запрос, решение, действие",
-		lead: "Open-source оркестратор с GOAP для маленьких моделей. Чат-бот для вашего сайта, который работает через собственные MCP / WebMCP-инструменты сайта — без GPU и без большой модели.",
+		lead: "Open-source оркестратор с GOAP для маленьких моделей с виджетом для вашего сайта. Виджет может взаимодействовать с WebMCP/MCP вашего сайта. Облачное и self-hosted решение.",
 		early: "Ранняя стадия · активная разработка",
 		get: "получить",
 		github: "исходники на GitHub",
 		playground: "песочница",
 		docs: "документация",
+		panel: "войти",
 		pause: "пауза",
 		play: "играть",
 	},
 	history: {
-		heading: "Агенты больше не только ищут. Они действуют.",
+		heading: ["Агенты не просто подсказывают", "Они действуют!"],
 		lead: "Через MCP ИИ-агент может пользоваться продуктом, как человек: положить товар в корзину, купить, создать сделку, записать звонок. Вот как к этому пришли крупные платформы.",
 		canLabel: "Что может агент",
+		pageLabel: "Перейти к событию %s",
 		events: [
-			{
-				date: "2025-06-23",
-				title: "Salesforce Agentforce 3: встроенный MCP-клиент",
-				text: "Агенты подключаются к любому MCP-серверу без своего кода. CRM перестаёт быть просто базой данных и становится средой, в которой работает агент.",
-				can: ["вызывать внешние инструменты"],
-			},
-			{
-				date: "2025-09",
-				title:
-					"ChatGPT Instant Checkout, а затем возврат к приложению продавца",
-				text: "OpenAI и Stripe открывают Agentic Commerce Protocol, чтобы агент мог купить прямо в чате — только в США, начиная с Etsy. К марту 2026 OpenAI переносит оформление в приложения ритейлеров: продавцов подключилось мало, а кнопка покупки конвертировала меньше 1%.",
-				can: ["купить (США, 2025–26)"],
-			},
 			{
 				date: "2025-12",
 				title: "MCP переходит под Linux Foundation",
@@ -702,32 +682,22 @@ const kk: LandingContent = {
 	video: {
 		aria: "PleiadesOrchestra демосы",
 		videoAria: "PleiadesOrchestra: сұраныс, шешім, әрекет",
-		lead: "Шағын модельдерге арналған GOAP бар open-source оркестратор. Сіздің сайтыңыздың өз MCP / WebMCP құралдары арқылы жұмыс істейтін чат-бот — GPU мен үлкен модельсіз.",
+		lead: "Шағын модельдерге арналған GOAP бар open-source оркестратор және сайтыңызға арналған виджет. Виджет сайтыңыздың WebMCP/MCP-імен жұмыс істей алады. Бұлттық және self-hosted шешім.",
 		early: "Ерте кезең · белсенді әзірлеу",
 		get: "алу",
 		github: "GitHub-тағы бастапқы код",
 		playground: "ойын алаңы",
 		docs: "құжаттама",
+		panel: "кіру",
 		pause: "кідірту",
 		play: "ойнату",
 	},
 	history: {
-		heading: "Агенттер енді тек іздемейді. Олар әрекет етеді.",
+		heading: ["Агенттер жай ғана кеңес бермейді", "Олар әрекет етеді!"],
 		lead: "MCP арқылы ЖИ-агент өнімді адам сияқты пайдалана алады: тауарды себетке салу, сатып алу, мәміле құру, қоңырауды тіркеу. Ірі платформалар бұған осылай келді.",
 		canLabel: "Агент не істей алады",
+		pageLabel: "%s-оқиғаға өту",
 		events: [
-			{
-				date: "2025-06-23",
-				title: "Salesforce Agentforce 3: нативті MCP клиенті",
-				text: "Агенттер кез келген MCP-үйлесімді серверге арнайы кодсыз қосылады. CRM тек дерекқор болудан қалып, агент ішінде жұмыс істейтін ортаға айналады.",
-				can: ["сыртқы құралдарды шақыру"],
-			},
-			{
-				date: "2025-09",
-				title: "ChatGPT Instant Checkout, сосын сатушының өз қосымшасына оралу",
-				text: "OpenAI мен Stripe агент чаттың ішінде сатып алуы үшін Agentic Commerce Protocol протоколын ашық кодпен жариялады — тек АҚШ-та, Etsy-ден бастап. 2026 жылғы наурызға қарай OpenAI төлемді сатушылардың өз қосымшаларына көшіреді: қосылған сатушылар аз болды, ал сатып алу түймесінің конверсиясы 1%-дан төмен болды.",
-				can: ["сатып алу (АҚШ, 2025–26)"],
-			},
 			{
 				date: "2025-12",
 				title: "MCP Linux Foundation-ға өтеді",

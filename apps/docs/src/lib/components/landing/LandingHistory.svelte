@@ -1,8 +1,11 @@
 <script lang="ts">
+	import { Splide } from "@splidejs/splide";
 	import Pane from "#lib/components/Pane.svelte";
 	import { localeFromPath } from "#lib/i18n.js";
 	import { landingContent } from "#lib/landing/content.js";
 	import { page } from "$app/state";
+	import "@splidejs/splide/dist/css/splide-core.min.css";
+	import { onMount } from "svelte";
 
 	let c = $derived(landingContent(localeFromPath(page.url.pathname)));
 	let t = $derived(c.history);
@@ -10,82 +13,126 @@
 	// Facts checked against vendors' own docs/announcements; texts live in #lib/landing/content.ts,
 	// in the same order as these sources.
 	const sources = [
-		"https://developer.salesforce.com/blogs/2025/06/introducing-mcp-support-across-salesforce",
-		"https://digitalcommerce360.com/2026/03/06/openai-shifts-checkout-plans-agentic-commerce-strategy/",
 		"https://www.anthropic.com/news/donating-the-model-context-protocol-and-establishing-of-the-agentic-ai-foundation",
 		"https://shopify.dev/docs/apps/build/storefront-mcp/servers/storefront",
 		"https://developers.hubspot.com/changelog/remote-hubspot-mcp-server-is-now-generally-available",
 		"https://developer.salesforce.com/blogs/2026/04/salesforce-hosted-mcp-servers-are-now-generally-available",
 	];
+
+	let slider: HTMLElement;
+	let splide: Splide | undefined;
+	// The event in view: the timeline is filled down to it.
+	let active = $state(0);
+
+	onMount(() => {
+		splide = new Splide(slider, {
+			direction: "ttb",
+			height: "16rem",
+			perPage: 1,
+			perMove: 1,
+			arrows: false,
+			// Our own bullets on the timeline, one per event.
+			pagination: false,
+			keyboard: "focused",
+			wheel: true,
+			// Slower, eased slides; a wheel or drag must be deliberate to move one event.
+			speed: 800,
+			easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+			wheelMinThreshold: 40,
+			wheelSleep: 700,
+			dragMinThreshold: { mouse: 30, touch: 40 },
+			flickPower: 300,
+			// At the first/last event the wheel scrolls the page again.
+			releaseWheel: true,
+			breakpoints: { 640: { height: "22rem" } },
+		});
+		splide.on("move", (index) => (active = index));
+		splide.mount();
+		return () => splide?.destroy();
+	});
 </script>
 
-<Pane title="guest@pleiades — world market" header={false} id="history" class="lg:col-span-2">
-	<h2 class="text-xl font-bold">{t.heading}</h2>
-	<p class="mt-2 max-w-3xl text-sm" style:color="var(--dim)">{t.lead}</p>
+<Pane title="guest@pleiades — world market" header={false} id="history" class="min-h-screen lg:col-span-2 !border-0">
+	<div class="container h-full">
+		<div
+			class="flex h-full flex-col justify-center gap-10 py-16 lg:flex-row lg:items-center lg:justify-between"
+		>
+			<h2 class="flex flex-col gap-3 font-normal">
+				<span class="text-3xl sm:text-4xl">{t.heading[0]}</span>
+				<span class="pl-5 text-5xl sm:text-6xl">{t.heading[1]}</span>
+			</h2>
 
-	<ol class="relative mt-6 ml-2 border-l" style:border-color="var(--rule)">
-		{#each t.events as event, i (event.title)}
-			<li class="relative pb-6 pl-6 last:pb-0">
+			<!-- Timeline on the right: a progress fill down to the event in view, one bullet per event. -->
+			<div class="relative w-full pr-10 lg:w-1/2">
 				<span
-					class="absolute top-1.5 -left-[5px] h-2.5 w-2.5 rounded-full"
+					class="absolute inset-y-0 right-[9px] w-0.5 rounded-full"
+					style:background="var(--rule)"
+					aria-hidden="true"
+				></span>
+				<!-- Bullets sit at the middle of equal parts (justify-around): (i + 0.5) / n of the height. -->
+				<!-- Transforms only, in step with the slide (speed/easing above): animating height or size re-laid out the page every frame and stuttered. -->
+				<span
+					class="absolute inset-y-0 right-[9px] w-0.5 origin-top rounded-full transition-transform duration-[800ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
+					style:transform="scaleY({(active + 0.5) / t.events.length})"
 					style:background="var(--accent)"
 					aria-hidden="true"
 				></span>
-				{#if /^\d/.test(event.date)}
-					<time class="text-xs" style:color="var(--accent-2)" datetime={event.date}
-						>{event.date}</time
-					>
-				{:else}
-					<span class="text-xs" style:color="var(--accent-2)">{event.date}</span>
-				{/if}
-				<h3 class="font-bold">{event.title}</h3>
-				<p class="max-w-2xl text-sm" style:color="var(--dim)">{event.text}</p>
-				<ul class="mt-2 flex flex-wrap gap-1.5 text-xs" aria-label={t.canLabel}>
-					{#each event.can as action (action)}
-						<li class="chip border px-2 py-0.5">{action}</li>
+				<div class="absolute inset-y-0 right-0 flex w-5 flex-col items-center justify-around">
+					{#each t.events as event, i (event.title)}
+						<!-- A 20px hit area around a small dot. -->
+						<button
+							type="button"
+							class="grid h-5 w-5 cursor-pointer place-items-center border-0 bg-transparent p-0"
+							aria-label={t.pageLabel.replace("%s", String(i + 1))}
+							aria-current={i === active ? "step" : undefined}
+							onclick={() => splide?.go(i)}
+						>
+							<span
+								class={[
+									"h-3 w-3 rounded-full transition-[transform,background-color] duration-[800ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+								]}
+								style:transform="scale({i === active ? 1 : i < active ? 0.67 : 0.33})"
+								style:background={i <= active ? "var(--accent)" : "var(--dim)"}
+								style:box-shadow={i === active
+									? "0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent)"
+									: undefined}
+							></span>
+						</button>
 					{/each}
-				</ul>
-				<a
-					href={sources[i]}
-					class="link-underline mt-1 inline-block text-xs"
-					style:color="var(--dim)"
-					rel="external noopener">{c.common.source}</a
-				>
-			</li>
-		{/each}
-	</ol>
-
-	<aside class="mt-8 border p-4" style:border-color="var(--accent)">
-		<h3 class="font-bold" style:color="var(--accent)">{t.cis.heading}</h3>
-		<div class="mt-4 overflow-x-auto">
-			<table class="w-full min-w-[40rem] border-collapse text-left text-sm">
-				<thead>
-					<tr class="border-b" style:color="var(--dim)">
-						<th scope="col" class="py-2 pr-4 font-normal">{t.cis.cols.country}</th>
-						<th scope="col" class="px-2 py-2 text-center font-normal">{t.cis.cols.assistant}</th>
-						<th scope="col" class="px-2 py-2 text-center font-normal">{t.cis.cols.acts}</th>
-						<th scope="col" class="px-2 py-2 text-center font-normal">{t.cis.cols.mcp}</th>
-						<th scope="col" class="py-2 pl-4 font-normal">{t.cis.cols.note}</th>
-					</tr>
-				</thead>
-				<tbody>
-					{#each t.cis.rows as row (row.country)}
-						<tr class="border-b align-top">
-							<th scope="row" class="py-2 pr-4 font-bold">{row.country}</th>
-							{#each [row.assistant, row.acts, row.mcp] as found, i (i)}
-								<td class="px-2 py-2 text-center">
-									<span
-										style:color={found ? 'var(--accent)' : 'var(--dim)'}
-										aria-label={found ? t.cis.yes : t.cis.no}>{found ? '✓' : '–'}</span
-									>
-								</td>
+				</div>
+				<!-- Splide: vertical, one event in view, wheel/drag/arrow keys move one at a time. -->
+				<section class="splide" bind:this={slider} aria-label={t.heading.join(" ")}>
+				<div class="splide__track">
+				<ul class="splide__list">
+				{#each t.events as event, i (event.title)}
+					<li class="splide__slide flex flex-col items-end justify-center text-right">
+						{#if /^\d/.test(event.date)}
+							<time class="text-xs" style:color="var(--accent-2)" datetime={event.date}
+							>{event.date}</time
+							>
+						{:else}
+							<span class="text-xs" style:color="var(--accent-2)">{event.date}</span>
+						{/if}
+						<h3 class="font-bold">{event.title}</h3>
+						<p class="ml-auto max-w-2xl text-sm" style:color="var(--dim)">{event.text}</p>
+						<ul class="mt-2 flex flex-wrap justify-end gap-1.5 text-xs" aria-label={t.canLabel}>
+							{#each event.can as action (action)}
+								<li class="chip border px-2 py-0.5">{action}</li>
 							{/each}
-							<td class="py-2 pl-4" style:color="var(--dim)">{row.note}</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
+						</ul>
+						<a
+								href={sources[i]}
+								class="link-underline mt-1 inline-block text-xs"
+								style:color="var(--dim)"
+								rel="external noopener">{c.common.source}</a
+						>
+					</li>
+				{/each}
+				</ul>
+				</div>
+				</section>
+			</div>
 		</div>
-		<p class="mt-2 text-xs" style:color="var(--dim)">{t.cis.legend}</p>
-	</aside>
+	</div>
 </Pane>
+

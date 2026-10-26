@@ -37,6 +37,7 @@
 			"!apps/pleiades-plugin"
 		],
 		"catalog": {
+			"@splidejs/splide": "4.1.4",
 			"elysia": "1.4.29",
 			"@elysiajs/openapi": "^1.4.16",
 			"@sentry/elysia": "11.4.0",

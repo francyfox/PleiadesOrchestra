@@ -10,6 +10,7 @@
 		"@repo/ui": "workspace:*",
 		"@repo/webmcp-polyfill": "workspace:*",
 		"@shalotts/pleiades-widget": "workspace:*",
+		"@splidejs/splide": "catalog:",
 		"@sveltejs/adapter-static": "catalog:",
 		"@sveltejs/kit": "catalog:",
 		"@sveltejs/vite-plugin-svelte": "catalog:",
