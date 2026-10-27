@@ -182,6 +182,47 @@ const en = {
 			],
 		},
 	},
+	// One message through the models, step by step (LandingFlow); the intent ids and probabilities live in the component.
+	flow: {
+		heading: "How the orchestrator answers",
+		lead: "One message through the small models: alpha leads, every other model does one narrow job.",
+		note: "An example run: the probabilities are illustrative.",
+		aria: "Diagram: one message passing through the orchestrator",
+		nodes: {
+			widget: {
+				tag: "widget · site",
+				text: "“Find a 27-inch monitor under $300”",
+			},
+			translate: {
+				tag: "alpha · translation",
+				text: "non-Latin text → English, CTranslate2, ~50 ms",
+			},
+			rules: {
+				tag: "alpha · rules + memory",
+				text: "checkout/removal words, then the site’s approved examples; nothing matched → gamma",
+			},
+			gamma: {
+				tag: "gamma · Laya / Jev",
+				text: "Which site tool does the message ask for? Tools by name, plus chat and other; under 0.5 the reply model asks back",
+			},
+			plan: {
+				tag: "alpha · GOAP planner",
+				text: "goal: the search_products result; plan: search_products → reply",
+			},
+			delta: {
+				tag: "delta · Qwen3-1.7B",
+				text: '{ "query": "27-inch monitor", "max_price": 300 }',
+			},
+			tool: {
+				tag: "site · WebMCP",
+				text: "search_products runs in the browser → 4 products",
+			},
+			beta: {
+				tag: "beta · reply",
+				text: "“The cheapest is Vista 27 for $249. Add it to the cart?”",
+			},
+		},
+	},
 	about: {
 		heading: "About Pleiades",
 		text: "PleiadesOrchestra is a self-hosted orchestrator for tiny models. Instead of one huge prompt it builds a chain of actions towards a goal (GOAP), so a 1B-parameter model can find a product, add it to the cart or compare items on a real site. It works with facts and prepared answers — it does not pretend to be a professional consultant.",
@@ -545,6 +586,46 @@ const ru: LandingContent = {
 			],
 		},
 	},
+	flow: {
+		heading: "Как отвечает оркестратор",
+		lead: "Одно сообщение через маленькие модели: alpha ведёт, каждая другая модель делает одну узкую работу.",
+		note: "Пример прогона: вероятности условные.",
+		aria: "Схема: одно сообщение проходит через оркестратор",
+		nodes: {
+			widget: {
+				tag: "виджет · сайт",
+				text: "«Найди монитор 27 дюймов дешевле $300»",
+			},
+			translate: {
+				tag: "alpha · перевод",
+				text: "не латиница → английский, CTranslate2, ~50 мс",
+			},
+			rules: {
+				tag: "alpha · правила + память",
+				text: "слова оплаты/удаления, затем одобренные примеры сайта; не нашлось → gamma",
+			},
+			gamma: {
+				tag: "gamma · Laya / Jev",
+				text: "Какой инструмент сайта нужен? Инструменты по имени, плюс chat и other; ниже 0.5 модель ответа переспросит",
+			},
+			plan: {
+				tag: "alpha · GOAP-планировщик",
+				text: "цель: результат search_products; план: search_products → ответ",
+			},
+			delta: {
+				tag: "delta · Qwen3-1.7B",
+				text: '{ "query": "27-inch monitor", "max_price": 300 }',
+			},
+			tool: {
+				tag: "сайт · WebMCP",
+				text: "search_products выполняется в браузере → 4 товара",
+			},
+			beta: {
+				tag: "beta · ответ",
+				text: "«Самый дешёвый — Vista 27 за $249. Добавить в корзину?»",
+			},
+		},
+	},
 	about: {
 		heading: "О Pleiades",
 		text: "PleiadesOrchestra — это self-hosted оркестратор для маленьких моделей. Вместо одного огромного промпта он строит цепочку действий к цели (GOAP), поэтому модель на 1 млрд параметров может найти товар, добавить его в корзину или сравнить позиции на реальном сайте. Он работает с фактами и заготовленными ответами и не притворяется профессиональным консультантом.",
@@ -906,6 +987,46 @@ const kk: LandingContent = {
 					note: "",
 				},
 			],
+		},
+	},
+	flow: {
+		heading: "Оркестратор қалай жауап береді",
+		lead: "Бір хабарлама шағын модельдер арқылы: alpha басқарады, қалған әр модель бір тар жұмысты атқарады.",
+		note: "Мысал: ықтималдықтар шартты.",
+		aria: "Сызба: бір хабарлама оркестратор арқылы өтеді",
+		nodes: {
+			widget: {
+				tag: "виджет · сайт",
+				text: "«$300-ден арзан 27 дюймдік монитор тап»",
+			},
+			translate: {
+				tag: "alpha · аударма",
+				text: "латын емес мәтін → ағылшын, CTranslate2, ~50 мс",
+			},
+			rules: {
+				tag: "alpha · ережелер + жады",
+				text: "төлеу/жою сөздері, сосын сайттың мақұлданған мысалдары; табылмаса → gamma",
+			},
+			gamma: {
+				tag: "gamma · Laya / Jev",
+				text: "Сайттың қай құралы керек? Құралдар атымен, оған қоса chat және other; 0.5-тен төмен болса, жауап моделі қайта сұрайды",
+			},
+			plan: {
+				tag: "alpha · GOAP жоспарлаушы",
+				text: "мақсат: search_products нәтижесі; жоспар: search_products → жауап",
+			},
+			delta: {
+				tag: "delta · Qwen3-1.7B",
+				text: '{ "query": "27-inch monitor", "max_price": 300 }',
+			},
+			tool: {
+				tag: "сайт · WebMCP",
+				text: "search_products браузерде орындалады → 4 тауар",
+			},
+			beta: {
+				tag: "beta · жауап",
+				text: "«Ең арзаны — Vista 27, $249. Себетке қосайын ба?»",
+			},
 		},
 	},
 	about: {
