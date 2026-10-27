@@ -8,6 +8,7 @@
 	import PlayIcon from "@lucide/svelte/icons/play";
 	import RocketIcon from "@lucide/svelte/icons/rocket";
 	import { onMount } from "svelte";
+	import LandingWidgetDemo from "#lib/components/landing/LandingWidgetDemo.svelte";
 	import { localeFromPath, localizeHref } from "#lib/i18n.js";
 	import { landingContent } from "#lib/landing/content.js";
 	import { PLEIADES_PANEL_LOGIN_URL, PLEIADES_REPO_URL } from "#lib/site.js";
@@ -40,14 +41,15 @@
 </script>
 
 <section
-        class="h-[calc(100vh-(var(--po-nav)))] min-h-[28rem] w-full"
+        class="flex min-h-[calc(100vh-(var(--po-nav)))] w-full"
         aria-label={t.aria}
 >
-    <div class="relative h-full w-full bg-black">
+    <!-- Text in flow, video behind it: the section grows on phones instead of cutting the text off. -->
+    <div class="relative flex w-full bg-black">
         <!-- svelte-ignore a11y_media_has_caption -->
         <video
                 bind:this={video}
-                class="h-full w-full object-cover"
+                class="absolute inset-0 h-full w-full object-cover"
                 autoplay
                 loop
                 muted
@@ -68,14 +70,14 @@
         </video>
 
         <div
-                class="absolute inset-x-0 bottom-0 p-4 sm:p-8 flex items-end h-full"
+                class="relative flex w-full flex-wrap content-end items-end justify-between gap-6 p-4 sm:p-8"
                 style:background="linear-gradient(to top, var(--bg) 7%, transparent 100%)"
         >
-            <div class="flex flex-col gap-4">
+            <div class="flex max-w-full flex-col gap-4">
                 <!-- The logo stays outside the h1: its mix-blend would invert the logo's colours. -->
                 <div class="flex items-center gap-3 sm:gap-4">
                     <h1 class="hidden">PleiadesOrchestra</h1>
-                    <div class="text-9xl font-bold text-white sm:text-8xl mix-blend-difference">PleiadesOrchestra</div>
+                    <div class="text-[clamp(2rem,8vw,4rem)] font-bold leading-none text-white mix-blend-difference">PleiadesOrchestra</div>
                 </div>
                 <p class="max-w-2xl text-sm text-white/80 sm:text-base">{t.lead}</p>
                 <p class="text-xs text-white/70">{t.early}</p>
@@ -127,6 +129,7 @@
                 </div>
             </div>
 
+            <LandingWidgetDemo />
         </div>
     </div>
 </section>

@@ -30,6 +30,27 @@ const en = {
 		panel: "sign in",
 		pause: "pause",
 		play: "play",
+		// Scripted widget chat beside the video, one line a second: "step" = a plan step line.
+		demo: {
+			aria: "Widget demo chat",
+			title: "Shop assistant",
+			placeholder: "Message…",
+			lines: [
+				{ from: "user", text: "Find a 27-inch monitor under $300" },
+				{ from: "step", text: "searching the catalog" },
+				{ from: "step", text: "found 4 products" },
+				{
+					from: "bot",
+					text: "The cheapest is Vista 27 for $249. Add it to the cart?",
+				},
+				{ from: "user", text: "Yes, two of them" },
+				{ from: "step", text: "add_to_cart · Vista 27 × 2" },
+				{
+					from: "bot",
+					text: "Done: 2 × Vista 27 in your cart, $498. Go to checkout?",
+				},
+			],
+		},
 	},
 	history: {
 		heading: ["Agents don’t just suggest", "They act!"],
@@ -67,6 +88,12 @@ const en = {
 				title: "Salesforce hosted MCP servers are generally available",
 				text: "A Salesforce-managed endpoint exposes an org’s data, flows, Apex actions and queries to any MCP-compatible client, Enterprise Edition and above.",
 				can: ["query data", "run flows", "run Apex actions"],
+			},
+			{
+				date: "2026-09-15",
+				title: "TypeSafe launches Jev, the first System One model",
+				text: "A model for decisions, not text: the app passes state and typed questions, Jev answers with probabilities in 70–500 ms (vendor figures). System 1 in Kahneman’s sense: a quick reflex beside slow reasoning models. Pleiades’ decision agent speaks the same system_one protocol.",
+				can: ["choose", "classify", "route", "yes/no with a probability"],
 			},
 		],
 		cis: {
@@ -358,6 +385,26 @@ const ru: LandingContent = {
 		panel: "войти",
 		pause: "пауза",
 		play: "играть",
+		demo: {
+			aria: "Демо-чат виджета",
+			title: "Помощник магазина",
+			placeholder: "Сообщение…",
+			lines: [
+				{ from: "user", text: "Найди монитор 27 дюймов дешевле $300" },
+				{ from: "step", text: "ищу в каталоге" },
+				{ from: "step", text: "найдено 4 товара" },
+				{
+					from: "bot",
+					text: "Самый дешёвый — Vista 27 за $249. Добавить в корзину?",
+				},
+				{ from: "user", text: "Да, две штуки" },
+				{ from: "step", text: "add_to_cart · Vista 27 × 2" },
+				{
+					from: "bot",
+					text: "Готово: 2 × Vista 27 в корзине, $498. Перейти к оплате?",
+				},
+			],
+		},
 	},
 	history: {
 		heading: ["Агенты не просто подсказывают", "Они действуют!"],
@@ -399,6 +446,17 @@ const ru: LandingContent = {
 				title: "Hosted MCP-серверы Salesforce вышли в GA",
 				text: "Управляемый Salesforce эндпоинт открывает данные организации, flows, Apex-действия и запросы любому MCP-совместимому клиенту, начиная с Enterprise Edition.",
 				can: ["запросить данные", "запустить flow", "вызвать Apex-действие"],
+			},
+			{
+				date: "2026-09-15",
+				title: "TypeSafe выпускает Jev — первую модель System One",
+				text: "Модель для решений, а не для текста: приложение передаёт состояние и типизированные вопросы, Jev отвечает вероятностями за 70–500 мс (по данным компании). System 1 по Канеману — быстрый рефлекс рядом с медленными рассуждающими моделями. Агент решений Pleiades говорит на том же протоколе system_one.",
+				can: [
+					"выбрать",
+					"классифицировать",
+					"маршрутизировать",
+					"да/нет с вероятностью",
+				],
 			},
 		],
 		cis: {
@@ -691,6 +749,26 @@ const kk: LandingContent = {
 		panel: "кіру",
 		pause: "кідірту",
 		play: "ойнату",
+		demo: {
+			aria: "Виджет демо-чаты",
+			title: "Дүкен көмекшісі",
+			placeholder: "Хабарлама…",
+			lines: [
+				{ from: "user", text: "$300-ден арзан 27 дюймдік монитор тап" },
+				{ from: "step", text: "каталогтан іздеу" },
+				{ from: "step", text: "4 тауар табылды" },
+				{
+					from: "bot",
+					text: "Ең арзаны — Vista 27, $249. Себетке қосайын ба?",
+				},
+				{ from: "user", text: "Иә, екеуін" },
+				{ from: "step", text: "add_to_cart · Vista 27 × 2" },
+				{
+					from: "bot",
+					text: "Дайын: себетте 2 × Vista 27, $498. Төлемге өтеміз бе?",
+				},
+			],
+		},
 	},
 	history: {
 		heading: ["Агенттер жай ғана кеңес бермейді", "Олар әрекет етеді!"],
@@ -736,6 +814,12 @@ const kk: LandingContent = {
 					"flow іске қосу",
 					"Apex әрекеттерін іске қосу",
 				],
+			},
+			{
+				date: "2026-09-15",
+				title: "TypeSafe Jev-ті шығарды — алғашқы System One моделі",
+				text: "Мәтін емес, шешім қабылдайтын модель: қолданба күй мен типтелген сұрақтарды береді, Jev 70–500 мс ішінде ықтималдықпен жауап береді (компания деректері). Канеман бойынша System 1 — баяу ойлайтын модельдердің жанындағы жылдам рефлекс. Pleiades шешім агенті де сол system_one протоколымен жұмыс істейді.",
+				can: ["таңдау", "жіктеу", "бағыттау", "иә/жоқ ықтималдықпен"],
 			},
 		],
 		cis: {

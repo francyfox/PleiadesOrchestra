@@ -17,6 +17,8 @@
 		"https://shopify.dev/docs/apps/build/storefront-mcp/servers/storefront",
 		"https://developers.hubspot.com/changelog/remote-hubspot-mcp-server-is-now-generally-available",
 		"https://developer.salesforce.com/blogs/2026/04/salesforce-hosted-mcp-servers-are-now-generally-available",
+		// No TypeSafe post of its own was found; launch coverage instead.
+		"https://letsdatascience.com/news/typesafe-ai-launches-jev-decision-model-889a38c0",
 	];
 
 	let slider: HTMLElement;

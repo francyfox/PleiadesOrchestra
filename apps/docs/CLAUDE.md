@@ -37,5 +37,6 @@ Public, inlined into the bundle by `vite.config.ts` (`__PUBLIC_ENV__`; `$env/sta
 
 - Markdown is compiled as Svelte. Braces in prose start an expression: put them in inline code. SveltePress turns inline code into a template literal and escapes only `\` and backticks, so `${` inside inline code is interpolated and breaks the build: write it as `<code>{'${VAR}'}</code>`. Fenced blocks are safe. A fence language must be in `highlighter.languages` (`vite.config.ts`), or Shiki fails the build.
 
+- Uno (theme) writes the utilities it finds in landing files too (`.flex-col`, `.items-end`, …) unlayered, so they beat Tailwind's layered ones: a breakpoint override of such a class (`flex-col lg:flex-row`) never applies. Lay out without it (e.g. `flex-wrap`).
 - Prerender: 404s and missing `#id`s inside `/docs` are logged as `[docs]` warnings, not build failures (`handleHttpError`/`handleMissingId`). Read them after `build`.
 - The theme's TOC store leaks the last docs page's anchors into prerendered landing/playground HTML; the missing-id warnings for those paths are ignored.
