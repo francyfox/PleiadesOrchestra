@@ -1,3 +1,5 @@
+import type { DecisionChoice } from "@repo/core";
+
 /** Where a request is: executing, paused on the visitor's browser, or over. */
 export type RequestStatus =
 	| "running"
@@ -59,6 +61,8 @@ export interface RequestLlmCall {
 	latencyMs: number;
 	ok: boolean;
 	error: string | null;
+	/** Every choice question of the call with all its probabilities; null for non-decision calls. */
+	choices: DecisionChoice[] | null;
 	at: number;
 }
 

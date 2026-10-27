@@ -77,6 +77,9 @@ export interface ReplyOptions {
 	langChosen?: boolean;
 	/** The assistant message the visitor answers (they picked one of its options). */
 	replyTo?: string;
+	/** The visitor's local date `YYYY-MM-DD` and IANA time zone: models do not know today. */
+	clientDate?: string;
+	timeZone?: string;
 }
 
 /** What a browser-side tool reported back. */

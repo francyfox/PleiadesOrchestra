@@ -93,6 +93,13 @@ export type LlmCallKind =
 	| "translate"
 	| "classify";
 
+/** One answered choice question of a decision call: every option with its probability. */
+export interface DecisionChoice {
+	question: string;
+	chosen: string | null;
+	options: Record<string, number>;
+}
+
 /** One model call. Token fields are `undefined` when the provider didn't report usage — never coerce to 0. */
 export interface LlmCallRecord extends CallContext {
 	kind: LlmCallKind;
@@ -105,6 +112,8 @@ export interface LlmCallRecord extends CallContext {
 	error?: string;
 	/** A decision's probability for its answer (classify: the intent's calibrated confidence). */
 	confidence?: number;
+	/** Every choice question the call answered, with all its probabilities; absent for non-decision calls. */
+	choices?: DecisionChoice[];
 	/** Epoch ms when the call finished. */
 	at: number;
 }

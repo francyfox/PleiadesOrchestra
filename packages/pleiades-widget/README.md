@@ -178,7 +178,7 @@ Why not Svelte: an empty Svelte 5 custom element is already ~11 kB brotli, Svelt
 
 ## Automation / testing
 
-**Replies.** `[title](url)` links in a reply (http/https only) show as buttons that open in a new tab. If a reply ends with a numbered list (`1. …` up to `9. …`), the list becomes buttons under it; clicking one, or pressing 1-9 while the panel is open, focus is inside it and the message box is empty, sends that option as the visitor's message. The message request then carries `replyTo` (the text of the reply being answered, at most 2000 characters).
+**Replies.** `[title](url)` links in a reply (http/https only) show as buttons that open in a new tab. If a reply ends with a numbered list (`1. …` up to `9. …`), the list becomes buttons under it; clicking one, or pressing 1-9 while the panel is open, focus is inside it and the message box is empty, sends that option as the visitor's message. The message request then carries `replyTo` (the text of the reply being answered, at most 2000 characters). Every message also carries the visitor's local date (`clientDate`, `YYYY-MM-DD`) and `timeZone`.
 
 `el.send(text)` sends a message exactly like a visitor typing and pressing Send (it opens the panel, runs the page's WebMCP tool calls) and resolves when the turn ends, never on a timer:
 

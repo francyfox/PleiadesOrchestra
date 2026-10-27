@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { RequestNode, RequestView } from "admin-api/types";
-import { elapsedMs, viewToGraph } from "./request-graph.ts";
+import { elapsedMs, MAX_OPTIONS, viewToGraph } from "./request-graph.ts";
 
 const detail = {
 	text: null,
@@ -175,5 +175,94 @@ describe("elapsedMs", () => {
 
 	test("a clock that went back never shows less than the snapshot", () => {
 		expect(elapsedMs(400, true, 1_000, 900)).toBe(400);
+	});
+});
+
+describe("viewToGraph choices", () => {
+	const withChoices = (
+		id: string,
+		kind: RequestNode["kind"],
+		round: number,
+	) => {
+		const base = node(id, kind, round);
+		const call = (choices: unknown) => ({
+			provider: "p",
+			model: "m",
+			latencyMs: 1,
+			inputTokens: null,
+			outputTokens: null,
+			ok: true,
+			error: null,
+			choices,
+		});
+		return {
+			...base,
+			detail: {
+				...base.detail,
+				calls: [
+					call([
+						{
+							question: "q1",
+							chosen: "b",
+							options: { a: 0.1, b: 0.7, c: 0.2 },
+						},
+						{
+							question: "q2",
+							chosen: "x0",
+							options: Object.fromEntries(
+								Array.from({ length: 15 }, (_, i) => [`x${i}`, 1 - i / 20]),
+							),
+						},
+					]),
+				],
+			},
+		} as unknown as RequestNode;
+	};
+	const graph = viewToGraph(
+		view(
+			[
+				node("prompt", "prompt", 0),
+				withChoices("classify", "classify", 0),
+				node("understand", "understand", 0),
+				node("1:a", "action", 1),
+				node("result", "result", 1),
+			],
+			[{ from: "prompt", to: "classify", kind: "next" }],
+		),
+	);
+	const choice = graph.nodes.filter((n) => n.type === "choice");
+
+	test("a fan per question: sorted, chosen marked, capped with a tail", () => {
+		const first = choice.filter((n) => n.data.question === "q1");
+		expect(first.map((n) => n.data.option)).toEqual(["b", "c", "a"]);
+		expect(
+			first.filter((n) => n.data.chosen).map((n) => n.data.option),
+		).toEqual(["b"]);
+		const second = choice.filter((n) => n.data.question === "q2");
+		expect(second).toHaveLength(MAX_OPTIONS + 1);
+		expect(second.at(-1)?.data.more).toBe(15 - MAX_OPTIONS);
+	});
+
+	test("fans sit below the main flow, ids are unique, edges point to existing nodes", () => {
+		const mainBottom = Math.max(
+			...graph.nodes
+				.filter((n) => n.type === "request")
+				.map((n) => n.position.y),
+		);
+		for (const n of choice)
+			expect(n.position.y).toBeGreaterThan(mainBottom + 100);
+		const ids = graph.nodes.map((n) => n.id);
+		expect(new Set(ids).size).toBe(ids.length);
+		const known = new Set(ids);
+		for (const e of graph.edges) {
+			expect(known.has(e.source) && known.has(e.target)).toBe(true);
+		}
+		const ys = choice.map((n) => n.position.y);
+		expect(new Set(ys).size).toBe(ys.length);
+	});
+
+	test("without choices the graph has only request nodes", () => {
+		const plain = viewToGraph(view([node("prompt", "prompt", 0)], []));
+		expect(plain.nodes.map((n) => n.type)).toEqual(["request"]);
 	});
 });

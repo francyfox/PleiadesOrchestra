@@ -38,6 +38,15 @@ const flowContent = {
 				kk: "Сүзгіге ештеңе сәйкес келмеді",
 			}),
 		},
+		choices: {
+			chosen: t({ ru: "выбрано", en: "chosen", kk: "таңдалды" }),
+			notSaid: t({ ru: "не сказано", en: "not said", kk: "айтылмаған" }),
+			more: t({
+				ru: insert("+{{count}} ещё"),
+				en: insert("+{{count}} more"),
+				kk: insert("+{{count}} тағы"),
+			}),
+		},
 		trace: {
 			button: t({ ru: "Трейс", en: "Trace", kk: "Трейс" }),
 			title: t({

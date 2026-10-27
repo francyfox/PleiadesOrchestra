@@ -760,6 +760,51 @@ describe("widget threads and messages", () => {
 		expect(seen).toBeUndefined();
 	});
 
+	test("clientDate and timeZone become turn facts, today falls back to the server's date, bad values are 422", async () => {
+		let seen: Record<string, unknown> = {};
+		const probe: GoapAction = {
+			name: "probe",
+			cost: 0,
+			preconditions: {},
+			effects: { replied: true },
+			async execute(c) {
+				seen = c.state;
+				return { replied: true };
+			},
+		};
+		const ctx = setup({}, { threadActionsFor: () => [probe] });
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+		const send = (body: Record<string, unknown>) =>
+			ctx.app.handle(
+				widgetRequest("/v1/widget/messages", {
+					token,
+					ip: IP,
+					body: { threadId, text: "hi", ...body },
+				}),
+			);
+
+		await (
+			await send({ clientDate: "2026-10-27", timeZone: "Asia/Almaty" })
+		).text();
+		expect(seen).toMatchObject({
+			today: "2026-10-27",
+			timeZone: "Asia/Almaty",
+		});
+
+		await (await send({})).text();
+		expect(String(seen.today)).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+		expect(seen.timeZone).toBeUndefined();
+
+		for (const bad of [
+			{ clientDate: "27.10.2026" },
+			{ clientDate: "2026-02-30" },
+			{ timeZone: "Mars/Olympus" },
+			{ timeZone: "x".repeat(65) },
+		])
+			expect((await send(bad)).status).toBe(422);
+	});
+
 	test("customerContext larger than the text limit → 413, model not called", async () => {
 		const ctx = setup({ maxTextChars: 20 });
 		const token = await newVisitor(ctx);

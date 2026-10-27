@@ -4,7 +4,7 @@ import type {
 	RequestsQuery,
 	RequestView,
 } from "./requests.schema.ts";
-import { buildWebMcpTrace, channelOf } from "./requests.trace.ts";
+import { buildWebMcpTrace, catalogOf, channelOf } from "./requests.trace.ts";
 import { buildRequestView } from "./requests.view.ts";
 
 type Orchestrator = Pick<FetchContext, "orchestrator">;
@@ -33,8 +33,8 @@ export async function fetchRequestTrace(
 	ownerId?: string,
 ): Promise<unknown[]> {
 	const details = await orchestrator.getRequest(id, ownerId);
-	const channel = channelOf(details);
-	const { items } = channel ? await orchestrator.listMcp() : { items: [] };
-	const tools = items.find((site) => site.channelId === channel)?.tools ?? [];
-	return buildWebMcpTrace(details, tools);
+	const { items } = channelOf(details)
+		? await orchestrator.listMcp()
+		: { items: [] };
+	return buildWebMcpTrace(details, catalogOf(details, items));
 }

@@ -1,3 +1,4 @@
+import { clientTime } from "@/lib/api/client-time.ts";
 import type { Pending } from "@/lib/chat/pending.ts";
 import type { CustomerContext } from "@/lib/config/config.ts";
 import type { WebMcpToolDescriptor } from "@/lib/webmcp/webmcp.ts";
@@ -269,6 +270,7 @@ export function createWidgetApi({
 					text,
 					...(page ? { page } : {}),
 					...(replyTo ? { replyTo: replyTo.slice(0, 2000) } : {}),
+					...clientTime(),
 					...languageFields(),
 					...(customerContext ? { customerContext } : {}),
 				}),

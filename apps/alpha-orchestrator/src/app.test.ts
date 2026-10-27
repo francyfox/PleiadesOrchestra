@@ -840,7 +840,12 @@ describe("createApp — alpha-understand reads the message as it comes in", () =
 		await readNdjson(await post(app, "купи 1 сыр"));
 
 		expect(asked).toEqual([
-			{ request: "купи 1 сыр", actionName: "alpha-understand" },
+			{
+				request: expect.stringMatching(
+					/^Today is \d{4}-\d{2}-\d{2} \(\w+\)\nVisitor's message: купи 1 сыр$/,
+				),
+				actionName: "alpha-understand",
+			},
 		]);
 		expect(seen[0]).toMatchObject({
 			userMessage: "купи 1 сыр",

@@ -80,6 +80,15 @@ const RequestLlmCall = t.Object({
 	latencyMs: t.Number(),
 	ok: t.Boolean(),
 	error: t.Nullable(t.String()),
+	choices: t.Nullable(
+		t.Array(
+			t.Object({
+				question: t.String(),
+				chosen: t.Nullable(t.String()),
+				options: t.Record(t.String(), t.Number()),
+			}),
+		),
+	),
 	at: t.Number(),
 });
 

@@ -5,6 +5,8 @@ import {
 	AWAITED_TOOL_FACT,
 	BROWSER_WAIT_TIMEOUT_MS,
 	EXPIRED_FACT,
+	VISITOR_WAIT_FACT,
+	VISITOR_WAIT_TIMEOUT_MS,
 } from "../run-stream/run-stream.service.ts";
 import { sessionFacts } from "../run-stream/run-stream.ts";
 import { readQueue } from "../tasks/tasks.service.ts";
@@ -18,7 +20,7 @@ const EXPIRED_MARKER_TTL_MS = 24 * 60 * 60 * 1000;
  * keeps only the conversation's own facts, like any other ended run, plus a
  * small marker (`EXPIRED_FACT`: the prompt and how many tasks were left) that
  * `pending` tells the widget once. A marker nobody asked for goes after
- * `EXPIRED_MARKER_TTL_MS`. A result that comes late gets "nothing to resume"
+ * `EXPIRED_MARKER_TTL_MS`. A question to the visitor (`VISITOR_WAIT_FACT`) is dropped after `VISITOR_WAIT_TIMEOUT_MS`, without a marker. A result that comes late gets "nothing to resume"
  * in-band. Returns how many threads it released.
  */
 export function expireStaleWaits(db: Db, now: number): number {
@@ -42,8 +44,21 @@ export function expireStaleWaits(db: Db, now: number): number {
 			.where(eq(threadWorldState.threadId, row.threadId))
 			.run();
 	}
+	// A question the visitor never answered: forgotten quietly (the reply asking it is long shown).
+	const unanswered = db
+		.select()
+		.from(threadWorldState)
+		.where(lt(threadWorldState.updatedAt, now - VISITOR_WAIT_TIMEOUT_MS))
+		.all()
+		.filter((row) => row.state[VISITOR_WAIT_FACT] !== undefined);
+	for (const row of unanswered) {
+		db.update(threadWorldState)
+			.set({ state: sessionFacts(row.state), goal: {}, updatedAt: now })
+			.where(eq(threadWorldState.threadId, row.threadId))
+			.run();
+	}
 	dropOldMarkers(db, now);
-	return stale.length;
+	return stale.length + unanswered.length;
 }
 
 function dropOldMarkers(db: Db, now: number): void {

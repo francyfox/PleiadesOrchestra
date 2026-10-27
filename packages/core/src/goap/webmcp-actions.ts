@@ -6,8 +6,12 @@ import {
 import { decideInRounds } from "../choice-rounds";
 import type { DecisionAgent } from "../decision-types";
 import type { FunctionCallAgent } from "../function-call-agent";
+import { recordCall } from "../record-call";
+import type { UsageRecorder } from "../types";
 import { UntranslatableError } from "../untranslatable-error";
+import { collectTokens } from "../usage-collector";
 import { validateArguments } from "../validate-arguments";
+import { matchingAttributes } from "./attribute-match";
 import { cursorFact, fanOutFor } from "./fan-out";
 import {
 	effectsOf,
@@ -50,6 +54,7 @@ import type {
 	GoapAction,
 	WorldState,
 } from "./types";
+import { STATED_ATTRIBUTES, type UnderstoodAttribute } from "./understanding";
 import {
 	describeParameterChoice,
 	describeTool,
@@ -66,6 +71,9 @@ export interface WebMcpToolDescriptor {
 		required?: string[];
 	};
 }
+
+/** Fact: JSON `{ tool, params: [{ name, description }] }` — required parameters nothing could fill. Nothing was sent to the site; the reply asks the visitor. */
+export const MISSING_PARAMS = "missingParams";
 
 /** The shape of `WaitingOn.payload` when `WaitingOn.kind === "webmcp_tool_call"`. */
 export interface WebMcpToolCallPayload {
@@ -89,6 +97,8 @@ export interface CreateWebMcpActionsConfig {
 	onError?: (error: unknown, context: { tool: string }) => void;
 	/** Real resource cost per tool — a browser round trip's latency varies with the tool, so this is a hook, not a constant, mirroring `McpToolSourceConfig.costFor`. */
 	costFor?: (tool: WebMcpToolDescriptor) => number;
+	/** Where the parameter choices (a decision call each) are reported, with their probabilities. */
+	usageRecorder?: UsageRecorder;
 }
 
 /** Placeholder until real calibration data exists — matches `tool-source.ts`'s `DEFAULT_MCP_TOOL_COST`. */
@@ -342,11 +352,13 @@ async function argumentsFor(
 	}
 }
 
-// --- choosing a value for a required enum parameter -------------------------
+// --- choosing a value for an enum parameter -------------------------
 
 interface EnumParameter {
 	name: string;
 	values: string[];
+	required: boolean;
+	description?: string;
 	/** Free-text description of the parameter, split per value where it says "<value>: …". */
 	descriptions: Record<string, string | null>;
 }
@@ -371,24 +383,22 @@ function describeValues(
 	return result;
 }
 
-/** Required string parameters that only accept a fixed list of values. */
-function requiredEnumParameters(tool: WebMcpToolDescriptor): EnumParameter[] {
-	const schema = tool.inputSchema as
-		| { properties?: Record<string, unknown>; required?: string[] }
-		| undefined;
+/** String parameters that only accept a fixed list of values, in schema order. */
+function enumParameters(tool: WebMcpToolDescriptor): EnumParameter[] {
+	const schema = tool.inputSchema;
 	const result: EnumParameter[] = [];
-	for (const name of schema?.required ?? []) {
-		const property = schema?.properties?.[name] as
-			| { enum?: unknown[]; description?: string }
-			| undefined;
-		const values = (property?.enum ?? []).filter(
+	for (const [name, raw] of Object.entries(schema?.properties ?? {})) {
+		const property = raw as { enum?: unknown[]; description?: string };
+		const values = (property.enum ?? []).filter(
 			(value): value is string => typeof value === "string",
 		);
 		if (values.length > 0) {
 			result.push({
 				name,
 				values,
-				descriptions: describeValues(values, property?.description),
+				required: schema?.required?.includes(name) ?? false,
+				description: property.description,
+				descriptions: describeValues(values, property.description),
 			});
 		}
 	}
@@ -404,6 +414,26 @@ function needsItem(tool: WebMcpToolDescriptor): boolean {
 		: Object.keys(schema?.properties ?? {}).length > 0;
 }
 
+/** The extra option of an optional parameter: the message doesn't say. Never sent to the site. */
+const NOT_SAID = "not_said";
+/** An optional parameter is set only when the model is at least this sure. */
+const OPTIONAL_MIN_PROBABILITY = 0.5;
+
+function readStatedAttributes(
+	state: Record<string, unknown>,
+): UnderstoodAttribute[] | undefined {
+	const raw = state[STATED_ATTRIBUTES];
+	if (typeof raw !== "string") return undefined;
+	try {
+		const parsed: unknown = JSON.parse(raw);
+		return Array.isArray(parsed)
+			? (parsed as UnderstoodAttribute[])
+			: undefined;
+	} catch {
+		return undefined;
+	}
+}
+
 const parameterFlag = (tool: string, parameter: string) =>
 	`param:${tool}:${parameter}`;
 
@@ -412,11 +442,15 @@ const parameterFlag = (tool: string, parameter: string) =>
  * user's message and the option descriptions in the tool's own schema —
  * bounded choice, the thing Laya does well. A value already in the state (the
  * shopper is already in a store) is kept. Costs one decision call, no browser.
+ * A required parameter takes the first option when the request doesn't say;
+ * an optional one has a "not said" option and stays unset then (the step is
+ * still done, so it never blocks the tool).
  */
 function createParameterChoiceAction(
 	tool: WebMcpToolDescriptor,
 	parameter: EnumParameter,
 	decisionAgent: DecisionAgent,
+	usageRecorder?: UsageRecorder,
 ): GoapAction {
 	const flag = parameterFlag(tool.name, parameter.name);
 	const question = `${tool.name}.${parameter.name}`;
@@ -431,23 +465,66 @@ function createParameterChoiceAction(
 			if (typeof current === "string" && parameter.values.includes(current)) {
 				return { [flag]: true };
 			}
+			// alpha-understand listed what the visitor stated: only a parameter it
+			// talks about is worth a model call (an optional one stays unset).
+			// No list at all (understand failed/off) keeps asking, as before.
+			const stated = readStatedAttributes(ctx.state);
+			const said = stated ? matchingAttributes(stated, parameter) : [];
+			if (stated && said.length === 0 && !parameter.required) {
+				return { [flag]: true };
+			}
 			// Laya reads English: the translation of the message when there is one.
 			let answers: Awaited<ReturnType<DecisionAgent["decide"]>> = {};
 			try {
-				answers = await decisionAgent.decide(
-					{
-						message: String(
-							ctx.state.userMessageEn ?? ctx.state.userMessage ?? "",
-						),
-					},
-					{
-						[question]: {
-							type: "choice",
-							instructions: `Which ${parameter.name} fits the user's request best? When the request doesn't say, pick the first.`,
-							criteria: parameter.descriptions,
+				const startedAt = Date.now();
+				const { value, tokens } = await collectTokens(() =>
+					decisionAgent.decide(
+						{
+							message: String(
+								ctx.state.userMessageEn ?? ctx.state.userMessage ?? "",
+							),
 						},
-					},
+						{
+							[question]: {
+								type: "choice",
+								instructions: `Which ${parameter.name} does the user's request ask for?${
+									parameter.description ? ` ${parameter.description}` : ""
+								}${
+									said.length
+										? ` The visitor said: ${said.map((a) => `${a.name} = ${a.value}`).join(", ")}.`
+										: ""
+								} The options are listed in their order (${parameter.values.join(", ")}); when they form a scale, the most, biggest or highest means the last and the least or smallest the first. ${
+									parameter.required
+										? "When the request doesn't say, pick the first."
+										: `When the request doesn't say, pick ${NOT_SAID}.`
+								}`,
+								criteria: parameter.required
+									? parameter.descriptions
+									: {
+											...parameter.descriptions,
+											[NOT_SAID]: "The request does not say.",
+										},
+							},
+						},
+					),
 				);
+				answers = value;
+				recordCall(usageRecorder, {
+					threadId: String(ctx.state.threadId ?? ""),
+					userId: String(ctx.state.userId ?? ""),
+					planRunId:
+						typeof ctx.state.planRunId === "string"
+							? ctx.state.planRunId
+							: undefined,
+					actionName: `choose:${question}`,
+					kind: "decision",
+					provider: "laya",
+					model: "gamma-decision",
+					latencyMs: Date.now() - startedAt,
+					at: Date.now(),
+					ok: true,
+					...tokens,
+				});
 			} catch (error) {
 				// Nothing could be translated for Laya: the same as a request that
 				// doesn't say — the first option (what the instruction above asks).
@@ -455,11 +532,20 @@ function createParameterChoiceAction(
 			}
 			const answer = answers[question];
 			const picked = answer?.type === "choice" ? answer.choice : undefined;
-			const value =
-				picked && parameter.values.includes(picked)
-					? picked
-					: (parameter.values[0] as string);
-			return { [parameter.name]: value, [flag]: true };
+			const valid = picked && parameter.values.includes(picked);
+			if (parameter.required) {
+				return {
+					[parameter.name]: valid ? picked : (parameter.values[0] as string),
+					[flag]: true,
+				};
+			}
+			const sure =
+				answer?.type !== "choice" ||
+				(answer.probabilities?.[picked as string] ?? 1) >=
+					OPTIONAL_MIN_PROBABILITY;
+			return valid && sure
+				? { [parameter.name]: picked, [flag]: true }
+				: { [flag]: true };
 		},
 	};
 }
@@ -471,7 +557,7 @@ function createParameterChoiceAction(
  * counterpart of `createMcpToolSource` (`tool-source.ts`). Each tool is
  * classified once (one Laya `choice` call, `TOOL_INTENTS`), and the intent
  * gives it real preconditions/effects, so the planner chains them: choose a
- * store → search → add to cart. Every required enum parameter gets its own
+ * store → search → add to cart. Every enum parameter gets its own
  * Laya step that picks the value (see `createParameterChoiceAction`).
  *
  * A WebMCP tool call can only execute in the visitor's browser (see
@@ -506,9 +592,14 @@ export async function createWebMcpActions(
 			const textKey = `webmcp:${tool.name}:text`;
 			const recoveryKey = `recovery:${tool.name}`;
 
-			const parameters = requiredEnumParameters(tool);
+			const parameters = enumParameters(tool);
 			const choices = parameters.map((parameter) =>
-				createParameterChoiceAction(tool, parameter, config.decisionAgent),
+				createParameterChoiceAction(
+					tool,
+					parameter,
+					config.decisionAgent,
+					config.usageRecorder,
+				),
 			);
 			const needsChoices = Object.fromEntries(
 				parameters.map((parameter) => [
@@ -676,7 +767,33 @@ export async function createWebMcpActions(
 							),
 							{ tool: tool.name },
 						);
-						return { [toolResultKey]: false };
+						// Not the site's failure: the visitor has not said everything yet.
+						const properties = (schema.properties ?? {}) as Record<
+							string,
+							{ description?: string }
+						>;
+						const params = (schema.required ?? [])
+							.filter(
+								(name) =>
+									args[name] === undefined ||
+									args[name] === null ||
+									args[name] === "",
+							)
+							.map((name) => ({
+								name,
+								description: properties[name]?.description ?? "",
+							}));
+						return {
+							[toolResultKey]: false,
+							...(params.length > 0
+								? {
+										[MISSING_PARAMS]: JSON.stringify({
+											tool: tool.name,
+											params,
+										}),
+									}
+								: {}),
+						};
 					}
 					// The visitor is already on that page (language and tracking
 					// parameters aside): the effect holds without a browser round trip.

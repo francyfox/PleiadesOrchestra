@@ -1,3 +1,4 @@
+import { withChoiceReport } from "@repo/core";
 import { createObservability, serve } from "@repo/elysia-kit";
 import { createApp } from "./app.ts";
 import { agentSettings } from "./modules/agent-settings/agent-settings.instance.ts";
@@ -54,9 +55,10 @@ const app = createApp({
 	// descriptions and enum values) is translated by alpha-understand, or the call is refused.
 	// Laya's probabilities are refitted on our own data (`bun run calibrate` in
 	// packages/core) in decisions.instance, so every consumer sees calibrated ones.
-	decisionAgent: withEnglishOnly(decisionAgent, {
-		translate: translateWithAlpha,
-	}),
+	// Outermost, so the ledger gets the callers' own option keys and calibrated probabilities.
+	decisionAgent: withChoiceReport(
+		withEnglishOnly(decisionAgent, { translate: translateWithAlpha }),
+	),
 	layaAutoApproveConfidence: config.LAYA_AUTO_APPROVE_CONFIDENCE,
 	productRequestAgent,
 	functionCallAgent,

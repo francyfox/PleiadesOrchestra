@@ -181,6 +181,7 @@ describe("buildRequestView", () => {
 				outputTokens: null,
 				ok: true,
 				error: null,
+				choices: null,
 			},
 		]);
 		expect(view.nodes[2]?.durationMs).toBe(350);
@@ -205,6 +206,13 @@ describe("buildRequestView", () => {
 						latencyMs: 120,
 						ok: true,
 						error: null,
+						choices: [
+							{
+								question: "intent",
+								chosen: "addToCart",
+								options: { addToCart: 0.8, chat: 0.2 },
+							},
+						],
 						at: T0 + 300,
 					},
 				],
@@ -225,7 +233,16 @@ describe("buildRequestView", () => {
 			durationMs: 120,
 		});
 		expect(classify?.detail.intent).toBe("addToCart");
-		expect(classify?.detail.calls[0]).toMatchObject({ provider: "laya" });
+		expect(classify?.detail.calls[0]).toMatchObject({
+			provider: "laya",
+			choices: [
+				{
+					question: "intent",
+					chosen: "addToCart",
+					options: { addToCart: 0.8, chat: 0.2 },
+				},
+			],
+		});
 		expect(view.nodes[2]?.durationMs).toBe(280);
 		expect(view.nodes[2]?.label).toBe("replied=true");
 		expect(view.edges.slice(0, 2).map((e) => [e.from, e.to])).toEqual([
@@ -360,6 +377,7 @@ describe("buildRequestView", () => {
 				outputTokens: 7,
 				ok: true,
 				error: null,
+				choices: null,
 			},
 		]);
 		expect(

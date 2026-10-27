@@ -40,6 +40,25 @@ describe("replyChunks", () => {
 		expect(chunk).toContain('"2"');
 	});
 
+	test("missing required details: the reply asks for them by meaning and does not claim a failure", () => {
+		const [chunk] = replyChunks(
+			{
+				userMessage: "забронируй на 28 в 9",
+				messageIntent: "book",
+				"toolResult:bookSlot": false,
+				missingParams: JSON.stringify({
+					tool: "bookSlot",
+					params: [{ name: "date", description: "day of the booking" }],
+				}),
+			},
+			1000,
+		);
+		expect(chunk).toContain("day of the booking");
+		expect(chunk).toContain("Nothing was done on the site yet");
+		expect(chunk).toContain("Do NOT say the action failed");
+		expect(chunk).not.toContain("failed (step");
+	});
+
 	test("after an item went into the cart the reply is told what was done", () => {
 		const [chunk] = replyChunks(
 			{

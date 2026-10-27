@@ -1,3 +1,4 @@
+import type { DecisionChoice } from "@repo/core";
 import { sql } from "drizzle-orm";
 import {
 	type AnySQLiteColumn,
@@ -258,6 +259,8 @@ export const llmCalls = sqliteTable(
 		error: text("error"),
 		// A decision's probability for its answer (classify: the intent's confidence); NULL for generation.
 		confidence: real("confidence"),
+		// Every choice question of a decision call with all its probabilities (`DecisionChoice[]`); NULL otherwise.
+		choices: text("choices", { mode: "json" }).$type<DecisionChoice[]>(),
 	},
 	(table) => [
 		index("llm_calls_visitor_at_idx").on(table.visitorId, table.at),

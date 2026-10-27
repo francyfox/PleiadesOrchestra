@@ -5,7 +5,7 @@ import type {
 	WorldState,
 	WorldStateStore,
 } from "@repo/core";
-import { runPlan } from "@repo/core";
+import { MISSING_PARAMS, runPlan } from "@repo/core";
 import { ALL_SESSION_FACTS } from "@repo/intent-presets";
 import type { ActiveRuns } from "../active-runs/active-runs.ts";
 import type { StoredStep } from "../database/database.schema.ts";
@@ -22,6 +22,7 @@ import {
 	awaitedTool,
 	errorMessage,
 	outcomeEvent,
+	VISITOR_WAIT_FACT,
 } from "./run-stream.service.ts";
 import type {
 	PreparedRun,
@@ -79,6 +80,8 @@ interface RunOutcome {
 	/** JSON arguments of that call. */
 	awaitedArgs?: string;
 	finalState: WorldState;
+	/** The plan's own end state, before the reply-only run that explained a failure. */
+	reached?: WorldState;
 	prepared: PreparedRun | undefined;
 	/** The queue goes on: no terminal line was sent. */
 	continues: boolean;
@@ -251,7 +254,11 @@ async function executeRun(
 			}
 		},
 	);
-	outcome.succeeded = result.succeeded;
+	// Asking the visitor for missing details is a good answer, not a failed run.
+	outcome.succeeded =
+		result.succeeded ||
+		(explained !== undefined &&
+			result.finalState[MISSING_PARAMS] !== undefined);
 	outcome.waiting = result.waiting !== undefined;
 	outcome.awaitedTool = result.waiting
 		? awaitedTool(result.waiting)
@@ -260,6 +267,7 @@ async function executeRun(
 		? awaitedArgs(result.waiting)
 		: undefined;
 	outcome.finalState = explained?.finalState ?? result.finalState;
+	outcome.reached = result.finalState;
 	// More tasks follow: no terminal line yet (a failed task is told in the final reply).
 	if (
 		hasQueuedTasks(prepared.state) &&
@@ -329,6 +337,7 @@ async function saveCheckpoint(
 	{
 		waiting,
 		finalState,
+		reached,
 		prepared,
 		awaitedTool: tool,
 		awaitedArgs: args,
@@ -343,6 +352,40 @@ async function saveCheckpoint(
 						[AWAITED_ARGS_FACT]: args,
 					}
 				: finalState,
+			goal: prepared.goal,
+		});
+		return;
+	}
+	// The reply asked for missing details: keep the request to continue it with the answer.
+	const missing = finalState[MISSING_PARAMS];
+	if (
+		typeof missing === "string" &&
+		prepared &&
+		!hasQueuedTasks(prepared.state)
+	) {
+		const { tool, params } = JSON.parse(missing) as {
+			tool: string;
+			params: { name: string; description: string }[];
+		};
+		// What the steps before the question did stays true (no repeated write);
+		// only the question's own marker and failed step are redone. Not
+		// `finalState`: that is after the reply-only run (reply text, replied).
+		const {
+			[MISSING_PARAMS]: _marker,
+			[`toolResult:${tool}`]: _failed,
+			...kept
+		} = reached ?? prepared.state;
+		await store.save(threadId, {
+			state: {
+				...sessionFacts(finalState),
+				...kept,
+				[VISITOR_WAIT_FACT]: JSON.stringify({
+					request: String(
+						prepared.state.userMessageEn ?? prepared.state.userMessage ?? "",
+					),
+					asked: params.map((p) => p.description || p.name),
+				}),
+			},
 			goal: prepared.goal,
 		});
 		return;

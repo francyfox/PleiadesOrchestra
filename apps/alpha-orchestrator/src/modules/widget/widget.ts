@@ -24,6 +24,7 @@ import {
 	corsHeaders,
 	emptyResponse,
 	suspendedResponse,
+	validClientTime,
 	type WidgetAuth,
 	WidgetGuard,
 } from "./widget.service.ts";
@@ -274,6 +275,7 @@ export function widgetRoutes(deps: WidgetDeps) {
 					) {
 						return emptyResponse(413, auth.origin);
 					}
+					if (!validClientTime(body)) return emptyResponse(422, auth.origin);
 					const rejected = rejectIfNotAllowedToUse(auth, body.threadId);
 					if (rejected) return rejected;
 
@@ -288,6 +290,8 @@ export function widgetRoutes(deps: WidgetDeps) {
 							lang: body.lang,
 							langChosen: body.langChosen,
 							replyTo: body.replyTo,
+							clientDate: body.clientDate,
+							timeZone: body.timeZone,
 						},
 					);
 					return ndjsonResponse(stream, request, corsHeaders(auth.origin));
@@ -295,12 +299,17 @@ export function widgetRoutes(deps: WidgetDeps) {
 				{
 					detail: {
 						summary: "Send a message and stream the reply",
-						description: `Authenticated by \`X-Visitor-Token\`. Empty-body errors: 401, 403, 404 (foreign thread), 413 (text or customerContext over the limit), 429 (rate limit). \`402 { code: "channel_suspended" }\` when the channel's owner has no plan or balance.\n\n${NDJSON_LINES}`,
+						description: `Authenticated by \`X-Visitor-Token\`. Empty-body errors: 401, 403, 404 (foreign thread), 413 (text or customerContext over the limit), 422 (bad clientDate or timeZone), 429 (rate limit). \`402 { code: "channel_suspended" }\` when the channel's owner has no plan or balance.\n\n${NDJSON_LINES}`,
 					},
 					body: t.Object({
 						threadId: t.String(),
 						text: t.String(),
 						replyTo: t.Optional(t.String({ maxLength: 2000 })),
+						// The visitor's local day and zone: the models do not know today's date.
+						clientDate: t.Optional(
+							t.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}$" }),
+						),
+						timeZone: t.Optional(t.String({ minLength: 1, maxLength: 64 })),
 						page: PageField,
 						...LangFields,
 						customerContext: t.Optional(

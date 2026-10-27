@@ -31,6 +31,17 @@ export const EXPIRED_FACT = "expiredRequest";
 /** How long a run waits for the browser to run its tool and answer; then the request counts as abandoned and its checkpoint is released (`waiting-runs`). */
 export const BROWSER_WAIT_TIMEOUT_MS = 60_000;
 
+/**
+ * Checkpoint fact of a run that asked the visitor for details it needs (`missingParams`) and ended its
+ * reply: JSON `{ request, asked }` (the English request, what was asked). The checkpoint also holds the
+ * run's starting facts and goal. The next message may answer it (`prepareNewMessage`). Not a browser wait:
+ * it has no `awaitedTool`, so `pending` and the 60 s expiry ignore it.
+ */
+export const VISITOR_WAIT_FACT = "visitorWait";
+
+/** A visitor thinks longer than a browser: an unanswered question is dropped after this (`waiting-runs`). */
+export const VISITOR_WAIT_TIMEOUT_MS = 10 * 60_000;
+
 /** The arguments of a WebMCP wait, as JSON; `undefined` for any other wait. */
 export function awaitedArgs(waiting: WaitingOn): string | undefined {
 	return waiting.kind === "webmcp_tool_call"

@@ -77,6 +77,7 @@ export type {
 	TraceEventType,
 } from "./modules/plan-runs/plan-runs.schema.ts";
 export type {
+	CallChoice,
 	NodeCall,
 	NodeDetail,
 	NodeStatus,

@@ -295,6 +295,24 @@ describe("getRequest", () => {
 				ok: true,
 			})
 			.run();
+		s.db
+			.insert(llmCalls)
+			.values({
+				at: T0 + 4_000,
+				visitorId: s.visitor.id,
+				threadId: s.threadId,
+				planRunId: "r2",
+				actionName: "classify",
+				kind: "classify",
+				provider: "laya",
+				model: "gamma-decision",
+				latencyMs: 80,
+				ok: true,
+				choices: [
+					{ question: "intent", chosen: "chat", options: { chat: 0.7 } },
+				],
+			})
+			.run();
 
 		// Any run of the chain opens the request.
 		const details = getRequest(s.db, s.active, "r2", T0 + 10_000);
@@ -323,6 +341,22 @@ describe("getRequest", () => {
 		expect(details?.llmCalls).toEqual([
 			{
 				planRunId: "r2",
+				actionName: "classify",
+				kind: "classify",
+				provider: "laya",
+				model: "gamma-decision",
+				inputTokens: null,
+				outputTokens: null,
+				latencyMs: 80,
+				ok: true,
+				error: null,
+				choices: [
+					{ question: "intent", chosen: "chat", options: { chat: 0.7 } },
+				],
+				at: T0 + 4_000,
+			},
+			{
+				planRunId: "r2",
 				actionName: "generateReply",
 				kind: "generate",
 				provider: "albedo",
@@ -332,6 +366,7 @@ describe("getRequest", () => {
 				latencyMs: 1_000,
 				ok: true,
 				error: null,
+				choices: null,
 				at: T0 + 4_400,
 			},
 		]);

@@ -92,6 +92,8 @@ Sends a message and streams the reply as NDJSON (see [Stream](#Stream)).
 | `threadId` | string | yes | A thread of this visitor. |
 | `text` | string | yes | At most `WIDGET_MAX_TEXT_CHARS` (default 2000), else `413`. |
 | `replyTo` | string | no | At most 2000 characters (else `422`). The text of the assistant message the visitor answers when they pick one of its options. Models keep no chat history, so it is passed to the understanding and reply models for this message only, quoted like the message itself. |
+| `clientDate` | string | no | The visitor's local date, `YYYY-MM-DD` (a real day, else `422`). Models do not know today; it becomes the turn fact `today` (the server's UTC date when absent). |
+| `timeZone` | string | no | IANA zone name (`Asia/Almaty`), at most 64 characters, one the server knows (else `422`). Kept as the turn fact `timeZone`. |
 | `page` | string | no | The visitor's `pathname + search`, at most 512 characters. |
 | `customerContext` | object | no | Flat map of string, number or boolean values. Its JSON may not exceed the same character limit as `text`, else `413`. |
 

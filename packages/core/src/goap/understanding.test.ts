@@ -20,6 +20,7 @@ test("a valid answer comes back as is, quantity 0 allowed", async () => {
 				intent: "addToCart",
 				text: "remove all t-shirts",
 				items: [{ name: "t-shirts", quantity: 0 }],
+				attributes: [{ name: "color", value: "red" }],
 			},
 		],
 	};
@@ -84,7 +85,7 @@ test("a task with an unknown intent is dropped when others remain", async () => 
 	};
 	expect(
 		(await understandMessage(fake(answer), INTENTS, "x", "en"))?.tasks,
-	).toEqual([good]);
+	).toEqual([{ ...good, attributes: [] }]);
 });
 
 test("the tool names the intents and the catalog language", () => {
@@ -121,11 +122,73 @@ test("the earlier assistant message is quoted in the request only when given", a
 			return { en: "add Vista 27 to the cart", tasks: [] };
 		},
 	};
-	await understandMessage(spy, INTENTS, "2", "en", undefined, "1. A\n2. B");
+	await understandMessage(spy, INTENTS, "2", "en", undefined, {
+		replyTo: "1. A\n2. B",
+	});
 	await understandMessage(spy, INTENTS, "2", "en");
 	expect(requests[0]).toContain(
 		"Earlier assistant message the visitor answers: «1. A\n2. B»",
 	);
 	expect(requests[0]).toContain("2");
 	expect(requests[1]).toBe("2");
+});
+
+test("attributes: broken entries dropped, a missing list is empty", async () => {
+	const task = { intent: "search", text: "a pizza", items: [] };
+	const out = await understandMessage(
+		fake({
+			en: "x",
+			tasks: [
+				{
+					...task,
+					attributes: [
+						{ name: " diet ", value: " vegetarian " },
+						{ name: "", value: "x" },
+						{ name: "size", value: " " },
+						{ name: "n" },
+						null,
+					],
+				},
+				task,
+			],
+		}),
+		INTENTS,
+		"x",
+		"en",
+	);
+	expect(out?.tasks.map((t) => t.attributes)).toEqual([
+		[{ name: "diet", value: "vegetarian" }],
+		[],
+	]);
+});
+
+test("today is given as context; a waiting run adds what was asked and answersPending", async () => {
+	const requests: string[] = [];
+	const spy: FunctionCallAgent = {
+		fillArguments: async ({ request }) => {
+			requests.push(request);
+			return { en: "on 2026-10-28", answersPending: true, tasks: [] };
+		},
+	};
+	const out = await understandMessage(spy, INTENTS, "на 28", "en", undefined, {
+		today: "2026-10-27",
+		pending: { request: "book a table", asked: ["the date of the visit"] },
+	});
+	expect(requests[0]).toContain("Today is 2026-10-27 (Tuesday)");
+	expect(requests[0]).toContain("asked the visitor for: the date of the visit");
+	expect(requests[0]).toEndWith("Visitor's message: на 28");
+	expect(out?.answersPending).toBe(true);
+	expect(
+		understandingTool(INTENTS, "en").inputSchema.properties,
+	).not.toHaveProperty("answersPending");
+	expect(understandingTool(INTENTS, "en").description).toContain(
+		"full YYYY-MM-DD dates",
+	);
+	const plain = await understandMessage(
+		fake({ en: "x", tasks: [] }),
+		INTENTS,
+		"x",
+		"en",
+	);
+	expect(plain).not.toHaveProperty("answersPending");
 });

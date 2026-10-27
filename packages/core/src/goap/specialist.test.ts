@@ -161,7 +161,7 @@ describe("matchSpecialist", () => {
 		});
 	});
 
-	test("an optional enum parameter binds too, and sets no choice flag", async () => {
+	test("an optional enum parameter binds too", async () => {
 		const actions = await catalog(SEARCH, ADD, BOOK);
 		const facts = matchSpecialist(
 			actions,
@@ -171,7 +171,7 @@ describe("matchSpecialist", () => {
 			specialistTool: "book_tickets",
 			format: "IMAX Laser",
 		});
-		expect(facts).not.toHaveProperty("param:book_tickets:format");
+		expect(facts).toHaveProperty("param:book_tickets:format", true);
 	});
 
 	test("the English translation is read too", async () => {

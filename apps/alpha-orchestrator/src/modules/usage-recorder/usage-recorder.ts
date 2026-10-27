@@ -42,10 +42,10 @@ export class SqliteUsageRecorder implements UsageRecorder {
 		// the whole batch on a foreign key.
 		const insert = sqlite.query(
 			`INSERT INTO llm_calls (at, visitor_id, channel_id, thread_id, plan_run_id, action_name,
-				kind, provider, model, input_tokens, output_tokens, latency_ms, ok, error, confidence)
+				kind, provider, model, input_tokens, output_tokens, latency_ms, ok, error, confidence, choices)
 			VALUES (?1, (SELECT id FROM visitors WHERE id = ?2), (SELECT channel_id FROM visitors WHERE id = ?2),
 				(SELECT id FROM threads WHERE id = ?3), (SELECT id FROM plan_runs WHERE id = ?4), ?5,
-				?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)`,
+				?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)`,
 		);
 		// The owner is read from the stored call: staff channels (NULL owner) and deleted ones debit nothing.
 		const debit = sqlite.query<
@@ -76,6 +76,7 @@ export class SqliteUsageRecorder implements UsageRecorder {
 					call.ok ? 1 : 0,
 					call.error ?? null,
 					call.confidence ?? null,
+					call.choices ? JSON.stringify(call.choices) : null,
 				);
 				const micro = usdToMicro(
 					costUsd(

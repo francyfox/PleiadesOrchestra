@@ -39,6 +39,7 @@ const toNodeCall = (call: Upstream["llmCalls"][number]): NodeCall => ({
 	outputTokens: call.outputTokens,
 	ok: call.ok,
 	error: call.error,
+	choices: call.choices ?? null,
 });
 
 /** One action as the run went through it, possibly across several runs (a browser tool pauses the run). */

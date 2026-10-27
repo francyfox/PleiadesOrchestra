@@ -83,6 +83,7 @@ export type {
 	ToolIntent,
 	ToolSource,
 	Understanding,
+	UnderstoodAttribute,
 	UnderstoodItem,
 	UnderstoodTask,
 	WaitingOn,
@@ -93,6 +94,7 @@ export type {
 	WorldStateStore,
 } from "./goap";
 export {
+	attributeFacts,
 	bindListScope,
 	chooseTool,
 	classifyMessageIntent,
@@ -125,6 +127,7 @@ export {
 	looksLikeSeveralTasks,
 	MAX_TOOL_TEXT_CHARS,
 	MISSING_ITEMS,
+	MISSING_PARAMS,
 	matchSpecialist,
 	mustAskOrder,
 	NEEDS_THE_WORDS,
@@ -148,8 +151,11 @@ export {
 	runPlan,
 	SCOPE_ALL,
 	SESSION_FACTS,
+	STATED_ATTRIBUTES,
 	samePage,
 	scopeFacts,
+	TIME_ZONE_FACT,
+	TODAY_FACT,
 	TOOL_INTENTS,
 	translateTexts,
 	understandMessage,
@@ -186,6 +192,7 @@ export type {
 	Agent,
 	AgentStreamEvent,
 	CallContext,
+	DecisionChoice,
 	HistoryStore,
 	IncomingMessage,
 	LlmCallKind,
@@ -194,5 +201,9 @@ export type {
 } from "./types";
 export { UntranslatableError } from "./untranslatable-error";
 export type { CollectedTokens } from "./usage-collector";
-export { collectTokens, reportTokens } from "./usage-collector";
+export {
+	collectTokens,
+	reportTokens,
+	withChoiceReport,
+} from "./usage-collector";
 export { validateArguments } from "./validate-arguments";

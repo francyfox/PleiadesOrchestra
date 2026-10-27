@@ -182,44 +182,126 @@ const en = {
 			],
 		},
 	},
-	// One message through the models, step by step (LandingFlow); the intent ids and probabilities live in the component.
+	// One message through the roles, step by step (LandingFlow). Texts per scenario and step id; the step order, the options fan and its probabilities live in the component.
 	flow: {
 		heading: "How the orchestrator answers",
-		lead: "One message through the small models: alpha leads, every other model does one narrow job.",
+		lead: "One message: alpha understands and plans, gamma chooses, delta fills in the parameters and calls the site’s tool, beta writes the reply.",
 		note: "An example run: the probabilities are illustrative.",
 		aria: "Diagram: one message passing through the orchestrator",
-		nodes: {
-			widget: {
-				tag: "widget · site",
-				text: "“Find a 27-inch monitor under $300”",
+		tabsLabel: "Scenario",
+		scenarios: {
+			a: {
+				label: "Default",
+				steps: {
+					widget: {
+						tag: "widget · site",
+						text: "“Find a 27-inch monitor under $300”",
+					},
+					understand: {
+						tag: "alpha · understanding",
+						text: "English, one task, attributes: 27 inch, under $300. One call: translation + tasks + quantities",
+					},
+					rules: {
+						tag: "alpha · rules",
+						text: "no checkout or removal words, so gamma decides",
+					},
+					gamma: {
+						tag: "gamma · action choice",
+						text: "Which site action? The site’s tools by name, plus chat and other",
+					},
+					plan: {
+						tag: "alpha · GOAP plan",
+						text: "goal: the search_products result; plan: search_products → reply",
+					},
+					delta: {
+						tag: "delta · parameters and call",
+						text: 'search_products({ query: "monitor 27", max_price: 300 }) → in the browser, 4 products',
+					},
+					beta: {
+						tag: "beta · reply",
+						text: "“The cheapest is Vista 27 for $249.” Buttons: 1. Add to cart 2. Show others",
+					},
+					answer: {
+						tag: "widget · site",
+						text: "The reply and the option buttons appear in the chat",
+					},
+				},
 			},
-			translate: {
-				tag: "alpha · translation",
-				text: "non-Latin text → English, CTranslate2, ~50 ms",
+			b: {
+				label: "Several tasks",
+				steps: {
+					widget: {
+						tag: "widget · site",
+						text: "“Find a monitor under $300 and add two to the cart”",
+					},
+					understand: {
+						tag: "alpha · understanding",
+						text: "2 tasks: search with under $300; add with quantity 2",
+					},
+					queue: {
+						tag: "alpha · task queue",
+						text: "tasks run in order, each with its own plan; no gamma needed, the intents come from alpha",
+					},
+					plan1: { tag: "alpha · GOAP plan 1", text: "search_products" },
+					delta1: {
+						tag: "delta · parameters and call",
+						text: 'search_products({ query: "monitor", max_price: 300 }) → in the browser, 4 products',
+					},
+					plan2: {
+						tag: "alpha · GOAP plan 2",
+						text: "add_to_cart; the product comes from the search answer",
+					},
+					delta2: {
+						tag: "delta · parameters and call",
+						text: 'add_to_cart({ product: "Vista 27", quantity: 2 }) → added',
+					},
+					beta: {
+						tag: "beta · reply",
+						text: "A short consultant reply that does not repeat the steps: “Need an HDMI cable too?”",
+					},
+					answer: {
+						tag: "widget · site",
+						text: "The reply appears in the chat",
+					},
+				},
 			},
-			rules: {
-				tag: "alpha · rules + memory",
-				text: "checkout/removal words, then the site’s approved examples; nothing matched → gamma",
-			},
-			gamma: {
-				tag: "gamma · Laya / Jev",
-				text: "Which site tool does the message ask for? Tools by name, plus chat and other; under 0.5 the reply model asks back",
-			},
-			plan: {
-				tag: "alpha · GOAP planner",
-				text: "goal: the search_products result; plan: search_products → reply",
-			},
-			delta: {
-				tag: "delta · Qwen3-1.7B",
-				text: '{ "query": "27-inch monitor", "max_price": 300 }',
-			},
-			tool: {
-				tag: "site · WebMCP",
-				text: "search_products runs in the browser → 4 products",
-			},
-			beta: {
-				tag: "beta · reply",
-				text: "“The cheapest is Vista 27 for $249. Add it to the cart?”",
+			c: {
+				label: "With a classifier",
+				steps: {
+					widget: { tag: "widget · site", text: "“Add two red T-shirts”" },
+					understand: {
+						tag: "alpha · understanding",
+						text: "task: add; item: red T-shirt × 2",
+					},
+					rules: {
+						tag: "alpha · rules and site memory",
+						text: "no checkout words, no approved example in memory",
+					},
+					gamma: {
+						tag: "gamma · intent",
+						text: "Which of the channel’s intents does the message ask for?",
+					},
+					plan: {
+						tag: "alpha · GOAP plan",
+						text: "goal: the item is in the cart; plan: search → add_to_cart",
+					},
+					delta1: {
+						tag: "delta · parameters and call",
+						text: 'search_products({ query: "red t-shirt" }) → found',
+					},
+					delta2: {
+						tag: "delta · parameters and call",
+						text: 'add_to_cart({ product: "Red T-Shirt", quantity: 2 }) → added',
+					},
+					template: {
+						tag: "alpha · reply template",
+						text: "“Added: 2 × Red T-Shirt”; no beta call",
+					},
+					answer: {
+						tag: "widget · site",
+						text: "The reply appears in the chat",
+					},
+				},
 			},
 		},
 	},
@@ -588,41 +670,120 @@ const ru: LandingContent = {
 	},
 	flow: {
 		heading: "Как отвечает оркестратор",
-		lead: "Одно сообщение через маленькие модели: alpha ведёт, каждая другая модель делает одну узкую работу.",
+		lead: "Одно сообщение: alpha понимает и планирует, gamma выбирает, delta подставляет параметры и вызывает инструмент сайта, beta пишет ответ.",
 		note: "Пример прогона: вероятности условные.",
 		aria: "Схема: одно сообщение проходит через оркестратор",
-		nodes: {
-			widget: {
-				tag: "виджет · сайт",
-				text: "«Найди монитор 27 дюймов дешевле $300»",
+		tabsLabel: "Сценарий",
+		scenarios: {
+			a: {
+				label: "Обычный",
+				steps: {
+					widget: {
+						tag: "виджет · сайт",
+						text: "«Найди монитор 27 дюймов дешевле $300»",
+					},
+					understand: {
+						tag: "alpha · понимание",
+						text: "английский, одна задача, атрибуты: 27 дюймов, дешевле $300. Один вызов: перевод + задачи + количества",
+					},
+					rules: {
+						tag: "alpha · правила",
+						text: "слов оформления или удаления нет, поэтому решает gamma",
+					},
+					gamma: {
+						tag: "gamma · выбор действия",
+						text: "Какое действие сайта нужно? Инструменты сайта по именам, плюс chat и other",
+					},
+					plan: {
+						tag: "alpha · план GOAP",
+						text: "цель: результат search_products; план: search_products → ответ",
+					},
+					delta: {
+						tag: "delta · параметры и вызов",
+						text: 'search_products({ query: "monitor 27", max_price: 300 }) → в браузере, 4 товара',
+					},
+					beta: {
+						tag: "beta · ответ",
+						text: "«Самый дешёвый — Vista 27 за $249.» Кнопки: 1. Добавить в корзину 2. Показать другие",
+					},
+					answer: {
+						tag: "виджет · сайт",
+						text: "Ответ и кнопки вариантов появляются в чате",
+					},
+				},
 			},
-			translate: {
-				tag: "alpha · перевод",
-				text: "не латиница → английский, CTranslate2, ~50 мс",
+			b: {
+				label: "Несколько задач",
+				steps: {
+					widget: {
+						tag: "виджет · сайт",
+						text: "«Найди монитор дешевле $300 и добавь два в корзину»",
+					},
+					understand: {
+						tag: "alpha · понимание",
+						text: "2 задачи: поиск с ценой до $300; добавление с количеством 2",
+					},
+					queue: {
+						tag: "alpha · очередь задач",
+						text: "задачи идут по порядку, у каждой свой план; gamma не нужна, намерения даёт alpha",
+					},
+					plan1: { tag: "alpha · план GOAP 1", text: "search_products" },
+					delta1: {
+						tag: "delta · параметры и вызов",
+						text: 'search_products({ query: "monitor", max_price: 300 }) → в браузере, 4 товара',
+					},
+					plan2: {
+						tag: "alpha · план GOAP 2",
+						text: "add_to_cart; товар берётся из ответа поиска",
+					},
+					delta2: {
+						tag: "delta · параметры и вызов",
+						text: 'add_to_cart({ product: "Vista 27", quantity: 2 }) → добавлено',
+					},
+					beta: {
+						tag: "beta · ответ",
+						text: "Короткий ответ консультанта, не повторяющий шаги: «Нужен ещё кабель HDMI?»",
+					},
+					answer: { tag: "виджет · сайт", text: "Ответ появляется в чате" },
+				},
 			},
-			rules: {
-				tag: "alpha · правила + память",
-				text: "слова оплаты/удаления, затем одобренные примеры сайта; не нашлось → gamma",
-			},
-			gamma: {
-				tag: "gamma · Laya / Jev",
-				text: "Какой инструмент сайта нужен? Инструменты по имени, плюс chat и other; ниже 0.5 модель ответа переспросит",
-			},
-			plan: {
-				tag: "alpha · GOAP-планировщик",
-				text: "цель: результат search_products; план: search_products → ответ",
-			},
-			delta: {
-				tag: "delta · Qwen3-1.7B",
-				text: '{ "query": "27-inch monitor", "max_price": 300 }',
-			},
-			tool: {
-				tag: "сайт · WebMCP",
-				text: "search_products выполняется в браузере → 4 товара",
-			},
-			beta: {
-				tag: "beta · ответ",
-				text: "«Самый дешёвый — Vista 27 за $249. Добавить в корзину?»",
+			c: {
+				label: "С классификатором",
+				steps: {
+					widget: {
+						tag: "виджет · сайт",
+						text: "«Добавь две красные футболки»",
+					},
+					understand: {
+						tag: "alpha · понимание",
+						text: "задача: добавить; товар: красная футболка × 2",
+					},
+					rules: {
+						tag: "alpha · правила и память сайта",
+						text: "слов оформления нет, одобренного примера в памяти нет",
+					},
+					gamma: {
+						tag: "gamma · намерение",
+						text: "Какое из намерений канала просит сообщение?",
+					},
+					plan: {
+						tag: "alpha · план GOAP",
+						text: "цель: товар в корзине; план: поиск → add_to_cart",
+					},
+					delta1: {
+						tag: "delta · параметры и вызов",
+						text: 'search_products({ query: "red t-shirt" }) → найдено',
+					},
+					delta2: {
+						tag: "delta · параметры и вызов",
+						text: 'add_to_cart({ product: "Red T-Shirt", quantity: 2 }) → добавлено',
+					},
+					template: {
+						tag: "alpha · шаблон ответа",
+						text: "«Добавлено: 2 × Red T-Shirt»; beta не вызывается",
+					},
+					answer: { tag: "виджет · сайт", text: "Ответ появляется в чате" },
+				},
 			},
 		},
 	},
@@ -991,41 +1152,117 @@ const kk: LandingContent = {
 	},
 	flow: {
 		heading: "Оркестратор қалай жауап береді",
-		lead: "Бір хабарлама шағын модельдер арқылы: alpha басқарады, қалған әр модель бір тар жұмысты атқарады.",
-		note: "Мысал: ықтималдықтар шартты.",
+		lead: "Бір хабарлама: alpha түсініп, жоспарлайды, gamma таңдайды, delta параметрлерді толтырып, сайттың құралын шақырады, beta жауап жазады.",
+		note: "Іске қосу мысалы: ықтималдықтар шартты.",
 		aria: "Сызба: бір хабарлама оркестратор арқылы өтеді",
-		nodes: {
-			widget: {
-				tag: "виджет · сайт",
-				text: "«$300-ден арзан 27 дюймдік монитор тап»",
+		tabsLabel: "Сценарий",
+		scenarios: {
+			a: {
+				label: "Әдеттегі",
+				steps: {
+					widget: {
+						tag: "виджет · сайт",
+						text: "«300 доллардан арзан 27 дюймдік монитор тап»",
+					},
+					understand: {
+						tag: "alpha · түсіну",
+						text: "ағылшынша, бір тапсырма, атрибуттар: 27 дюйм, $300-тан арзан. Бір шақыру: аударма + тапсырмалар + саны",
+					},
+					rules: {
+						tag: "alpha · ережелер",
+						text: "рәсімдеу немесе жою сөздері жоқ, сондықтан gamma шешеді",
+					},
+					gamma: {
+						tag: "gamma · әрекетті таңдау",
+						text: "Сайттың қандай әрекеті керек? Сайт құралдары аты бойынша, плюс chat және other",
+					},
+					plan: {
+						tag: "alpha · GOAP жоспары",
+						text: "мақсат: search_products нәтижесі; жоспар: search_products → жауап",
+					},
+					delta: {
+						tag: "delta · параметрлер және шақыру",
+						text: 'search_products({ query: "monitor 27", max_price: 300 }) → браузерде, 4 тауар',
+					},
+					beta: {
+						tag: "beta · жауап",
+						text: "«Ең арзаны — Vista 27, $249.» Түймелер: 1. Себетке қосу 2. Басқаларын көрсету",
+					},
+					answer: {
+						tag: "виджет · сайт",
+						text: "Жауап пен нұсқа түймелері чатта пайда болады",
+					},
+				},
 			},
-			translate: {
-				tag: "alpha · аударма",
-				text: "латын емес мәтін → ағылшын, CTranslate2, ~50 мс",
+			b: {
+				label: "Бірнеше тапсырма",
+				steps: {
+					widget: {
+						tag: "виджет · сайт",
+						text: "«300 доллардан арзан монитор тауып, екеуін себетке сал»",
+					},
+					understand: {
+						tag: "alpha · түсіну",
+						text: "2 тапсырма: бағасы $300-қа дейін іздеу; саны 2 қосу",
+					},
+					queue: {
+						tag: "alpha · тапсырмалар кезегі",
+						text: "тапсырмалар ретімен орындалады, әрқайсысының өз жоспары бар; gamma қажет емес, ниеттерді alpha береді",
+					},
+					plan1: { tag: "alpha · GOAP жоспары 1", text: "search_products" },
+					delta1: {
+						tag: "delta · параметрлер және шақыру",
+						text: 'search_products({ query: "monitor", max_price: 300 }) → браузерде, 4 тауар',
+					},
+					plan2: {
+						tag: "alpha · GOAP жоспары 2",
+						text: "add_to_cart; тауар іздеу жауабынан алынады",
+					},
+					delta2: {
+						tag: "delta · параметрлер және шақыру",
+						text: 'add_to_cart({ product: "Vista 27", quantity: 2 }) → қосылды',
+					},
+					beta: {
+						tag: "beta · жауап",
+						text: "Қадамдарды қайталамайтын қысқа кеңесші жауабы: «HDMI кабелі де керек пе?»",
+					},
+					answer: { tag: "виджет · сайт", text: "Жауап чатта пайда болады" },
+				},
 			},
-			rules: {
-				tag: "alpha · ережелер + жады",
-				text: "төлеу/жою сөздері, сосын сайттың мақұлданған мысалдары; табылмаса → gamma",
-			},
-			gamma: {
-				tag: "gamma · Laya / Jev",
-				text: "Сайттың қай құралы керек? Құралдар атымен, оған қоса chat және other; 0.5-тен төмен болса, жауап моделі қайта сұрайды",
-			},
-			plan: {
-				tag: "alpha · GOAP жоспарлаушы",
-				text: "мақсат: search_products нәтижесі; жоспар: search_products → жауап",
-			},
-			delta: {
-				tag: "delta · Qwen3-1.7B",
-				text: '{ "query": "27-inch monitor", "max_price": 300 }',
-			},
-			tool: {
-				tag: "сайт · WebMCP",
-				text: "search_products браузерде орындалады → 4 тауар",
-			},
-			beta: {
-				tag: "beta · жауап",
-				text: "«Ең арзаны — Vista 27, $249. Себетке қосайын ба?»",
+			c: {
+				label: "Классификатормен",
+				steps: {
+					widget: { tag: "виджет · сайт", text: "«Екі қызыл футболка қос»" },
+					understand: {
+						tag: "alpha · түсіну",
+						text: "тапсырма: қосу; тауар: қызыл футболка × 2",
+					},
+					rules: {
+						tag: "alpha · ережелер және сайт жады",
+						text: "рәсімдеу сөздері жоқ, жадта бекітілген мысал жоқ",
+					},
+					gamma: {
+						tag: "gamma · ниет",
+						text: "Хабарлама арна ниеттерінің қайсысын сұрайды?",
+					},
+					plan: {
+						tag: "alpha · GOAP жоспары",
+						text: "мақсат: тауар себетте; жоспар: іздеу → add_to_cart",
+					},
+					delta1: {
+						tag: "delta · параметрлер және шақыру",
+						text: 'search_products({ query: "red t-shirt" }) → табылды',
+					},
+					delta2: {
+						tag: "delta · параметрлер және шақыру",
+						text: 'add_to_cart({ product: "Red T-Shirt", quantity: 2 }) → қосылды',
+					},
+					template: {
+						tag: "alpha · жауап үлгісі",
+						text: "«Қосылды: 2 × Red T-Shirt»; beta шақырылмайды",
+					},
+					answer: { tag: "виджет · сайт", text: "Жауап чатта пайда болады" },
+				},
 			},
 		},
 	},

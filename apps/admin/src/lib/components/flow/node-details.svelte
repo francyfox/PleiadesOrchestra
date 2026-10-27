@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
 	import type { RequestNode } from "#lib/api-types.js";
+	import { Badge } from "#lib/components/ui/badge/index.js";
 	import { formatGoal } from "#lib/goap-facts.js";
 	import { useFormat } from "#lib/i18n/use-format.js";
+	import { sortedOptions } from "#lib/request-graph.js";
 
 	/** Everything the BFF knows about one node: arguments, the tool's answer, effects, model calls. */
 	let { node }: { node: RequestNode } = $props();
@@ -52,6 +54,24 @@
 		{@render row($content.detail.effects.value, detail.effects && Object.keys(detail.effects).length ? formatGoal(detail.effects) : null, true)}
 	{/if}
 	{@render row($content.detail.error.value, detail.error)}
+	{#each detail.calls.flatMap((call) => call.choices ?? []) as choice, index (index)}
+		<div class="py-2 text-sm">
+			<div class="mb-1 text-muted-foreground">{choice.question}</div>
+			<table class="w-full text-xs">
+				<tbody>
+					{#each sortedOptions(choice) as [option, probability] (option)}
+						<tr class={option === choice.chosen ? "font-medium" : "text-muted-foreground"}>
+							<td class="break-all py-0.5 pr-2 font-mono">{option === "not_said" ? $content.choices.notSaid.value : option}</td>
+							<td class="w-14 py-0.5 text-right font-mono tabular-nums">{$format.percent(probability)}</td>
+							<td class="w-20 py-0.5 pl-2">
+								{#if option === choice.chosen}<Badge variant="secondary">{$content.choices.chosen.value}</Badge>{/if}
+							</td>
+						</tr>
+					{/each}
+				</tbody>
+			</table>
+		</div>
+	{/each}
 	{#if node.kind === "action" || node.kind === "understand"}
 		<div class="py-2 text-sm">
 			<div class="mb-1 text-muted-foreground">{$content.detail.calls.value}</div>

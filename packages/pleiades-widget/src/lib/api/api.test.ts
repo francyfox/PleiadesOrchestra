@@ -66,6 +66,8 @@ describe("language and cancel", () => {
 		await collect(api.sendToolResult("tok", "t1", "c1", "tool", "ok", false));
 		expect(body(calls[0])).toMatchObject({ lang: "kk" });
 		expect(body(calls[0]).langChosen).toBeUndefined();
+		expect(body(calls[0]).clientDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+		expect(body(calls[1]).clientDate).toBeUndefined();
 		expect(body(calls[1])).toMatchObject({ lang: "kk", langChosen: true });
 	});
 
@@ -159,6 +161,8 @@ describe("createWidgetApi", () => {
 		]);
 		expect(calls[0]?.url).toBe("https://agent.example.com/v1/widget/messages");
 		expect(JSON.parse(String(calls[0]?.init.body))).toEqual({
+			clientDate: expect.any(String),
+			timeZone: expect.any(String),
 			threadId: "t1",
 			text: "hello",
 		});
@@ -178,6 +182,8 @@ describe("createWidgetApi", () => {
 			}),
 		);
 		expect(JSON.parse(String(calls[0]?.init.body))).toEqual({
+			clientDate: expect.any(String),
+			timeZone: expect.any(String),
 			threadId: "t1",
 			text: "hello",
 			customerContext: { country: "Kazakhstan", city: "Qyzylorda" },
@@ -186,6 +192,8 @@ describe("createWidgetApi", () => {
 		const noContext = recorder(() => ndjson([{ type: "done", elapsedMs: 1 }]));
 		await collect(noContext.api.streamMessage("tok", "t1", "hello"));
 		expect(JSON.parse(String(noContext.calls[0]?.init.body))).toEqual({
+			clientDate: expect.any(String),
+			timeZone: expect.any(String),
 			threadId: "t1",
 			text: "hello",
 		});
@@ -206,6 +214,8 @@ describe("createWidgetApi", () => {
 			),
 		);
 		expect(JSON.parse(String(calls[0]?.init.body))).toEqual({
+			clientDate: expect.any(String),
+			timeZone: expect.any(String),
 			threadId: "t1",
 			text: "hi",
 			page: "/ru/cart?x=1",

@@ -60,6 +60,13 @@ export const UpstreamRequestRun = t.Object({
 	events: t.Array(TraceEvent),
 });
 
+/** One choice question a decision call answered: every option with its probability. */
+export const CallChoice = t.Object({
+	question: t.String(),
+	chosen: nullable(t.String()),
+	options: t.Record(t.String(), t.Number()),
+});
+
 export const UpstreamLlmCall = t.Object({
 	planRunId: nullable(t.String()),
 	actionName: nullable(t.String()),
@@ -71,6 +78,7 @@ export const UpstreamLlmCall = t.Object({
 	latencyMs: t.Number(),
 	ok: t.Boolean(),
 	error: nullable(t.String()),
+	choices: t.Optional(nullable(t.Array(CallChoice))),
 	at: t.Number(),
 });
 
@@ -125,6 +133,8 @@ export const NodeCall = t.Object({
 	outputTokens: nullable(t.Number()),
 	ok: t.Boolean(),
 	error: nullable(t.String()),
+	/** Every choice the call answered with all its probabilities; null for calls that decide nothing. */
+	choices: nullable(t.Array(CallChoice)),
 });
 
 export const NodeDetail = t.Object({
@@ -177,6 +187,7 @@ export type RequestSummary = Static<typeof RequestSummary>;
 export type RequestsPage = Static<typeof RequestsPage>;
 export type UpstreamRequestDetails = Static<typeof UpstreamRequestDetails>;
 export type NodeStatus = Static<typeof NodeStatus>;
+export type CallChoice = Static<typeof CallChoice>;
 export type NodeCall = Static<typeof NodeCall>;
 export type NodeDetail = Static<typeof NodeDetail>;
 export type RequestNode = Static<typeof RequestNode>;

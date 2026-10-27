@@ -1,10 +1,16 @@
 import { describe, expect, test } from "bun:test";
-import type { DecisionAgent, DecisionAnswer } from "../decision-types.ts";
+import type {
+	DecisionAgent,
+	DecisionAnswer,
+	DecisionQuestion,
+} from "../decision-types.ts";
 import type {
 	FunctionCallAgent,
 	FunctionCallRequest,
 } from "../function-call-agent.ts";
+import type { LlmCallRecord } from "../types.ts";
 import { UntranslatableError } from "../untranslatable-error.ts";
+import { withChoiceReport } from "../usage-collector.ts";
 import {
 	createWebMcpActions,
 	firstListedProductName,
@@ -527,6 +533,56 @@ describe("tool arguments written by the function-call model", () => {
 		]);
 	});
 
+	test("the visitor's local date is among the facts the model reads", async () => {
+		const agent = fakeFunctionCall({ query: "x" });
+		const actions = await createWebMcpActions({
+			tools: [SEARCH_TOOL],
+			decisionAgent: fakeDecisionAgent("search"),
+			functionCallAgent: agent,
+		});
+		await actions[0]?.execute({
+			state: {
+				userMessageEn: "x",
+				today: "2026-10-27",
+				timeZone: "Asia/Almaty",
+			},
+		});
+		expect(agent.requests[0]?.facts).toMatchObject({
+			today: "2026-10-27",
+			timeZone: "Asia/Almaty",
+		});
+	});
+
+	test("a required parameter nothing could fill: no browser call, the missing ones are a fact", async () => {
+		const tool = {
+			name: "bookSlot",
+			description: "Book a slot",
+			inputSchema: {
+				type: "object" as const,
+				properties: {
+					date: { type: "string", description: "day of the visit, YYYY-MM-DD" },
+					name: { type: "string" },
+				},
+				required: ["date", "name"],
+			},
+		};
+		const actions = await createWebMcpActions({
+			tools: [tool],
+			decisionAgent: fakeDecisionAgent("addToCart"),
+			functionCallAgent: fakeFunctionCall({ name: "Danil" }),
+		});
+		const outcome = await actions
+			.at(-1)
+			?.execute({ state: { userMessageEn: "book" } });
+		expect(outcome).toEqual({
+			"toolResult:bookSlot": false,
+			missingParams: JSON.stringify({
+				tool: "bookSlot",
+				params: [{ name: "date", description: "day of the visit, YYYY-MM-DD" }],
+			}),
+		});
+	});
+
 	test("arguments still missing a required field are not sent to the browser: the step fails and says why", async () => {
 		const errors: unknown[] = [];
 		const actions = await createWebMcpActions({
@@ -536,7 +592,7 @@ describe("tool arguments written by the function-call model", () => {
 			onError: (error) => errors.push(String(error)),
 		});
 		const outcome = await actions[0]?.execute({ state: {} });
-		expect(outcome).toEqual({ "toolResult:search_products": false });
+		expect(outcome).toMatchObject({ "toolResult:search_products": false });
 		expect(errors).toContain(
 			"Error: search_products: query is required (arguments for the call are incomplete)",
 		);
@@ -684,5 +740,179 @@ describe("choosing an enum parameter: English for Laya, a safe value without it"
 			store: "Алматы",
 			"param:set_store:store": true,
 		});
+	});
+});
+
+describe("choosing an optional enum parameter", () => {
+	const setSize: WebMcpToolDescriptor = {
+		name: "set_pizza_size",
+		description: "Change the size",
+		inputSchema: {
+			type: "object",
+			properties: {
+				size: { type: "string", enum: ["Small", "Medium", "Large"] },
+				number_of_persons: { type: "number" },
+			},
+		},
+	};
+
+	function agentPicking(
+		choice: string,
+		probability = 0.9,
+		seen: Record<string, DecisionQuestion> = {},
+	): DecisionAgent {
+		return {
+			async decide(_state, questions) {
+				Object.assign(seen, questions);
+				const answer: DecisionAnswer = {
+					type: "choice",
+					choice,
+					probabilities: { [choice]: probability },
+				};
+				return { [Object.keys(questions)[0] as string]: answer };
+			},
+		};
+	}
+
+	async function build(decisionAgent: DecisionAgent) {
+		const actions = await createWebMcpActions({
+			tools: [setSize],
+			decisionAgent,
+		});
+		const choose = actions.find((a) => a.name === "choose:set_pizza_size.size");
+		const tool = actions.find((a) => a.name === "set_pizza_size");
+		if (!choose || !tool) throw new Error("missing actions");
+		return { choose, tool };
+	}
+
+	test("gets a choice step that the tool waits for, with the schema order and a 'not said' option", async () => {
+		const seen: Record<string, DecisionQuestion> = {};
+		const { choose, tool } = await build(agentPicking("Large", 0.9, seen));
+		expect(tool.preconditions["param:set_pizza_size:size"]).toBe(true);
+		expect(choose.effects["param:set_pizza_size:size"]).toBe(true);
+		await choose.execute({ state: { userMessage: "the biggest one" } });
+		const question = seen["set_pizza_size.size"];
+		if (question?.type !== "choice") throw new Error("not a choice");
+		expect(Object.keys(question.criteria)).toEqual([
+			"Small",
+			"Medium",
+			"Large",
+			"not_said",
+		]);
+		expect(question.instructions).toContain("Small, Medium, Large");
+	});
+
+	test("optional enum: no stated attribute -> no model call, flag set; a matching one -> asked with what was said; no list -> asked", async () => {
+		const seen: Record<string, DecisionQuestion> = {};
+		const { choose } = await build(agentPicking("Large", 0.9, seen));
+		const flagOnly = { "param:set_pizza_size:size": true };
+		const state = (attrs?: unknown) => ({
+			userMessage: "x",
+			...(attrs ? { statedAttributes: JSON.stringify(attrs) } : {}),
+		});
+		expect(
+			await choose.execute({
+				state: state([{ name: "diet", value: "vegetarian" }]),
+			}),
+		).toEqual(flagOnly);
+		expect(await choose.execute({ state: state([]) })).toEqual(flagOnly);
+		expect(Object.keys(seen)).toHaveLength(0);
+		expect(
+			await choose.execute({
+				state: state([{ name: "size", value: "maximum" }]),
+			}),
+		).toEqual({ size: "Large", ...flagOnly });
+		const question = seen["set_pizza_size.size"];
+		if (question?.type !== "choice") throw new Error("not a choice");
+		expect(question.instructions).toContain(
+			"The visitor said: size = maximum.",
+		);
+		for (const key of Object.keys(seen)) delete seen[key];
+		await choose.execute({ state: state() });
+		expect(Object.keys(seen)).toHaveLength(1);
+	});
+
+	test("required enum is asked even when nothing matches", async () => {
+		const seen: Record<string, DecisionQuestion> = {};
+		const actions = await createWebMcpActions({
+			tools: [
+				{
+					name: "book_hotel",
+					description: "Book a room",
+					inputSchema: {
+						type: "object",
+						properties: {
+							room: { type: "string", enum: ["single", "double"] },
+						},
+						required: ["room"],
+					},
+				},
+			],
+			decisionAgent: agentPicking("double", 0.9, seen),
+		});
+		const choose = actions.find((a) => a.name === "choose:book_hotel.room");
+		await choose?.execute({
+			state: {
+				statedAttributes: JSON.stringify([{ name: "city", value: "Rome" }]),
+			},
+		});
+		expect(Object.keys(seen)).toContain("book_hotel.room");
+	});
+
+	test("the chosen value lands in the state, so in the tool's arguments", async () => {
+		const { choose } = await build(agentPicking("Large"));
+		expect(await choose.execute({ state: { userMessage: "max" } })).toEqual({
+			size: "Large",
+			"param:set_pizza_size:size": true,
+		});
+	});
+
+	test("'not said', a low probability or a failing call leave the parameter unset", async () => {
+		for (const agent of [
+			agentPicking("not_said"),
+			agentPicking("Large", 0.2),
+			{
+				async decide() {
+					throw new UntranslatableError("x");
+				},
+			} satisfies DecisionAgent,
+		]) {
+			const { choose } = await build(agent);
+			expect(await choose.execute({ state: { userMessage: "hm" } })).toEqual({
+				"param:set_pizza_size:size": true,
+			});
+		}
+	});
+
+	test("the choice is recorded with all its probabilities", async () => {
+		const calls: LlmCallRecord[] = [];
+		const actions = await createWebMcpActions({
+			tools: [setSize],
+			decisionAgent: withChoiceReport(agentPicking("Large", 0.8)),
+			usageRecorder: { record: (call) => calls.push(call) },
+		});
+		await actions
+			.find((a) => a.name === "choose:set_pizza_size.size")
+			?.execute({ state: { threadId: "t", userId: "u", userMessage: "max" } });
+		expect(calls).toHaveLength(1);
+		expect(calls[0]).toMatchObject({
+			actionName: "choose:set_pizza_size.size",
+			kind: "decision",
+			threadId: "t",
+			choices: [
+				{
+					question: "set_pizza_size.size",
+					chosen: "Large",
+					options: { Large: 0.8 },
+				},
+			],
+		});
+	});
+
+	test("a value already in the state is kept", async () => {
+		const { choose } = await build(agentPicking("Large"));
+		expect(
+			await choose.execute({ state: { size: "Small", userMessage: "x" } }),
+		).toEqual({ "param:set_pizza_size:size": true });
 	});
 });

@@ -1,5 +1,9 @@
 import { expect, test } from "bun:test";
-import { collectTokens, reportTokens } from "./usage-collector";
+import {
+	collectTokens,
+	reportTokens,
+	withChoiceReport,
+} from "./usage-collector";
 
 test("calls inside add up, concurrent collectors stay apart, none reported stays undefined", async () => {
 	const a = collectTokens(async () => {
@@ -16,4 +20,28 @@ test("calls inside add up, concurrent collectors stay apart, none reported stays
 	expect((await b).tokens).toEqual({ inputTokens: 100 });
 	expect((await none).tokens).toEqual({});
 	expect(() => reportTokens({ inputTokens: 1 })).not.toThrow();
+});
+
+test("withChoiceReport hands every choice answer, with all probabilities, to the surrounding collector", async () => {
+	const agent = withChoiceReport({
+		async decide() {
+			return {
+				intent: {
+					type: "choice",
+					choice: "chat",
+					probabilities: { chat: 0.7, other: 0.3 },
+				},
+				ok: { type: "boolean", probability: 0.9 },
+			};
+		},
+	});
+	const { tokens } = await collectTokens(async () => {
+		await agent.decide({}, {});
+		await agent.decide({}, {});
+	});
+	expect(tokens.choices).toEqual([
+		{ question: "intent", chosen: "chat", options: { chat: 0.7, other: 0.3 } },
+		{ question: "intent", chosen: "chat", options: { chat: 0.7, other: 0.3 } },
+	]);
+	await expect(agent.decide({}, {})).resolves.toBeDefined();
 });

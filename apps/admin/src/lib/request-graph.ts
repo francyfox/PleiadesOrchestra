@@ -1,4 +1,4 @@
-import type { RequestNode, RequestView } from "admin-api/types";
+import type { CallChoice, RequestNode, RequestView } from "admin-api/types";
 
 /**
  * Pure layout of a `RequestView` for the canvas: prompt → understanding →
@@ -9,6 +9,27 @@ import type { RequestNode, RequestView } from "admin-api/types";
 
 const COLUMN_WIDTH = 230;
 const ROW_HEIGHT = 140;
+const OPTION_HEIGHT = 44;
+const QUESTION_GAP = 28;
+/** Fans hang below the main flow, shifted right so their edges stay visible. */
+const FAN_OFFSET_X = 40;
+export const MAX_OPTIONS = 12;
+
+/** One option of a decision model's question, or the "+N more" tail. */
+export interface ChoiceNodeData {
+	[key: string]: unknown;
+	/** The decision node this option belongs to. */
+	parentId: string;
+	question: string;
+	/** First option of its question: the question label is drawn on it. */
+	first: boolean;
+	option: string;
+	/** 0..1, `null` for the "+N more" tail. */
+	probability: number | null;
+	chosen: boolean;
+	/** How many options were cut off (set only on the tail). */
+	more: number | null;
+}
 
 export interface RequestNodeData {
 	[key: string]: unknown;
@@ -22,17 +43,27 @@ export interface RequestNodeData {
 	live: boolean;
 }
 
+export type GraphNode =
+	| {
+			id: string;
+			type: "request";
+			position: { x: number; y: number };
+			data: RequestNodeData;
+	  }
+	| {
+			id: string;
+			type: "choice";
+			position: { x: number; y: number };
+			data: ChoiceNodeData;
+	  };
+
 export interface RequestGraph {
-	nodes: {
-		id: string;
-		position: { x: number; y: number };
-		data: RequestNodeData;
-	}[];
+	nodes: GraphNode[];
 	edges: {
 		id: string;
 		source: string;
 		target: string;
-		data: { kind: "next" | "replan" };
+		data: { kind: "next" | "replan" | "choice" };
 	}[];
 }
 
@@ -67,7 +98,7 @@ export function viewToGraph(view: RequestView): RequestGraph {
 	const lastRow = rounds.length > 0 ? rounds.length - 1 : 0;
 
 	const seen = new Map<number, number>();
-	const placed = view.nodes.map((node) => {
+	const placed: GraphNode[] = view.nodes.map((node) => {
 		let x: number;
 		let y: number;
 		if (node.kind === "prompt") {
@@ -87,6 +118,7 @@ export function viewToGraph(view: RequestView): RequestGraph {
 		}
 		return {
 			id: node.id,
+			type: "request" as const,
 			position: { x: x * COLUMN_WIDTH, y: y * ROW_HEIGHT },
 			data: {
 				id: node.id,
@@ -100,15 +132,70 @@ export function viewToGraph(view: RequestView): RequestGraph {
 		};
 	});
 
-	return {
-		nodes: placed,
-		edges: view.edges.map((edge) => ({
-			id: `${edge.from}->${edge.to}`,
-			source: edge.from,
-			target: edge.to,
-			data: { kind: edge.kind },
-		})),
-	};
+	const edges: RequestGraph["edges"] = view.edges.map((edge) => ({
+		id: `${edge.from}->${edge.to}`,
+		source: edge.from,
+		target: edge.to,
+		data: { kind: edge.kind },
+	}));
+
+	// Decision-model choices: a fan of options per question, below every main row.
+	const fanTop = (lastRow + 1) * ROW_HEIGHT + QUESTION_GAP;
+	for (const node of placed) {
+		const source = view.nodes.find((n) => n.id === node.id);
+		const questions = (source?.detail.calls ?? []).flatMap(
+			(call) => call.choices ?? [],
+		);
+		let y = fanTop;
+		questions.forEach((choice, q) => {
+			const options = sortedOptions(choice);
+			const shown = options.slice(0, MAX_OPTIONS);
+			const rows: ChoiceNodeData[] = shown.map(([option, probability], i) => ({
+				parentId: node.id,
+				question: choice.question,
+				first: i === 0,
+				option,
+				probability,
+				chosen: option === choice.chosen,
+				more: null,
+			}));
+			if (options.length > shown.length) {
+				rows.push({
+					parentId: node.id,
+					question: choice.question,
+					first: false,
+					option: "",
+					probability: null,
+					chosen: false,
+					more: options.length - shown.length,
+				});
+			}
+			rows.forEach((data, i) => {
+				const id = `${node.id}#choice${q}.${i}`;
+				placed.push({
+					id,
+					type: "choice",
+					position: { x: node.position.x + FAN_OFFSET_X, y },
+					data,
+				});
+				edges.push({
+					id: `${node.id}->${id}`,
+					source: node.id,
+					target: id,
+					data: { kind: "choice" },
+				});
+				y += OPTION_HEIGHT;
+			});
+			y += QUESTION_GAP;
+		});
+	}
+
+	return { nodes: placed, edges };
+}
+
+/** Options by probability, highest first; ties keep the model's order. */
+export function sortedOptions(choice: CallChoice): [string, number][] {
+	return Object.entries(choice.options).sort((a, b) => b[1] - a[1]);
 }
 
 /**

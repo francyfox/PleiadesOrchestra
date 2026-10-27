@@ -171,6 +171,24 @@ export function buildWebMcpTrace(details: Details, tools: Tool[]): unknown[] {
 	return trace;
 }
 
+/**
+ * The tools of the catalog the request ran against: of the channel's catalogs, the one that
+ * has every tool it called. One channel can serve several sites (the playground), so the
+ * channel alone is not enough; with no call to match, its first catalog.
+ */
+export function catalogOf<T extends { name: string }>(
+	details: Details,
+	sites: readonly { channelId: string; tools: T[] }[],
+): T[] {
+	const channel = channelOf(details);
+	const own = sites.filter((site) => site.channelId === channel);
+	const called = details.runs.flatMap((run) => callsOf(run).map((c) => c.tool));
+	const used = own.find((site) =>
+		called.every((tool) => site.tools.some((t) => t.name === tool)),
+	);
+	return (used ?? own[0])?.tools ?? [];
+}
+
 /** The channel the request ran for, as the runs recorded it in the world state. */
 export function channelOf(details: Details): string | null {
 	for (const run of details.runs)

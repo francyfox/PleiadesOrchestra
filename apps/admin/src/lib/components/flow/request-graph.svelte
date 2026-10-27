@@ -11,6 +11,7 @@
 	import { mode } from "mode-watcher";
 	import type { RequestView } from "#lib/api-types.js";
 	import { viewToGraph } from "#lib/request-graph.js";
+	import ChoiceNode from "./choice-node.svelte";
 	import RequestNode from "./request-node.svelte";
 
 	/** Read-only canvas of one request's decision graph. Clicking a node selects it. */
@@ -26,7 +27,7 @@
 		height?: string;
 	} = $props();
 
-	const nodeTypes = { request: RequestNode };
+	const nodeTypes = { request: RequestNode, choice: ChoiceNode };
 
 	let nodes = $state.raw<Node[]>([]);
 	let edges = $state.raw<Edge[]>([]);
@@ -42,16 +43,19 @@
 
 	$effect(() => {
 		const liveIds = new Set(
-			graph.nodes.filter((node) => node.data.live).map((node) => node.id),
+			graph.nodes
+				.filter((node) => node.type === "request" && node.data.live)
+				.map((node) => node.id),
 		);
 		nodes = graph.nodes.map((node) => ({
 			id: node.id,
-			type: "request",
+			type: node.type,
 			position: node.position,
 			data: { ...node.data, receivedAt },
 			selected: node.id === selectedId,
 			draggable: true,
 			connectable: false,
+			selectable: node.type === "request",
 		}));
 		edges = graph.edges.map((edge) => ({
 			id: edge.id,
@@ -59,7 +63,12 @@
 			target: edge.target,
 			// Flow into the node being worked on, and across a replan.
 			animated: edge.data.kind === "replan" || liveIds.has(edge.target),
-			style: edge.data.kind === "replan" ? "stroke-dasharray: 6 4;" : undefined,
+			style:
+				edge.data.kind === "replan"
+					? "stroke-dasharray: 6 4;"
+					: edge.data.kind === "choice"
+						? "stroke-dasharray: 2 4; opacity: 0.6;"
+						: undefined,
 			markerEnd: { type: MarkerType.ArrowClosed },
 		}));
 	});
@@ -73,7 +82,7 @@
 			{nodeTypes}
 			fitView
 			nodesConnectable={false}
-			onnodeclick={({ node }) => onSelect(node.id)}
+			onnodeclick={({ node }) => onSelect(String(node.data.parentId ?? node.id))}
 			colorMode={mode.current === "dark" ? "dark" : "light"}
 			proOptions={{ hideAttribution: true }}
 		>

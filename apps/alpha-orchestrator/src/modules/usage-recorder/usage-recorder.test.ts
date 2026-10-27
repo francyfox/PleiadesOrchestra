@@ -71,6 +71,23 @@ describe("SqliteUsageRecorder", () => {
 		expect(rows.map((row) => row.confidence)).toEqual([0.87, null]);
 	});
 
+	test("stores a decision's choices with all probabilities, NULL when it has none", () => {
+		const db = testDb();
+		const recorder = new SqliteUsageRecorder(db, new RunBinding());
+		const choices = [
+			{
+				question: "intent",
+				chosen: "chat",
+				options: { chat: 0.7, other: 0.3 },
+			},
+		];
+		recorder.record(call({ kind: "classify", choices }));
+		recorder.record(call({ kind: "generate" }));
+		recorder.flush();
+		const rows = db.select().from(llmCalls).all();
+		expect(rows.map((row) => row.choices)).toEqual([choices, null]);
+	});
+
 	test("keeps missing usage as NULL, never 0", () => {
 		const db = testDb();
 		const recorder = new SqliteUsageRecorder(db, new RunBinding());

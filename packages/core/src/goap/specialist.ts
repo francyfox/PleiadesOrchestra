@@ -62,24 +62,19 @@ export function matchEnumValue(
 
 interface SchemaLike {
 	properties?: Record<string, unknown>;
-	required?: string[];
 }
 
 /** String parameters with a fixed list of values, required or not. */
 function enumParameters(
 	schema: SchemaLike | undefined,
-): { name: string; values: string[]; required: boolean }[] {
-	const result: { name: string; values: string[]; required: boolean }[] = [];
+): { name: string; values: string[] }[] {
+	const result: { name: string; values: string[] }[] = [];
 	for (const [name, property] of Object.entries(schema?.properties ?? {})) {
 		const values = ((property as { enum?: unknown[] })?.enum ?? []).filter(
 			(value): value is string => typeof value === "string",
 		);
 		if (values.length > 0) {
-			result.push({
-				name,
-				values,
-				required: schema?.required?.includes(name) ?? false,
-			});
+			result.push({ name, values });
 		}
 	}
 	return result;
@@ -108,9 +103,7 @@ export function bindEnumValues(
 			return undefined;
 		}
 		const texts = messageTexts(state);
-		let best:
-			| { name: string; value: string; required: boolean; length: number }
-			| undefined;
+		let best: { name: string; value: string; length: number } | undefined;
 		for (const parameter of parameters) {
 			for (const text of texts) {
 				const value = matchEnumValue(text, parameter.values);
@@ -119,7 +112,6 @@ export function bindEnumValues(
 					best = {
 						name: parameter.name,
 						value,
-						required: parameter.required,
 						length,
 					};
 				}
@@ -130,8 +122,8 @@ export function bindEnumValues(
 			score: best.length,
 			facts: {
 				[best.name]: best.value,
-				// The choice step for a required enum has nothing left to decide.
-				...(best.required ? { [flagFor(best.name)]: true } : {}),
+				// The choice step of the enum has nothing left to decide.
+				[flagFor(best.name)]: true,
 			},
 		};
 	};

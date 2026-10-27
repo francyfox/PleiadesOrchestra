@@ -159,6 +159,13 @@ export class ReplyService implements WidgetReply {
 				...(taxonomy ? { taxonomy } : {}),
 				functionCallAgent,
 				onError: this.deps.onError,
+				usageRecorder: this.deps.usageRecorder?.record
+					? {
+							record: this.deps.usageRecorder.record.bind(
+								this.deps.usageRecorder,
+							),
+						}
+					: undefined,
 			});
 		} catch (error) {
 			// Laya reads English only and the site's tool text could not be

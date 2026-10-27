@@ -6,10 +6,12 @@ import type {
 	IntentVerdict,
 	Taxonomy,
 	Understanding,
+	UnderstoodAttribute,
 	UnderstoodItem,
 	WorldState,
 } from "@repo/core";
 import {
+	attributeFacts,
 	bindListScope,
 	chooseTool,
 	classifyMessageIntentDetailed,
@@ -30,7 +32,10 @@ import {
 	recordCall,
 	reuseLastProduct,
 	runnableTasks,
+	STATED_ATTRIBUTES,
 	scopeFacts,
+	TIME_ZONE_FACT,
+	TODAY_FACT,
 	understandMessage,
 } from "@repo/core";
 import { intentFromMessageCues, SHOP_TAXONOMY } from "@repo/intent-presets";
@@ -57,6 +62,7 @@ import {
 import {
 	AWAITED_ARGS_FACT,
 	AWAITED_TOOL_FACT,
+	VISITOR_WAIT_FACT,
 } from "../run-stream/run-stream.service.ts";
 import { sessionFacts } from "../run-stream/run-stream.ts";
 import type { PreparedRun } from "../run-stream/run-stream.types.ts";
@@ -123,7 +129,12 @@ async function initialState(
 	planRunId: string,
 	text: string,
 	options: ReplyOptions,
-): Promise<{ state: WorldState; understood?: Understanding }> {
+): Promise<{
+	state: WorldState;
+	understood?: Understanding;
+	/** The message answers the question a run waited on: that run's goal, to continue it. */
+	resumedGoal?: Partial<WorldState>;
+}> {
 	const userMessage = normalizeText.apply(text);
 	const replyTo = options.replyTo ? typedText(options.replyTo) : "";
 	const personaLang = deps.personaLang?.(visitor.channelId);
@@ -137,6 +148,11 @@ async function initialState(
 	}
 	const context = { threadId, userId: visitor.id, planRunId };
 	const catalogLang = deps.catalogLanguage?.(visitor.channelId) ?? "en";
+	const checkpoint = await deps.worldStateStore.load(threadId);
+	const wait = visitorWaitOf(checkpoint?.state);
+	// Models do not know today's date; the visitor's own day beats the server's.
+	const today =
+		options.clientDate ?? new Date(deps.now()).toISOString().slice(0, 10);
 	// One call gives the English text, the tasks and the products; when it fails the message goes on as typed.
 	const understood = deps.understandAgent
 		? await understandMessage(
@@ -147,7 +163,7 @@ async function initialState(
 				userMessage,
 				catalogLang,
 				{ ...context, actionName: "alpha-understand" },
-				replyTo,
+				{ replyTo, today, pending: wait },
 			)
 		: undefined;
 	const english = understood?.en;
@@ -166,7 +182,10 @@ async function initialState(
 		catalogLang,
 		// One task: its products are the request, the parse step is not needed.
 		...(understood?.tasks.length === 1
-			? itemFacts(understood.tasks[0]?.items)
+			? {
+					...itemFacts(understood.tasks[0]?.items),
+					...attributeFacts(understood.tasks[0]?.attributes),
+				}
 			: {}),
 		threadId,
 		userId: visitor.id,
@@ -176,14 +195,65 @@ async function initialState(
 		...(replyTo ? { [REPLY_TO_FACT]: replyTo } : {}),
 		...customerFacts(options.customerContext),
 		...pageFacts(options.page, options),
+		[TODAY_FACT]: today,
+		...(options.timeZone ? { [TIME_ZONE_FACT]: options.timeZone } : {}),
 		...(deps.history ? { [USER_STORED_FACT]: true } : {}),
 		...(personaLang ? { [PERSONA_LANG_FACT]: personaLang } : {}),
 	};
-	const checkpoint = await deps.worldStateStore.load(threadId);
+	if (checkpoint && wait && understood?.answersPending) {
+		// The same request goes on: its starting facts, plus what the answer adds.
+		const { [VISITOR_WAIT_FACT]: _wait, ...asked } = checkpoint.state;
+		const english = [asked.userMessageEn, turn.userMessageEn]
+			.filter((part) => typeof part === "string" && part)
+			.join(". ");
+		if (typeof asked.planRunId === "string")
+			joinRequest(deps.db, planRunId, asked.planRunId);
+		return {
+			state: {
+				...asked,
+				...turn,
+				// The request the visitor made stays the one the reply is about.
+				userMessage: asked.userMessage ?? turn.userMessage,
+				...(english ? { userMessageEn: english } : {}),
+				...mergedAttributes(asked, turn),
+			},
+			understood,
+			resumedGoal: checkpoint.goal,
+		};
+	}
+	// Not an answer (or nothing was asked): the old question is dropped with this run's checkpoint.
 	return {
 		state: checkpoint ? { ...sessionFacts(checkpoint.state), ...turn } : turn,
 		understood,
 	};
+}
+
+/** The question a run waits on, from its checkpoint; `undefined` when none. */
+function visitorWaitOf(
+	state: WorldState | undefined,
+): { request: string; asked: string[] } | undefined {
+	const json = state?.[VISITOR_WAIT_FACT];
+	if (typeof json !== "string") return undefined;
+	try {
+		return JSON.parse(json);
+	} catch {
+		return undefined;
+	}
+}
+
+/** `statedAttributes` of the waiting request with the answer's on top (same name: the answer wins). */
+function mergedAttributes(asked: WorldState, turn: WorldState): WorldState {
+	const read = (state: WorldState): UnderstoodAttribute[] => {
+		try {
+			return JSON.parse(String(state[STATED_ATTRIBUTES] ?? "[]"));
+		} catch {
+			return [];
+		}
+	};
+	const byName = new Map(
+		[...read(asked), ...read(turn)].map((entry) => [entry.name, entry]),
+	);
+	return byName.size > 0 ? attributeFacts([...byName.values()]) : {};
 }
 
 /** `query`/`quantity` (the first product) and, for several, the whole list: what `parseProductRequest` would have written. Quantity 0 stays: it means removal. */
@@ -253,7 +323,7 @@ export async function prepareNewMessage(
 	text: string,
 	options: ReplyOptions,
 ): Promise<PreparedRun> {
-	const { state, understood } = await initialState(
+	const { state, understood, resumedGoal } = await initialState(
 		deps,
 		visitor,
 		threadId,
@@ -263,6 +333,17 @@ export async function prepareNewMessage(
 	);
 	const dynamicActions = await resolveDynamicActions(deps, threadId);
 	const actions = [...deps.actions, ...dynamicActions];
+	// shortcut: only `missingParams` waits for the visitor; `clarifyOptions` and `conflictingTasks` could use the same fact, not built yet.
+	if (resumedGoal) {
+		return {
+			state,
+			goal: resumedGoal,
+			actions: replyAfterTask(
+				preferSpecialist(bindListScope(actions, state), state),
+				resumedGoal,
+			),
+		};
+	}
 
 	// No per-thread catalog (the common case): skip classification, a plain
 	// "hi" always resolves through `generateReply` without a decision-model call.
@@ -406,6 +487,7 @@ function planTask(
 			...base,
 			userMessageEn: task.text,
 			...itemFacts(task.items),
+			...attributeFacts(task.attributes),
 			...chainFacts(queue, outcomes),
 		},
 		usable,
@@ -464,6 +546,7 @@ async function prepareSeveralTasks(
 			intent: task.intent,
 			text: task.text ?? "",
 			...(task.items?.length ? { items: task.items } : {}),
+			...(task.attributes ? { attributes: task.attributes } : {}),
 		}),
 	);
 	return planTask(

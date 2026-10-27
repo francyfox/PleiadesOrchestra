@@ -176,6 +176,13 @@
 			"when": 1793096967842,
 			"tag": "0024_channel_several_tasks",
 			"breakpoints": true
+		},
+		{
+			"idx": 25,
+			"version": "6",
+			"when": 1793114232741,
+			"tag": "0025_llm_call_choices",
+			"breakpoints": true
 		}
 	]
 }

@@ -1,7 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import type { TraceEvent } from "../plan-runs/plan-runs.schema.ts";
 import type { UpstreamRequestDetails } from "./requests.schema.ts";
-import { buildWebMcpTrace, TRACE_TOOL_PREFIX } from "./requests.trace.ts";
+import {
+	buildWebMcpTrace,
+	catalogOf,
+	TRACE_TOOL_PREFIX,
+} from "./requests.trace.ts";
 
 // parsed JSON, shape asserted by the tests
 type Turn = ReturnType<typeof JSON.parse>;
@@ -212,5 +216,37 @@ describe("buildWebMcpTrace", () => {
 		expect(
 			trace[1].response.candidates[0].content.parts[0].functionCall,
 		).toBeDefined();
+	});
+});
+
+describe("catalogOf", () => {
+	// One channel serving two sites (the playground): a grocery catalog and a pizza one.
+	const sites = [
+		{ channelId: "other", tools: [{ name: "set_pizza_size" }] },
+		{ channelId: "ch1", tools: [{ name: "search_products" }] },
+		{
+			channelId: "ch1",
+			tools: [{ name: "set_pizza_size" }, { name: "add_pizza" }],
+		},
+	];
+
+	test("the channel's catalog that has the tools the request called, not the first one", () => {
+		const pizza = details({}, [
+			run("a", [planned({ channelId: "ch1" }), waiting("set_pizza_size", {})]),
+		]);
+		expect(catalogOf(pizza, sites).map((t) => t.name)).toEqual([
+			"set_pizza_size",
+			"add_pizza",
+		]);
+	});
+
+	test("no browser call: the channel's first catalog; no channel: none", () => {
+		const chat = details({}, [run("a", [planned({ channelId: "ch1" })])]);
+		expect(catalogOf(chat, sites).map((t) => t.name)).toEqual([
+			"search_products",
+		]);
+		expect(catalogOf(details({}, [run("a", [planned({})])]), sites)).toEqual(
+			[],
+		);
 	});
 });

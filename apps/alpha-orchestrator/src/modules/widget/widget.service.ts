@@ -21,6 +21,27 @@ export function corsHeaders(origin: string): Record<string, string> {
 	return { "access-control-allow-origin": origin, vary: "Origin" };
 }
 
+/** A real calendar day (`2026-02-30` is not) and an IANA zone the runtime knows: the model reads both as facts. */
+export function validClientTime(body: {
+	clientDate?: string;
+	timeZone?: string;
+}): boolean {
+	const { clientDate, timeZone } = body;
+	if (
+		clientDate !== undefined &&
+		new Date(`${clientDate}T00:00:00Z`).toISOString().slice(0, 10) !==
+			clientDate
+	)
+		return false;
+	if (timeZone === undefined) return true;
+	try {
+		new Intl.DateTimeFormat("en", { timeZone });
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 /** A body-less response, with CORS headers when the origin is known. */
 export function emptyResponse(status: number, origin?: string): Response {
 	return new Response(null, {

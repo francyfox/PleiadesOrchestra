@@ -8,7 +8,7 @@ import type { CallContext } from "../types";
 import { needsTheWords } from "./intent-taxonomy";
 import { goalForIntent } from "./message-intent";
 import type { GoapAction } from "./types";
-import type { UnderstoodItem } from "./understanding";
+import type { UnderstoodAttribute, UnderstoodItem } from "./understanding";
 
 export interface DecomposedTask {
 	intent: string;
@@ -16,6 +16,8 @@ export interface DecomposedTask {
 	text?: string;
 	/** The products and counts the task is about, when `understandMessage` made the list. */
 	items?: UnderstoodItem[];
+	/** What the visitor states for the task besides the products (`understandMessage`). */
+	attributes?: UnderstoodAttribute[];
 	/** Index of an earlier task this one must follow. */
 	after?: number;
 }

@@ -13,6 +13,7 @@ import {
 	LIST_EMPTY,
 	LIST_READ,
 	MISSING_ITEMS,
+	MISSING_PARAMS,
 	PAGE_LANG_FACT,
 	REMOVED_ITEMS,
 	readItems,
@@ -306,6 +307,21 @@ function ranATool(state: WorldState): boolean {
 	return Object.keys(state).some((key) => key.startsWith("toolResult:"));
 }
 
+/** The required details a tool step could not fill (`missingParams`), by meaning; `undefined` when none. */
+function missingDetails(state: WorldState): string | undefined {
+	if (typeof state[MISSING_PARAMS] !== "string") return undefined;
+	try {
+		const { params } = JSON.parse(state[MISSING_PARAMS]) as {
+			params: { name: string; description: string }[];
+		};
+		return params
+			.map((p) => (p.description ? `${p.description} (${p.name})` : p.name))
+			.join("; ");
+	} catch {
+		return undefined;
+	}
+}
+
 /** A tool step that ended in failure (`toolResult:<tool> = false`). */
 function failedTool(state: WorldState): string | undefined {
 	return Object.keys(state)
@@ -372,6 +388,10 @@ function taskNote(state: WorldState): string | undefined {
 	}
 	if (typeof state.clarifyOptions === "string") {
 		return `It is unclear which action on the site the visitor wants. The site can: ${state.clarifyOptions}. Ask ONE short clarifying question and offer 2-3 fitting options from this list. Claim nothing about what is on the site now.`;
+	}
+	const missing = missingDetails(state);
+	if (missing) {
+		return `Nothing was done on the site yet: the request still lacks details the visitor has not given: ${missing}. Ask the visitor, in one short message, for exactly these details, described by their meaning (never show the raw field names). Do NOT say the action failed or could not be done; say what is needed to go on.`;
 	}
 	if (!task) return undefined;
 	const failed = failedTool(state);

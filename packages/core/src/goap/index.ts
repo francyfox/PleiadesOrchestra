@@ -108,10 +108,18 @@ export type {
 } from "./types";
 export type {
 	Understanding,
+	UnderstoodAttribute,
 	UnderstoodItem,
 	UnderstoodTask,
 } from "./understanding";
-export { translateTexts, understandMessage } from "./understanding";
+export {
+	attributeFacts,
+	STATED_ATTRIBUTES,
+	TIME_ZONE_FACT,
+	TODAY_FACT,
+	translateTexts,
+	understandMessage,
+} from "./understanding";
 export type {
 	CreateWebMcpActionsConfig,
 	WebMcpToolCallPayload,
@@ -121,6 +129,7 @@ export {
 	createWebMcpActions,
 	firstListedProductName,
 	MAX_TOOL_TEXT_CHARS,
+	MISSING_PARAMS,
 } from "./webmcp-actions";
 export type {
 	WorldStateCheckpoint,

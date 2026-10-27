@@ -1,4 +1,8 @@
-import type { UnderstoodItem, WorldState } from "@repo/core";
+import type {
+	UnderstoodAttribute,
+	UnderstoodItem,
+	WorldState,
+} from "@repo/core";
 import {
 	FOUND_ITEMS,
 	itemsText,
@@ -29,6 +33,8 @@ export interface QueuedTask {
 	text: string;
 	/** Products and counts of the task, when `alpha-understand` listed them. */
 	items?: UnderstoodItem[];
+	/** What the visitor stated for the task, when `alpha-understand` listed it (gates enum choices). */
+	attributes?: UnderstoodAttribute[];
 }
 
 export interface TaskOutcome extends QueuedTask {
