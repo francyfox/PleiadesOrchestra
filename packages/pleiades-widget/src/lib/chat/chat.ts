@@ -36,6 +36,8 @@ export interface ChatMessage {
 	createdAt?: number;
 	/** What the assistant did to produce this reply, in order. Only on replies that used tools. */
 	steps?: ChatStep[];
+	/** On a visitor message that picked an option: the reply it answered (≤2000 chars). */
+	replyTo?: string;
 }
 
 /**
@@ -418,6 +420,7 @@ export function createChat({
 		customerContext?: CustomerContext,
 		/** Continue a call the server already waits on instead of sending `text` (`cancel`: answer it as failed). */
 		resume?: HeldCall & { cancel?: boolean },
+		replyTo?: string,
 	): Promise<"ok" | "failed" | "request" | "cancelled"> {
 		let stream = resume
 			? undefined
@@ -428,6 +431,7 @@ export function createChat({
 					signal,
 					customerContext,
 					page?.(),
+					replyTo,
 				);
 		let toolCall: (HeldCall & { cancel?: boolean }) | undefined = resume;
 		while (true) {
@@ -498,6 +502,8 @@ export function createChat({
 		customerContext?: CustomerContext,
 		/** No new message: carry on a call the server waits on (`resumePending`, `checkPending`). */
 		resume?: HeldCall & { cancel?: boolean },
+		/** The assistant message this text answers (a picked option), sent as `replyTo`. */
+		replyTo?: string,
 	): Promise<SendResult> {
 		const text = raw.trim();
 		const refused = (error: string): SendResult => ({
@@ -535,6 +541,7 @@ export function createChat({
 			role: "user",
 			content: text,
 			createdAt: now(),
+			...(replyTo ? { replyTo } : {}),
 		};
 		const assistant: ChatMessage = {
 			id: nextId(),
@@ -571,6 +578,7 @@ export function createChat({
 						resetIdleTimer,
 						customerContext,
 						resume,
+						replyTo,
 					),
 				);
 			} catch (cause) {
@@ -587,6 +595,7 @@ export function createChat({
 						resetIdleTimer,
 						customerContext,
 						resume,
+						replyTo,
 					),
 				);
 			}

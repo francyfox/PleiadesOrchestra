@@ -188,6 +188,11 @@ describe("prepareResume", () => {
 	});
 });
 
+/** alpha-understand answering with this English text and no tasks. */
+const sayEnglish = (en: string) => ({
+	fillArguments: async () => ({ en, tasks: [] }),
+});
+
 describe("prepareNewMessage: «now buy them» after a search", () => {
 	async function prepare(
 		session: Record<string, string | boolean>,
@@ -200,7 +205,7 @@ describe("prepareNewMessage: «now buy them» after a search", () => {
 			worldStateStore,
 			webmcpCatalog: new Map([["t1", [action("add_to_cart")]]]),
 			actions: [],
-			translate: () => english,
+			understandAgent: sayEnglish(english),
 			intentMemory: {
 				classify: () => ({ intent: "addToCart", via: "exact", confidence: 1 }),
 			},
@@ -294,7 +299,6 @@ describe("prepareNewMessage / prepareResume: a message that names a tool's optio
 			worldStateStore: new InMemoryWorldStateStore(),
 			webmcpCatalog: new Map([["t1", catalog]]),
 			actions: [],
-			translate: () => undefined,
 			intentMemory: {
 				classify: () => ({ intent: "addToCart", via: "exact", confidence: 1 }),
 			},
@@ -401,7 +405,7 @@ describe("prepareNewMessage: «remove everything» reads the list first", () => 
 			worldStateStore: new InMemoryWorldStateStore(),
 			webmcpCatalog: new Map([["t1", catalog]]),
 			actions: [],
-			translate: () => english,
+			understandAgent: sayEnglish(english),
 			intentMemory: { classify: () => undefined },
 			now: () => 0,
 		} as unknown as ReplyDeps;
@@ -451,7 +455,7 @@ describe("prepareNewMessage: «remove everything» reads the list first", () => 
 	});
 });
 
-describe("registerWebMcpTools: Russian site, translator not ready", () => {
+describe("registerWebMcpTools: Russian site, alpha-understand not ready", () => {
 	const russianTool = {
 		name: "найти_товар",
 		description: "Поиск товаров в каталоге",
@@ -465,7 +469,8 @@ describe("registerWebMcpTools: Russian site, translator not ready", () => {
 				decide: async () => ({ intent: { type: "choice", choice: "search" } }),
 			},
 			{
-				translate: async () => (ready ? "Search products in the catalog" : ""),
+				translate: async (texts) =>
+					texts.map(() => (ready ? "Search products in the catalog" : "")),
 			},
 		);
 		const errors: unknown[] = [];
@@ -518,7 +523,6 @@ describe("prepareNewMessage: what Laya is sure about is learned on its own", () 
 			worldStateStore: new InMemoryWorldStateStore(),
 			webmcpCatalog: new Map([["t1", [action("add_to_cart")]]]),
 			actions: [],
-			translate: (text: string) => text,
 			intentMemory: {
 				classify: () => undefined,
 				invalidate: (id: string) => invalidated.push(id),
@@ -846,5 +850,120 @@ describe("pageFacts", () => {
 			"page:lang": "ru",
 		});
 		expect(pageFacts(undefined)).toEqual({});
+	});
+});
+
+describe("prepareNewMessage: the alpha-understand step", () => {
+	const answer = (tasks: unknown[], en = "add 2 cheese") => ({ en, tasks });
+	const cheese = {
+		intent: "addToCart",
+		text: "add 2 cheese",
+		items: [{ name: "cheese", quantity: 2 }],
+	};
+
+	async function prepare(
+		text: string,
+		understand: (call: { tool: { description?: string } }) => unknown,
+		options: { catalogLang?: string; severalTasks?: boolean } = {},
+	) {
+		const split: string[] = [];
+		const toolDescriptions: string[] = [];
+		const withEffects = (name: string, effects: Record<string, boolean>) => ({
+			...action(name),
+			effects,
+		});
+		const deps = {
+			worldStateStore: new InMemoryWorldStateStore(),
+			webmcpCatalog: new Map([
+				[
+					"t1",
+					[
+						withEffects("search_products", { catalogSearched: true }),
+						withEffects("add_to_cart", { inCart: true }),
+					],
+				],
+			]),
+			actions: [],
+			intentSets: () => (options.severalTasks ? [] : ["shop"]),
+			severalTasks: () => options.severalTasks ?? false,
+			catalogLanguage: () => options.catalogLang,
+			understandAgent: {
+				async fillArguments(call: { tool: { description?: string } }) {
+					toolDescriptions.push(call.tool.description ?? "");
+					return understand(call);
+				},
+			},
+			functionCallAgent: {
+				async fillArguments(call: { request: string }) {
+					split.push(call.request);
+					throw new Error("unusable");
+				},
+			},
+			decisionAgent: { decide: async () => ({}) },
+			now: () => 0,
+		} as unknown as ReplyDeps;
+		const prepared = await prepareNewMessage(
+			deps,
+			{ id: "u", channelId: "c" } as VisitorRow,
+			"t1",
+			"run-1",
+			text,
+			{},
+		);
+		return { prepared, split, toolDescriptions };
+	}
+
+	test("its answer gives the English text and writes the product facts", async () => {
+		const { prepared } = await prepare("добавь два сыра", () =>
+			answer([cheese]),
+		);
+		expect(prepared.state).toMatchObject({
+			userMessageEn: "add 2 cheese",
+			query: "cheese",
+			quantity: 2,
+			requestParsed: true,
+		});
+	});
+
+	test("an unusable answer leaves the message as typed: no English text, no facts", async () => {
+		const { prepared } = await prepare("добавь два сыра", () => {
+			throw new Error("down");
+		});
+		expect(prepared.state.userMessage).toBe("добавь два сыра");
+		expect(prepared.state.userMessageEn).toBeUndefined();
+		expect(prepared.state.quantity).toBeUndefined();
+	});
+
+	test("a ru catalog gets Russian item names and the call asks for them", async () => {
+		const { prepared, toolDescriptions } = await prepare(
+			"добавь два сыра",
+			() => answer([{ ...cheese, items: [{ name: "сыр", quantity: 2 }] }]),
+			{ catalogLang: "ru" },
+		);
+		expect(prepared.state).toMatchObject({ query: "сыр", quantity: 2 });
+		expect(toolDescriptions[0]).toContain("Russian");
+	});
+
+	test("two tasks become a queue without asking delta to split", async () => {
+		const { prepared, split } = await prepare(
+			"add cheese and look for milk",
+			() =>
+				answer(
+					[
+						cheese,
+						{
+							intent: "search",
+							text: "look for milk",
+							items: [{ name: "milk", quantity: 1 }],
+						},
+					],
+					"add cheese and look for milk",
+				),
+			{ severalTasks: true },
+		);
+		expect(split).toEqual([]);
+		expect(prepared.state.userMessageEn).toBe("add 2 cheese");
+		expect(prepared.state).toMatchObject({ query: "cheese", quantity: 2 });
+		expect(String(prepared.state.taskQueue)).toContain("look for milk");
 	});
 });

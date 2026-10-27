@@ -107,6 +107,12 @@ export type {
 	WorldState,
 } from "./types";
 export type {
+	Understanding,
+	UnderstoodItem,
+	UnderstoodTask,
+} from "./understanding";
+export { translateTexts, understandMessage } from "./understanding";
+export type {
 	CreateWebMcpActionsConfig,
 	WebMcpToolCallPayload,
 	WebMcpToolDescriptor,

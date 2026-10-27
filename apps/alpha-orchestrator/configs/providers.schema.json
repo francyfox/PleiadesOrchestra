@@ -28,8 +28,7 @@
 						"type": "string",
 						"enum": [
 							"openai-compat",
-							"systemone",
-							"ctranslate2"
+							"systemone"
 						]
 					},
 					"api_key": {
@@ -61,8 +60,7 @@
 											"speech",
 											"transcription",
 											"reranking",
-											"decision",
-											"translation"
+											"decision"
 										]
 									}
 								},
@@ -76,8 +74,7 @@
 										"speech",
 										"transcription",
 										"reranking",
-										"decision",
-										"translation"
+										"decision"
 									]
 								},
 								"temperature": {

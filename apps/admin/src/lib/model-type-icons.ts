@@ -3,7 +3,6 @@ import AudioLinesIcon from "@lucide/svelte/icons/audio-lines";
 import BoxesIcon from "@lucide/svelte/icons/boxes";
 import GavelIcon from "@lucide/svelte/icons/gavel";
 import ImageIcon from "@lucide/svelte/icons/image";
-import LanguagesIcon from "@lucide/svelte/icons/languages";
 import MicIcon from "@lucide/svelte/icons/mic";
 import TypeIcon from "@lucide/svelte/icons/type";
 import VideoIcon from "@lucide/svelte/icons/video";
@@ -19,5 +18,4 @@ export const MODEL_TYPE_ICONS = {
 	transcription: MicIcon,
 	reranking: ArrowUpDownIcon,
 	decision: GavelIcon,
-	translation: LanguagesIcon,
 } as const satisfies Record<ModelType, unknown>;

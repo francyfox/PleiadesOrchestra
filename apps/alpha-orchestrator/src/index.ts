@@ -6,6 +6,10 @@ import {
 	agent,
 	productRequestAgent,
 } from "./modules/agents/agents.instance.ts";
+import {
+	translateWithAlpha,
+	understandAgent,
+} from "./modules/alpha-understand/alpha-understand.instance.ts";
 import { channelDirectory } from "./modules/channel-directory/channel-directory.instance.ts";
 import { config } from "./modules/config/config.service.ts";
 import { db } from "./modules/database/database.instance.ts";
@@ -18,10 +22,6 @@ import { priceBook } from "./modules/prices/prices.instance.ts";
 import { assertRetentionCoversHistory } from "./modules/retention/retention.service.ts";
 import { startRetentionJobs } from "./modules/retention/retention.ts";
 import { runs } from "./modules/run-binding/run-binding.instance.ts";
-import {
-	loadTranslator,
-	translatorModel,
-} from "./modules/translate/translate.instance.ts";
 import { usageRecorder } from "./modules/usage-recorder/usage-recorder.instance.ts";
 import { backfillVisitorNames } from "./modules/visitors/visitors.service.ts";
 import { startWaitingRunsJob } from "./modules/waiting-runs/waiting-runs.ts";
@@ -48,29 +48,19 @@ function reportError(message: string) {
 	};
 }
 
-// Loaded in the background: the first start downloads ~150 MB, and the service
-// must answer meanwhile. Messages that arrive before it is ready simply go on
-// untranslated (an empty answer means "no translation").
-let translator: Awaited<ReturnType<typeof loadTranslator>>;
-void loadTranslator(reportError("translator_unavailable")).then((loaded) => {
-	translator = loaded;
-	if (loaded) logger.info({ message: "translator ready" });
-});
-
-const translate = async (text: string) =>
-	(await translator?.translate(text)) ?? "";
-
 const app = createApp({
-	translate,
 	agent,
 	// Laya reads English only: whatever still is not (a Russian site's tool
-	// descriptions and enum values) is translated here, or the call is refused.
+	// descriptions and enum values) is translated by alpha-understand, or the call is refused.
 	// Laya's probabilities are refitted on our own data (`bun run calibrate` in
 	// packages/core) in decisions.instance, so every consumer sees calibrated ones.
-	decisionAgent: withEnglishOnly(decisionAgent, { translate }),
+	decisionAgent: withEnglishOnly(decisionAgent, {
+		translate: translateWithAlpha,
+	}),
 	layaAutoApproveConfidence: config.LAYA_AUTO_APPROVE_CONFIDENCE,
 	productRequestAgent,
 	functionCallAgent,
+	understandAgent,
 	apiKey: config.HARNESS_API_KEY,
 	adminApiKey: config.ADMIN_API_KEY,
 	adminCorsOrigins: config.ADMIN_CORS_ORIGINS,
@@ -98,6 +88,7 @@ const app = createApp({
 			const text = agentSettings.effective("beta-text");
 			const laya = agentSettings.effective("gamma-decision");
 			const delta = agentSettings.effective("delta-function-call");
+			const understand = agentSettings.effective("alpha-understand");
 			return [
 				{
 					id: "beta-text",
@@ -107,19 +98,18 @@ const app = createApp({
 					model: text.model,
 				},
 				{
+					id: "alpha-understand",
+					name: "alpha-understand",
+					role: "understand" as const,
+					baseUrl: understand.baseUrl,
+					model: understand.model,
+				},
+				{
 					id: "gamma-decision",
 					name: "gamma-decision",
 					role: "decision" as const,
 					baseUrl: laya.baseUrl,
 					model: laya.model,
-				},
-				{
-					id: "translate",
-					name: "Opus-MT translator",
-					role: "translate" as const,
-					baseUrl: "",
-					model: translatorModel().repo,
-					ready: translator !== undefined,
 				},
 				...(delta.baseUrl
 					? [
@@ -172,7 +162,6 @@ serve(app, {
 	maxRequestBodySize: config.HTTP_MAX_BODY_BYTES,
 	observability,
 	onShutdown: () => {
-		translator?.close();
 		stopRetentionJobs();
 		stopWaitingRunsJob();
 		usageRecorder.flush();

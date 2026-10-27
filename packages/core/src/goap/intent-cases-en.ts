@@ -1,12 +1,11 @@
 /**
- * What the translator (Opus-MT ru→en, `apps/alpha-orchestrator`) hands Laya
- * for each Russian case of `intent-cases.ts`: Laya reads English only, and the
- * eval (`bun run eval:intents`) must feed it what production does. The native
- * translator is not available on the eval host, so these are written by hand,
- * faithful to the words (not improved toward the expected intent). A real
- * translator is a little worse than this («купить творог» → "buy some
- * cottage"), so the eval's "Laya alone" figure is an upper bound.
- * Latin words stay as typed, as in `translateAroundLatin`.
+ * What alpha-understand (`apps/alpha-orchestrator`) hands Laya for each
+ * Russian case of `intent-cases.ts`: Laya reads English only, and the eval
+ * (`bun run eval:intents`) must feed it what production does. The eval host
+ * has no model for it, so these are written by hand, faithful to the words
+ * (not improved toward the expected intent); a real model is a little worse,
+ * so the eval's "Laya alone" figure is an upper bound.
+ * Latin words stay as typed.
  */
 const ENGLISH: Record<string, string> = {
 	привет: "hello",

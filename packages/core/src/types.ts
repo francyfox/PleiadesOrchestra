@@ -81,9 +81,8 @@ export interface HistoryStore {
 }
 
 /**
- * What a recorded call was for. `translate` is not a language model at all
- * (the message translator, CTranslate2) — it is in the same ledger so the
- * admin's graph and latency charts see it next to the models. `classify` is
+ * What a recorded call was for. `translate` is only in old rows (the retired
+ * Opus-MT translator): kept readable, never written. `classify` is
  * the message's intent being decided: by Laya, the site's memory or the words
  * (`provider` says which).
  */

@@ -3,18 +3,16 @@ import type { Db } from "../database/database.ts";
 export interface AgentSpec {
 	id: string;
 	name: string;
-	role: "text" | "decision" | "function-call" | "translate";
+	role: "text" | "decision" | "function-call" | "understand";
 	/** As configured — may carry credentials; only `publicEndpoint()` of it leaves the process. */
 	baseUrl: string;
 	model: string | null;
-	/** In-process agent (the translator): up or down by this flag, no HTTP probe. */
-	ready?: boolean;
 }
 
 export interface AgentHealth {
 	id: string;
 	name: string;
-	role: "text" | "decision" | "function-call" | "translate";
+	role: "text" | "decision" | "function-call" | "understand";
 	endpoint: string;
 	model: string | null;
 	status: "up" | "down";
@@ -58,10 +56,9 @@ export function publicEndpoint(baseUrl: string): string {
 
 const RESPONSE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
-/** What the ledger calls the model of each agent's calls, besides the model it is configured with: Laya names itself on decision rows, the translator on its own. */
+/** What the ledger calls the model of each agent's calls, besides the model it is configured with: Laya names itself on decision rows. */
 const LEDGER_ALIASES: Record<string, string[]> = {
 	decision: ["laya-system-one", "gamma-decision"],
-	translate: ["opus-mt-ru-en"],
 };
 
 /** Mean latency of the successful calls of each model in the last 24 h (the ledger, `llm_calls`). */
@@ -125,12 +122,10 @@ export function probeAgents(
 	return Promise.all(
 		specs.map(async (spec): Promise<AgentHealth> => {
 			const startedAt = now();
-			let up =
-				spec.ready ??
-				(isHostedDecisions(spec)
-					? await answers(fetchFn, spec.baseUrl, timeoutMs, true)
-					: await answers(fetchFn, healthUrl(spec.baseUrl), timeoutMs));
-			if (!up && spec.ready === undefined && spec.role !== "decision") {
+			let up = isHostedDecisions(spec)
+				? await answers(fetchFn, spec.baseUrl, timeoutMs, true)
+				: await answers(fetchFn, healthUrl(spec.baseUrl), timeoutMs);
+			if (!up && spec.role !== "decision") {
 				up = await answers(fetchFn, modelsUrl(spec.baseUrl), timeoutMs);
 			}
 			const checkedAt = now();

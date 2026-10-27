@@ -31,6 +31,15 @@ describe("replyChunks", () => {
 		expect(replyChunks({ userMessage: "привет" }, 100)).toEqual(["привет"]);
 	});
 
+	test("replyTo is passed to the reply model as the message the visitor answers", () => {
+		const [chunk] = replyChunks(
+			{ userMessage: "2", replyTo: "1. Add A\n2. Add B" },
+			1000,
+		);
+		expect(chunk).toContain("«1. Add A\n2. Add B»");
+		expect(chunk).toContain('"2"');
+	});
+
 	test("after an item went into the cart the reply is told what was done", () => {
 		const [chunk] = replyChunks(
 			{

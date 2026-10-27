@@ -46,7 +46,7 @@ const RATE_LIMIT_RETRIES = 3;
  * The channel (publishable key, allowed origin) must exist on the server.
  *
  * Tokens: the stream's `done` line counts only the reply model. With
- * `adminApiKey` the request's `llmCalls` (Laya, delta, translator, beta) are
+ * `adminApiKey` the request's `llmCalls` (Laya, delta, alpha-understand, beta) are
  * read from `/v1/admin/requests` instead.
  */
 export function createOrchestraContender(deps: {
@@ -186,8 +186,8 @@ export function createOrchestraContender(deps: {
 	return {
 		name: "orchestra + beta",
 		tokensNote: deps.adminApiKey
-			? "every model call of the request (Laya, delta, translator, beta) from /v1/admin/requests"
-			: "reply model only (set ORCHESTRA_ADMIN_API_KEY to count Laya, delta and the translator too)",
+			? "every model call of the request (Laya, delta, alpha-understand, beta) from /v1/admin/requests"
+			: "reply model only (set ORCHESTRA_ADMIN_API_KEY to count Laya, delta and alpha-understand too)",
 		async run(shop, test) {
 			const base = {
 				id: test.id,

@@ -72,18 +72,16 @@
 
 {#snippet actionsCell(agent: Agent)}
 	<div class="flex justify-end">
-		{#if agent.role !== "translate"}
 		<IconButton icon={SettingsIcon} tone="primary" label={$content.settings.action.value} onclick={() => {
 			editing = agent;
 			dialogOpen = true;
 		}} />
-		{/if}
 	</div>
 {/snippet}
 
 {#snippet nameCell(agent: Agent)}
 	<span class="font-medium">{agent.name}</span>
-	<Badge variant="outline" class="ml-1">{$content.role[agent.role].value}</Badge>
+	<Badge variant="outline" class="ml-1" title={agent.role === "understand" ? $content.roleHint.understand.value : undefined}>{$content.role[agent.role].value}</Badge>
 {/snippet}
 
 {#snippet endpointCell(endpoint: string)}

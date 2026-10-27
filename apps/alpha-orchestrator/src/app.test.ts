@@ -5,6 +5,7 @@ import type {
 	DecisionAgent,
 	DecisionAnswer,
 	DecisionQuestion,
+	FunctionCallAgent,
 	GoapAction,
 	IncomingMessage,
 	LlmCallRecord,
@@ -783,7 +784,7 @@ describe("createApp — message intent routing", () => {
 	});
 });
 
-describe("createApp — the message is translated as it comes in", () => {
+describe("createApp — alpha-understand reads the message as it comes in", () => {
 	function post(app: ReturnType<typeof createTestApp>, text: string) {
 		return app.handle(
 			authedRequest("http://harness.local/v1/messages", {
@@ -792,6 +793,22 @@ describe("createApp — the message is translated as it comes in", () => {
 				body: JSON.stringify({ threadId: "t1", userId: "u1", text }),
 			}),
 		);
+	}
+
+	/** alpha-understand answering with this English text; records what it was asked and with which context. */
+	function understanding(en: string, fail = false) {
+		const asked: { request: string; actionName?: string }[] = [];
+		const agent: FunctionCallAgent = {
+			async fillArguments(call) {
+				asked.push({
+					request: call.request,
+					actionName: call.context?.actionName,
+				});
+				if (fail) throw new Error("model not loaded");
+				return { en, tasks: [] };
+			},
+		};
+		return { asked, agent };
 	}
 
 	/** An action that records the state it runs with; cheaper than the reply, so it wins the plan. */
@@ -810,22 +827,21 @@ describe("createApp — the message is translated as it comes in", () => {
 		return { seen, action };
 	}
 
-	test("a Russian message reaches the plan next to its English translation; the original stays", async () => {
-		const asked: string[] = [];
+	test("a Russian message reaches the plan next to its English text; the original stays", async () => {
+		const { asked, agent: understandAgent } = understanding("buy one cheese");
 		const { seen, action } = stateRecorder();
 		const app = createTestApp({
 			agent: fakeAgent(singleDeltaStream),
 			decisionAgent: fakeDecisionAgent(),
 			threadActionsFor: () => [action],
-			translate: (text) => {
-				asked.push(text);
-				return "buy one cheese";
-			},
+			understandAgent,
 		});
 
 		await readNdjson(await post(app, "купи 1 сыр"));
 
-		expect(asked).toEqual(["купи 1 сыр"]);
+		expect(asked).toEqual([
+			{ request: "купи 1 сыр", actionName: "alpha-understand" },
+		]);
 		expect(seen[0]).toMatchObject({
 			userMessage: "купи 1 сыр",
 			userMessageEn: "buy one cheese",
@@ -872,96 +888,26 @@ describe("createApp — the message is translated as it comes in", () => {
 		expect(seen.map((state) => state.catalogLang)).toEqual(["ru", "en"]);
 	});
 
-	test("a translation is reported to the usage ledger, a failed one as not ok; English costs nothing", async () => {
-		const recorded: LlmCallRecord[] = [];
-		const usageRecorder = {
-			flush() {},
-			record: (call: LlmCallRecord) => recorded.push(call),
-		};
-		const { action } = stateRecorder();
-		const base = {
-			agent: fakeAgent(singleDeltaStream),
-			decisionAgent: fakeDecisionAgent(),
-			threadActionsFor: () => [action],
-			usageRecorder,
-		};
-
-		await readNdjson(
-			await post(
-				createTestApp({ ...base, translate: () => "buy one cheese" }),
-				"купи 1 сыр",
-			),
-		);
-		const translations = () =>
-			recorded.filter((call) => call.kind === "translate");
-		expect(translations()).toHaveLength(1);
-		expect(translations()[0]).toMatchObject({
-			kind: "translate",
-			provider: "ctranslate2",
-			actionName: "translate",
-			ok: true,
-		});
-		expect(translations()[0]?.planRunId).toBeString();
-		expect(translations()[0]?.latencyMs).toBeGreaterThanOrEqual(0);
-
-		recorded.length = 0;
-		await readNdjson(
-			await post(
-				createTestApp({
-					...base,
-					translate: () => {
-						throw new Error("model not loaded");
-					},
-				}),
-				"купи 1 сыр",
-			),
-		);
-		expect(translations()[0]).toMatchObject({
-			kind: "translate",
-			ok: false,
-			error: "model not loaded",
-		});
-
-		recorded.length = 0;
-		await readNdjson(
-			await post(
-				createTestApp({ ...base, translate: () => "x" }),
-				"buy 1 cheese",
-			),
-		);
-		expect(translations()).toEqual([]);
-	});
-
-	test("a message already in English is not translated and is its own English text", async () => {
-		const asked: string[] = [];
+	test("without alpha-understand an English message is its own English text", async () => {
 		const { seen, action } = stateRecorder();
 		const app = createTestApp({
 			agent: fakeAgent(singleDeltaStream),
 			decisionAgent: fakeDecisionAgent(),
 			threadActionsFor: () => [action],
-			translate: (text) => {
-				asked.push(text);
-				return "x";
-			},
 		});
 
 		await readNdjson(await post(app, "buy 1 cheese"));
 
-		expect(asked).toEqual([]);
 		expect(seen[0]?.userMessageEn).toBe("buy 1 cheese");
 	});
 
-	test("a translator that fails costs the translation, not the message", async () => {
+	test("an alpha-understand that fails costs the English text, not the message", async () => {
 		const { seen, action } = stateRecorder();
-		const errors: unknown[] = [];
 		const app = createTestApp({
 			agent: fakeAgent(singleDeltaStream),
 			decisionAgent: fakeDecisionAgent(),
 			threadActionsFor: () => [action],
-			translate: () => {
-				throw new Error("model not loaded");
-			},
-			onError: (error) => errors.push(String(error)),
+			understandAgent: understanding("x", true).agent,
 		});
 
 		const events = await readNdjson(await post(app, "купи 1 сыр"));
@@ -970,7 +916,6 @@ describe("createApp — the message is translated as it comes in", () => {
 		expect(events.some((e) => (e as { type: string }).type === "done")).toBe(
 			true,
 		);
-		expect(errors).toEqual(["Error: model not loaded"]);
 	});
 
 	test("Laya sorts the English text when no word of the message decides", async () => {
@@ -983,7 +928,7 @@ describe("createApp — the message is translated as it comes in", () => {
 				return {};
 			}),
 			threadActionsFor: () => [action],
-			translate: () => "a laptop, please",
+			understandAgent: understanding("a laptop, please").agent,
 		});
 
 		await readNdjson(await post(app, "ноутбук, пожалуйста"));

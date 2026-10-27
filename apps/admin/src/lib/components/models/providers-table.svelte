@@ -67,7 +67,7 @@
 {/snippet}
 
 {#snippet urlCell(url: string)}
-	{#if url}<CopyValue value={url} label={url} />{:else}<span class="text-muted-foreground">{$content.providers.inProcess.value}</span>{/if}
+	<CopyValue value={url} label={url} />
 {/snippet}
 
 {#snippet keyCell(key: string)}

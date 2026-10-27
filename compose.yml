@@ -53,8 +53,6 @@ services:
       # providers.toml (keys inside: gitignored, dockerignored, 0600); the
       # directory, not the file, so it can be created on first start.
       - ./apps/alpha-orchestrator/configs:/configs
-      # The Opus-MT translation model downloads here on first start.
-      - alpha-orchestrator-models:/models
     # Loopback only: the orchestrator also serves /v1/admin/*. Public traffic goes
     # through the `tunnel` profile over the compose network, not this port.
     ports:
@@ -262,7 +260,6 @@ services:
 #    restart: unless-stopped
 
 volumes:
-  alpha-orchestrator-models:
   beta-text-models:
   delta-function-call-models:
   gamma-decision-models:

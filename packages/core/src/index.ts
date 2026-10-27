@@ -82,6 +82,9 @@ export type {
 	ToolChoice,
 	ToolIntent,
 	ToolSource,
+	Understanding,
+	UnderstoodItem,
+	UnderstoodTask,
 	WaitingOn,
 	WebMcpToolCallPayload,
 	WebMcpToolDescriptor,
@@ -148,6 +151,8 @@ export {
 	samePage,
 	scopeFacts,
 	TOOL_INTENTS,
+	translateTexts,
+	understandMessage,
 } from "./goap";
 export { groundArguments } from "./ground-arguments";
 export { InMemoryHistoryStore } from "./history";

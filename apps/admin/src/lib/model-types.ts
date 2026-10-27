@@ -8,7 +8,6 @@ export const MODEL_TYPES = [
 	"transcription",
 	"reranking",
 	"decision",
-	"translation",
 ] as const;
 export type ModelType = (typeof MODEL_TYPES)[number];
 

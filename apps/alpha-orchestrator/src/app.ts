@@ -74,10 +74,10 @@ export interface AppDeps {
 	layaAutoApproveConfidence?: number;
 	/** Extracts `{query, quantity}` from a shopping message; optional (tests leave it out). */
 	productRequestAgent?: Agent;
-	/** Russian → English for a message as it comes in (Opus-MT, ~30 ms); unset = the text stays as typed. */
-	translate?: (text: string) => string | Promise<string>;
 	/** Writes the JSON arguments of WebMCP tool calls; without it they are built from the run's facts. */
 	functionCallAgent?: FunctionCallAgent;
+	/** `alpha-understand`: one call turns a message into English plus its tasks and products; unset or failing = the text stays as typed, then decomposition. */
+	understandAgent?: FunctionCallAgent;
 	/** Transport secret (telegram-bot, cli, integration backends). */
 	apiKey: string;
 	/** Separate secret for /v1/admin/* (apps/admin-api). */
@@ -145,7 +145,6 @@ export function createApp(deps: AppDeps) {
 		agent: deps.agent,
 		decisionAgent: deps.decisionAgent,
 		productRequestAgent: deps.productRequestAgent,
-		translate: deps.translate,
 		intentMemory,
 		layaAutoApproveConfidence: deps.layaAutoApproveConfidence,
 		catalogLanguage: (channelId) =>
@@ -164,6 +163,7 @@ export function createApp(deps: AppDeps) {
 					: ["shop"],
 			),
 		functionCallAgent: deps.functionCallAgent,
+		understandAgent: deps.understandAgent,
 		personaLang: (channelId) => getPersona(deps.db, channelId).defaultLang,
 		history: deps.historyStore,
 		actions,

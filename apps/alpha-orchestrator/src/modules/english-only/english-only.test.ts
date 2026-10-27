@@ -19,11 +19,14 @@ const DICTIONARY: Record<string, string> = {
 
 function translator() {
 	const calls: string[] = [];
+	const batches: string[][] = [];
 	return {
 		calls,
-		translate: async (text: string) => {
-			calls.push(text);
-			return DICTIONARY[text] ?? "";
+		batches,
+		translate: async (texts: string[]) => {
+			batches.push(texts);
+			calls.push(...texts);
+			return texts.map((text) => DICTIONARY[text] ?? "");
 		},
 	};
 }
@@ -107,7 +110,7 @@ describe("withEnglishOnly", () => {
 			const keys = Object.keys((questions.q as { criteria: object }).criteria);
 			return { q: { type: "choice", choice: keys[1] as string } };
 		});
-		const translate = async () => "Store";
+		const translate = async (texts: string[]) => texts.map(() => "Store");
 		const answers = await withEnglishOnly(agent, { translate }).decide(
 			{},
 			{ q: choiceQuestion({ Алматы: null, Астана: null }) },
@@ -146,19 +149,22 @@ describe("withEnglishOnly", () => {
 		).toHaveLength(1);
 	});
 
-	test("a Latin word inside a Russian string stays as typed", async () => {
-		const { agent, seen } = recordingAgent(() => ({}));
-		const translate = async (text: string) => (text === "купи" ? "buy" : "");
+	test("everything a call needs is translated in one batch", async () => {
+		const { agent } = recordingAgent(() => ({}));
+		const { translate, batches } = translator();
 		await withEnglishOnly(agent, { translate }).decide(
-			{ message: "купи Medium Roast" },
-			{},
+			{ message: "купи сыр" },
+			{ q: choiceQuestion({ Алматы: "поиск товаров" }) },
 		);
-		expect(seen[0]?.state).toEqual({ message: "buy Medium Roast" });
+		expect(batches).toHaveLength(1);
+		expect(new Set(batches[0]).size).toBe(batches[0]?.length ?? -1);
 	});
 
 	test("an untranslatable string stops the call: no Russian reaches Laya", async () => {
 		const { agent, seen } = recordingAgent(() => ({}));
-		const empty = withEnglishOnly(agent, { translate: async () => "" });
+		const empty = withEnglishOnly(agent, {
+			translate: async (texts: string[]) => texts.map(() => ""),
+		});
 		await expect(
 			empty.decide({ message: "купи сыр" }, {}),
 		).rejects.toBeInstanceOf(UntranslatableError);
@@ -169,6 +175,16 @@ describe("withEnglishOnly", () => {
 		});
 		await expect(
 			failing.decide({ message: "купи сыр" }, {}),
+		).rejects.toBeInstanceOf(UntranslatableError);
+		const short = withEnglishOnly(agent, { translate: async () => [] });
+		await expect(
+			short.decide({ message: "купи сыр" }, {}),
+		).rejects.toBeInstanceOf(UntranslatableError);
+		const stillRussian = withEnglishOnly(agent, {
+			translate: async (texts: string[]) => texts,
+		});
+		await expect(
+			stillRussian.decide({ message: "купи сыр" }, {}),
 		).rejects.toBeInstanceOf(UntranslatableError);
 		const none = withEnglishOnly(agent, {});
 		await expect(

@@ -26,7 +26,7 @@ The orchestrator never sees the site's code or database, only tool names, schema
 | `beta-text` | A `llama-server` with a small reply model. Writes the conversational answer. |
 | `gamma-decision` (Laya) | Typed-decision sidecar. Answers choice and score questions with calibrated probabilities; never writes text. Used for intent classification and for choosing among a tool's options. |
 | `delta-function-call` | A small `llama-server` that fills the JSON arguments of a tool call from the visitor's message and the tool's schema. |
-| translator | Not a separate service: a native Opus-MT (CTranslate2) engine inside `alpha-orchestrator`. The decision and function-call models read English only, so other languages are translated first. |
+| alpha-understand | Not a separate service: one call of a language model from `alpha-orchestrator` per message. It writes the message in English, splits it into tasks and marks how many of each product; the decision and function-call models read English only. |
 
 Each model service can run on the same machine or elsewhere; `alpha-orchestrator` reaches it by base URL.
 

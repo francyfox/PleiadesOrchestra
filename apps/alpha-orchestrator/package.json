@@ -7,7 +7,7 @@
 	"scripts": {
 		"dev": "bun --watch src/index.ts",
 		"start": "bun src/index.ts",
-		"build": "bun build ./src/index.ts ./src/modules/translate/translate.worker.ts --compile --target=bun-linux-x64-musl --outfile dist/harness",
+		"build": "bun build ./src/index.ts --compile --target=bun-linux-x64-musl --outfile dist/harness",
 		"test": "bun test",
 		"check-types": "bun check",
 		"lint": "biome check .",

@@ -22,14 +22,13 @@ const MODEL_TYPES = [
 	"transcription",
 	"reranking",
 	"decision",
-	"translation",
 ] as const;
 
 /** A model with the parameters it is called with. */
 export const ProviderModel = Type.Object({
 	id: Type.String({ minLength: 1, maxLength: 200 }),
 	name: Type.String({ minLength: 1, maxLength: 200 }),
-	/** What the model can do (several for a multimodal one), as the AI SDK names its factories; `translation` is the in-process translator. */
+	/** What the model can do (several for a multimodal one), as the AI SDK names its factories. */
 	types: Type.Array(oneOf(MODEL_TYPES), { minItems: 1 }),
 	temperature: Type.Optional(Type.Number({ minimum: 0, maximum: 2 })),
 	reasoningEffort: Type.Optional(oneOf(["none", "low", "medium", "high"])),

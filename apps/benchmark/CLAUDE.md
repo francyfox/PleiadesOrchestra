@@ -33,7 +33,7 @@ All three call Laya through `createDecisionAgent` (AI SDK `experimental_decide`)
 ## Notes
 
 - CPU by default, 4 threads. `tools --gpu` offloads to Vulkan, meaningful only where the whole model fits in VRAM (the dev iGPU has 0.5 GB).
-- Cases are English only (the translator runs before delta/Laya in production; `efficiency` also has Russian twins, it goes end to end through the translator) and vary the domain (CLAUDE.md "Domain: not one shop"): extend with other domains before trusting 100% figures.
+- Cases are English only (alpha-understand translates before delta/Laya in production; `efficiency` also has Russian twins, it goes end to end through alpha-understand) and vary the domain (CLAUDE.md "Domain: not one shop"): extend with other domains before trusting 100% figures.
 - Reference numbers (6 complex cases, Ollama `qwen3:1.7b-q8_0`): all fields ~33%, p50 ~840 ms; with `--laya` ~17%, p50 ~640 ms. `bun laya` on a GPU server: 64/87 decisions, p50 ~33 ms; the same weights in-process on 4 CPU threads: same accuracy, p50 ~400 ms.
 - Qwen3 in Ollama ignores `chat_template_kwargs`: it needs `reasoningEffort: "none"` in `providerOptions` (camelCase; a literal `reasoning_effort` key is overwritten), otherwise it thinks ~1000 tokens and the schema leaves an empty object.
 - The 48/128 answer budgets cut Qwen3's runaway "thinking" inside JSON strings, which used to run to the old 512-token cap.

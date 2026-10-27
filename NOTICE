@@ -34,11 +34,6 @@ Native components built into the Docker images
 llama.cpp (ggml-org) — MIT License
   Used as the base image of apps/beta-text and apps/delta-function-call.
 
-CTranslate2 (OpenNMT) — MIT License
-SentencePiece (Google) — Apache License 2.0
-  Built from source by apps/alpha-orchestrator/native/build.sh and called
-  through apps/alpha-orchestrator/native/translator.cpp.
-
 ONNX Runtime (Microsoft) — MIT License
   Used through @receptron/laya in apps/gamma-decision.
 
@@ -63,15 +58,6 @@ Qwen3-1.7B (Qwen, Alibaba Cloud), used by apps/delta-function-call
 Laya (receptron/laya-onnx, based on convaiinnovations/laya), used by
 apps/gamma-decision
   Apache License 2.0.
-
-Opus-MT ru-en (Helsinki-NLP), used for message translation through the
-CTranslate2 conversion gaudi/opus-mt-ru-en-ctranslate2
-  Creative Commons Attribution 4.0 International (CC BY 4.0),
-  https://creativecommons.org/licenses/by/4.0/
-  Source: https://huggingface.co/Helsinki-NLP/opus-mt-ru-en
-  The model is converted to CTranslate2 format and quantized to int8 at load.
-  OPUS-MT: Tiedemann, J. and Thottingal, S., "OPUS-MT — Building open
-  translation services for the World", EAMT 2020.
 
 --------------------------------------------------------------------------------
 Fonts (apps/admin)

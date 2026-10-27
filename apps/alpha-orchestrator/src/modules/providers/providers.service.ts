@@ -7,10 +7,9 @@ export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
 /**
  * What a model is for, named after the AI SDK's model factories
  * (`languageModel`, `embeddingModel`, `imageModel`, `videoModel`, `speechModel`,
- * `transcriptionModel`, `rerankingModel`, `decisionModel`); `translation` is
- * ours (the in-process CTranslate2 translator has no SDK counterpart). Only
- * `language`, `decision` and `translation` are used by agents today; the rest
- * can be listed so the file describes a provider's whole catalog.
+ * `transcriptionModel`, `rerankingModel`, `decisionModel`). Only `language` and
+ * `decision` are used by agents today; the rest can be listed so the file
+ * describes a provider's whole catalog.
  */
 export const MODEL_TYPES = [
 	"language",
@@ -21,7 +20,6 @@ export const MODEL_TYPES = [
 	"transcription",
 	"reranking",
 	"decision",
-	"translation",
 ] as const;
 export type ModelType = (typeof MODEL_TYPES)[number];
 
@@ -38,26 +36,47 @@ export interface ProviderModel {
 }
 
 /** Files from before models had a type: the provider's `type` decides what all its models are. */
-const LEGACY_PROVIDER_TYPES = [
-	"openai-compat",
-	"systemone",
-	"ctranslate2",
-] as const;
+const LEGACY_PROVIDER_TYPES = ["openai-compat", "systemone"] as const;
 const legacyModelType = (type: string | undefined): ModelType =>
-	type === "systemone"
-		? "decision"
-		: type === "ctranslate2"
-			? "translation"
-			: "language";
+	type === "systemone" ? "decision" : "language";
+
+/**
+ * The in-process Opus-MT translator is gone, but a file written for it still
+ * loads: its provider (`type = "ctranslate2"`) and its `translation` models are
+ * dropped, and a provider left with nothing to call goes with them.
+ */
+interface LegacyProvider {
+	type?: string;
+	base_url?: string;
+	decisions_url?: string;
+	models?: { type?: string; types?: string[] }[];
+}
+
+function dropLegacyTranslator(raw: unknown): unknown {
+	const providers = (raw as { providers?: Record<string, LegacyProvider> })
+		?.providers;
+	if (!providers || typeof providers !== "object") return raw;
+	for (const [id, p] of Object.entries(providers)) {
+		if (p?.type === "ctranslate2") {
+			delete providers[id];
+			continue;
+		}
+		if (!Array.isArray(p?.models)) continue;
+		const kept = p.models.filter(
+			(m) => m?.type !== "translation" && !m?.types?.includes("translation"),
+		);
+		const dropped = kept.length < p.models.length;
+		p.models = kept;
+		if (dropped && !p.base_url && !p.decisions_url) delete providers[id];
+	}
+	return raw;
+}
 
 /**
  * A model server from `configs/providers.toml`. `baseUrl` is the OpenAI-compatible
  * endpoint (language models); `decisionsUrl` is where its decision models are
  * asked: a root without `/v1` (Laya, TypeSafe Jev: `POST {root}/v1/systemone`)
- * or a URL ending in `/decisions` (OpenRouter), default `baseUrl`. A provider
- * with only translation models (the in-process translator) has no URL, `baseUrl`
- * is "", and the model id is a Hugging Face repo.
- */
+ * or a URL ending in `/decisions` (OpenRouter), default `baseUrl`.  */
 export interface Provider {
 	id: string;
 	name: string;
@@ -101,22 +120,10 @@ const Schema = z.object({
 						)
 						.default([]),
 				})
-				.refine(
-					(p) =>
-						p.base_url ||
-						p.decisions_url ||
-						(p.models.length > 0 &&
-							p.models.every((m) =>
-								(m.types ?? [m.type ?? legacyModelType(p.type)]).every(
-									(type) => type === "translation",
-								),
-							)),
-					{
-						message:
-							"base_url is required (only a provider of translation models runs in-process)",
-						path: ["base_url"],
-					},
-				),
+				.refine((p) => p.base_url || p.decisions_url, {
+					message: "base_url is required",
+					path: ["base_url"],
+				}),
 		)
 		.default({}),
 });
@@ -161,7 +168,7 @@ function analyze(toml: string): {
 			errors: [{ message, ...(line ? { line } : {}) }],
 		};
 	}
-	const parsed = Schema.safeParse(raw);
+	const parsed = Schema.safeParse(dropLegacyTranslator(raw));
 	if (!parsed.success)
 		return {
 			providers: [],
@@ -356,8 +363,7 @@ export function seedProviders(
 ): Provider[] {
 	const seeded: Provider[] = [];
 	for (const server of servers) {
-		if (!server.baseUrl && !server.model.types.includes("translation"))
-			continue;
+		if (!server.baseUrl) continue;
 		const same = seeded.find((p) => p.baseUrl === server.baseUrl);
 		if (!same)
 			seeded.push({

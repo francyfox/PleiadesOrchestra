@@ -6,7 +6,6 @@ import {
 	UntranslatableError,
 } from "@repo/core";
 import { LruMap } from "../lru-map/lru-map.ts";
-import { translateAroundLatin } from "../translate/translate.service.ts";
 
 /** Any letter that is not Latin: the string is not (only) English. */
 const NOT_ENGLISH = /(?!\p{Script=Latin})\p{L}/u;
@@ -14,8 +13,8 @@ const NOT_ENGLISH = /(?!\p{Script=Latin})\p{L}/u;
 export { UntranslatableError };
 
 export interface EnglishOnlyOptions {
-	/** Russian → English; an empty answer, a throw, or no translator at all means "cannot translate". */
-	translate?: (text: string) => string | Promise<string>;
+	/** Strings → English, same order (alpha-understand); a throw, a wrong count, an empty or still non-English answer, or no translator at all means "cannot translate". */
+	translate?: (texts: string[]) => Promise<string[]>;
 	/** Most translated strings kept (tool descriptions, enum values: static per site). */
 	cacheSize?: number;
 }
@@ -23,7 +22,7 @@ export interface EnglishOnlyOptions {
 /**
  * Wraps the `DecisionAgent` port so that nothing but English reaches Laya:
  * every string with non-Latin letters in the state, the instructions and the
- * criteria is translated first (Latin words stay as typed, `translateAroundLatin`).
+ * criteria is translated first, all of a call in one batch.
  *
  * Criteria KEYS are the options Laya reads, so a non-Latin key (a Russian store
  * name) is sent as its translation, not as an opaque id: descriptions are often
@@ -43,23 +42,48 @@ export function withEnglishOnly(
 		maxEntries: options.cacheSize ?? 1000,
 	});
 
-	async function english(text: string): Promise<string> {
-		if (!NOT_ENGLISH.test(text)) return text;
-		const cached = cache.get(text);
-		if (cached !== undefined) return cached;
-		let translated = "";
+	/** Every string of a call that is not English yet, translated in one batch into the cache. */
+	async function prefetch(
+		state: DecisionState,
+		questions: Record<string, DecisionQuestion>,
+	) {
+		const missing = new Set<string>();
+		const collect = (value: unknown) => {
+			if (typeof value === "string") {
+				if (NOT_ENGLISH.test(value) && !cache.has(value)) missing.add(value);
+			} else if (Array.isArray(value)) value.forEach(collect);
+			else if (value && typeof value === "object") {
+				const { type, criteria } = value as {
+					type?: unknown;
+					criteria?: object;
+				};
+				if (type === "choice" && criteria)
+					Object.keys(criteria).forEach(collect);
+				Object.values(value).forEach(collect);
+			}
+		};
+		collect(state);
+		collect(Object.values(questions));
+		if (missing.size === 0) return;
+		const texts = [...missing];
+		let out: string[] = [];
 		try {
-			translated = options.translate
-				? (await translateAroundLatin(text, options.translate)).trim()
-				: "";
+			out = options.translate ? await options.translate(texts) : [];
 		} catch {
-			translated = "";
+			out = [];
 		}
 		// A translation that still has Russian in it (a model that left a word as is) is not English either.
-		if (translated === "" || NOT_ENGLISH.test(translated)) {
-			throw new UntranslatableError(text);
-		}
-		cache.set(text, translated);
+		texts.forEach((text, i) => {
+			const translated = out[i]?.trim();
+			if (translated && !NOT_ENGLISH.test(translated))
+				cache.set(text, translated);
+		});
+	}
+
+	async function english(text: string): Promise<string> {
+		if (!NOT_ENGLISH.test(text)) return text;
+		const translated = cache.get(text);
+		if (translated === undefined) throw new UntranslatableError(text);
 		return translated;
 	}
 
@@ -128,6 +152,7 @@ export function withEnglishOnly(
 			state: DecisionState,
 			questions: Record<string, DecisionQuestion>,
 		) {
+			await prefetch(state, questions);
 			const stateEn = await deep(state);
 			const prepared = await Promise.all(
 				Object.entries(questions).map(

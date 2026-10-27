@@ -724,6 +724,42 @@ describe("widget threads and messages", () => {
 		expect(seen).toEqual({ city: "Qyzylorda", country: "Kazakhstan" });
 	});
 
+	test("replyTo reaches the run as a turn fact; too long is 422; absent still works", async () => {
+		let seen: unknown = "unset";
+		const probe: GoapAction = {
+			name: "probe",
+			cost: 0,
+			preconditions: {},
+			effects: { replied: true },
+			async execute(c) {
+				seen = c.state.replyTo;
+				return { replied: true };
+			},
+		};
+		const ctx = setup({}, { threadActionsFor: () => [probe] });
+		const token = await newVisitor(ctx);
+		const threadId = await newThread(ctx, token);
+		const send = (body: Record<string, unknown>) =>
+			ctx.app.handle(
+				widgetRequest("/v1/widget/messages", {
+					token,
+					ip: IP,
+					body: { threadId, text: "2", ...body },
+				}),
+			);
+
+		const ok = await send({ replyTo: "1. Add A\n2. Add B" });
+		await ok.text();
+		expect(ok.status).toBe(200);
+		expect(seen).toBe("1. Add A\n2. Add B");
+
+		expect((await send({ replyTo: "x".repeat(2001) })).status).toBe(422);
+
+		seen = "unset";
+		await (await send({})).text();
+		expect(seen).toBeUndefined();
+	});
+
 	test("customerContext larger than the text limit → 413, model not called", async () => {
 		const ctx = setup({ maxTextChars: 20 });
 		const token = await newVisitor(ctx);

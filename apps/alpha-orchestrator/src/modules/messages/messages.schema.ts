@@ -5,6 +5,8 @@ export const MessageBody = t.Object({
 	/** External user id within the channel. */
 	userId: t.String(),
 	text: t.String(),
+	/** The assistant message the sender answers (a picked option). */
+	replyTo: t.Optional(t.String({ maxLength: 2000 })),
 	channel: t.Optional(t.String()),
 	displayName: t.Optional(t.String()),
 });

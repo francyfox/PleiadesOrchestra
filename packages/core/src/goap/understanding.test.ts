@@ -1,0 +1,131 @@
+import { expect, test } from "bun:test";
+import type { FunctionCallAgent } from "../function-call-agent.ts";
+import {
+	translateTexts,
+	understandingTool,
+	understandMessage,
+} from "./understanding.ts";
+
+const INTENTS = { search: "look for things", addToCart: "buy", other: "else" };
+
+const fake = (answer: unknown): FunctionCallAgent => ({
+	fillArguments: async () => answer as Record<string, unknown>,
+});
+
+test("a valid answer comes back as is, quantity 0 allowed", async () => {
+	const answer = {
+		en: "remove all t-shirts",
+		tasks: [
+			{
+				intent: "addToCart",
+				text: "remove all t-shirts",
+				items: [{ name: "t-shirts", quantity: 0 }],
+			},
+		],
+	};
+	expect(await understandMessage(fake(answer), INTENTS, "x", "en")).toEqual(
+		answer,
+	);
+});
+
+test("small talk is an empty task list", async () => {
+	expect(
+		await understandMessage(
+			fake({ en: "hello", tasks: [] }),
+			INTENTS,
+			"привет",
+			"en",
+		),
+	).toEqual({ en: "hello", tasks: [] });
+});
+
+test("unusable answers are undefined", async () => {
+	const bad = [
+		{},
+		{ en: "", tasks: [] },
+		{ en: "x" },
+		{ en: "x", tasks: "no" },
+		{ en: "x", tasks: [{ intent: "fly", text: "a", items: [] }] },
+		{ en: "x", tasks: [{ intent: "search", text: "", items: [] }] },
+		{
+			en: "x",
+			tasks: [
+				{ intent: "search", text: "a", items: [{ name: "a", quantity: -1 }] },
+			],
+		},
+		{
+			en: "x",
+			tasks: [
+				{ intent: "search", text: "a", items: [{ name: " ", quantity: 1 }] },
+			],
+		},
+	];
+	for (const answer of bad)
+		expect(
+			await understandMessage(fake(answer), INTENTS, "x", "en"),
+		).toBeUndefined();
+	const failing: FunctionCallAgent = {
+		fillArguments: async () => {
+			throw new Error("down");
+		},
+	};
+	expect(await understandMessage(failing, INTENTS, "x", "en")).toBeUndefined();
+});
+
+test("a task with an unknown intent is dropped when others remain", async () => {
+	const good = {
+		intent: "search",
+		text: "a lamp",
+		items: [{ name: "lamp", quantity: 1 }],
+	};
+	const answer = {
+		en: "a lamp and wings",
+		tasks: [good, { intent: "fly", text: "wings", items: [] }],
+	};
+	expect(
+		(await understandMessage(fake(answer), INTENTS, "x", "en"))?.tasks,
+	).toEqual([good]);
+});
+
+test("the tool names the intents and the catalog language", () => {
+	const tool = understandingTool(INTENTS, "ru");
+	expect(tool.description).toContain("Russian");
+	expect(JSON.stringify(tool.inputSchema)).toContain(
+		'"enum":["search","addToCart","other"]',
+	);
+});
+
+test("translateTexts returns the strings in order and refuses a short answer", async () => {
+	expect(
+		await translateTexts(fake({ texts: ["one", "two"] }), ["раз", "два"]),
+	).toEqual(["one", "two"]);
+	expect(
+		translateTexts(fake({ texts: ["one"] }), ["раз", "два"]),
+	).rejects.toThrow();
+	expect(
+		translateTexts(fake({ texts: ["a", 2] }), ["а", "б"]),
+	).rejects.toThrow();
+});
+
+test("the instructions demand digits for counts in the English text", () => {
+	const { description } = understandingTool(INTENTS, "en");
+	expect(description).toContain("count as a digit");
+	expect(description).toContain('never "a pair of socks"');
+});
+
+test("the earlier assistant message is quoted in the request only when given", async () => {
+	const requests: string[] = [];
+	const spy: FunctionCallAgent = {
+		fillArguments: async ({ request }) => {
+			requests.push(request);
+			return { en: "add Vista 27 to the cart", tasks: [] };
+		},
+	};
+	await understandMessage(spy, INTENTS, "2", "en", undefined, "1. A\n2. B");
+	await understandMessage(spy, INTENTS, "2", "en");
+	expect(requests[0]).toContain(
+		"Earlier assistant message the visitor answers: «1. A\n2. B»",
+	);
+	expect(requests[0]).toContain("2");
+	expect(requests[1]).toBe("2");
+});

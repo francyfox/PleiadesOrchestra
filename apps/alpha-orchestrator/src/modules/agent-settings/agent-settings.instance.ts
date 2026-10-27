@@ -21,6 +21,12 @@ export const agentSettings = createAgentSettings({
 			apiKey: config.FUNCTION_CALL_API_KEY,
 			model: config.FUNCTION_CALL_MODEL,
 		},
+		// Beta's server; its picked model too (agent-settings.service) until alpha-understand has its own.
+		"alpha-understand": {
+			baseUrl: config.LLM_BASE_URL,
+			apiKey: config.LLM_API_KEY,
+			model: config.LLM_MODEL,
+		},
 		"gamma-decision": {
 			baseUrl: config.LAYA_API_BASE_URL,
 			apiKey: config.LAYA_API_KEY,
@@ -68,22 +74,6 @@ export const agentSettings = createAgentSettings({
 						extraBody: {},
 					},
 				},
-				// The in-process translator, only where a library is installed; no URL, no key.
-				...(config.TRANSLATE_LIB_PATH
-					? [
-							{
-								id: "local-translate",
-								baseUrl: "",
-								apiKeyVar: "",
-								model: {
-									id: config.TRANSLATE_MODEL_REPO,
-									name: config.TRANSLATE_MODEL_REPO,
-									types: ["translation" as const],
-									extraBody: {},
-								},
-							},
-						]
-					: []),
 			]),
 	}),
 });

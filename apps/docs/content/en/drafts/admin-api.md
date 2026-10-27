@@ -240,7 +240,7 @@ The ledger (`credit_ledger`, append-only) is in **micro-USD** integers (1 TR = 1
 }
 ```
 
-- `rows` are per day (UTC) × `kind` (`ingest` / `generate` / `decision` / `translate`; `translate` is not an LLM but the CTranslate2 message translator, `provider: ctranslate2`, `action_name: translate`, no tokens; `classify` is the message intent decision, `action_name: classify`, `provider` = `laya` / `memory` / `rules`, whichever decided). `overall` is per `kind` over the whole period.
+- `rows` are per day (UTC) × `kind` (`ingest` / `generate` / `decision` / `translate`; `translate` only in rows from before 2026-10-27, when the CTranslate2 translator was removed (alpha-understand translates now, its calls are `decision` with `action_name: alpha-understand`); `classify` is the message intent decision, `action_name: classify`, `provider` = `laya` / `memory` / `rules`, whichever decided). `overall` is per `kind` over the whole period.
 - Percentiles are nearest-rank over the `latencyMs` of all calls, including failed ones (`failed` is their count).
 - `tokensPerSecond` is the median of `outputTokens / latency` over successful calls with usage; `null` if there are none (Laya has no tokens).
 
@@ -277,7 +277,7 @@ One user message = one **request**: the first run plus one more per browser tool
 
 `events[].type` and `payload` are exactly `PlanTraceEvent` from `@repo/core` (`packages/core/src/goap/types.ts`) without the `type`/`attempt`/`action`/`at` fields, which are lifted to the top level; long strings in `state` are cut to 500 characters; `finished` has no `attempt`, so its `attempts` goes into the column. For a run going on now (`running: true`) these are the events that have already happened (from memory; they are not in the DB yet). `now` is the server time; the elapsed time of the running step is counted from it.
 
-**admin-api (BFF) → panel.** The panel does not stitch runs together or guess statuses: `GET /api/requests` returns the same page, and `GET /api/requests/:id` returns a `RequestView` ready to draw. It has `nodes`: `prompt` → `translate` (only if the message was translated: its call is in the first run's `llm_calls`; `label`/`detail.text` is the English text, `durationMs` the translation time, the call in `detail.calls`) → `classify` (if the intent was decided in this request: `label` is the intent, `detail.calls[0].provider` says who decided; a thread without a tool catalog has no decision) → `understand` (its time without translation and intent decision; when `classify` is there, its `label` is the plan goal `key=value …`) → the plan steps → `result`. Each node has a `round`, a `status` (`done|running|browser|failed|skipped|diverged|pending|not_reached|reached|missed`), `startedAt`, `durationMs`, and a `detail` with the tool arguments, browser time, tool answer, effects, error and model calls. `edges` are `next`/`replan`. A browser tool is one step, although the server stops and resumes around it; its `detail.browserMs` is the time from the server's pause to the resume. `now` is returned only for a running request (otherwise the response would change on every read and the live hub would push it forever). Live topics at `/api/live`: `requests` (the list, 3 s) and `request` (one request, 1 s).
+**admin-api (BFF) → panel.** The panel does not stitch runs together or guess statuses: `GET /api/requests` returns the same page, and `GET /api/requests/:id` returns a `RequestView` ready to draw. It has `nodes`: `prompt` → `translate` (only in requests from before 2026-10-27, when a message was translated by CTranslate2: its call is in the first run's `llm_calls`; `label`/`detail.text` is the English text, `durationMs` the translation time, the call in `detail.calls`) → `classify` (if the intent was decided in this request: `label` is the intent, `detail.calls[0].provider` says who decided; a thread without a tool catalog has no decision) → `understand` (its time without translation and intent decision; when `classify` is there, its `label` is the plan goal `key=value …`) → the plan steps → `result`. Each node has a `round`, a `status` (`done|running|browser|failed|skipped|diverged|pending|not_reached|reached|missed`), `startedAt`, `durationMs`, and a `detail` with the tool arguments, browser time, tool answer, effects, error and model calls. `edges` are `next`/`replan`. A browser tool is one step, although the server stops and resumes around it; its `detail.browserMs` is the time from the server's pause to the resume. `now` is returned only for a running request (otherwise the response would change on every read and the live hub would push it forever). Live topics at `/api/live`: `requests` (the list, 3 s) and `request` (one request, 1 s).
 
 ### MCP (sites' WebMCP tool catalogs)
 
@@ -312,7 +312,7 @@ Paging (`GET /v1/admin/channels`, `GET /v1/admin/blocked-ips`): `pageSize` 1…1
 
 A channel is not only a "site": it is any entry point (telegram, discord, slack, cli, jira, a widget on a site…). `kind: "web"` is the only kind created through the API, and the only one with widget keys and `allowedOrigins`.
 
-`catalogLanguage` is a language code (`^[a-z]{2}(-[A-Z]{2})?$`, not a name; otherwise `422` from the orchestrator and `400 invalid_language` from admin-api): the language the site's product names are written in. The search query goes to the site's tool in that language whatever the shopper wrote: for `en`, from the message's English translation; for `ru`, from the message itself (the `extractProductRequestRu` rules); for other languages, the shopper's words as they are. It lands in `WorldState` as the `catalogLang` fact (internal; delta models do not see it).
+`catalogLanguage` is a language code (`^[a-z]{2}(-[A-Z]{2})?$`, not a name; otherwise `422` from the orchestrator and `400 invalid_language` from admin-api): the language the site's product names are written in. The search query goes to the site's tool in that language whatever the shopper wrote: for `en`, from alpha-understand's English text and product names; for `ru`, from the message itself (the `extractProductRequestRu` rules); for other languages, the shopper's words as they are. It lands in `WorldState` as the `catalogLang` fact (internal; delta models do not see it).
 
 ### IP blocks
 
@@ -336,7 +336,7 @@ A channel is not only a "site": it is any entry point (telegram, discord, slack,
 interface Agent {
   id: string;                    // "beta-text" | "gamma-decision"
   name: string;
-  role: "text" | "decision" | "function-call" | "translate"; // text (LLM) / typed decisions (Laya) / JSON arguments of a function call (delta) / the in-process Opus-MT translator (no endpoint; status = loaded)
+  role: "text" | "decision" | "function-call" | "understand"; // text (LLM) / typed decisions (Laya) / JSON arguments of a function call (delta) / alpha-understand: English, tasks and quantities of a message in one call
   endpoint: string;              // base URL without login/password, query and fragment
   model: string | null;          // null for the decision agent
   status: "up" | "down";
@@ -384,8 +384,7 @@ interface ProviderModel {
   extraBody: Record<string, unknown>; // extra request-body fields, e.g. { "provider": { "require_parameters": true } }
 }
 interface Provider { id: string; name: string; baseUrl: string; decisionsUrl?: string; apiKey: string; models: ProviderModel[] }
-// ProviderModel.types (a non-empty list of "language" | "embedding" | "image" | "video" | "speech" | "transcription" | "reranking" | "decision" | "translation", the AI SDK's factory names; several for a multimodal model): gamma-decision picks only "decision" models, the other agents only "language"; a wrong pick is 400. decisionsUrl: where decision models are asked (Laya root without /v1, or an OpenRouter-style .../decisions URL), default baseUrl
-// "translation" models (types includes "translation"): the in-process translator (a provider of only those has no baseUrl, "" here; the model id is a Hugging Face repo); no agent can pick one, it is read at start (a change needs a restart)
+// ProviderModel.types (a non-empty list of "language" | "embedding" | "image" | "video" | "speech" | "transcription" | "reranking" | "decision", the AI SDK's factory names; several for a multimodal model): gamma-decision picks only "decision" models, the other agents only "language"; a wrong pick is 400. decisionsUrl: where decision models are asked (Laya root without /v1, or an OpenRouter-style .../decisions URL), default baseUrl
 // apiKey: "••••" + last 4 characters, "$VAR" as written, "" = none — never the key
 ```
 

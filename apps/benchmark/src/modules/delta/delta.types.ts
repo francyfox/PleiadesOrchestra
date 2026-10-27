@@ -15,7 +15,7 @@ export interface Case {
 	facts: Record<string, string | number | boolean>;
 	/** What the previous tool answered, if this step depends on it. */
 	answer?: string;
-	/** The request in English, as the translator hands it to delta. */
+	/** The request in English, as alpha-understand hands it to delta. */
 	request: string;
 }
 

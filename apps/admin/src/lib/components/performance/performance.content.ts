@@ -20,11 +20,6 @@ const performanceContent = {
 				en: "beta-text: digest of a long message's part",
 				kk: "beta-text: ұзын хабарлама бөлігінің конспектісі",
 			}),
-			translate: t({
-				ru: "CTranslate2: перевод сообщения ru→en",
-				en: "CTranslate2: message translation ru→en",
-				kk: "CTranslate2: хабарлама аудармасы ru→en",
-			}),
 			classify: t({
 				ru: "определение намерения: Laya, память сайта или слова",
 				en: "intent decision: Laya, the site's memory or words",

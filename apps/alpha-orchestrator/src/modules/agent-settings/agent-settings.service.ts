@@ -118,7 +118,8 @@ export function createAgentSettings(deps: AgentSettingsDeps) {
 				buildEffective(
 					modelTypeOf(id),
 					env[id],
-					row(id),
+					// alpha-understand runs on beta's model until it is given its own.
+					row(id) ?? (id === "alpha-understand" ? row("beta-text") : undefined),
 					providers.providers(),
 					providers.resolveKey,
 				),

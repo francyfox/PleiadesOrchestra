@@ -1,4 +1,4 @@
-import type { WorldState } from "@repo/core";
+import type { UnderstoodItem, WorldState } from "@repo/core";
 import {
 	FOUND_ITEMS,
 	itemsText,
@@ -27,6 +27,8 @@ export interface QueuedTask {
 	intent: string;
 	/** English words of the message that ask for this task. */
 	text: string;
+	/** Products and counts of the task, when `alpha-understand` listed them. */
+	items?: UnderstoodItem[];
 }
 
 export interface TaskOutcome extends QueuedTask {

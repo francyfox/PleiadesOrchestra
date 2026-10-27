@@ -42,10 +42,10 @@ export interface ReplyDeps {
 	 * below, or unset, they wait for a person.
 	 */
 	layaAutoApproveConfidence?: number;
-	/** Translates a message that is not English; absent when no translator is loaded. */
-	translate?: (text: string) => string | Promise<string>;
 	/** `delta-function-call`: fills in WebMCP tool arguments as JSON; unset = built from facts. */
 	functionCallAgent?: FunctionCallAgent;
+	/** `alpha-understand`: message -> English + tasks with products and counts in one call; unset or failing = the message goes on as typed. */
+	understandAgent?: FunctionCallAgent;
 	/** The channel persona's fixed answer language (ISO code); "" or unset = the visitor's. */
 	personaLang?: (channelId: string) => string | undefined;
 	/** Where the visitor's message is stored when the run starts (so a reload mid-run still shows it). */

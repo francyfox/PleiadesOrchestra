@@ -28,6 +28,8 @@ export interface WidgetOptions {
 	/** The visitor picked a language in the header. */
 	onLang: (lang: Lang) => void;
 	onSend: (text: string) => void;
+	/** An option of the newest reply was picked: send it as a visitor message that answers `replyTo`. */
+	onPick: (text: string, replyTo: string) => void;
 	onStop: () => void;
 	/** The notice about unfinished work: run the held tool, answer it as failed, send the lost prompt again. */
 	onContinue: () => void;
@@ -71,6 +73,7 @@ export function createWidget(options: WidgetOptions) {
 		lang: options.lang,
 		examples: options.examples,
 		onAsk: options.onSend,
+		onPick: options.onPick,
 	});
 	const errorLine = createErrorLine(s);
 	const progress = createProgress(s);
@@ -106,6 +109,19 @@ export function createWidget(options: WidgetOptions) {
 	el.className = "widget";
 	el.dataset.pos = options.position;
 	el.innerHTML = launcher.html + panel.html;
+
+	// Keys 1..9 pick an option; the composer's own typing is left alone (see `pickKey`).
+	el.addEventListener("keydown", (event) => {
+		const inPanel = (event.target as Element).closest?.(".panel") != null;
+		if (
+			messages.model.pickKey(event, {
+				open: isOpen,
+				inPanel,
+				draftEmpty: composer.model.draft === "",
+			})
+		)
+			event.preventDefault();
+	});
 
 	const side = options.position.endsWith("left") ? "left" : "right";
 	let started = false;

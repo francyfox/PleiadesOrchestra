@@ -7,7 +7,7 @@ import type { LayaCase } from "./choices.types.ts";
 // t-shirt": out or false).
 //
 // Shop-domain layer: the sites, schemas and requests are fixtures, varied on
-// purpose (CLAUDE.md "Domain: not one shop"). English: the translator runs first.
+// purpose (CLAUDE.md "Domain: not one shop"). English: alpha-understand translates first.
 
 const tool = (
 	name: string,

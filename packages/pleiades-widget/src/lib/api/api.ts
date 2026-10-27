@@ -78,6 +78,8 @@ export interface WidgetApi {
 		customerContext?: CustomerContext,
 		/** `pathname + search` of the visitor's page (see `currentPage`). */
 		page?: string,
+		/** The assistant message this text answers (a picked option), ≤2000 chars. */
+		replyTo?: string,
 	): AsyncGenerator<StreamEvent>;
 	/** Resumes a run that stopped on a `tool_call` event, once the browser has executed it. */
 	sendToolResult(
@@ -255,6 +257,7 @@ export function createWidgetApi({
 			signal,
 			customerContext,
 			page,
+			replyTo,
 		) {
 			const response = await request("/v1/widget/messages", {
 				method: "POST",
@@ -265,6 +268,7 @@ export function createWidgetApi({
 					threadId,
 					text,
 					...(page ? { page } : {}),
+					...(replyTo ? { replyTo: replyTo.slice(0, 2000) } : {}),
 					...languageFields(),
 					...(customerContext ? { customerContext } : {}),
 				}),

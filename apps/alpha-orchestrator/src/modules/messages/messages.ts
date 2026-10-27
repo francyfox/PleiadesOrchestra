@@ -46,6 +46,7 @@ export function messagesRoutes({ db, directory, reply, now }: MessagesDeps) {
 			);
 			const stream = reply.startReply(visitor, threadId, body.text, {
 				signal: request.signal,
+				replyTo: body.replyTo,
 			});
 			return ndjsonResponse(stream, request);
 		},

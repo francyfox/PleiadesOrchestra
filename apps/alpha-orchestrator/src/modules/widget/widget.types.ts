@@ -75,6 +75,8 @@ export interface ReplyOptions {
 	/** The widget's UI language (`en`/`ru`/`kk`) and whether the visitor picked it in the language picker. */
 	lang?: string;
 	langChosen?: boolean;
+	/** The assistant message the visitor answers (they picked one of its options). */
+	replyTo?: string;
 }
 
 /** What a browser-side tool reported back. */

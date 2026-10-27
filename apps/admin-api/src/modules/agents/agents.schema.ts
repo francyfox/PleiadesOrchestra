@@ -8,7 +8,7 @@ export const AgentRole = t.UnionEnum([
 	"text",
 	"decision",
 	"function-call",
-	"translate",
+	"understand",
 ]);
 
 export const AgentStatus = t.UnionEnum(["up", "down"]);

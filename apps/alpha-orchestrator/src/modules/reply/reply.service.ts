@@ -1,9 +1,12 @@
 import type {
 	CallContext,
 	CollectedTokens,
+	DecomposedTask,
 	GoapAction,
 	IntentVerdict,
 	Taxonomy,
+	Understanding,
+	UnderstoodItem,
 	WorldState,
 } from "@repo/core";
 import {
@@ -23,10 +26,12 @@ import {
 	PAGE_LANG_FACT,
 	parsePage,
 	preferSpecialist,
+	REQUESTED_ITEMS,
 	recordCall,
 	reuseLastProduct,
 	runnableTasks,
 	scopeFacts,
+	understandMessage,
 } from "@repo/core";
 import { intentFromMessageCues, SHOP_TAXONOMY } from "@repo/intent-presets";
 import {
@@ -40,6 +45,7 @@ import {
 import {
 	LANG_CHOSEN_FACT,
 	PERSONA_LANG_FACT,
+	REPLY_TO_FACT,
 	USER_STORED_FACT,
 } from "../goap/goap.types.ts";
 import { learnIntent } from "../intents/intents.service.ts";
@@ -64,7 +70,6 @@ import {
 	turnFacts,
 } from "../tasks/tasks.service.ts";
 import { normalizeText } from "../text/text.service.ts";
-import { translateAroundLatin } from "../translate/translate.service.ts";
 import type { VisitorRow } from "../visitors/visitors.types.ts";
 import type { ReplyOptions, ToolOutcome } from "../widget/widget.types.ts";
 import type { ReplyDeps } from "./reply.types.ts";
@@ -118,8 +123,9 @@ async function initialState(
 	planRunId: string,
 	text: string,
 	options: ReplyOptions,
-): Promise<WorldState> {
+): Promise<{ state: WorldState; understood?: Understanding }> {
 	const userMessage = normalizeText.apply(text);
+	const replyTo = options.replyTo ? typedText(options.replyTo) : "";
 	const personaLang = deps.personaLang?.(visitor.channelId);
 	// Stored now, not when the run ends: a reload mid-run (or a run that never
 	// ends) still shows what the visitor said. The reply stores only itself.
@@ -129,11 +135,22 @@ async function initialState(
 			[{ role: "user", content: typedText(text) }],
 		);
 	}
-	const english = await translateMessage(deps, userMessage, {
-		threadId,
-		userId: visitor.id,
-		planRunId,
-	});
+	const context = { threadId, userId: visitor.id, planRunId };
+	const catalogLang = deps.catalogLanguage?.(visitor.channelId) ?? "en";
+	// One call gives the English text, the tasks and the products; when it fails the message goes on as typed.
+	const understood = deps.understandAgent
+		? await understandMessage(
+				deps.understandAgent,
+				decompositionDescriptions(
+					deps.taxonomy?.(visitor.channelId) ?? SHOP_TAXONOMY,
+				),
+				userMessage,
+				catalogLang,
+				{ ...context, actionName: "alpha-understand" },
+				replyTo,
+			)
+		: undefined;
+	const english = understood?.en;
 	const turn: WorldState = {
 		userMessage,
 		// As typed, only cleaned of control characters: what the history keeps,
@@ -141,28 +158,45 @@ async function initialState(
 		userMessageRaw: typedText(text),
 		// What the planner and the small models read; the reply is still about
 		// the original. A message with no non-Latin letter is its own English
-		// text; absent only when a translation was needed and none came.
+		// text; absent only when a translation was needed and alpha-understand gave none.
 		...(english || !NOT_ENGLISH.test(userMessage)
 			? { userMessageEn: english ?? userMessage }
 			: {}),
 		// The query for the site's search must be in its catalog's language.
-		catalogLang: deps.catalogLanguage?.(visitor.channelId) ?? "en",
+		catalogLang,
+		// One task: its products are the request, the parse step is not needed.
+		...(understood?.tasks.length === 1
+			? itemFacts(understood.tasks[0]?.items)
+			: {}),
 		threadId,
 		userId: visitor.id,
 		// Which channel's persona the reply is written in (`buildActions`).
 		channelId: visitor.channelId,
 		planRunId,
+		...(replyTo ? { [REPLY_TO_FACT]: replyTo } : {}),
 		...customerFacts(options.customerContext),
 		...pageFacts(options.page, options),
 		...(deps.history ? { [USER_STORED_FACT]: true } : {}),
 		...(personaLang ? { [PERSONA_LANG_FACT]: personaLang } : {}),
 	};
 	const checkpoint = await deps.worldStateStore.load(threadId);
-	return checkpoint ? { ...sessionFacts(checkpoint.state), ...turn } : turn;
+	return {
+		state: checkpoint ? { ...sessionFacts(checkpoint.state), ...turn } : turn,
+		understood,
+	};
 }
 
-/** Shown next to the call in the ledger and the graph (the files `translate-engine.ts` downloads). */
-const TRANSLATE_MODEL = "opus-mt-ru-en";
+/** `query`/`quantity` (the first product) and, for several, the whole list: what `parseProductRequest` would have written. Quantity 0 stays: it means removal. */
+function itemFacts(items: UnderstoodItem[] = []): WorldState {
+	const [first] = items;
+	if (!first) return {};
+	return {
+		requestParsed: true,
+		query: first.name,
+		quantity: first.quantity,
+		...(items.length > 1 ? { [REQUESTED_ITEMS]: JSON.stringify(items) } : {}),
+	};
+}
 
 /** The text as the user typed it: canonical unicode, `\n` line ends, no control characters other than line breaks and tabs. */
 export function typedText(text: string): string {
@@ -175,54 +209,6 @@ export function typedText(text: string): string {
 
 /** Any letter that is not Latin: the message is not (only) English. */
 const NOT_ENGLISH = /(?!\p{Script=Latin})\p{L}/u;
-
-/**
- * The message in English, the first thing done with it: Laya and the small
- * models read English far better than Russian. `undefined` when it already is
- * English, when there is no translator, or when the translator fails (reported,
- * never fatal — the message just goes on in its own language).
- */
-async function translateMessage(
-	deps: ReplyDeps,
-	text: string,
-	context: CallContext,
-): Promise<string | undefined> {
-	if (!deps.translate || !NOT_ENGLISH.test(text)) return undefined;
-	const startedAt = performance.now();
-	const recorder = deps.usageRecorder?.record
-		? { record: deps.usageRecorder.record.bind(deps.usageRecorder) }
-		: undefined;
-	const report = (
-		outcome: ({ ok: true } & CollectedTokens) | { ok: false; error: string },
-	) =>
-		recordCall(recorder, {
-			...context,
-			actionName: "translate",
-			kind: "translate",
-			provider: "ctranslate2",
-			model: TRANSLATE_MODEL,
-			latencyMs: Math.round(performance.now() - startedAt),
-			at: deps.now(),
-			...outcome,
-		});
-	try {
-		const { value, tokens } = await collectTokens(() =>
-			translateAroundLatin(
-				text,
-				deps.translate as NonNullable<ReplyDeps["translate"]>,
-			),
-		);
-		report({ ok: true, ...tokens });
-		return value || undefined;
-	} catch (error) {
-		report({
-			ok: false,
-			error: error instanceof Error ? error.message : String(error),
-		});
-		deps.onError?.(error);
-		return undefined;
-	}
-}
 
 /** Who decided the intent, as the ledger names it (shown in the graph). */
 const INTENT_PROVIDERS = {
@@ -267,7 +253,7 @@ export async function prepareNewMessage(
 	text: string,
 	options: ReplyOptions,
 ): Promise<PreparedRun> {
-	const state = await initialState(
+	const { state, understood } = await initialState(
 		deps,
 		visitor,
 		threadId,
@@ -291,16 +277,18 @@ export async function prepareNewMessage(
 	// that picks the site's own tools (no intent sets) is decomposed only when its switch
 	// forces it (the tasks then take the shop preset's intents); a tool-level queue is not built yet.
 	if (
-		deps.functionCallAgent &&
 		messageEn !== undefined &&
 		(deps.intentSets?.(visitor.channelId).length !== 0 ||
 			deps.severalTasks?.(visitor.channelId) === true) &&
-		looksLikeSeveralTasks(messageEn)
+		(understood
+			? understood.tasks.length >= 2
+			: deps.functionCallAgent && looksLikeSeveralTasks(messageEn))
 	) {
 		const several = await prepareSeveralTasks(
 			deps,
 			{ visitor, threadId, planRunId, state, actions, taxonomy },
 			messageEn,
+			understood?.tasks,
 		);
 		if (several) return several;
 	}
@@ -414,7 +402,12 @@ function planTask(
 				)
 			: actions;
 	return planIntent(
-		{ ...base, userMessageEn: task.text, ...chainFacts(queue, outcomes) },
+		{
+			...base,
+			userMessageEn: task.text,
+			...itemFacts(task.items),
+			...chainFacts(queue, outcomes),
+		},
 		usable,
 		task.intent,
 		taxonomy,
@@ -440,14 +433,18 @@ async function prepareSeveralTasks(
 		taxonomy: Taxonomy;
 	},
 	messageEn: string,
+	/** The tasks `alpha-understand` already gave: no decomposition call. */
+	understood?: DecomposedTask[],
 ): Promise<PreparedRun | undefined> {
 	const { visitor, threadId, planRunId, state, actions, taxonomy } = run;
-	const found = await decomposeMessage(
-		deps.functionCallAgent as NonNullable<ReplyDeps["functionCallAgent"]>,
-		decompositionDescriptions(taxonomy),
-		messageEn,
-		{ threadId, userId: visitor.id, planRunId },
-	);
+	const found =
+		understood ??
+		(await decomposeMessage(
+			deps.functionCallAgent as NonNullable<ReplyDeps["functionCallAgent"]>,
+			decompositionDescriptions(taxonomy),
+			messageEn,
+			{ threadId, userId: visitor.id, planRunId },
+		));
 	if (!found || found.length < 2) return undefined;
 	const tasks = runnableTasks(found, taxonomy, actions);
 	if (tasks.length === 0) return undefined;
@@ -463,7 +460,11 @@ async function prepareSeveralTasks(
 		};
 	}
 	const [first, ...rest] = tasks.map(
-		(task): QueuedTask => ({ intent: task.intent, text: task.text ?? "" }),
+		(task): QueuedTask => ({
+			intent: task.intent,
+			text: task.text ?? "",
+			...(task.items?.length ? { items: task.items } : {}),
+		}),
 	);
 	return planTask(
 		{ ...state, [TASKS_STARTED_FACT]: deps.now() },

@@ -162,7 +162,6 @@ describe("providers.toml", () => {
 			"transcription",
 			"reranking",
 			"decision",
-			"translation",
 		])
 			expect(
 				parseProviders(
@@ -196,66 +195,39 @@ models = [{ id = "vision", types = ["language", "image"] }, { id = "old", type =
 	});
 
 	test("a file from before model types: the provider's type decides what its models are", () => {
-		const [laya, translate, chat] = parseProviders(`[providers.laya]
+		const [laya, chat] = parseProviders(`[providers.laya]
 type = "systemone"
 base_url = "http://g:8080"
 models = [{ id = "laya" }]
-
-[providers.local-translate]
-type = "ctranslate2"
-models = [{ id = "gaudi/opus-mt-ru-en-ctranslate2" }]
 
 [providers.chat]
 base_url = "http://a/v1"
 models = [{ id = "m" }]
 `) as Provider[];
 		expect(laya?.models[0]?.types).toEqual(["decision"]);
-		expect(translate?.models[0]?.types).toEqual(["translation"]);
 		expect(chat?.models[0]?.types).toEqual(["language"]);
 		expect(stringifyProviders([laya as Provider])).not.toContain(
 			'type = "systemone"',
 		);
 	});
 
-	test("a provider of translation models needs no base_url, the others do; it is written without one", () => {
-		const toml = `[providers.local-translate]
-models = [{ id = "gaudi/opus-mt-ru-en-ctranslate2", type = "translation" }]
-`;
-		const p = parseProviders(toml)[0] as Provider;
-		expect(p).toMatchObject({ baseUrl: "" });
-		expect(p.models[0]?.types).toEqual(["translation"]);
-		expect(stringifyProviders([p])).not.toContain("base_url");
-		expect(parseProviders(stringifyProviders([p]))).toEqual([p]);
+	test("a file from the Opus-MT days still loads: its provider and its translation models are dropped", () => {
+		const providers = parseProviders(`[providers.local-translate]
+type = "ctranslate2"
+models = [{ id = "gaudi/opus-mt-ru-en-ctranslate2" }]
+
+[providers.local-translate2]
+models = [{ id = "org/opus", type = "translation" }]
+
+[providers.chat]
+base_url = "http://a/v1"
+models = [{ id = "m" }, { id = "opus", types = ["translation"] }]
+`);
+		expect(providers.map((p) => p.id)).toEqual(["chat"]);
+		expect(providers[0]?.models.map((m) => m.id)).toEqual(["m"]);
 		expect(() => parseProviders('[providers.x]\nname = "x"\n')).toThrow(
 			"base_url is required",
 		);
-	});
-
-	test("a ctranslate2 server is seeded without a base URL and without a key", () => {
-		const model = {
-			id: "org/m",
-			name: "org/m",
-			types: ["translation" as const],
-			extraBody: {},
-		};
-		expect(
-			seedProviders([
-				{
-					id: "local-translate",
-					baseUrl: "",
-					apiKeyVar: "",
-					model,
-				},
-			]),
-		).toEqual([
-			{
-				id: "local-translate",
-				name: "local-translate",
-				baseUrl: "",
-				apiKey: "",
-				models: [model],
-			},
-		]);
 	});
 
 	test("seeding from env: one provider per base URL, keys as env references, no server = skipped", () => {

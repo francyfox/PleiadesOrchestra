@@ -14,7 +14,7 @@ const AGENTS = [
 	"beta-text",
 	"delta-function-call",
 	"gamma-decision",
-	"translate",
+	"alpha-understand",
 ];
 /** The text models whose sampling the bench pins to the minimum. */
 const PINNED = ["beta-text", "delta-function-call"];
@@ -67,7 +67,11 @@ export function createOrchestraSettings(deps: {
 					{
 						agent,
 						model,
-						temperature: configs.find((one) => one.id === model)?.temperature,
+						// alpha-understand is built with temperature 0 whatever its model is configured with.
+						temperature:
+							agent === "alpha-understand"
+								? 0
+								: configs.find((one) => one.id === model)?.temperature,
 					},
 				];
 			});

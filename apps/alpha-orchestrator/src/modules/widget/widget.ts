@@ -287,6 +287,7 @@ export function widgetRoutes(deps: WidgetDeps) {
 							page: body.page,
 							lang: body.lang,
 							langChosen: body.langChosen,
+							replyTo: body.replyTo,
 						},
 					);
 					return ndjsonResponse(stream, request, corsHeaders(auth.origin));
@@ -299,6 +300,7 @@ export function widgetRoutes(deps: WidgetDeps) {
 					body: t.Object({
 						threadId: t.String(),
 						text: t.String(),
+						replyTo: t.Optional(t.String({ maxLength: 2000 })),
 						page: PageField,
 						...LangFields,
 						customerContext: t.Optional(

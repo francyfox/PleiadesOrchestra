@@ -180,3 +180,140 @@ describe("message times", () => {
 		expect(model.messages[0]?.time).toBe("3m");
 	});
 });
+
+const asked = "Which one?\n1. Show cheese\n2. Show milk";
+const chatWithOptions = [
+	{ id: "u", role: "user" as const, content: "hi" },
+	{ id: "a", role: "assistant" as const, content: asked },
+];
+
+describe("options and links", () => {
+	test("the newest finished reply gets buttons, the text loses the list", () => {
+		const [, bubble] = bubbleViews(chatWithOptions, false);
+		expect(bubble?.choices.map((o) => o.text)).toEqual([
+			"Show cheese",
+			"Show milk",
+		]);
+		expect(bubble?.choices[1]?.n).toBe("2");
+		expect(bubble?.listed).toEqual([]);
+		expect(bubble?.parts.map((p) => p.text).join("")).toBe("Which one?");
+	});
+
+	test("while the turn is busy the newest reply shows no buttons", () => {
+		const [, bubble] = bubbleViews(chatWithOptions, true);
+		expect(bubble?.choices).toEqual([]);
+		expect(bubble?.listed).toEqual([]);
+	});
+
+	test("an older reply keeps its options as plain lines", () => {
+		const [, old] = bubbleViews(
+			[...chatWithOptions, { id: "u2", role: "user", content: "x" }],
+			false,
+		);
+		expect(old?.choices).toEqual([]);
+		expect(old?.listed).toHaveLength(2);
+	});
+
+	test("the option label comes from the language string; links become link parts, a user bubble stays one text run", () => {
+		const [user, bubble] = bubbleViews(
+			[
+				{ id: "u", role: "user", content: "[a](https://x.test)" },
+				{
+					id: "a",
+					role: "assistant",
+					content: "See [Cheese](https://x.test/c)\n1. A\n2. B",
+				},
+			],
+			false,
+			undefined,
+			"Option {n}: {text}",
+		);
+		expect(user?.parts).toHaveLength(1);
+		expect(user?.parts[0]?.isLink).toBe(false);
+		expect(bubble?.parts[1]).toMatchObject({
+			isLink: true,
+			href: "https://x.test/c",
+			text: "Cheese",
+		});
+		expect(bubble?.choices[0]?.label).toBe("Option 1: A");
+	});
+
+	test("a picked option's bubble quotes the answered message without its list", () => {
+		const [bubble] = bubbleViews(
+			[{ id: "u", role: "user", content: "Show milk", replyTo: asked }],
+			false,
+		);
+		expect(bubble?.quote).toBe("Which one?");
+	});
+});
+
+describe("picking", () => {
+	const where = { open: true, inPanel: true, draftEmpty: true };
+	const key = (k: string, extra: object = {}) => ({
+		key: k,
+		ctrlKey: false,
+		metaKey: false,
+		altKey: false,
+		shiftKey: false,
+		isComposing: false,
+		...extra,
+	});
+	const setup = (busy = false) => {
+		const sent: [string, string][] = [];
+		const model = createMessagesModel("hi", {
+			onPick: (t, r) => sent.push([t, r]),
+		});
+		model.render(chatWithOptions, busy);
+		return { model, sent };
+	};
+
+	test("key 2 sends the second option with the full reply as replyTo", () => {
+		const { model, sent } = setup();
+		expect(model.pickKey(key("2"), where)).toBe(true);
+		expect(sent).toEqual([["Show milk", asked]]);
+	});
+
+	test("replyTo is cut to 2000 characters", () => {
+		const sent: string[] = [];
+		const model = createMessagesModel("hi", { onPick: (_, r) => sent.push(r) });
+		model.render(
+			[
+				{
+					id: "a",
+					role: "assistant",
+					content: `${"x".repeat(3000)}\n1. a\n2. b`,
+				},
+			],
+			false,
+		);
+		model.pickKey(key("1"), where);
+		expect(sent[0]).toHaveLength(2000);
+	});
+
+	test.each([
+		["no such option", key("3"), where],
+		["not a digit", key("a"), where],
+		["a modifier", key("1", { ctrlKey: true }), where],
+		["shift", key("1", { shiftKey: true }), where],
+		["IME composition", key("1", { isComposing: true }), where],
+		["panel closed", key("1"), { ...where, open: false }],
+		["focus outside the panel", key("1"), { ...where, inPanel: false }],
+		["something typed", key("1"), { ...where, draftEmpty: false }],
+	])("%s: the key is left alone", (_, event, ctx) => {
+		const { model, sent } = setup();
+		expect(model.pickKey(event, ctx)).toBe(false);
+		expect(sent).toEqual([]);
+	});
+
+	test("nothing is picked while the turn is busy, nor from an older reply", () => {
+		const busy = setup(true);
+		expect(busy.model.pickKey(key("1"), where)).toBe(false);
+		const { model, sent } = setup();
+		model.render(
+			[...chatWithOptions, { id: "u2", role: "user", content: "x" }],
+			false,
+		);
+		expect(model.pickKey(key("1"), where)).toBe(false);
+		expect(sent).toEqual([]);
+	});
+});

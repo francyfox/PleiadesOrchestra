@@ -76,6 +76,8 @@ function harness(
 	const log: string[] = [];
 	/** The `page` every request carried, in order. */
 	const pages: (string | undefined)[] = [];
+	/** The `replyTo` every message request carried, in order. */
+	const replyTos: (string | undefined)[] = [];
 	const registeredTools: WebMcpToolDescriptor[][] = [];
 	let visitors = 0;
 	let threads = 0;
@@ -97,8 +99,17 @@ function harness(
 		async pending() {
 			return script.pending?.() ?? { state: "none" };
 		},
-		async *streamMessage(token, threadId, text, signal, customerContext, page) {
+		async *streamMessage(
+			token,
+			threadId,
+			text,
+			signal,
+			customerContext,
+			page,
+			replyTo,
+		) {
 			pages.push(page);
+			replyTos.push(replyTo);
 			log.push(`send:${threadId}@${token}:${text}`);
 			yield* script.stream
 				? script.stream(token, threadId, text, signal, customerContext)
@@ -155,7 +166,7 @@ function harness(
 	});
 	const states: ChatState[] = [];
 	chat.subscribe((state) => states.push(structuredClone(state)));
-	return { chat, log, store, states, api, registeredTools, pages };
+	return { chat, log, store, states, api, registeredTools, pages, replyTos };
 }
 
 /** Rejects once `signal` fires, like a real `fetch` aborting mid-stream. */
@@ -729,6 +740,15 @@ describe("createChat WebMCP round trip", () => {
 			content: "found some",
 		});
 		expect(log).toContain("tool-result:t1@tok1:search_products");
+	});
+
+	test("a picked option goes through send: the bubble keeps what it answered, the request carries replyTo", async () => {
+		const { chat, replyTos } = harness();
+		await chat.send("a", undefined, undefined, "Which?\n1. a\n2. b");
+		await chat.send("plain");
+		expect(replyTos).toEqual(["Which?\n1. a\n2. b", undefined]);
+		expect(chat.state.messages[0]?.replyTo).toBe("Which?\n1. a\n2. b");
+		expect(chat.state.messages[2]).not.toHaveProperty("replyTo");
 	});
 
 	test("every request carries the page as it is at that moment — also after a tool navigated", async () => {

@@ -30,7 +30,47 @@ export const messagesTemplate = (scope: string) =>
 							<span x-bind:class="step.cls" x-text="step.text" />
 						</template>
 					</span>
-					<span x-text="message.content" />
+					<span class="quote" x-show="message.quote" x-text="message.quote" />
+					<span class="body">
+						<template x-for="part in message.parts" x-bind:key="part.key">
+							<span>
+								<span x-show="part.isText" x-text="part.text" />
+								{/* biome-ignore lint/a11y/useAnchorContent: the title and href are bound by Alpine */}
+								{/* biome-ignore lint/a11y/useValidAnchor: the title and href are bound by Alpine */}
+								<a
+									class="link"
+									part="link"
+									target="_blank"
+									rel="noopener noreferrer"
+									x-show="part.isLink"
+									x-bind:href="part.href"
+									x-text="part.text"
+								/>
+							</span>
+						</template>
+					</span>
+					<span class="options">
+						<template x-for="option in message.choices" x-bind:key="option.key">
+							<button
+								type="button"
+								class="try-row option"
+								part="option"
+								x-bind:data-n="option.n"
+								x-bind:aria-label="option.label"
+								x-bind:aria-keyshortcuts="option.n"
+								x-on:click="pick"
+							>
+								<kbd x-text="option.n" />
+								<span x-text="option.text" />
+							</button>
+						</template>
+						<template x-for="option in message.listed" x-bind:key="option.key">
+							<span class="option listed">
+								<kbd x-text="option.n" />
+								<span x-text="option.text" />
+							</span>
+						</template>
+					</span>
 					<time
 						class="stamp"
 						aria-live="off"

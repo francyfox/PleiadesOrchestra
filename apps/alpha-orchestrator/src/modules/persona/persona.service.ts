@@ -200,7 +200,10 @@ export const FIXED_RULES: readonly string[] = [
 	"If the outcome says something failed or was not found, say so plainly and pass on the site's advice.",
 	"Start with the answer. No greeting and no introducing yourself, unless the visitor greets you or asks who you are.",
 	"Never repeat the visitor's request back to them.",
-	"Reply with plain text for a chat bubble: short, no JSON, no code blocks, no headings.",
+	"The visitor already sees the steps that were done (what was searched, added, removed) as lines above your reply. Do not list them again. Answer like a helpful consultant of this site in 1-2 short sentences: a brief recommendation, what else may be needed, or the next step.",
+	"Reply for a chat bubble: short, no JSON, no code blocks, no headings. Markdown is allowed only in two forms: the options list below and links.",
+	"When you offer the visitor choices (which option, which date, what to do next), put them at the very END of the reply as a numbered list, one per line, exactly `1. <option>`, at most 9 items, nothing after the list. Each option is a complete short phrase the visitor could send back as their own message (for example `1. Book the 3 pm slot`). The text before the list must not repeat the options or refer to their numbers.",
+	"Links: only URLs that came from the site's answers, written as Markdown `[title](https://...)`.",
 ];
 
 /** The tail of every prompt: header and rules, exactly as the model reads them. */

@@ -21,11 +21,18 @@ const agentsContent = {
 		role: {
 			text: t({ ru: "текст", en: "text", kk: "мәтін" }),
 			decision: t({ ru: "решения", en: "decision", kk: "шешім" }),
-			translate: t({ ru: "перевод", en: "translate", kk: "аударма" }),
+			understand: t({ ru: "понимание", en: "understand", kk: "түсіну" }),
 			"function-call": t({
 				ru: "вызов функций",
 				en: "function call",
 				kk: "функция шақыру",
+			}),
+		},
+		roleHint: {
+			understand: t({
+				ru: "Понимание сообщения: перевод на английский, задачи и количество товаров одним вызовом",
+				en: "Message understanding: translation to English, tasks and product quantities in one call",
+				kk: "Хабарламаны түсіну: ағылшынға аудару, тапсырмалар мен тауар саны бір шақыруда",
 			}),
 		},
 		status: {

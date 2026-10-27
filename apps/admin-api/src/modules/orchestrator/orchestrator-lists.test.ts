@@ -57,6 +57,13 @@ const AGENT = {
 	checkedAt: 5,
 };
 
+const UNDERSTAND = {
+	...AGENT,
+	id: "alpha-understand",
+	name: "alpha-understand",
+	role: "understand",
+};
+
 let upstream: Upstream[];
 let respond: (req: Upstream) => Response;
 let app: ReturnType<typeof createApp>;
@@ -166,10 +173,10 @@ describe("agents", () => {
 
 	test("passes the orchestrator's agent list through", async () => {
 		const cookie = await signedIn();
-		respond = () => json({ items: [AGENT] });
+		respond = () => json({ items: [AGENT, UNDERSTAND] });
 		const response = await get("/api/agents", cookie);
 		expect(response.status).toBe(200);
-		expect(await response.json()).toEqual({ items: [AGENT] });
+		expect(await response.json()).toEqual({ items: [AGENT, UNDERSTAND] });
 		expect(upstream[0]?.url).toBe("http://orchestrator/v1/admin/agents");
 	});
 

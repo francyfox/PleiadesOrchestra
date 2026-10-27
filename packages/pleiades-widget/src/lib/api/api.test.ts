@@ -232,6 +232,28 @@ describe("createWidgetApi", () => {
 		expect(JSON.parse(String(calls[2]?.init.body))).not.toHaveProperty("page");
 	});
 
+	test("streamMessage sends replyTo cut to 2000 chars, omits it when not given", async () => {
+		const { api, calls } = recorder(() =>
+			ndjson([{ type: "done", elapsedMs: 1 }]),
+		);
+		await collect(
+			api.streamMessage(
+				"tok",
+				"t1",
+				"hi",
+				undefined,
+				undefined,
+				undefined,
+				"x".repeat(2500),
+			),
+		);
+		expect(JSON.parse(String(calls[0]?.init.body)).replyTo).toHaveLength(2000);
+		await collect(api.streamMessage("tok", "t1", "hi"));
+		expect(JSON.parse(String(calls[1]?.init.body))).not.toHaveProperty(
+			"replyTo",
+		);
+	});
+
 	test("decodes lines split across chunks, including multi-byte text", async () => {
 		const { api } = recorder(() =>
 			ndjson(

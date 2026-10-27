@@ -49,7 +49,7 @@ export const AgentTestResult = t.Object({
 export const ProviderModel = t.Object({
 	id: t.String({ minLength: 1, maxLength: 200 }),
 	name: t.String({ minLength: 1, maxLength: 200 }),
-	/** What the model can do (several for a multimodal one), as the AI SDK names its factories; `translation` is the in-process translator. */
+	/** What the model can do (several for a multimodal one), as the AI SDK names its factories. */
 	types: t.Array(
 		t.Union([
 			t.Literal("language"),
@@ -60,7 +60,6 @@ export const ProviderModel = t.Object({
 			t.Literal("transcription"),
 			t.Literal("reranking"),
 			t.Literal("decision"),
-			t.Literal("translation"),
 		]),
 		{ minItems: 1 },
 	),

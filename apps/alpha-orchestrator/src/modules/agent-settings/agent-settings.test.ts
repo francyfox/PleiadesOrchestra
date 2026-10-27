@@ -30,6 +30,11 @@ const ENV = {
 		apiKey: "",
 		model: "qwen3-1.7b",
 	},
+	"alpha-understand": {
+		baseUrl: "http://beta-text:8080/v1",
+		apiKey: "env-key",
+		model: "vikhr",
+	},
 	"gamma-decision": {
 		baseUrl: "http://laya:8090",
 		apiKey: "",
@@ -216,6 +221,40 @@ describe("agent settings", () => {
 		});
 	});
 
+	test("alpha-understand follows beta's pick until it has its own", async () => {
+		const { agentSettings, call } = await setup();
+		await call("/providers/openrouter", "PUT", {
+			name: "OpenRouter",
+			baseUrl: "https://openrouter.ai/api/v1",
+			apiKey: "sk-or-v1-supersecret1234",
+		});
+		for (const id of ["mistralai/voxtral-small", "qwen/qwen3-30b"])
+			await call("/providers/openrouter/models", "PUT", {
+				id,
+				name: id,
+				types: ["language"],
+				extraBody: {},
+			});
+		await call("/agents/beta-text/model", "PUT", {
+			provider: "openrouter",
+			model: "mistralai/voxtral-small",
+		});
+		expect(agentSettings.effective("alpha-understand")).toMatchObject({
+			provider: "openrouter",
+			model: "mistralai/voxtral-small",
+		});
+		await call("/agents/alpha-understand/model", "PUT", {
+			provider: "openrouter",
+			model: "qwen/qwen3-30b",
+		});
+		expect(agentSettings.effective("alpha-understand").model).toBe(
+			"qwen/qwen3-30b",
+		);
+		expect(agentSettings.effective("beta-text").model).toBe(
+			"mistralai/voxtral-small",
+		);
+	});
+
 	test("bad picks are refused", async () => {
 		const { call } = await setup();
 		const pick = (id: string, body: unknown) =>
@@ -301,25 +340,6 @@ models = [{ id = "qwen/qwen3-30b", types = ["language", "image"] }, { id = "liqu
 				"a",
 			),
 		).toThrow(AgentSettingsError);
-	});
-
-	test("no agent picks a translation model", async () => {
-		const { agentSettings } = await setup(
-			undefined,
-			`${SEED}${SYSTEMONE}
-[providers.local-translate]
-type = "ctranslate2"
-models = [{ id = "org/opus" }]
-`,
-		);
-		for (const id of ["beta-text", "gamma-decision"] as const)
-			expect(() =>
-				agentSettings.pick(
-					id,
-					{ provider: "local-translate", model: "org/opus" },
-					"a",
-				),
-			).toThrow(AgentSettingsError);
 	});
 
 	test("test for gamma makes one systemone decision at the effective server", async () => {

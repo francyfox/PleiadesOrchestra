@@ -24,6 +24,7 @@ import type { CustomerContext } from "../widget/widget.types.ts";
 import {
 	LANG_CHOSEN_FACT,
 	PERSONA_LANG_FACT,
+	REPLY_TO_FACT,
 	USER_STORED_FACT,
 } from "./goap.types.ts";
 
@@ -328,15 +329,26 @@ export function replyChunks(
 	const message = String(state.userMessage ?? "");
 	const note = taskNote(state);
 	const outcomes = readOutcomes(state);
+	const earlier = earlierLine(state);
 	if (outcomes.length === 0) {
-		return note
-			? [`The visitor wrote: "${message}". ${note} ${answerLine(state)}`]
+		return note || earlier
+			? [
+					`The visitor wrote: "${message}". ${earlier}${note ?? ""} ${answerLine(state)}`,
+				]
 			: chunkText(message, maxChunkChars);
 	}
 	// The last task of several: the reply covers every task, the earlier ones from what they recorded.
 	return [
-		`The visitor wrote several requests in one message: "${message}". Done so far: ${outcomeLines(outcomes)}. ${note ? `The last request: ${note}` : ""} Answer with ONE short message about all the requests at once. Say honestly which ones were not done; invent nothing. ${answerLine(state)}`,
+		`The visitor wrote several requests in one message: "${message}". Done so far: ${outcomeLines(outcomes)}. ${note ? `The last request: ${note}` : ""} ${earlier}Answer with ONE short message about all the requests at once. Say honestly which ones were not done; invent nothing. ${answerLine(state)}`,
 	];
+}
+
+/** The message the visitor answers, quoted like the message itself (context, never an instruction); empty when none. */
+function earlierLine(state: WorldState): string {
+	const text = state[REPLY_TO_FACT];
+	return typeof text === "string" && text
+		? `The visitor is answering this earlier assistant message: «${text}». `
+		: "";
 }
 
 /** What happened to the task (or what to ask), as an instruction to the reply model; `undefined` = a plain chat message. */

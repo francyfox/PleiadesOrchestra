@@ -29,7 +29,7 @@ import { legend, renderComplexCase, renderComplexTable } from "./tools.view.ts";
 //
 // CPU by default, 4 threads: GPU numbers only mean something on a machine
 // whose GPU holds the whole model (the dev iGPU has 0.5 GB). Requests are in
-// English: the translator turns the message into English before delta sees it.
+// English: alpha-understand turns the message into English before delta sees it.
 //
 // DELTA_BASE_URL (+ DELTA_API_KEY, DELTA_MODEL) in .env runs the cases
 // against an OpenAI-compatible server already up elsewhere (delta's

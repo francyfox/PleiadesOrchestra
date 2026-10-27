@@ -1,7 +1,6 @@
 name: orchestra
 # Manual deploy of the VPS backend (alpha-orchestrator + admin-api) and the admin panel
-# (pleiades-panel.shalotts.site). Builds both images (`docker save`, CTranslate2 included: the
-# VPS can't compile it) and the panel's static build, then publishes them on a single rolling
+# (pleiades-panel.shalotts.site). Builds both images (`docker save`) and the panel's static build, then publishes them on a single rolling
 # prerelease (tag `orchestra`) pointing at them in a private R2 bucket.
 # ~/pleiades-orchestra/poll.py on the VPS loads them and restarts the stack; nothing pushes to
 # the server.
@@ -30,8 +29,8 @@ jobs:
           bun-version: 1.4.3
       - uses: docker/setup-buildx-action@v3
 
-      # Image names match ~/pleiades-orchestra/compose.yml on the VPS. The gha cache keeps the
-      # CTranslate2 `native` stage, so it is only rebuilt when native/ changes.
+      # Image names match ~/pleiades-orchestra/compose.yml on the VPS. The gha cache keeps
+      # the unchanged layers.
       - uses: docker/build-push-action@v6
         with:
           context: .

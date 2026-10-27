@@ -54,7 +54,7 @@
 	}));
 
 	const selectClass =
-		"h-9 rounded-md border border-input bg-background px-2 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring";
+		"h-9 w-full min-w-0 rounded-md border border-input bg-background px-2 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring";
 </script>
 
 <Dialog.Root bind:open>

@@ -306,6 +306,8 @@ export class PleiadesChat extends HTMLElement {
 				this.#ui?.focusLang();
 			},
 			onSend: (text) => void chat.send(text, customerContext),
+			onPick: (text, replyTo) =>
+				void chat.send(text, customerContext, undefined, replyTo),
 			onStop: () => chat.stop(),
 			onContinue: () => void chat.continuePending(),
 			onCancel: () => void chat.cancelPending(),

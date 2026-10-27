@@ -8,11 +8,14 @@ import type { CallContext } from "../types";
 import { needsTheWords } from "./intent-taxonomy";
 import { goalForIntent } from "./message-intent";
 import type { GoapAction } from "./types";
+import type { UnderstoodItem } from "./understanding";
 
 export interface DecomposedTask {
 	intent: string;
 	/** The words of the message that ask for this task: what the task's own run reads. */
 	text?: string;
+	/** The products and counts the task is about, when `understandMessage` made the list. */
+	items?: UnderstoodItem[];
 	/** Index of an earlier task this one must follow. */
 	after?: number;
 }

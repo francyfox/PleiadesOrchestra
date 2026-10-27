@@ -7,6 +7,7 @@ export const AGENT_IDS = [
 	"beta-text",
 	"delta-function-call",
 	"gamma-decision",
+	"alpha-understand",
 ] as const;
 export type AgentId = (typeof AGENT_IDS)[number];
 

@@ -22,7 +22,7 @@ function fakeServer(models: Record<string, unknown>[]) {
 					{ id: "beta-text", model: "a" },
 					{ id: "delta-function-call", model: "a" },
 					{ id: "gamma-decision", model: "g" },
-					{ id: "translate", model: "t" },
+					{ id: "alpha-understand", model: "a" },
 				],
 			});
 		const agent = agents[path.split("/").pop() ?? ""];
@@ -63,7 +63,7 @@ test("sets temperature 0 once per model and restores the exact original body", a
 		["beta-text", "a", 0],
 		["delta-function-call", "a", 0],
 		["gamma-decision", "g", undefined],
-		["translate", "t", undefined],
+		["alpha-understand", "a", 0],
 	]);
 	await restore();
 	expect(puts.at(-1)?.body).toEqual(original);

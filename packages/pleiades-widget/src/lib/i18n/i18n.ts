@@ -32,6 +32,7 @@ export const strings = {
 		cancelled:
 			"Request cancelled. The action may already have happened — check the page.",
 		language: "Language",
+		option: "Option {n}: {text}",
 		examples: [
 			"What can you help me with here?",
 			"Find something for me",
@@ -71,6 +72,7 @@ export const strings = {
 		cancelled:
 			"Запрос отменён. Действие могло уже выполниться — проверьте страницу.",
 		language: "Язык",
+		option: "Вариант {n}: {text}",
 		examples: [
 			"С чем ты можешь помочь здесь?",
 			"Найди мне что-нибудь",
@@ -110,6 +112,7 @@ export const strings = {
 		cancelled:
 			"Сұрау тоқтатылды. Әрекет орындалып қойған болуы мүмкін — бетті тексеріңіз.",
 		language: "Тіл",
+		option: "{n}-нұсқа: {text}",
 		examples: [
 			"Мұнда қандай көмек бере аласың?",
 			"Маған бірдеңе тауып бер",
