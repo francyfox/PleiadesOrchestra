@@ -49,6 +49,7 @@ export function channelsRoutes({ db, directory, now }: ChannelsDeps) {
 							allowedOrigins: body.allowedOrigins,
 							catalogLanguage: body.catalogLanguage,
 							intentSets: body.intentSets,
+							severalTasks: body.severalTasks,
 							ownerId: body.ownerId,
 						},
 						now(),

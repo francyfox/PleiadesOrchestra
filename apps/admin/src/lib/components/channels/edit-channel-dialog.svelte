@@ -7,6 +7,7 @@
 	import { Button } from "#lib/components/ui/button/index.js";
 	import * as Dialog from "#lib/components/ui/dialog/index.js";
 	import { Label } from "#lib/components/ui/label/index.js";
+	import { Switch } from "#lib/components/ui/switch/index.js";
 	import { Textarea } from "#lib/components/ui/textarea/index.js";
 	import { useFieldErrorText } from "#lib/forms/use-field-error-text.js";
 	import AccessModeSelect from "./access-mode-select.svelte";
@@ -53,6 +54,15 @@
 					{#key channel.id}
 						<IntentSetsField selected={channel.intentSets} />
 					{/key}
+					<div class="grid gap-2">
+						<!-- Off sends no input at all: the marker says the switch was on the form. -->
+						<input type="hidden" name="severalTasksShown" value="1" />
+						<div class="flex items-center gap-2">
+							<Switch id="edit-several-tasks" name="severalTasks" checked={channel.severalTasks} />
+							<Label for="edit-several-tasks">{$content.severalTasks.label.value}</Label>
+						</div>
+						<p class="text-xs text-muted-foreground">{$content.severalTasks.hint.value}</p>
+					</div>
 					<div class="grid gap-2">
 						<Label for="edit-origins">{$content.allowedOrigins.value}</Label>
 						<Textarea id="edit-origins" name="allowedOrigins" value={channel.allowedOrigins.join("\n")} />

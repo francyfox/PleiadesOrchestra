@@ -33,6 +33,8 @@ export const Channel = t.Composite([
 		/** Language the site's catalog is written in; search queries are sent in it. */
 		catalogLanguage: t.String(),
 		intentSets: t.Array(t.String()),
+		/** Delta splits a message of several tasks even without intent sets. */
+		severalTasks: t.Boolean(),
 		publishableKey: nullable(t.String()),
 		disabledAt: nullable(t.Number()),
 		createdAt: t.Number(),

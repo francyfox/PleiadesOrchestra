@@ -36,6 +36,8 @@ export const UpdateChannelInput = Type.Object({
 	allowedOrigins: Type.Optional(Type.Array(Type.String())),
 	catalogLanguage: Type.Optional(Type.String()),
 	intentSets: Type.Optional(Type.Array(Type.String())),
+	/** Delta splits a message of several tasks even without intent sets. */
+	severalTasks: Type.Optional(Type.Boolean()),
 	disabled: Type.Optional(Type.Boolean()),
 });
 
@@ -55,6 +57,7 @@ export const UpdateChannelForm = Type.Object({
 	allowedOrigins: UpdateChannelInput.properties.allowedOrigins,
 	catalogLanguage: CreateChannelForm.properties.catalogLanguage,
 	intentSets: UpdateChannelInput.properties.intentSets,
+	severalTasks: UpdateChannelInput.properties.severalTasks,
 });
 
 /** What the visitor meets: the bot's name, tone and limits. Empty string / list = not set. */

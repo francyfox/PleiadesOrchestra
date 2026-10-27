@@ -288,11 +288,13 @@ export async function prepareNewMessage(
 	const original = String(state.userMessage ?? "");
 	const taxonomy = deps.taxonomy?.(visitor.channelId) ?? SHOP_TAXONOMY;
 	// Several tasks in one message run one after another. shortcut: a channel
-	// that picks the site's own tools (no intent sets) is not decomposed, there is no tool-level queue yet.
+	// that picks the site's own tools (no intent sets) is decomposed only when its switch
+	// forces it (the tasks then take the shop preset's intents); a tool-level queue is not built yet.
 	if (
 		deps.functionCallAgent &&
 		messageEn !== undefined &&
-		deps.intentSets?.(visitor.channelId).length !== 0 &&
+		(deps.intentSets?.(visitor.channelId).length !== 0 ||
+			deps.severalTasks?.(visitor.channelId) === true) &&
 		looksLikeSeveralTasks(messageEn)
 	) {
 		const several = await prepareSeveralTasks(

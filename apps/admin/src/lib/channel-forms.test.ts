@@ -99,3 +99,20 @@ test("intent sets: ticked boxes become the list, and a form that shows the field
 	// A form without the field leaves the channel's sets alone.
 	expect(bodyOf(absent)).not.toHaveProperty("intentSets");
 });
+
+test("several tasks: the switch on the form sends true or false, a form without it sends nothing", () => {
+	const bodyOf = (fields: Record<string, string>) => {
+		const data = new FormData();
+		data.set("id", "c");
+		for (const [name, value] of Object.entries(fields)) data.set(name, value);
+		const parsed = parseForm(UpdateChannelForm, data, channelOverrides);
+		return parsed.ok ? parsed.body : parsed.errors;
+	};
+	expect(bodyOf({ severalTasksShown: "1", severalTasks: "on" })).toMatchObject({
+		severalTasks: true,
+	});
+	expect(bodyOf({ severalTasksShown: "1" })).toMatchObject({
+		severalTasks: false,
+	});
+	expect(bodyOf({})).not.toHaveProperty("severalTasks");
+});

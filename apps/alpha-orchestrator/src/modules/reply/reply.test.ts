@@ -634,9 +634,11 @@ describe("prepareNewMessage: a channel without intent sets", () => {
 			sets?: string[];
 			probability?: number;
 			extra?: GoapAction[];
+			severalTasks?: boolean;
 		} = {},
 	) {
 		const asked: string[][] = [];
+		const split: string[] = [];
 		const deps = {
 			worldStateStore: new InMemoryWorldStateStore(),
 			webmcpCatalog: new Map([
@@ -651,6 +653,14 @@ describe("prepareNewMessage: a channel without intent sets", () => {
 			]),
 			actions: [],
 			intentSets: () => options.sets ?? [],
+			severalTasks: () => options.severalTasks ?? false,
+			functionCallAgent: {
+				// No usable split: the message falls through to the tool choice.
+				async fillArguments(call: { request: string }) {
+					split.push(call.request);
+					throw new Error("unusable");
+				},
+			},
 			decisionAgent: {
 				async decide(_state: unknown, questions: Record<string, unknown>) {
 					const [key, question] = Object.entries(questions)[0] as [
@@ -678,8 +688,17 @@ describe("prepareNewMessage: a channel without intent sets", () => {
 			text,
 			{},
 		);
-		return { prepared, asked };
+		return { prepared, asked, split };
 	}
+
+	test("several tasks are split only when the channel's switch forces it", async () => {
+		const text = "make the pizza bigger and then show my cart";
+		expect((await prepare(text, "get_cart")).split).toHaveLength(0);
+		const forced = await prepare(text, "get_cart", { severalTasks: true });
+		expect(forced.split).toEqual([text]);
+		// Nothing usable came back: the message still gets its tool.
+		expect(forced.prepared.goal).toMatchObject({ "toolResult:get_cart": true });
+	});
 
 	test("the tool Laya picks is the goal, whatever shop intent it would have had", async () => {
 		const { prepared, asked } = await prepare(

@@ -30,7 +30,7 @@ CREATE TABLE `channels` (
 	`allowed_origins` text DEFAULT '[]' NOT NULL,
 	`disabled_at` integer,
 	`created_at` integer NOT NULL
-, `catalog_language` text DEFAULT 'en' NOT NULL, `owner_id` text, `intent_sets` text DEFAULT '["shop"]' NOT NULL);
+, `catalog_language` text DEFAULT 'en' NOT NULL, `owner_id` text, `intent_sets` text DEFAULT '["shop"]' NOT NULL, `several_tasks` integer DEFAULT false NOT NULL);
 CREATE UNIQUE INDEX `channels_slug_unique` ON `channels` (`slug`);
 CREATE UNIQUE INDEX `channels_publishable_key_unique` ON `channels` (`publishable_key`);
 CREATE TABLE `llm_calls` (
@@ -255,6 +255,7 @@ INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '6
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'db4b68f84e07adb1fa993054f23e2f676a11bbc4d94047db081351b6f3c31c52', 1792559642677);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '9c755ee69d557b8c2509c3ec35cae90f75593d422cb9cd693c3a6cce295d1349', 1792749311631);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '555cc4b3858a7c414ba147b6360efacb3c624028bab5af0c6871b6140f09a56a', 1792835818788);
-INSERT INTO "channels" ("id", "slug", "kind", "name", "access_mode", "publishable_key", "secret_key_hash", "allowed_origins", "disabled_at", "created_at", "catalog_language", "owner_id", "intent_sets") VALUES ('ch_telegram', 'telegram', 'telegram', 'Telegram', 'whitelist', NULL, NULL, '[]', NULL, CAST(strftime('%s', 'now') AS INTEGER) * 1000, 'en', NULL, '["shop"]');
-INSERT INTO "channels" ("id", "slug", "kind", "name", "access_mode", "publishable_key", "secret_key_hash", "allowed_origins", "disabled_at", "created_at", "catalog_language", "owner_id", "intent_sets") VALUES ('ch_cli', 'cli', 'cli', 'CLI', 'open', NULL, NULL, '[]', NULL, CAST(strftime('%s', 'now') AS INTEGER) * 1000, 'en', NULL, '["shop"]');
+INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '666ad99db66df0b89698ed63efb805345a120c25a8a21dde9f4b289da78900de', 1793096967842);
+INSERT INTO "channels" ("id", "slug", "kind", "name", "access_mode", "publishable_key", "secret_key_hash", "allowed_origins", "disabled_at", "created_at", "catalog_language", "owner_id", "intent_sets", "several_tasks") VALUES ('ch_telegram', 'telegram', 'telegram', 'Telegram', 'whitelist', NULL, NULL, '[]', NULL, CAST(strftime('%s', 'now') AS INTEGER) * 1000, 'en', NULL, '["shop"]', 0);
+INSERT INTO "channels" ("id", "slug", "kind", "name", "access_mode", "publishable_key", "secret_key_hash", "allowed_origins", "disabled_at", "created_at", "catalog_language", "owner_id", "intent_sets", "several_tasks") VALUES ('ch_cli', 'cli', 'cli', 'CLI', 'open', NULL, NULL, '[]', NULL, CAST(strftime('%s', 'now') AS INTEGER) * 1000, 'en', NULL, '["shop"]', 0);
 COMMIT;

@@ -165,4 +165,16 @@ describe("channels (proxied)", () => {
 		});
 		expect(upstream[1]?.body).not.toHaveProperty("intentSets");
 	});
+
+	test("the several-tasks switch travels to the orchestrator", async () => {
+		const cookie = await signedIn();
+		setRespond(() => json({ channel: { ...CHANNEL, severalTasks: true } }));
+		const res = await call(`/api/channels/${CHANNEL.id}`, {
+			method: "PATCH",
+			cookie,
+			body: { severalTasks: true },
+		});
+		expect(res.status).toBe(200);
+		expect(upstream.at(-1)?.body).toMatchObject({ severalTasks: true });
+	});
 });

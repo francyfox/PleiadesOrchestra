@@ -241,6 +241,35 @@ describe("admin channels", () => {
 		).toBe("kk");
 	});
 
+	test("severalTasks: off for a new channel, a patch turns it on, other patches leave it", async () => {
+		const { app } = setupAdminApp();
+		const created = await json(
+			await app.handle(
+				admin("/channels", {
+					method: "POST",
+					body: {
+						slug: "split",
+						name: "Shop",
+						kind: "web",
+						accessMode: "open",
+						allowedOrigins: [],
+					},
+				}),
+			),
+		);
+		expect(created.channel.severalTasks).toBe(false);
+		const patch = async (body: Record<string, unknown>) =>
+			json(
+				await app.handle(
+					admin(`/channels/${created.channel.id}`, { method: "PATCH", body }),
+				),
+			);
+		expect((await patch({ severalTasks: true })).channel.severalTasks).toBe(
+			true,
+		);
+		expect((await patch({ name: "X" })).channel.severalTasks).toBe(true);
+	});
+
 	test("intentSets: a new channel has none, a patch sets the list, other patches leave it", async () => {
 		const { app } = setupAdminApp();
 		const post = async (body: Record<string, unknown>) =>

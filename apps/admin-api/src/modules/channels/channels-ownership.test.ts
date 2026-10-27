@@ -10,6 +10,7 @@ const channel = (id: string, ownerId: string | null) => ({
 	allowedOrigins: [],
 	catalogLanguage: "en",
 	intentSets: [],
+	severalTasks: false,
 	publishableKey: "pk",
 	disabledAt: null,
 	createdAt: 1,

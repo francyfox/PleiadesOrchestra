@@ -30,6 +30,7 @@ const CHANNEL = {
 	allowedOrigins: [],
 	catalogLanguage: "en",
 	intentSets: [],
+	severalTasks: false,
 	publishableKey: "pk",
 	disabledAt: null,
 	createdAt: 1,

@@ -228,6 +228,18 @@ const channelsContent = {
 				kk: "Әдепкіде жиынтық жоқ: хабарлама сайттың құралын таңдайды. Жиынтық тек қадамдар тәртібін және қауіпті әрекеттерден қорғауды қосады, ештеңені жасырмайды.",
 			}),
 		},
+		severalTasks: {
+			label: t({
+				ru: "Несколько задач в одном сообщении",
+				en: "Several tasks in one message",
+				kk: "Бір хабарламада бірнеше тапсырма",
+			}),
+			hint: t({
+				ru: "delta раскладывает «найди X и добавь Y» на задачи и выполняет их по очереди, даже без набора намерений (тогда задачи читаются как в наборе shop). С набором это включено всегда. Каждое такое сообщение — лишний вызов delta.",
+				en: "delta splits «find X and add Y» into tasks and runs them in turn, even without intent sets (the tasks are then read as in the shop set). With a set this is always on. Every such message costs one more delta call.",
+				kk: "delta «X тауып, Y қос» сияқты хабарламаны тапсырмаларға бөліп, кезекпен орындайды, ниет жиынтығы болмаса да (онда тапсырмалар shop жиынтығындағыдай оқылады). Жиынтық болса, бұл әрқашан қосулы. Әр осындай хабарлама delta-ға тағы бір шақыру.",
+			}),
+		},
 		persona: {
 			action: t({ ru: "Персона бота", en: "Bot persona", kk: "Бот персонасы" }),
 			title: t({

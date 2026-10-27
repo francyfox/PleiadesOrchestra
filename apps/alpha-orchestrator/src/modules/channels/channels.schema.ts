@@ -40,6 +40,8 @@ export const Channel = t.Object({
 	ownerId: t.Nullable(t.String()),
 	/** Intent sets in force, in order (later ones win); empty = no set, the site's tools are the goals. */
 	intentSets: t.Array(t.String()),
+	/** Delta splits a message of several tasks even without intent sets. */
+	severalTasks: t.Boolean(),
 });
 
 export const ChannelsQuery = t.Composite([
@@ -60,6 +62,7 @@ export const CreateChannelBody = t.Object({
 	allowedOrigins: t.Array(t.String()),
 	catalogLanguage: t.Optional(LanguageSchema),
 	intentSets: t.Optional(t.Array(t.String())),
+	severalTasks: t.Optional(t.Boolean()),
 	/** admin-api account id; left out = staff-owned. */
 	ownerId: t.Optional(t.String({ minLength: 1 })),
 });
@@ -70,6 +73,7 @@ export const UpdateChannelBody = t.Object({
 	allowedOrigins: t.Optional(t.Array(t.String())),
 	catalogLanguage: t.Optional(LanguageSchema),
 	intentSets: t.Optional(t.Array(t.String())),
+	severalTasks: t.Optional(t.Boolean()),
 	disabled: t.Optional(t.Boolean()),
 });
 

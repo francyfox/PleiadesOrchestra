@@ -27,6 +27,8 @@ export interface ReplyDeps {
 	 * own tools (`chooseTool`). Unset (tests, old callers): the built-in intent flow.
 	 */
 	intentSets?: (channelId: string) => string[];
+	/** Split a message of several tasks with delta even on a channel without intent sets. */
+	severalTasks?: (channelId: string) => boolean;
 	/**
 	 * What a channel's presets merge into: the intents Laya picks from, what a tool
 	 * of each needs and gives, the word rules and the guards. The shop's when unset.

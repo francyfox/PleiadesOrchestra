@@ -41,6 +41,10 @@ export const channels = sqliteTable(
 			.$type<string[]>()
 			.notNull()
 			.default(["shop"]),
+		// Split a message of several tasks with delta even without intent sets (for trying it out).
+		severalTasks: integer("several_tasks", { mode: "boolean" })
+			.notNull()
+			.default(false),
 	},
 	(table) => [index("channels_owner_idx").on(table.ownerId)],
 );

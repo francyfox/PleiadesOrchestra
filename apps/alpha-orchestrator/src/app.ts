@@ -152,6 +152,8 @@ export function createApp(deps: AppDeps) {
 			deps.channels.byId(channelId)?.catalogLanguage,
 		intentSets: (channelId) =>
 			deps.channels.byId(channelId)?.intentSets ?? ["shop"],
+		severalTasks: (channelId) =>
+			deps.channels.byId(channelId)?.severalTasks ?? false,
 		// shortcut: a channel with no set still takes its tools' dependencies (a search
 		// before an id-based add) from the shop preset; read them from the tools' schemas
 		// instead when a second domain needs it.

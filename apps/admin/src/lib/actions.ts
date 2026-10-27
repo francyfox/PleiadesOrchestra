@@ -275,6 +275,8 @@ export const channelOverrides: FieldOverrides = {
 		form.has("intentSetsShown")
 			? form.getAll("intentSets").map(String)
 			: undefined,
+	severalTasks: (form) =>
+		form.has("severalTasksShown") ? form.has("severalTasks") : undefined,
 };
 
 /** UI vs wire: an empty persona field is a real value ("not set"), not a missing one; topics are a text, one per line. */

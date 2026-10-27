@@ -1,0 +1,1 @@
+ALTER TABLE `channels` ADD `several_tasks` integer DEFAULT false NOT NULL;
