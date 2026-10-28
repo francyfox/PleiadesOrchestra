@@ -1,4 +1,4 @@
-import type { Goal, GoapAction, WorldState } from "./types";
+import type { Goal, GoapAction, WorldState } from "#core/goap/types";
 
 type Subgoal = Partial<WorldState>;
 

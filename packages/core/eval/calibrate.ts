@@ -10,17 +10,14 @@
  */
 
 import { readdirSync } from "node:fs";
-import type {
-	LayaBucket,
-	LayaCalibrationTable,
-} from "../src/laya-calibrate.ts";
+import type { LayaBucket, LayaCalibrationTable } from "#core/laya-calibrate";
 import {
 	type CalibrationReport,
 	crossValidate,
 	type LayaRecordFile,
 	type LayaSample,
 	recordToSample,
-} from "../src/laya-fit.ts";
+} from "#core/laya-fit";
 
 const MIN_SAMPLES = 30;
 const flag = (name: string, fallback: number) => {
@@ -96,7 +93,7 @@ if (!process.argv.includes("--dry")) {
 		.join("\n");
 	await Bun.write(
 		new URL("../src/laya-calibration.ts", import.meta.url),
-		`import type { LayaCalibrationTable } from "./laya-calibrate";
+		`import type { LayaCalibrationTable } from "#core/laya-calibrate";
 
 /**
  * Laya temperature per (question type x option-count bucket), refitted on our

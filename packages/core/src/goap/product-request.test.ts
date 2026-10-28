@@ -7,7 +7,7 @@ import {
 	namesNoProduct,
 	parseProductRequest,
 	reuseLastProduct,
-} from "./product-request.ts";
+} from "#core/goap/product-request";
 
 describe("parseProductRequest", () => {
 	test("reads query and quantity from the model's JSON", () => {

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { INTENT_CASES, INTENT_HOLDOUT } from "./intent-cases.ts";
-import { englishOf } from "./intent-cases-en.ts";
+import { INTENT_CASES, INTENT_HOLDOUT } from "#core/goap/intent-cases";
+import { englishOf } from "#core/goap/intent-cases-en";
 
 const NOT_ENGLISH = /(?!\p{Script=Latin})\p{L}/u;
 

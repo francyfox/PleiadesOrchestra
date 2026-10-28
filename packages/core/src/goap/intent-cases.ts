@@ -1,4 +1,4 @@
-import type { MessageIntent } from "./message-intent";
+import type { MessageIntent } from "#core/goap/message-intent";
 
 /**
  * Messages a shopper really types, with the intent each one must be sorted

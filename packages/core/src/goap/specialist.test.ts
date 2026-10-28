@@ -1,16 +1,16 @@
 import { describe, expect, test } from "bun:test";
-import type { DecisionAgent } from "../decision-types.ts";
-import { plan } from "./plan.ts";
+import type { DecisionAgent } from "#core/decision-types";
+import { plan } from "#core/goap/plan";
 import {
 	matchEnumValue,
 	matchSpecialist,
 	preferSpecialist,
-} from "./specialist.ts";
-import type { GoapAction, WorldState } from "./types.ts";
+} from "#core/goap/specialist";
+import type { GoapAction, WorldState } from "#core/goap/types";
 import {
 	createWebMcpActions,
 	type WebMcpToolDescriptor,
-} from "./webmcp-actions.ts";
+} from "#core/goap/webmcp-actions";
 
 describe("matchEnumValue", () => {
 	const recipes = [

@@ -1,12 +1,18 @@
 import { intentFromToolNameCues, SHOP_TAXONOMY } from "@repo/intent-presets";
-import { decideInRounds, planChoiceRounds } from "../choice-rounds";
-import type { DecisionAgent } from "../decision-types";
-import { withChoiceRound } from "../usage-collector";
-import { needsTheWords, type Taxonomy } from "./intent-taxonomy";
+import { decideInRounds, planChoiceRounds } from "#core/choice-rounds";
+import type { DecisionAgent } from "#core/decision-types";
+import {
+	effectsOf,
+	needsTheWords,
+	type Taxonomy,
+} from "#core/goap/intent-taxonomy";
+import { withChoiceRound } from "#core/usage-collector";
 
 export interface ToolOption {
 	name: string;
 	description?: string;
+	/** The tool action's effects: which intent it serves (`ChooseToolConfig.intent`). */
+	effects?: Record<string, unknown>;
 }
 
 export interface ChooseToolConfig {
@@ -16,10 +22,17 @@ export interface ChooseToolConfig {
 	taxonomy?: Taxonomy;
 	/** A winner below this probability is not trusted: the visitor is asked instead. */
 	threshold?: number;
+	/**
+	 * What the visitor's words already say the message does («buy» = addToCart):
+	 * only the tools with that intent's effects are offered, so the products
+	 * named cannot pull in another tool; when no tool has them, every tool is.
+	 */
+	intent?: string;
 }
 
 export type ToolChoice =
-	| { kind: "tool"; tool: string; confidence?: number }
+	/** `via: "words"`: the intent left one tool, no model was asked. */
+	| { kind: "tool"; tool: string; confidence?: number; via?: "words" }
 	| { kind: "chat" | "unclear"; confidence?: number };
 
 const TOOL_CHOICE_INSTRUCTIONS =
@@ -30,67 +43,86 @@ const CHAT = "chat";
 const NONE = "other";
 const DEFAULT_THRESHOLD = 0.5;
 const DESCRIPTION_CHARS = 90;
+/** The last round has few options, so it can afford most of a description. */
+const FINAL_DESCRIPTION_CHARS = 200;
 /** Tools per group; `chat` and `other` make it 10, Laya's calibrated size. */
 const GROUP_OPTIONS = 8;
 
 /** First sentence, short: Laya shares one 192-token budget between all options of a round. */
 function brief(description: string | undefined): string {
-	const first = (description ?? "").split(/(?<=[.!?])\s/)[0] ?? "";
-	return first.length > DESCRIPTION_CHARS
-		? `${first.slice(0, DESCRIPTION_CHARS - 1)}…`
-		: first;
+	return cut(
+		(description ?? "").split(/(?<=[.!?])\s/)[0] ?? "",
+		DESCRIPTION_CHARS,
+	);
 }
 
-/**
- * What Laya reads for a tool. The name alone beat name + description: «find
- * sneakers» chose `get_current_product` (description: «the product on the
- * page») over `search_products` with descriptions, and `search products` with
- * the name (6/8 vs 5/8 on the WooCommerce demo). A name of one word says too
- * little, so it keeps the description.
- */
-function label(tool: ToolOption): string {
-	const words = tool.name
+const cut = (text: string, chars: number): string =>
+	text.length > chars ? `${text.slice(0, chars - 1)}…` : text;
+
+const nameWords = (name: string): string =>
+	name
 		.replace(/([a-z])([A-Z])/g, "$1 $2")
 		.split(/[^A-Za-z0-9]+/)
 		.filter(Boolean)
 		.join(" ")
 		.toLowerCase();
+
+/**
+ * What the model reads for a tool in a group. The name alone beat name +
+ * description on Laya: «find sneakers» chose `get_current_product`
+ * (description: «the product on the page») over `search_products` with
+ * descriptions (6/8 vs 5/8 on the WooCommerce demo). A name of one word says
+ * too little, so it keeps the description.
+ */
+function label(tool: ToolOption): string {
+	const words = nameWords(tool.name);
 	return words.includes(" ") ? words : brief(tool.description);
 }
 
 /**
- * The default way to pick what a message asks for, when the channel has no
- * intent set: the site's own tools are the options, in groups of at most 8,
- * each group together with `chat` and `other` (so a group with nothing for the
- * message says so instead of crowning a random tool). The tools that win their
- * group meet in a final round. A knockout that carries one winner through
- * every round (`decideInRounds`) crowned `get_current_product` early and then
- * `list_kits` for «find sneakers»: Laya's probabilities are only relative to
- * the options in the question.
- *
- * Tools that checkout or remove are not offered: those are taken from the
- * visitor's own words only (`NEEDS_THE_WORDS`), never from a model. A winner
- * that is `other`, below the threshold, or not an option at all is `unclear`,
- * so the visitor is asked instead of a random tool being run.
+ * What the model reads in the last round: name and description. Names alone
+ * crowned `add_staples_to_cart` for «buy toilet paper» (the products read as
+ * staples); its description says it is for «the usual».
  */
+function explained(tool: ToolOption): string {
+	return tool.description
+		? `${nameWords(tool.name)}: ${cut(tool.description, FINAL_DESCRIPTION_CHARS)}`
+		: label(tool);
+}
+
 export async function chooseTool(
 	config: ChooseToolConfig,
 	message: string,
 ): Promise<ToolChoice> {
 	const taxonomy = config.taxonomy ?? SHOP_TAXONOMY;
 	const guarded = needsTheWords(taxonomy);
-	const offered = config.tools.filter((tool) => {
+	const safe = config.tools.filter((tool) => {
 		const intent = intentFromToolNameCues(taxonomy, tool);
 		return !(intent && guarded.has(intent));
 	});
+	const intentEffects = config.intent
+		? Object.entries(effectsOf(config.intent, taxonomy))
+		: [];
+	const ofIntent =
+		intentEffects.length > 0
+			? safe.filter((tool) =>
+					intentEffects.every(([key, value]) => tool.effects?.[key] === value),
+				)
+			: [];
+	const only = ofIntent.length === 1 ? ofIntent[0] : undefined;
+	if (only) return { kind: "tool", tool: only.name, via: "words" };
+	const offered = ofIntent.length > 0 ? ofIntent : safe;
 	const toolCriteria = Object.fromEntries(
 		offered.map((tool) => [tool.name, label(tool)]),
+	);
+	const toolExplained = Object.fromEntries(
+		offered.map((tool) => [tool.name, explained(tool)]),
 	);
 	const framing: Record<string, string> = {
 		[CHAT]: "greeting, thanks or small talk, nothing to do with the site",
 		[NONE]: "none of the site's actions fits the request",
 	};
-	const ask = (keys: string[], round: string) =>
+	const ask = (keys: string[], round: string, texts: Record<string, string>) =>
 		withChoiceRound(round, () =>
 			decideInRounds(
 				config.decisionAgent,
@@ -100,9 +132,7 @@ export async function chooseTool(
 					instructions: TOOL_CHOICE_INSTRUCTIONS,
 					criteria: {
 						...framing,
-						...Object.fromEntries(
-							keys.map((key) => [key, toolCriteria[key] ?? ""]),
-						),
+						...Object.fromEntries(keys.map((key) => [key, texts[key] ?? ""])),
 					},
 				},
 			),
@@ -116,9 +146,11 @@ export async function chooseTool(
 	const winners: { tool: string; probability?: number }[] = [];
 	let chat: number | undefined;
 	for (const [index, group] of groups.entries()) {
+		// A single group is also the last round.
 		const { choice, rounds } = await ask(
 			group,
 			`group ${index + 1} of ${groups.length}`,
+			groups.length === 1 ? toolExplained : toolCriteria,
 		);
 		const probability = rounds[rounds.length - 1]?.probability;
 		if (choice === CHAT) chat = Math.max(chat ?? 0, probability ?? 1);
@@ -132,6 +164,7 @@ export async function chooseTool(
 		const { choice, rounds } = await ask(
 			winners.map((w) => w.tool),
 			"final",
+			toolExplained,
 		);
 		const probability = rounds[rounds.length - 1]?.probability;
 		final =

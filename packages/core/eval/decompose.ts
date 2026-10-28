@@ -2,15 +2,16 @@
  * Live accuracy of `decomposeMessage` against delta (function-call model):
  *   bun run eval:decompose              # summary + every failing case
  * Env: FUNCTION_CALL_BASE_URL (default http://localhost:8282/v1), FUNCTION_CALL_API_KEY,
- * FUNCTION_CALL_MODEL (default qwen3-1.7b), FUNCTION_CALL_REASONING_EFFORT (Ollama: none).
+ * FUNCTION_CALL_MODEL (default qwen3-1.7b), FUNCTION_CALL_REASONING_EFFORT (Ollama: none);
+ * or `albedo eval --name decompose` takes the running orchestrator's.
  * Score per case: task count, intent set (order-free), `after` per position.
  * No answer (undefined) counts as a miss on all three.
  */
 
-import { createFunctionCallAgent } from "../src/function-call-agent.ts";
-import { DECOMPOSITION_CASES } from "../src/goap/decomposition-cases.ts";
-import { decompositionDescriptions } from "../src/goap/intent-taxonomy.ts";
-import { decomposeMessage } from "../src/goap/task-decomposition.ts";
+import { createFunctionCallAgent } from "#core/function-call-agent";
+import { DECOMPOSITION_CASES } from "#core/goap/decomposition-cases";
+import { decompositionDescriptions } from "#core/goap/intent-taxonomy";
+import { decomposeMessage } from "#core/goap/task-decomposition";
 
 const effort = process.env.FUNCTION_CALL_REASONING_EFFORT;
 const agent = createFunctionCallAgent({

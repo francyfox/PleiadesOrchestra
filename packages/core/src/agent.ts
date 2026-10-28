@@ -5,19 +5,19 @@ import {
 	type ModelMessage,
 	streamText,
 } from "ai";
-import { InMemoryHistoryStore } from "./history";
-import { recordCall } from "./record-call";
+import { InMemoryHistoryStore } from "#core/history";
+import { recordCall } from "#core/record-call";
 import {
 	type AttemptTally,
 	attemptsOf,
 	newTally,
 	reportingTrouble,
 	tallyingAttempts,
-} from "./server-trouble";
+} from "#core/server-trouble";
 import {
 	type createTelemetry,
 	telemetry as defaultTelemetry,
-} from "./telemetry";
+} from "#core/telemetry";
 import type {
 	Agent,
 	AgentStreamEvent,
@@ -26,7 +26,7 @@ import type {
 	IncomingMessage,
 	LlmCallKind,
 	UsageRecorder,
-} from "./types";
+} from "#core/types";
 
 export interface AgentConfig {
 	baseURL: string;

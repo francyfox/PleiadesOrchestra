@@ -1,15 +1,15 @@
 import { describe, expect, test } from "bun:test";
 import { SHOP_TAXONOMY } from "@repo/intent-presets";
-import type { FunctionCallAgent } from "../function-call-agent.ts";
-import { createFunctionCallAgent } from "../function-call-agent.ts";
+import type { FunctionCallAgent } from "#core/function-call-agent";
+import { createFunctionCallAgent } from "#core/function-call-agent";
 import {
 	decomposeMessage,
 	hasOrderWord,
 	looksLikeSeveralTasks,
 	mustAskOrder,
 	runnableTasks,
-} from "./task-decomposition.ts";
-import type { GoapAction } from "./types.ts";
+} from "#core/goap/task-decomposition";
+import type { GoapAction } from "#core/goap/types";
 
 const INTENTS = {
 	search: "look for things",

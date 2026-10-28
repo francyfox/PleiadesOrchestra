@@ -1,32 +1,37 @@
 /**
  * Live accuracy of tool classification (`classifyToolIntent`) on the demo
- * shop's tools, Laya alone vs as shipped (the tool's name first):
+ * shop's tools, model alone vs as shipped (the tool's name first):
  *   bun run eval:tools
- * Env: LAYA_API_BASE_URL (default http://localhost:8090), LAYA_API_KEY.
+ * Env: DECISION_BASE_URL (default http://localhost:8090; a URL ending in
+ * `/decisions` is OpenRouter), DECISION_API_KEY, DECISION_MODEL; or
+ * `albedo eval --name tools` takes the running orchestrator's.
  */
-import { createDecisionAgent } from "../src/decision-agent.ts";
-import { classifyToolIntent } from "../src/goap/webmcp-actions.ts";
+import { createDecisionAgent } from "#core/decision-agent";
+import { classifyToolIntent } from "#core/goap/webmcp-actions";
 import { DEMO_TOOLS } from "./demo-tools.ts";
 
 const agent = createDecisionAgent({
-	baseURL: process.env.LAYA_API_BASE_URL ?? "http://localhost:8090",
-	apiKey: process.env.LAYA_API_KEY ?? "",
+	baseURL: process.env.DECISION_BASE_URL ?? "http://localhost:8090",
+	apiKey: process.env.DECISION_API_KEY ?? "",
+	...(process.env.DECISION_MODEL
+		? { modelId: process.env.DECISION_MODEL }
+		: {}),
 	telemetry: { logLlmState() {}, logMessageEvent() {} } as never,
 });
 
-// "Laya alone": names scrambled so the name cues find nothing to read.
+// "model alone": names scrambled so the name cues find nothing to read.
 const nameless = (name: string) => `tool_${name.length}_${name.charCodeAt(0)}`;
 
 for (const [mode, rename] of [
-	["Laya alone", nameless],
+	["model alone", nameless],
 	["as shipped", (name: string) => name],
 ] as const) {
 	let ok = 0;
 	let total = 0;
 	const lines: string[] = [];
 	for (const tool of DEMO_TOOLS) {
-		// `readState` is a tool's role read from its name; Laya is never offered it.
-		if (mode === "Laya alone" && tool.expected === "readState") continue;
+		// `readState` is a tool's role read from its name; the model is never offered it.
+		if (mode === "model alone" && tool.expected === "readState") continue;
 		const got = await classifyToolIntent(agent, {
 			name: rename(tool.name),
 			description: tool.description,

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createRunLock } from "./run-lock.ts";
+import { createRunLock } from "#core/goap/run-lock";
 
 function deferred<T>() {
 	let resolve!: (value: T) => void;

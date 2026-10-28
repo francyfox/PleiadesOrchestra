@@ -1,15 +1,15 @@
 import { intentFromMessageCues, SHOP_TAXONOMY } from "@repo/intent-presets";
-import { decideInRounds } from "../choice-rounds";
-import type { DecisionAgent } from "../decision-types";
-import type { IntentHit } from "./intent-memory";
+import { decideInRounds } from "#core/choice-rounds";
+import type { DecisionAgent } from "#core/decision-types";
+import type { IntentHit } from "#core/goap/intent-memory";
 import {
 	effectsOf,
 	layaDescriptions,
 	needsTheWords,
 	type Taxonomy,
 	type ToolIntent,
-} from "./intent-taxonomy";
-import type { GoapAction, WorldState } from "./types";
+} from "#core/goap/intent-taxonomy";
+import type { GoapAction, WorldState } from "#core/goap/types";
 
 /** `chat`, or an intent id of the channel's presets. */
 export type MessageIntent = "chat" | ToolIntent;

@@ -1,5 +1,5 @@
-import { MinHeap } from "./heap";
-import type { Goal, GoapAction, WorldState } from "./types";
+import { MinHeap } from "#core/goap/heap";
+import type { Goal, GoapAction, WorldState } from "#core/goap/types";
 
 /**
  * Fact interning: every distinct (key, value) pair seen in the goal and in the

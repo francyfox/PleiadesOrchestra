@@ -1,5 +1,5 @@
-import { listArgument } from "./shopping-list";
-import type { ActionContext, GoapAction, WorldState } from "./types";
+import { listArgument } from "#core/goap/shopping-list";
+import type { ActionContext, GoapAction, WorldState } from "#core/goap/types";
 
 /**
  * Narrow port for the one thing this module needs from an MCP client — not

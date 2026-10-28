@@ -3,10 +3,10 @@ import type {
 	DecisionAnswer,
 	DecisionQuestion,
 	DecisionState,
-} from "../decision-types";
-import type { UsageRecorder } from "../types";
-import { type CollectedTokens, collectTokens } from "../usage-collector";
-import type { ActionContext, GoapAction, WorldState } from "./types";
+} from "#core/decision-types";
+import type { ActionContext, GoapAction, WorldState } from "#core/goap/types";
+import type { UsageRecorder } from "#core/types";
+import { type CollectedTokens, collectTokens } from "#core/usage-collector";
 
 export interface DecisionActionConfig {
 	name: string;

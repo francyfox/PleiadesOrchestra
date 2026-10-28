@@ -1,4 +1,4 @@
-import type { UnderstoodAttribute } from "./understanding";
+import type { UnderstoodAttribute } from "#core/goap/understanding";
 
 /** Function words that would make any description "match"; language grammar, not domain. */
 const STOP = new Set([

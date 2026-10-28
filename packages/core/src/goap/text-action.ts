@@ -1,5 +1,5 @@
-import type { Agent } from "../types";
-import type { ActionContext, GoapAction, WorldState } from "./types";
+import type { ActionContext, GoapAction, WorldState } from "#core/goap/types";
+import type { Agent } from "#core/types";
 
 export interface TextActionMeta {
 	elapsedMs: number;

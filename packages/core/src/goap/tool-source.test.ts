@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { McpClient } from "./tool-source.ts";
-import { buildArguments, createMcpToolSource } from "./tool-source.ts";
+import type { McpClient } from "#core/goap/tool-source";
+import { buildArguments, createMcpToolSource } from "#core/goap/tool-source";
 
 function fakeMcpClient(overrides: Partial<McpClient> = {}): McpClient & {
 	calls: Array<{ name: string; arguments?: Record<string, unknown> }>;

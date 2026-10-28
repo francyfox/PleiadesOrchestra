@@ -3,11 +3,11 @@ import type {
 	DecisionAgent,
 	DecisionAnswer,
 	DecisionQuestion,
-} from "../decision-types.ts";
-import type { LlmCallRecord } from "../types.ts";
-import { reportTokens } from "../usage-collector";
-import { createDecisionAction } from "./decision-action.ts";
-import type { WorldState } from "./types.ts";
+} from "#core/decision-types";
+import { createDecisionAction } from "#core/goap/decision-action";
+import type { WorldState } from "#core/goap/types";
+import type { LlmCallRecord } from "#core/types";
+import { reportTokens } from "#core/usage-collector";
 
 function fakeDecisionAgent(
 	answer: DecisionAnswer,

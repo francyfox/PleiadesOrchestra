@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { validateArguments } from "./validate-arguments.ts";
+import { validateArguments } from "#core/validate-arguments";
 
 const schema = {
 	type: "object",

@@ -5,8 +5,8 @@ import {
 	FUNCTION_CALL_SYSTEM_PROMPT,
 	fillOnce,
 	functionCallMessages,
-} from "./function-call-agent.ts";
-import type { LlmCallRecord } from "./types.ts";
+} from "#core/function-call-agent";
+import type { LlmCallRecord } from "#core/types";
 
 const SEARCH = {
 	name: "search_products",

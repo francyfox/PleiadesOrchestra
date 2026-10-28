@@ -1,4 +1,4 @@
-import type { WorldState } from "./types";
+import type { WorldState } from "#core/goap/types";
 
 /**
  * A paused run's full resumable state: not just the facts (`state`) but the

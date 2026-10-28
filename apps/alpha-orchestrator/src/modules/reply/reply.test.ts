@@ -745,6 +745,41 @@ describe("prepareNewMessage: a channel without intent sets", () => {
 		expect(asked).toHaveLength(0);
 	});
 
+	describe("an intent the words give narrows the tools", () => {
+		const adds = (name: string): GoapAction => ({
+			...tool(name, `Put things in the cart (${name}).`),
+			effects: { inCart: true, [`toolResult:${name}`]: true },
+		});
+
+		test("only the tools of that intent are offered", async () => {
+			const { prepared, asked } = await prepare(
+				"buy Toilet Paper, Laundry Detergent",
+				"add_to_cart",
+				{ extra: [adds("add_to_cart"), adds("add_staples_to_cart")] },
+			);
+			expect(prepared.goal).toMatchObject({ "toolResult:add_to_cart": true });
+			expect(asked.flat()).toContain("add_staples_to_cart");
+			expect(asked.flat()).not.toContain("get_cart");
+			expect(asked.flat()).not.toContain("set_pizza_size");
+		});
+
+		test("one tool of that intent is the answer without asking the model", async () => {
+			const { prepared, asked } = await prepare(
+				"купи Toilet Paper",
+				"get_cart",
+				{ extra: [adds("add_to_cart")] },
+			);
+			expect(prepared.goal).toMatchObject({ "toolResult:add_to_cart": true });
+			expect(asked).toHaveLength(0);
+		});
+
+		test("an intent no tool has keeps every tool on offer", async () => {
+			const { asked } = await prepare("find sneakers", "get_cart");
+			expect(asked.flat()).toContain("get_cart");
+			expect(asked.flat()).toContain("set_pizza_size");
+		});
+	});
+
 	test("checkout words are still taken from the words, never from the tool choice", async () => {
 		const { asked } = await prepare("checkout now please", "get_cart");
 		expect(asked).toHaveLength(0);

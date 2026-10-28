@@ -28,6 +28,17 @@ import { backfillVisitorNames } from "./modules/visitors/visitors.service.ts";
 import { startWaitingRunsJob } from "./modules/waiting-runs/waiting-runs.ts";
 import { SqliteWorldStateStore } from "./modules/world-state/world-state.ts";
 
+// Local evals (`albedo eval`) ask the models this service really uses; only reachable through `docker compose exec`.
+if (process.argv[2] === "agent:settings") {
+	console.log(
+		JSON.stringify({
+			decision: agentSettings.effective("gamma-decision"),
+			functionCall: agentSettings.effective("delta-function-call"),
+		}),
+	);
+	process.exit(0);
+}
+
 // Migrations already ran when database.instance.ts opened the database.
 backfillVisitorNames(db);
 assertRetentionCoversHistory(

@@ -3,12 +3,15 @@ import {
 	type Taxonomy,
 	tasksConflict,
 } from "@repo/intent-presets";
-import type { FunctionCallAgent } from "../function-call-agent";
-import type { CallContext } from "../types";
-import { needsTheWords } from "./intent-taxonomy";
-import { goalForIntent } from "./message-intent";
-import type { GoapAction } from "./types";
-import type { UnderstoodAttribute, UnderstoodItem } from "./understanding";
+import type { FunctionCallAgent } from "#core/function-call-agent";
+import { needsTheWords } from "#core/goap/intent-taxonomy";
+import { goalForIntent } from "#core/goap/message-intent";
+import type { GoapAction } from "#core/goap/types";
+import type {
+	UnderstoodAttribute,
+	UnderstoodItem,
+} from "#core/goap/understanding";
+import type { CallContext } from "#core/types";
 
 export interface DecomposedTask {
 	intent: string;

@@ -1,5 +1,9 @@
-import { effectsOf, type Taxonomy, type ToolIntent } from "./intent-taxonomy";
-import type { WorldState } from "./types";
+import {
+	effectsOf,
+	type Taxonomy,
+	type ToolIntent,
+} from "#core/goap/intent-taxonomy";
+import type { WorldState } from "#core/goap/types";
 
 export interface KnownTool {
 	name: string;

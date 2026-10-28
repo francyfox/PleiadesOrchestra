@@ -1,15 +1,15 @@
 import { describe, expect, test } from "bun:test";
-import type { DecisionAgent } from "../decision-types.ts";
-import { pruneUnproducibleFacts } from "./catalog.ts";
-import { runPlan } from "./executor.ts";
-import { bindListScope, scopeFacts } from "./list-removal.ts";
-import { goalForIntent } from "./message-intent.ts";
-import type { WorldState } from "./types.ts";
+import type { DecisionAgent } from "#core/decision-types";
+import { pruneUnproducibleFacts } from "#core/goap/catalog";
+import { runPlan } from "#core/goap/executor";
+import { bindListScope, scopeFacts } from "#core/goap/list-removal";
+import { goalForIntent } from "#core/goap/message-intent";
+import type { WorldState } from "#core/goap/types";
 import {
 	createWebMcpActions,
 	type WebMcpToolCallPayload,
 	type WebMcpToolDescriptor,
-} from "./webmcp-actions.ts";
+} from "#core/goap/webmcp-actions";
 
 // Laya is never asked: every tool's name says what it does, and the one that
 // does not (`update_cart_item`) is read from its schema.

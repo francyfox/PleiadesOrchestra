@@ -1,13 +1,17 @@
-import type { ToolIntent } from "./intent-taxonomy";
-import { LIST_EMPTY, LISTED_ITEMS, REMOVED_ITEMS } from "./list-removal";
+import type { ToolIntent } from "#core/goap/intent-taxonomy";
+import {
+	LIST_EMPTY,
+	LISTED_ITEMS,
+	REMOVED_ITEMS,
+} from "#core/goap/list-removal";
 import {
 	FOUND_ITEMS,
 	itemsText,
 	MISSING_ITEMS,
 	readItems,
-} from "./shopping-list";
-import { fact, say } from "./step-text";
-import type { GoapAction, WorldState } from "./types";
+} from "#core/goap/shopping-list";
+import { fact, say } from "#core/goap/step-text";
+import type { GoapAction, WorldState } from "#core/goap/types";
 
 // What the user is told while a WebMCP tool is being used. Texts are written
 // per intent, not per tool: any site's "search" tool reads "Ищу «…»…".

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { MinHeap } from "./heap.ts";
+import { MinHeap } from "#core/goap/heap";
 
 describe("MinHeap", () => {
 	test("pops by ascending priority", () => {

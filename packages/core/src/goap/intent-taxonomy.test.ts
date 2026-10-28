@@ -1,13 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import { type IntentPreset, mergePresets } from "@repo/intent-presets";
-import type { DecisionAgent } from "../decision-types";
+import type { DecisionAgent } from "#core/decision-types";
 import {
 	classifyMessageIntentDetailed,
 	goalForIntent,
 	messageIntentCriteria,
-} from "./message-intent";
-import { chooseTool } from "./tool-choice";
-import { createWebMcpActions } from "./webmcp-actions";
+} from "#core/goap/message-intent";
+import { chooseTool } from "#core/goap/tool-choice";
+import { createWebMcpActions } from "#core/goap/webmcp-actions";
 
 // A preset that has nothing to do with shops: table booking.
 const bookings: IntentPreset = {

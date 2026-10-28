@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { withTimeout } from "./timeout";
+import { withTimeout } from "#core/timeout";
 
 describe("withTimeout", () => {
 	test("resolves with the original value when it completes before the timeout", async () => {

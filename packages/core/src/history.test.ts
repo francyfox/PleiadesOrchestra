@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { InMemoryHistoryStore } from "./history";
+import { InMemoryHistoryStore } from "#core/history";
 
 const ctx = (threadId: string) => ({ threadId, userId: "u1" });
 

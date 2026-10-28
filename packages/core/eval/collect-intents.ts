@@ -4,21 +4,24 @@
  * the English text only), for every eval case Laya may answer. Saved once so
  * `bun run calibrate` can fit offline and repeatably:
  *   bun eval/collect-intents.ts            # -> eval/data/laya-intents.json
- * Env: LAYA_API_BASE_URL, LAYA_API_KEY (as `eval:intents`).
+ * Env: DECISION_BASE_URL, DECISION_API_KEY, DECISION_MODEL (as `eval:intents`).
  */
 
-import { createDecisionAgent } from "../src/decision-agent.ts";
-import { INTENT_CASES, INTENT_HOLDOUT } from "../src/goap/intent-cases.ts";
-import { englishOf } from "../src/goap/intent-cases-en.ts";
+import { createDecisionAgent } from "#core/decision-agent";
+import { INTENT_CASES, INTENT_HOLDOUT } from "#core/goap/intent-cases";
+import { englishOf } from "#core/goap/intent-cases-en";
 import {
 	MESSAGE_INTENT_CRITERIA,
 	MESSAGE_INTENT_INSTRUCTIONS,
-} from "../src/goap/message-intent.ts";
-import type { LayaRecord } from "../src/laya-fit.ts";
+} from "#core/goap/message-intent";
+import type { LayaRecord } from "#core/laya-fit";
 
 const laya = createDecisionAgent({
-	baseURL: process.env.LAYA_API_BASE_URL ?? "http://localhost:8090",
-	apiKey: process.env.LAYA_API_KEY ?? "",
+	baseURL: process.env.DECISION_BASE_URL ?? "http://localhost:8090",
+	apiKey: process.env.DECISION_API_KEY ?? "",
+	...(process.env.DECISION_MODEL
+		? { modelId: process.env.DECISION_MODEL }
+		: {}),
 	telemetry: { logLlmState() {}, logMessageEvent() {} } as never,
 });
 

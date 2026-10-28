@@ -1,12 +1,19 @@
 export { intentFromCues } from "@repo/intent-presets";
-export { pruneUnproducibleFacts } from "./catalog";
-export type { DecisionActionConfig } from "./decision-action";
-export { createDecisionAction } from "./decision-action";
-export type { RunPlanOptions, RunPlanResult } from "./executor";
-export { runPlan } from "./executor";
-export type { IntentExample, IntentHit, IntentModel } from "./intent-memory";
-export { createIntentModel, normalizeIntentText } from "./intent-memory";
-export type { Taxonomy, ToolIntent } from "./intent-taxonomy";
+export { pruneUnproducibleFacts } from "#core/goap/catalog";
+export type { DecisionActionConfig } from "#core/goap/decision-action";
+export { createDecisionAction } from "#core/goap/decision-action";
+export type { RunPlanOptions, RunPlanResult } from "#core/goap/executor";
+export { runPlan } from "#core/goap/executor";
+export type {
+	IntentExample,
+	IntentHit,
+	IntentModel,
+} from "#core/goap/intent-memory";
+export {
+	createIntentModel,
+	normalizeIntentText,
+} from "#core/goap/intent-memory";
+export type { Taxonomy, ToolIntent } from "#core/goap/intent-taxonomy";
 export {
 	decompositionDescriptions,
 	EFFECTS_BY_INTENT,
@@ -19,7 +26,7 @@ export {
 	preconditionsOf,
 	SESSION_FACTS,
 	TOOL_INTENTS,
-} from "./intent-taxonomy";
+} from "#core/goap/intent-taxonomy";
 export {
 	bindListScope,
 	LIST_EMPTY,
@@ -28,71 +35,76 @@ export {
 	REMOVED_ITEMS,
 	SCOPE_ALL,
 	scopeFacts,
-} from "./list-removal";
-export type { StdioMcpClientConfig } from "./mcp-client";
-export { connectStdioMcpClient } from "./mcp-client";
+} from "#core/goap/list-removal";
+export type { StdioMcpClientConfig } from "#core/goap/mcp-client";
+export { connectStdioMcpClient } from "#core/goap/mcp-client";
 export type {
 	ClassifyMessageIntentConfig,
 	IntentSource,
 	IntentVerdict,
 	MessageIntent,
-} from "./message-intent";
+} from "#core/goap/message-intent";
 export {
 	classifyMessageIntent,
 	classifyMessageIntentDetailed,
 	goalForIntent,
 	NEEDS_THE_WORDS,
-} from "./message-intent";
-export type { ParsedPage } from "./page";
-export { PAGE_FACT, PAGE_LANG_FACT, parsePage, samePage } from "./page";
-export { plan } from "./plan";
+} from "#core/goap/message-intent";
+export type { ParsedPage } from "#core/goap/page";
+export {
+	PAGE_FACT,
+	PAGE_LANG_FACT,
+	parsePage,
+	samePage,
+} from "#core/goap/page";
+export { plan } from "#core/goap/plan";
 export type {
 	ProductRequest,
 	ProductRequestActionConfig,
-} from "./product-request";
+} from "#core/goap/product-request";
 export {
 	createProductRequestAction,
 	namesNoProduct,
 	parseProductRequest,
 	reuseLastProduct,
-} from "./product-request";
-export type { RunLock } from "./run-lock";
-export { createRunLock } from "./run-lock";
-export type { ListItem } from "./shopping-list";
+} from "#core/goap/product-request";
+export type { RunLock } from "#core/goap/run-lock";
+export { createRunLock } from "#core/goap/run-lock";
+export type { ListItem } from "#core/goap/shopping-list";
 export {
 	FOUND_ITEMS,
 	itemsText,
 	MISSING_ITEMS,
 	REQUESTED_ITEMS,
 	readItems,
-} from "./shopping-list";
-export { matchSpecialist, preferSpecialist } from "./specialist";
-export type { StepLanguage } from "./step-text";
-export { stepLanguage } from "./step-text";
-export type { DecomposedTask } from "./task-decomposition";
+} from "#core/goap/shopping-list";
+export { matchSpecialist, preferSpecialist } from "#core/goap/specialist";
+export type { StepLanguage } from "#core/goap/step-text";
+export { stepLanguage } from "#core/goap/step-text";
+export type { DecomposedTask } from "#core/goap/task-decomposition";
 export {
 	decomposeMessage,
 	hasOrderWord,
 	looksLikeSeveralTasks,
 	mustAskOrder,
 	runnableTasks,
-} from "./task-decomposition";
+} from "#core/goap/task-decomposition";
 export type {
 	StreamingContext,
 	TextActionConfig,
 	TextActionMeta,
-} from "./text-action";
-export { createTextAction } from "./text-action";
-export type { ToolChoice, ToolOption } from "./tool-choice";
-export { chooseTool } from "./tool-choice";
+} from "#core/goap/text-action";
+export { createTextAction } from "#core/goap/text-action";
+export type { ToolChoice, ToolOption } from "#core/goap/tool-choice";
+export { chooseTool } from "#core/goap/tool-choice";
 export type {
 	McpCallToolResult,
 	McpClient,
 	McpToolDescriptor,
 	McpToolSourceConfig,
 	ToolSource,
-} from "./tool-source";
-export { createMcpToolSource } from "./tool-source";
+} from "#core/goap/tool-source";
+export { createMcpToolSource } from "#core/goap/tool-source";
 export type {
 	ActionContext,
 	ActionResult,
@@ -105,13 +117,13 @@ export type {
 	StepPhase,
 	WaitingOn,
 	WorldState,
-} from "./types";
+} from "#core/goap/types";
 export type {
 	Understanding,
 	UnderstoodAttribute,
 	UnderstoodItem,
 	UnderstoodTask,
-} from "./understanding";
+} from "#core/goap/understanding";
 export {
 	attributeFacts,
 	STATED_ATTRIBUTES,
@@ -119,20 +131,20 @@ export {
 	TODAY_FACT,
 	translateTexts,
 	understandMessage,
-} from "./understanding";
+} from "#core/goap/understanding";
 export type {
 	CreateWebMcpActionsConfig,
 	WebMcpToolCallPayload,
 	WebMcpToolDescriptor,
-} from "./webmcp-actions";
+} from "#core/goap/webmcp-actions";
 export {
 	createWebMcpActions,
 	firstListedProductName,
 	MAX_TOOL_TEXT_CHARS,
 	MISSING_PARAMS,
-} from "./webmcp-actions";
+} from "#core/goap/webmcp-actions";
 export type {
 	WorldStateCheckpoint,
 	WorldStateStore,
-} from "./world-state-store";
-export { InMemoryWorldStateStore } from "./world-state-store";
+} from "#core/goap/world-state-store";
+export { InMemoryWorldStateStore } from "#core/goap/world-state-store";

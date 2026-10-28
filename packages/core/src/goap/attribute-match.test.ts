@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { matchingAttributes } from "./attribute-match.ts";
+import { matchingAttributes } from "#core/goap/attribute-match";
 
 const size = { name: "size", values: ["Small", "Large"] };
 

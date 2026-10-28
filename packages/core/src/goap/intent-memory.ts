@@ -1,4 +1,4 @@
-import type { MessageIntent } from "./message-intent.ts";
+import type { MessageIntent } from "#core/goap/message-intent";
 
 /**
  * What a site has taught the classifier: messages (in English) a person

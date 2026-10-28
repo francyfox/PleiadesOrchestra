@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { Agent, AgentStreamEvent, IncomingMessage } from "../types.ts";
-import { createTextAction, type TextActionMeta } from "./text-action.ts";
+import { createTextAction, type TextActionMeta } from "#core/goap/text-action";
+import type { Agent, AgentStreamEvent, IncomingMessage } from "#core/types";
 
 function fakeAgent(
 	events: AgentStreamEvent[],

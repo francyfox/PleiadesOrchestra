@@ -4,7 +4,7 @@ See root `CLAUDE.md` for monorepo commands, workflow, code style and repo-wide l
 
 ## Overview
 
-LLM client library: no HTTP server, no transport code. Consumed by `alpha-orchestrator`, `telegram-bot`, `cli` (Bun source import, `exports: ./src/index.ts`). Files in `src/` are flat and import without `.ts` extension (unlike the apps); `src/index.ts` is the public surface.
+LLM client library: no HTTP server, no transport code. Consumed by `alpha-orchestrator`, `telegram-bot`, `cli` (Bun source import, `exports: ./src/index.ts`). `src/index.ts` is the public surface. Inside the package (`src/`, `eval/`) import through the alias `#core/<path under src>` without `.ts` (`package.json` `imports`: `"#core/*": "./src/*.ts"`; a folder is `#core/goap/index`).
 
 HTTP model calls go through the Vercel AI SDK: `ai`, `@ai-sdk/openai-compatible` (chat/reply model on `beta-text`), `@ai-sdk/typesafe-ai` (decision models via `experimental_decide`, talking to `gamma-decision`). Versions are pinned **exactly** in the root catalog because `experimental_*` APIs change in patch releases.
 
@@ -27,10 +27,11 @@ Enum parameters (`createParameterChoiceAction` in `webmcp-actions.ts`): every st
 
 **An action on every item of a list the site shows («очисти корзину», «remove everything»)** — same fan-out, the list comes from a tool's answer (`list-removal.ts`). A tool whose NAME reads (`get_/list_/view_…`) is intent `readState` (effect `listRead`; a tool role, never offered to Laya or as a message intent: `LAYA_INTENT_DESCRIPTIONS`). An edit tool whose schema says «0 removes» (`removesAtZero`) is `removeFromCart`. `asksForAll` (`message-cues.ts`, closed list) + `scopeFacts` write `scopeAll`; `bindListScope` then makes a remover that needs an item (`scopedPreconditions`) wait for `listRead` and keeps only the reader named closest to it (`get_cart` for `update_cart_item`); a remover with no required params (`clear_cart`) is untouched and wins by cost. `parseListedItems` reads every line of the answer (count «2 ×», price/size cut, leading `#id` = the entry's id) into `listedItems`; `removeEach` (`fan-out.ts`) calls the remover once per item, `removalArguments` fills the name field and the number that removes at 0 from the schema alone; a remover with a list parameter gets everything in one call. An answer that lists nothing and says «empty» ends the step truthfully (`listEmpty`); a list it cannot read fails the step. Limit: a site that removes only by an id its list answer does not show cannot be served. `goalForIntent` checks fact AND value (`inCart: false` was «producible» by add tools: the root of the old `no_plan`).
 
-Commands: `bun --cwd packages/core test`; evals `bun run eval:intents`, `eval:tools`, `bench:plan` (in `packages/core`, cases in `src/goap/intent-cases.ts`).
+Commands: `bun --cwd packages/core test`; evals `bun run eval:intents`, `eval:tools`, `eval:choose-tool` (`chooseTool` per message on four demo sites; `DECISION_BASE_URL`/`DECISION_API_KEY`/`DECISION_MODEL`), `bench:plan` (in `packages/core`, cases in `src/goap/intent-cases.ts`).
 
 ## Lessons
 
+- **Alias is `#core/*`, not `@/*` or `#/*`** — tsconfig `paths` apply only inside the package's own `bun check`: apps that import core by source fail on `@/` in their type check. `package.json` `imports` resolve per package everywhere, but Bun 1.4 does not resolve the bare `#/` prefix.
 - **`createOpenAICompatible` needs `includeUsage: true`** — otherwise streamed token counts are `undefined` (it must send `stream_options: { include_usage: true }` to llama-server).
 - **A failed GOAP run must not keep its full WorldState as checkpoint** — only a WAITING run keeps it; every other end keeps just `SESSION_FACTS` (stale `webmcp:*:result = "error"` once infected the next message). Enforced orchestrator-side.
 - **IronClaw won't work with small local models** — ~15k token system prompt + 30s timeout. Use this custom core/adapter setup instead.

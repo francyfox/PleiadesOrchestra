@@ -5,7 +5,7 @@ import {
 	fitTemperature,
 	type LayaSample,
 	recordToSample,
-} from "./laya-fit";
+} from "#core/laya-fit";
 
 /** Deterministic pseudo-random numbers so the synthetic data never flakes. */
 function rng(seed: number) {

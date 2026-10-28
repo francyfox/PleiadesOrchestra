@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { runPlan } from "./executor.ts";
-import type { ActionResult, GoapAction, PlanTraceEvent } from "./types.ts";
+import { runPlan } from "#core/goap/executor";
+import type {
+	ActionResult,
+	GoapAction,
+	PlanTraceEvent,
+} from "#core/goap/types";
 
 function action(
 	name: string,

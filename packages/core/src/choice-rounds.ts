@@ -1,4 +1,4 @@
-import type { DecisionAgent, DecisionState } from "./decision-types";
+import type { DecisionAgent, DecisionState } from "#core/decision-types";
 
 /**
  * Laya shares ONE budget between all options of a `choice` question

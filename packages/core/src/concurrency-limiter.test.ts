@@ -3,9 +3,9 @@ import {
 	createConcurrencyLimiter,
 	withConcurrencyLimit,
 	withDecisionConcurrencyLimit,
-} from "./concurrency-limiter.ts";
-import type { DecisionAgent } from "./decision-types.ts";
-import type { Agent, AgentStreamEvent, IncomingMessage } from "./types.ts";
+} from "#core/concurrency-limiter";
+import type { DecisionAgent } from "#core/decision-types";
+import type { Agent, AgentStreamEvent, IncomingMessage } from "#core/types";
 
 function deferred<T>() {
 	let resolve!: (value: T) => void;

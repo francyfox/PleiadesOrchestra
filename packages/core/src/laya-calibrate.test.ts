@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import type { DecisionAgent, DecisionAnswer } from "./decision-types";
+import type { DecisionAgent, DecisionAnswer } from "#core/decision-types";
 import {
 	calibrate,
 	layaBucket,
 	rescaleProbabilities,
 	withCalibration,
-} from "./laya-calibrate";
+} from "#core/laya-calibrate";
 
 const choiceQuestion = (n: number) => ({
 	type: "choice" as const,

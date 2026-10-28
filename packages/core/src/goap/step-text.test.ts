@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { stepLanguage } from "./step-text.ts";
+import { stepLanguage } from "#core/goap/step-text";
 
 describe("stepLanguage", () => {
 	test("Russian and Kazakh pages get Russian, English ones English", () => {

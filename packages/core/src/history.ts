@@ -1,5 +1,5 @@
 import type { ModelMessage } from "ai";
-import type { CallContext, HistoryStore } from "./types";
+import type { CallContext, HistoryStore } from "#core/types";
 
 /**
  * Bounded in-memory `HistoryStore`, keyed by thread — the default when no

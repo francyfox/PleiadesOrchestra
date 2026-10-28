@@ -1,13 +1,13 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { createAgent } from "./agent";
-import { InMemoryHistoryStore } from "./history";
-import { createTelemetry } from "./telemetry";
+import { createAgent } from "#core/agent";
+import { InMemoryHistoryStore } from "#core/history";
+import { createTelemetry } from "#core/telemetry";
 import type {
 	AgentStreamEvent,
 	IncomingMessage,
 	LlmCallRecord,
 	UsageRecorder,
-} from "./types";
+} from "#core/types";
 
 interface Usage {
 	prompt_tokens: number;

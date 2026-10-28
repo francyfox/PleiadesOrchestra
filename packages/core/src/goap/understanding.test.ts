@@ -1,10 +1,10 @@
 import { expect, test } from "bun:test";
-import type { FunctionCallAgent } from "../function-call-agent.ts";
+import type { FunctionCallAgent } from "#core/function-call-agent";
 import {
 	translateTexts,
 	understandingTool,
 	understandMessage,
-} from "./understanding.ts";
+} from "#core/goap/understanding";
 
 const INTENTS = { search: "look for things", addToCart: "buy", other: "else" };
 

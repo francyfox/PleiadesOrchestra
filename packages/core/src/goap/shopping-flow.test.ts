@@ -1,16 +1,19 @@
 import { describe, expect, test } from "bun:test";
-import type { DecisionAgent, DecisionAnswer } from "../decision-types.ts";
-import type { Agent } from "../types.ts";
-import { pruneUnproducibleFacts } from "./catalog.ts";
-import { runPlan } from "./executor.ts";
-import { classifyMessageIntent, goalForIntent } from "./message-intent.ts";
-import { createProductRequestAction } from "./product-request.ts";
-import type { GoapAction, PlanTraceEvent, WorldState } from "./types.ts";
+import type { DecisionAgent, DecisionAnswer } from "#core/decision-types";
+import { pruneUnproducibleFacts } from "#core/goap/catalog";
+import { runPlan } from "#core/goap/executor";
+import {
+	classifyMessageIntent,
+	goalForIntent,
+} from "#core/goap/message-intent";
+import { createProductRequestAction } from "#core/goap/product-request";
+import type { GoapAction, PlanTraceEvent, WorldState } from "#core/goap/types";
 import {
 	createWebMcpActions,
 	type WebMcpToolCallPayload,
 	type WebMcpToolDescriptor,
-} from "./webmcp-actions.ts";
+} from "#core/goap/webmcp-actions";
+import type { Agent } from "#core/types";
 
 // The Basketful demo's three tools, as `document.modelContext` lists them.
 const TOOLS: WebMcpToolDescriptor[] = [

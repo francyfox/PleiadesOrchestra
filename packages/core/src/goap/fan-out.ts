@@ -1,10 +1,10 @@
-import type { ToolIntent } from "./intent-taxonomy";
+import type { ToolIntent } from "#core/goap/intent-taxonomy";
 import {
 	LISTED_ITEMS,
 	outOfStockNamed,
 	REMOVED_ITEMS,
 	SCOPE_ALL,
-} from "./list-removal";
+} from "#core/goap/list-removal";
 import {
 	FOUND_ITEMS,
 	findListParameter,
@@ -12,9 +12,9 @@ import {
 	REQUESTED_ITEMS,
 	readItems,
 	writeItems,
-} from "./shopping-list";
-import type { WorldState } from "./types";
-import { NO_RESULTS } from "./webmcp-steps";
+} from "#core/goap/shopping-list";
+import type { WorldState } from "#core/goap/types";
+import { NO_RESULTS } from "#core/goap/webmcp-steps";
 
 // One WebMCP wait is one tool call, so a request for several things runs the
 // same tool several times: call for thing i, wait, read the answer, call for

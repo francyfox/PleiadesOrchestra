@@ -3,19 +3,19 @@ import type {
 	DecisionAgent,
 	DecisionAnswer,
 	DecisionQuestion,
-} from "../decision-types.ts";
+} from "#core/decision-types";
 import type {
 	FunctionCallAgent,
 	FunctionCallRequest,
-} from "../function-call-agent.ts";
-import type { LlmCallRecord } from "../types.ts";
-import { UntranslatableError } from "../untranslatable-error.ts";
-import { withChoiceReport } from "../usage-collector.ts";
+} from "#core/function-call-agent";
 import {
 	createWebMcpActions,
 	firstListedProductName,
 	type WebMcpToolDescriptor,
-} from "./webmcp-actions.ts";
+} from "#core/goap/webmcp-actions";
+import type { LlmCallRecord } from "#core/types";
+import { UntranslatableError } from "#core/untranslatable-error";
+import { withChoiceReport } from "#core/usage-collector";
 
 function fakeDecisionAgent(choice: string): DecisionAgent & {
 	capturedState?: unknown;

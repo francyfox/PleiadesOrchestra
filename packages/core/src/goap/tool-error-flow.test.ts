@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import type { DecisionAgent, DecisionAnswer } from "../decision-types.ts";
-import { runPlan } from "./executor.ts";
-import type { WorldState } from "./types.ts";
+import type { DecisionAgent, DecisionAnswer } from "#core/decision-types";
+import { runPlan } from "#core/goap/executor";
+import type { WorldState } from "#core/goap/types";
 import {
 	createWebMcpActions,
 	type WebMcpToolCallPayload,
 	type WebMcpToolDescriptor,
-} from "./webmcp-actions.ts";
+} from "#core/goap/webmcp-actions";
 
 const choice = (value: string): DecisionAnswer => ({
 	type: "choice",

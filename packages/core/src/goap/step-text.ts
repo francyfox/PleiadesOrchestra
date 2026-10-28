@@ -1,5 +1,5 @@
-import { PAGE_LANG_FACT } from "./page";
-import type { WorldState } from "./types";
+import { PAGE_LANG_FACT } from "#core/goap/page";
+import type { WorldState } from "#core/goap/types";
 
 export type StepLanguage = "ru" | "en";
 

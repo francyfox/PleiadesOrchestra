@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import type { DecisionAgent, DecisionAnswer } from "../decision-types.ts";
+import type { DecisionAgent, DecisionAnswer } from "#core/decision-types";
 import {
 	classifyMessageIntent,
 	classifyMessageIntentDetailed,
 	goalForIntent,
-} from "./message-intent.ts";
-import type { GoapAction } from "./types.ts";
+} from "#core/goap/message-intent";
+import type { GoapAction } from "#core/goap/types";
 
 function fakeDecisionAgent(
 	answer: DecisionAnswer | undefined,

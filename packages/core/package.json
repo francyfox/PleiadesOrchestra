@@ -6,6 +6,9 @@
 	"module": "src/index.ts",
 	"type": "module",
 	"private": true,
+	"imports": {
+		"#core/*": "./src/*.ts"
+	},
 	"exports": {
 		".": "./src/index.ts"
 	},
@@ -17,6 +20,7 @@
 		"calibrate": "bun eval/calibrate.ts",
 		"eval:decompose": "bun eval/decompose.ts",
 		"eval:tools": "bun eval/tools.ts",
+		"eval:choose-tool": "bun eval/choose-tool.ts",
 		"bench:plan": "bun eval/plan-bench.ts"
 	},
 	"dependencies": {

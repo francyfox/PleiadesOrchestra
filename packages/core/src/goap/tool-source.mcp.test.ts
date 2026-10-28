@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
 import { fromJsonSchema, McpServer } from "@modelcontextprotocol/server";
-import { createMcpToolSource } from "./tool-source.ts";
+import { createMcpToolSource } from "#core/goap/tool-source";
 
 /**
  * Unlike tool-source.test.ts (which fakes `McpClient`), this drives a real

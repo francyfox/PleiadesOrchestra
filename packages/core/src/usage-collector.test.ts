@@ -4,7 +4,7 @@ import {
 	reportTokens,
 	withChoiceReport,
 	withChoiceRound,
-} from "./usage-collector";
+} from "#core/usage-collector";
 
 test("calls inside add up, concurrent collectors stay apart, none reported stays undefined", async () => {
 	const a = collectTokens(async () => {

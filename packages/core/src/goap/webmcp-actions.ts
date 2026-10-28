@@ -3,23 +3,18 @@ import {
 	SHOP_TAXONOMY,
 	type Taxonomy,
 } from "@repo/intent-presets";
-import { decideInRounds } from "../choice-rounds";
-import type { DecisionAgent } from "../decision-types";
-import type { FunctionCallAgent } from "../function-call-agent";
-import { recordCall } from "../record-call";
-import type { UsageRecorder } from "../types";
-import { UntranslatableError } from "../untranslatable-error";
-import { collectTokens } from "../usage-collector";
-import { validateArguments } from "../validate-arguments";
-import { matchingAttributes } from "./attribute-match";
-import { cursorFact, fanOutFor } from "./fan-out";
+import { decideInRounds } from "#core/choice-rounds";
+import type { DecisionAgent } from "#core/decision-types";
+import type { FunctionCallAgent } from "#core/function-call-agent";
+import { matchingAttributes } from "#core/goap/attribute-match";
+import { cursorFact, fanOutFor } from "#core/goap/fan-out";
 import {
 	effectsOf,
 	layaDescriptions,
 	needsTheWords,
 	preconditionsOf,
 	type ToolIntent,
-} from "./intent-taxonomy";
+} from "#core/goap/intent-taxonomy";
 import {
 	countedItems,
 	findZeroField,
@@ -36,31 +31,39 @@ import {
 	removalArguments,
 	removesAtZero,
 	SCOPE_ALL,
-} from "./list-removal";
-import { PAGE_FACT, samePage } from "./page";
+} from "#core/goap/list-removal";
+import { PAGE_FACT, samePage } from "#core/goap/page";
 import {
 	FOUND_ITEMS,
 	MISSING_ITEMS,
 	REQUESTED_ITEMS,
 	readItems,
 	writeItems,
-} from "./shopping-list";
-import { bindEnumValues, SPECIALIST_FACT } from "./specialist";
-import { recoveryFromToolError } from "./tool-error-recovery";
-import { buildArguments } from "./tool-source";
+} from "#core/goap/shopping-list";
+import { bindEnumValues, SPECIALIST_FACT } from "#core/goap/specialist";
+import { recoveryFromToolError } from "#core/goap/tool-error-recovery";
+import { buildArguments } from "#core/goap/tool-source";
 import type {
 	ActionContext,
 	ActionResult,
 	GoapAction,
 	WorldState,
-} from "./types";
-import { STATED_ATTRIBUTES, type UnderstoodAttribute } from "./understanding";
+} from "#core/goap/types";
+import {
+	STATED_ATTRIBUTES,
+	type UnderstoodAttribute,
+} from "#core/goap/understanding";
 import {
 	describeParameterChoice,
 	describeTool,
 	destinationOf,
 	NO_RESULTS,
-} from "./webmcp-steps";
+} from "#core/goap/webmcp-steps";
+import { recordCall } from "#core/record-call";
+import type { UsageRecorder } from "#core/types";
+import { UntranslatableError } from "#core/untranslatable-error";
+import { collectTokens } from "#core/usage-collector";
+import { validateArguments } from "#core/validate-arguments";
 
 export interface WebMcpToolDescriptor {
 	name: string;

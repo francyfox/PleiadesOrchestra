@@ -25,7 +25,7 @@ export interface EnvServer {
 /** The settings an agent is built from. */
 export interface EffectiveSettings {
 	baseUrl: string;
-	/** Never leaves the process. */
+	/** Never leaves the process, except to `agent:settings` (`index.ts`) run through `docker compose exec`. */
 	apiKey: string;
 	model: string;
 	/** Id of the picked provider (unset = the env server); the usage ledger shows it as `provider`. */

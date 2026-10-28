@@ -4,9 +4,9 @@
  *   bun run bench:plan
  * Also asserts both return the same plan for every case.
  */
-import { plan } from "../src/goap/plan.ts";
-import { planReference } from "../src/goap/plan-reference.ts";
-import type { GoapAction } from "../src/goap/types.ts";
+import { plan } from "#core/goap/plan";
+import { planReference } from "#core/goap/plan-reference";
+import type { GoapAction } from "#core/goap/types";
 
 /**
  * Layered catalog: fact `f<i>` is producible by `width` alternative actions

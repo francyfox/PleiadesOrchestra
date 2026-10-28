@@ -1,4 +1,4 @@
-import type { ToolIntent } from "../src/goap/intent-taxonomy.ts";
+import type { ToolIntent } from "#core/goap/intent-taxonomy";
 
 /**
  * The eleven tools of the Basketful demo shop (`apps/shopping-cart-webmcp`),

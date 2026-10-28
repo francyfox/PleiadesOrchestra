@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { repairArguments } from "./repair-arguments.ts";
+import { repairArguments } from "#core/repair-arguments";
 
 const schema = {
 	type: "object",

@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { createIntentModel, normalizeIntentText } from "./intent-memory.ts";
+import {
+	createIntentModel,
+	normalizeIntentText,
+} from "#core/goap/intent-memory";
 
 describe("normalizeIntentText", () => {
 	test("lowercases, drops punctuation and collapses spaces", () => {

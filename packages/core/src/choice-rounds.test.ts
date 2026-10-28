@@ -4,14 +4,14 @@ import {
 	estimateTokens,
 	LAYA_HEAD_TOKENS,
 	planChoiceRounds,
-} from "./choice-rounds";
-import type { DecisionAgent, DecisionQuestion } from "./decision-types";
-import { LAYA_INTENT_DESCRIPTIONS } from "./goap/intent-taxonomy";
+} from "#core/choice-rounds";
+import type { DecisionAgent, DecisionQuestion } from "#core/decision-types";
+import { LAYA_INTENT_DESCRIPTIONS } from "#core/goap/intent-taxonomy";
 import {
 	MESSAGE_INTENT_CRITERIA,
 	MESSAGE_INTENT_INSTRUCTIONS,
-} from "./goap/message-intent";
-import { TOOL_INTENT_INSTRUCTIONS } from "./goap/webmcp-actions";
+} from "#core/goap/message-intent";
+import { TOOL_INTENT_INSTRUCTIONS } from "#core/goap/webmcp-actions";
 
 const crit = (n: number, text = "short text") =>
 	Object.fromEntries(Array.from({ length: n }, (_, i) => [`opt${i}`, text]));

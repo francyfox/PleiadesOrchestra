@@ -1,4 +1,4 @@
-import type { GoapAction } from "./types";
+import type { GoapAction } from "#core/goap/types";
 
 /**
  * Drops preconditions that no action in the catalog (and not the caller's

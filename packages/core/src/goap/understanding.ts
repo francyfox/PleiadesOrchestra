@@ -1,5 +1,5 @@
-import type { FunctionCallAgent } from "../function-call-agent";
-import type { CallContext } from "../types";
+import type { FunctionCallAgent } from "#core/function-call-agent";
+import type { CallContext } from "#core/types";
 
 export interface UnderstoodItem {
 	name: string;

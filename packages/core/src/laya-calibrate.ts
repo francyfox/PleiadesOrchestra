@@ -2,7 +2,7 @@ import type {
 	DecisionAgent,
 	DecisionAnswer,
 	DecisionQuestion,
-} from "./decision-types";
+} from "#core/decision-types";
 
 /**
  * Laya answers with softmax(z / T) where T is one shipped temperature per

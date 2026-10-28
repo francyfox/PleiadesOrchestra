@@ -7,8 +7,8 @@ import {
 	parseListedItems,
 	removalArguments,
 	scopeFacts,
-} from "./list-removal.ts";
-import type { GoapAction } from "./types.ts";
+} from "#core/goap/list-removal";
+import type { GoapAction } from "#core/goap/types";
 
 const CART_ANSWER = [
 	"Greenleaf Market cart (3 items):",

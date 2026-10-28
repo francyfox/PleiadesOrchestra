@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { ConsolaReporter, LogObject } from "consola";
-import { createTelemetry } from "./telemetry";
+import { createTelemetry } from "#core/telemetry";
 
 function fakeReporter() {
 	const logs: LogObject[] = [];

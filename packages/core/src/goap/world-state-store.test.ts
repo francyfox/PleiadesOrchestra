@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { InMemoryWorldStateStore } from "./world-state-store.ts";
+import { InMemoryWorldStateStore } from "#core/goap/world-state-store";
 
 describe("InMemoryWorldStateStore", () => {
 	test("load returns undefined for a thread that was never saved", async () => {

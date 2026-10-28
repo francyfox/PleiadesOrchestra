@@ -1,12 +1,12 @@
-import type { Agent } from "../types";
 import {
 	itemsText,
 	REQUESTED_ITEMS,
 	readItems,
 	writeItems,
-} from "./shopping-list";
-import { fact, say } from "./step-text";
-import type { ActionContext, GoapAction, WorldState } from "./types";
+} from "#core/goap/shopping-list";
+import { fact, say } from "#core/goap/step-text";
+import type { ActionContext, GoapAction, WorldState } from "#core/goap/types";
+import type { Agent } from "#core/types";
 
 export interface ProductItem {
 	/** What to search the catalog for, in the catalog's own language. */

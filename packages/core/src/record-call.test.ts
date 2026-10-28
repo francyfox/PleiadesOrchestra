@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { recordCall } from "./record-call";
-import type { LlmCallRecord } from "./types";
+import { recordCall } from "#core/record-call";
+import type { LlmCallRecord } from "#core/types";
 
 const call: LlmCallRecord = {
 	threadId: "t",

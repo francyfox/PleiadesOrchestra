@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { DecisionAgent } from "./decision-types";
-import type { DecisionChoice } from "./types";
+import type { DecisionAgent } from "#core/decision-types";
+import type { DecisionChoice } from "#core/types";
 
 export interface CollectedTokens {
 	inputTokens?: number;

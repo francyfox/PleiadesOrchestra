@@ -1,7 +1,7 @@
 import { asksForAll, tokens } from "@repo/intent-presets";
-import type { ListItem } from "./shopping-list";
-import { findListParameter } from "./shopping-list";
-import type { GoapAction, WorldState } from "./types";
+import type { ListItem } from "#core/goap/shopping-list";
+import { findListParameter } from "#core/goap/shopping-list";
+import type { GoapAction, WorldState } from "#core/goap/types";
 
 // «Remove everything» is the same fan-out as «buy A, B, C», only the list does
 // not come from the message but from a tool's answer: a tool that reads the

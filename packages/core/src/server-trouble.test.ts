@@ -5,7 +5,7 @@ import {
 	reportingTrouble,
 	tallyingAttempts,
 	watchServerTrouble,
-} from "./server-trouble";
+} from "#core/server-trouble";
 
 const fake = (respond: () => Promise<Response>) =>
 	respond as unknown as typeof fetch;

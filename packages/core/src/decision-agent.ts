@@ -5,13 +5,13 @@ import type {
 	DecisionAnswer,
 	DecisionQuestion,
 	DecisionState,
-} from "./decision-types";
-import { reportingTrouble } from "./server-trouble";
+} from "#core/decision-types";
+import { reportingTrouble } from "#core/server-trouble";
 import {
 	type createTelemetry,
 	telemetry as defaultTelemetry,
-} from "./telemetry";
-import { reportTokens } from "./usage-collector";
+} from "#core/telemetry";
+import { reportTokens } from "#core/usage-collector";
 
 export interface DecisionAgentConfig {
 	/** `gamma-decision` root, without `/v1` (the TypeSafe client appends it); a URL ending in `/decisions` (OpenRouter) is posted to as it is. */

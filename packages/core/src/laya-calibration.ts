@@ -1,4 +1,4 @@
-import type { LayaCalibrationTable } from "./laya-calibrate";
+import type { LayaCalibrationTable } from "#core/laya-calibrate";
 
 /**
  * Laya temperature per (question type x option-count bucket), refitted on our

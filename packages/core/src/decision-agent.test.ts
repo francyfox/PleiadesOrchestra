@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { Experimental_DecisionMockModelV4 } from "ai/test";
 import type { ConsolaReporter, LogObject } from "consola";
-import { createDecisionAgent } from "./decision-agent.ts";
-import { createTelemetry } from "./telemetry.ts";
-import { collectTokens } from "./usage-collector";
+import { createDecisionAgent } from "#core/decision-agent";
+import { createTelemetry } from "#core/telemetry";
+import { collectTokens } from "#core/usage-collector";
 
 const BASE_URL = "https://laya-api.internal";
 const API_KEY = "test-api-key";

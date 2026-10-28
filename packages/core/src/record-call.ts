@@ -1,8 +1,8 @@
 import {
 	type createTelemetry,
 	telemetry as defaultTelemetry,
-} from "./telemetry";
-import type { LlmCallRecord, UsageRecorder } from "./types";
+} from "#core/telemetry";
+import type { LlmCallRecord, UsageRecorder } from "#core/types";
 
 /**
  * The one place a finished call is reported: a telemetry line (stdout) and a

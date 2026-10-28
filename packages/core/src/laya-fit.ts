@@ -2,7 +2,7 @@ import {
 	type LayaBucket,
 	layaBucket,
 	SHIPPED_TEMPERATURES,
-} from "./laya-calibrate";
+} from "#core/laya-calibrate";
 
 /** One asked question with a known right answer: Laya's shipped probabilities and the index of the right option. */
 export interface LayaSample {

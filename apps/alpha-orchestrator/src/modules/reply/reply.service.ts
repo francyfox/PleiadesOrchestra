@@ -664,11 +664,12 @@ async function prepareByTool(
 		.map((action) => ({
 			name: action.name,
 			description: action.description,
+			effects: action.effects,
 		}));
 	const startedAt = performance.now();
 	const { value: choice, tokens } = await collectTokens(() =>
 		chooseTool(
-			{ decisionAgent: deps.decisionAgent, tools, taxonomy },
+			{ decisionAgent: deps.decisionAgent, tools, taxonomy, intent: words },
 			message.english ?? message.original,
 		),
 	);
@@ -676,7 +677,8 @@ async function prepareByTool(
 		deps,
 		{
 			intent: choice.kind === "tool" ? "other" : "chat",
-			source: "laya",
+			source:
+				choice.kind === "tool" && choice.via === "words" ? "words" : "laya",
 			confidence: choice.confidence,
 		},
 		{

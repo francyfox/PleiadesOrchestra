@@ -1,4 +1,4 @@
-import { plan } from "./plan";
+import { plan } from "#core/goap/plan";
 import type {
 	BaseContext,
 	Goal,
@@ -9,7 +9,7 @@ import type {
 	StepPhase,
 	WaitingOn,
 	WorldState,
-} from "./types";
+} from "#core/goap/types";
 
 export interface RunPlanOptions {
 	state: WorldState;

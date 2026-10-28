@@ -1,6 +1,6 @@
 import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
-import type { McpClient } from "./tool-source";
+import type { McpClient } from "#core/goap/tool-source";
 
 export interface StdioMcpClientConfig {
 	/** Identity this client announces to the server — cosmetic, shows up in the server's own logs, not a secret. */

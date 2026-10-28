@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { recoveryFromToolError } from "./tool-error-recovery.ts";
+import { recoveryFromToolError } from "#core/goap/tool-error-recovery";
 
 const KNOWN = [
 	{ name: "choose_store", intent: "chooseStore" as const },

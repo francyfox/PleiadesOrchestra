@@ -8,22 +8,22 @@ import {
 	NoObjectGeneratedError,
 	Output,
 } from "ai";
-import { groundArguments } from "./ground-arguments";
-import { recordCall } from "./record-call";
-import { repairArguments } from "./repair-arguments";
+import { groundArguments } from "#core/ground-arguments";
+import { recordCall } from "#core/record-call";
+import { repairArguments } from "#core/repair-arguments";
 import {
 	type AttemptTally,
 	attemptsOf,
 	newTally,
 	reportingTrouble,
 	tallyingAttempts,
-} from "./server-trouble";
+} from "#core/server-trouble";
 import {
 	type createTelemetry,
 	telemetry as defaultTelemetry,
-} from "./telemetry";
-import type { CallContext, UsageRecorder } from "./types";
-import { validateArguments } from "./validate-arguments";
+} from "#core/telemetry";
+import type { CallContext, UsageRecorder } from "#core/types";
+import { validateArguments } from "#core/validate-arguments";
 
 export interface FunctionCallTool {
 	name: string;

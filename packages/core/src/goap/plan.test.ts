@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { plan } from "./plan.ts";
-import type { GoapAction } from "./types.ts";
+import { plan } from "#core/goap/plan";
+import type { GoapAction } from "#core/goap/types";
 
 /** Test fixture: `execute` is never called by `plan()` — it's a no-op stub to satisfy the type. */
 function action(

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { INTENT_CASES, INTENT_HOLDOUT } from "./intent-cases.ts";
-import { TOOL_INTENTS } from "./intent-taxonomy.ts";
+import { INTENT_CASES, INTENT_HOLDOUT } from "#core/goap/intent-cases";
+import { TOOL_INTENTS } from "#core/goap/intent-taxonomy";
 
 describe("INTENT_CASES", () => {
 	test("every expected intent exists, and every intent has at least one case", () => {

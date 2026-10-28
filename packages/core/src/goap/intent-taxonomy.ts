@@ -1,5 +1,5 @@
 import { SHOP_TAXONOMY, type Taxonomy } from "@repo/intent-presets";
-import type { WorldState } from "./types";
+import type { WorldState } from "#core/goap/types";
 
 /**
  * What the classifier, the planner and the guards read about intents. The data

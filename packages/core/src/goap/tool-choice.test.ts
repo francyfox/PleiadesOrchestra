@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import type { DecisionAgent } from "../decision-types";
-import { collectTokens, withChoiceReport } from "../usage-collector";
-import { chooseTool } from "./tool-choice";
+import type { DecisionAgent } from "#core/decision-types";
+import { chooseTool } from "#core/goap/tool-choice";
+import { collectTokens, withChoiceReport } from "#core/usage-collector";
 
 /** Answers every choice question with `pick(options)`, and keeps what it was asked. */
 function agent(
@@ -120,5 +120,134 @@ describe("chooseTool", () => {
 		expect(
 			await chooseTool({ decisionAgent, tools: many }, "find sneakers"),
 		).toMatchObject({ kind: "tool", tool: "search_products" });
+	});
+
+	describe("an intent the words give narrows the tools", () => {
+		const adds = (name: string) => ({
+			name,
+			description: `Put things in the cart (${name}).`,
+			effects: { inCart: true, [`toolResult:${name}`]: true },
+		});
+
+		test("only the tools of that intent are offered", async () => {
+			const decisionAgent = agent(() => "add_to_cart");
+			const verdict = await chooseTool(
+				{
+					decisionAgent,
+					tools: [...tools, adds("add_to_cart"), adds("add_staples_to_cart")],
+					intent: "addToCart",
+				},
+				"buy toilet paper",
+			);
+			expect(verdict).toMatchObject({ kind: "tool", tool: "add_to_cart" });
+			expect(decisionAgent.asked.flat()).toContain("add_staples_to_cart");
+			expect(decisionAgent.asked.flat()).not.toContain("get_cart");
+		});
+
+		test("one tool of that intent is the answer without asking the model", async () => {
+			const decisionAgent = agent(() => "get_cart");
+			expect(
+				await chooseTool(
+					{
+						decisionAgent,
+						tools: [...tools, adds("add_to_cart")],
+						intent: "addToCart",
+					},
+					"buy toilet paper",
+				),
+			).toEqual({ kind: "tool", tool: "add_to_cart", via: "words" });
+			expect(decisionAgent.asked).toHaveLength(0);
+		});
+
+		test("an intent no tool has keeps every tool on offer", async () => {
+			const decisionAgent = agent(() => "get_cart");
+			await chooseTool(
+				{ decisionAgent, tools, intent: "addToCart" },
+				"buy toilet paper",
+			);
+			expect(decisionAgent.asked.flat()).toContain("set_pizza_size");
+		});
+	});
+
+	describe("the groups read names, the last round reads descriptions", () => {
+		const staples = {
+			name: "add_staples_to_cart",
+			description:
+				"Put the shopper's saved staples in the cart. Use it when they ask for their staples or 'the usual'.",
+		};
+		const add = {
+			name: "add_to_cart",
+			description: "Add a product to the cart.",
+		};
+		/** Keeps every round's tool texts (without chat/other). */
+		const reading = (pick: (options: string[]) => string) => {
+			const texts: Record<string, string>[] = [];
+			const decisionAgent: DecisionAgent = {
+				async decide(_state, questions) {
+					const [key, question] = Object.entries(questions)[0] as [
+						string,
+						{ type: string; criteria: Record<string, string> },
+					];
+					const { chat: _c, other: _o, ...tools } = question.criteria;
+					texts.push(tools);
+					const choice = pick(Object.keys(question.criteria));
+					return {
+						[key]: { type: "choice", choice, probabilities: { [choice]: 0.9 } },
+					};
+				},
+			};
+			return { decisionAgent, texts };
+		};
+
+		test("one round: every tool with its description", async () => {
+			const { decisionAgent, texts } = reading(() => "add_to_cart");
+			await chooseTool(
+				{ decisionAgent, tools: [add, staples] },
+				"buy toilet paper",
+			);
+			expect(texts).toEqual([
+				{
+					add_to_cart: "add to cart: Add a product to the cart.",
+					add_staples_to_cart: `add staples to cart: ${staples.description}`,
+				},
+			]);
+		});
+
+		test("groups: names only; the final between their winners: with descriptions", async () => {
+			const many = [
+				add,
+				...Array.from({ length: 8 }, (_, i) => ({
+					name: `tool_${i}`,
+					description: `does thing number ${i}`,
+				})),
+				staples,
+			];
+			const { decisionAgent, texts } = reading((options) =>
+				options.includes("add_to_cart")
+					? "add_to_cart"
+					: options.includes("add_staples_to_cart")
+						? "add_staples_to_cart"
+						: "other",
+			);
+			await chooseTool({ decisionAgent, tools: many }, "buy toilet paper");
+			expect(texts[0]?.add_to_cart).toBe("add to cart");
+			expect(texts.at(-1)).toEqual({
+				add_to_cart: "add to cart: Add a product to the cart.",
+				add_staples_to_cart: `add staples to cart: ${staples.description}`,
+			});
+		});
+
+		test("a long description is cut", async () => {
+			const { decisionAgent, texts } = reading(() => "add_to_cart");
+			await chooseTool(
+				{
+					decisionAgent,
+					tools: [{ ...add, description: "word ".repeat(200) }, staples],
+				},
+				"buy",
+			);
+			expect(texts[0]?.add_to_cart?.length).toBeLessThanOrEqual(250);
+			expect(texts[0]?.add_to_cart?.endsWith("…")).toBe(true);
+		});
 	});
 });

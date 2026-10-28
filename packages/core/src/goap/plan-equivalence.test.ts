@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { plan } from "./plan.ts";
-import { planReference } from "./plan-reference.ts";
-import type { GoapAction, WorldState } from "./types.ts";
+import { plan } from "#core/goap/plan";
+import { planReference } from "#core/goap/plan-reference";
+import type { GoapAction, WorldState } from "#core/goap/types";
 
 function lcg(seed: number) {
 	let s = seed;

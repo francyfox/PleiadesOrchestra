@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { asksForAll, intentFromCues } from "@repo/intent-presets";
-import { INTENT_CASES, INTENT_HOLDOUT } from "./intent-cases.ts";
+import { INTENT_CASES, INTENT_HOLDOUT } from "#core/goap/intent-cases";
 
 describe("intentFromCues", () => {
 	test("the more specific intent wins over the broader one that shares its words", () => {

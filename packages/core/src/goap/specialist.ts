@@ -1,5 +1,5 @@
-import type { ToolIntent } from "./intent-taxonomy";
-import type { GoapAction, WorldState } from "./types";
+import type { ToolIntent } from "#core/goap/intent-taxonomy";
+import type { GoapAction, WorldState } from "#core/goap/types";
 
 /**
  * A site's tool often names its own options: `add_recipe_to_cart { recipe:

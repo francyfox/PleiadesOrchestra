@@ -1,4 +1,4 @@
-import type { WorldState } from "./types";
+import type { WorldState } from "#core/goap/types";
 
 // A request for several things at once («buy A, B, C») is carried through the
 // run as three JSON-string facts, because a WorldState holds only primitives.

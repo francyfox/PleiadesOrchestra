@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { pruneUnproducibleFacts } from "./catalog.ts";
-import type { GoapAction } from "./types.ts";
+import { pruneUnproducibleFacts } from "#core/goap/catalog";
+import type { GoapAction } from "#core/goap/types";
 
 const action = (
 	name: string,

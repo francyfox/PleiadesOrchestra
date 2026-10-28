@@ -1,5 +1,5 @@
-import type { DecisionAgent } from "./decision-types";
-import type { Agent, AgentStreamEvent, IncomingMessage } from "./types";
+import type { DecisionAgent } from "#core/decision-types";
+import type { Agent, AgentStreamEvent, IncomingMessage } from "#core/types";
 
 /**
  * Bounded-parallelism gate for a shared, CPU-bound backend (`beta-text`'s

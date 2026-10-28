@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { PAGE_FACT, PAGE_LANG_FACT, parsePage, samePage } from "./page.ts";
+import {
+	PAGE_FACT,
+	PAGE_LANG_FACT,
+	parsePage,
+	samePage,
+} from "#core/goap/page";
 
 describe("parsePage", () => {
 	test("a language prefix in the path is taken out of the path", () => {

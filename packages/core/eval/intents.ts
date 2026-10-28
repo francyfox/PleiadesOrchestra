@@ -1,28 +1,33 @@
 /**
- * Live accuracy of `classifyMessageIntent` against gamma-decision (Laya):
+ * Live accuracy of `classifyMessageIntent` against the decision model:
  *   bun run eval:intents               # summary
  *   bun run eval:intents -- --misses   # also every wrong answer
- * Env: LAYA_API_BASE_URL (default http://localhost:8090), LAYA_API_KEY.
- * Both case sets, each message sorted two ways: Laya alone, and as shipped
- * (lexical cues first, Laya for the rest, its checkout/removal answers refused
+ * Env: DECISION_BASE_URL (default http://localhost:8090; a URL ending in
+ * `/decisions` is OpenRouter), DECISION_API_KEY, DECISION_MODEL; or
+ * `albedo eval --name intents` takes the running orchestrator's.
+ * Both case sets, each message sorted two ways: model alone, and as shipped
+ * (lexical cues first, the model for the rest, its checkout/removal answers refused
  * without the words for them). `INTENT_HOLDOUT` was written before the cues
  * and never used to shape them. Russian cases are sent as `englishOf(...)`
  * (`intent-cases-en.ts`), as production sends the translation.
  */
 
-import { createDecisionAgent } from "../src/decision-agent.ts";
-import type { DecisionAgent } from "../src/decision-types.ts";
-import { INTENT_CASES, INTENT_HOLDOUT } from "../src/goap/intent-cases.ts";
-import { englishOf } from "../src/goap/intent-cases-en.ts";
-import { classifyMessageIntent } from "../src/goap/message-intent.ts";
+import { createDecisionAgent } from "#core/decision-agent";
+import type { DecisionAgent } from "#core/decision-types";
+import { INTENT_CASES, INTENT_HOLDOUT } from "#core/goap/intent-cases";
+import { englishOf } from "#core/goap/intent-cases-en";
+import { classifyMessageIntent } from "#core/goap/message-intent";
 
 const laya = createDecisionAgent({
-	baseURL: process.env.LAYA_API_BASE_URL ?? "http://localhost:8090",
-	apiKey: process.env.LAYA_API_KEY ?? "",
+	baseURL: process.env.DECISION_BASE_URL ?? "http://localhost:8090",
+	apiKey: process.env.DECISION_API_KEY ?? "",
+	...(process.env.DECISION_MODEL
+		? { modelId: process.env.DECISION_MODEL }
+		: {}),
 	telemetry: { logLlmState() {}, logMessageEvent() {} } as never,
 });
 
-// Laya reads English only (like production, where the orchestrator translates
+// The model reads English only (like production, where the orchestrator translates
 // first): the Russian cases go along with their English rendering, and the run
 // stops if anything that is not Latin still reaches the model.
 const agent: DecisionAgent = {
@@ -30,7 +35,7 @@ const agent: DecisionAgent = {
 		if (
 			/(?!\p{Script=Latin})\p{L}/u.test(JSON.stringify({ state, questions }))
 		) {
-			throw new Error("non-English text reached Laya");
+			throw new Error("non-English text reached the model");
 		}
 		return laya.decide(state, questions);
 	},
@@ -44,7 +49,7 @@ for (const [setName, cases] of [
 	["INTENT_HOLDOUT", INTENT_HOLDOUT],
 ] as const) {
 	for (const [mode, cues] of [
-		["Laya alone", false],
+		["model alone", false],
 		["as shipped", true],
 	] as const) {
 		let ok = 0;

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { groundArguments } from "./ground-arguments.ts";
+import { groundArguments } from "#core/ground-arguments";
 
 const schema = {
 	type: "object" as const,
