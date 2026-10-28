@@ -4,7 +4,10 @@
  *   names only    every round reads tool names (how it was before);
  *   descriptions  the last round reads names + descriptions;
  *   as shipped    + the intent the words give narrows the tools.
- * Each tool's effects come from `classifyToolIntent`, as on registration.
+ * In every mode a tool with options is then asked whether the message only
+ * asks which choices there are (`askedOptions`, as production): expected
+ * `options:<tool>`. Each tool's effects come from `classifyToolIntent`, as on
+ * registration.
  *   bun run eval:choose-tool
  * Env: DECISION_BASE_URL (default http://localhost:8090; a URL ending in
  * `/decisions` is OpenRouter), DECISION_API_KEY, DECISION_MODEL; or
@@ -13,7 +16,11 @@
 import { intentFromMessageCues, SHOP_TAXONOMY } from "@repo/intent-presets";
 import { createDecisionAgent } from "#core/decision-agent";
 import { effectsOf } from "#core/goap/intent-taxonomy";
-import { chooseTool, type ToolOption } from "#core/goap/tool-choice";
+import {
+	askedOptions,
+	chooseTool,
+	type ToolOption,
+} from "#core/goap/tool-choice";
 import { classifyToolIntent } from "#core/goap/webmcp-actions";
 import { TOOL_CHOICE_SITES } from "./choose-tool-cases.ts";
 
@@ -60,7 +67,19 @@ for (const site of TOOL_CHOICE_SITES) {
 				},
 				message,
 			);
-			const got = choice.kind === "tool" ? choice.tool : choice.kind;
+			const chosen =
+				choice.kind === "tool"
+					? tools.find((tool) => tool.name === choice.tool)
+					: undefined;
+			const asked =
+				chosen &&
+				(await askedOptions({ decisionAgent: agent }, chosen, message));
+			const got =
+				choice.kind !== "tool"
+					? choice.kind
+					: asked
+						? `options:${choice.tool}`
+						: choice.tool;
 			const s = score[mode] as { ok: number; total: number };
 			s.total++;
 			if (got === expected) s.ok++;

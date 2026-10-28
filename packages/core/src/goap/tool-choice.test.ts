@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { DecisionAgent } from "#core/decision-types";
-import { chooseTool } from "#core/goap/tool-choice";
+import { askedOptions, chooseTool } from "#core/goap/tool-choice";
 import { collectTokens, withChoiceReport } from "#core/usage-collector";
 
 /** Answers every choice question with `pick(options)`, and keeps what it was asked. */
@@ -249,5 +249,57 @@ describe("chooseTool", () => {
 			expect(texts[0]?.add_to_cart?.length).toBeLessThanOrEqual(250);
 			expect(texts[0]?.add_to_cart?.endsWith("…")).toBe(true);
 		});
+	});
+});
+
+describe("askedOptions: a question about what a tool offers is answered from its schema", () => {
+	const setSize = {
+		name: "set_pizza_size",
+		effects: { "toolResult:set_pizza_size": true },
+		options: { size: ["Small", "Medium", "Large"] },
+	};
+	function asking(probability: number) {
+		const asked: string[] = [];
+		const decisionAgent: DecisionAgent = {
+			async decide(state, questions) {
+				asked.push(String((state as { message: string }).message));
+				const id = Object.keys(questions)[0] as string;
+				return { [id]: { type: "boolean", probability } };
+			},
+		};
+		return { decisionAgent, asked };
+	}
+
+	test("a question gets the options, a request does not", async () => {
+		const yes = asking(0.8);
+		expect(await askedOptions(yes, setSize, "what sizes are there?")).toEqual({
+			size: ["Small", "Medium", "Large"],
+		});
+		expect(yes.asked).toEqual(["what sizes are there?"]);
+		const no = asking(0.3);
+		expect(await askedOptions(no, setSize, "make it large")).toBeUndefined();
+	});
+
+	test("no model call for a tool without options or one that only reads", async () => {
+		const yes = asking(0.9);
+		expect(
+			await askedOptions(
+				yes,
+				{ name: "share_pizza", effects: {} },
+				"how do I share it?",
+			),
+		).toBeUndefined();
+		expect(
+			await askedOptions(
+				yes,
+				{
+					name: "search_products",
+					effects: { catalogSearched: true },
+					options: { department: ["Dairy", "Bakery"] },
+				},
+				"do you have tomatoes?",
+			),
+		).toBeUndefined();
+		expect(yes.asked).toHaveLength(0);
 	});
 });

@@ -32,13 +32,17 @@ interface Settings {
  */
 export function evalEnv(output: string): Record<string, string> {
 	const last = output.trim().split("\n").at(-1) ?? "";
-	let parsed: { decision?: Settings; functionCall?: Settings };
+	let parsed: {
+		decision?: Settings;
+		functionCall?: Settings;
+		understand?: Settings;
+	};
 	try {
 		parsed = JSON.parse(last);
 	} catch {
 		throw new Error(`alpha-orchestrator agent:settings: ${last}`);
 	}
-	const { decision, functionCall } = parsed;
+	const { decision, functionCall, understand } = parsed;
 	if (!decision || !functionCall) {
 		throw new Error(`alpha-orchestrator agent:settings: ${last}`);
 	}
@@ -51,6 +55,17 @@ export function evalEnv(output: string): Record<string, string> {
 		FUNCTION_CALL_MODEL: functionCall.model,
 		...(functionCall.reasoningEffort
 			? { FUNCTION_CALL_REASONING_EFFORT: functionCall.reasoningEffort }
+			: {}),
+		// alpha-understand: absent from an orchestrator built before it was printed.
+		...(understand
+			? {
+					UNDERSTAND_BASE_URL: understand.baseUrl,
+					UNDERSTAND_API_KEY: understand.apiKey,
+					UNDERSTAND_MODEL: understand.model,
+					...(understand.reasoningEffort
+						? { UNDERSTAND_REASONING_EFFORT: understand.reasoningEffort }
+						: {}),
+				}
 			: {}),
 	};
 }

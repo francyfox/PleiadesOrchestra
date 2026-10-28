@@ -13,6 +13,8 @@ export interface ToolOption {
 	description?: string;
 	/** The tool action's effects: which intent it serves (`ChooseToolConfig.intent`). */
 	effects?: Record<string, unknown>;
+	/** Its enum parameters (`GoapAction.options`): what the site offers. */
+	options?: Record<string, string[]>;
 }
 
 export interface ChooseToolConfig {
@@ -183,4 +185,38 @@ export async function chooseTool(
 	return trusted
 		? { kind: "tool", tool: final.tool, confidence: final.probability }
 		: { kind: "unclear", confidence: final.probability };
+}
+
+const ASKS_INSTRUCTIONS =
+	"Does the user only ask which choices there are (for example which sizes, styles or times exist), " +
+	"rather than ask to do something? A request worded as a question («can you make it large?») is asking to do it.";
+
+/**
+ * The tool's options when the message only asks what they are («what sizes are
+ * there?»): the reply lists them from the schema and the site is not called.
+ * Asked (one boolean decision) only for a tool that changes something and has
+ * fixed options; a search or a reader is called for a question as usual («do
+ * you have tomatoes?», «what is in my cart?»).
+ */
+export async function askedOptions(
+	config: { decisionAgent: DecisionAgent; taxonomy?: Taxonomy },
+	tool: ToolOption,
+	message: string,
+): Promise<Record<string, string[]> | undefined> {
+	if (!tool.options || Object.keys(tool.options).length === 0) return undefined;
+	const taxonomy = config.taxonomy ?? SHOP_TAXONOMY;
+	const reads = ["search", "readState"].some((intent) =>
+		Object.entries(effectsOf(intent, taxonomy)).every(
+			([key, value]) => tool.effects?.[key] === value,
+		),
+	);
+	if (reads) return undefined;
+	const answers = await config.decisionAgent.decide(
+		{ message },
+		{ asks: { type: "boolean", instructions: ASKS_INSTRUCTIONS } },
+	);
+	const answer = answers.asks;
+	return answer?.type === "boolean" && answer.probability >= DEFAULT_THRESHOLD
+		? tool.options
+		: undefined;
 }

@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import type { FunctionCallAgent } from "#core/function-call-agent";
 import {
+	conversationContext,
 	translateTexts,
 	understandingTool,
 	understandMessage,
@@ -131,6 +132,53 @@ test("the earlier assistant message is quoted in the request only when given", a
 	);
 	expect(requests[0]).toContain("2");
 	expect(requests[1]).toBe("2");
+});
+
+test("conversationContext: the last assistant message is answered, what came before is the history", () => {
+	const chain = [
+		{ role: "user", content: "хочу купить томат" },
+		{ role: "assistant", content: "Томатов нет. Сок или кетчуп?" },
+		{ role: "user", content: "а какой сок есть?" },
+		{ role: "assistant", content: "1. Tomato Juice\n2. Organic Tomato Juice" },
+	];
+	expect(conversationContext(chain)).toEqual({
+		replyTo: "1. Tomato Juice\n2. Organic Tomato Juice",
+		history: chain.slice(0, 3),
+	});
+	// The newest message is the visitor's: nothing is being answered.
+	expect(conversationContext(chain.slice(0, 3))).toEqual({});
+	expect(conversationContext([])).toEqual({});
+	// Not text (a tool part): skipped, never quoted as "[object Object]".
+	expect(
+		conversationContext([
+			{ role: "user", content: [{ type: "text", text: "x" }] },
+			{ role: "assistant", content: "Pizza or pasta?" },
+		]),
+	).toEqual({ replyTo: "Pizza or pasta?", history: [] });
+});
+
+test("the earlier conversation is quoted oldest first, before the answered message", async () => {
+	const requests: string[] = [];
+	const spy: FunctionCallAgent = {
+		fillArguments: async ({ request }) => {
+			requests.push(request);
+			return { en: "buy Organic Tomato Juice", tasks: [] };
+		},
+	};
+	await understandMessage(spy, INTENTS, "второй", "en", undefined, {
+		replyTo: "1. Tomato Juice\n2. Organic Tomato Juice",
+		history: [
+			{ role: "user", content: "хочу купить томат" },
+			{ role: "assistant", content: "Томатов нет. Сок или кетчуп?" },
+		],
+	});
+	const request = requests[0] ?? "";
+	expect(request).toContain(
+		"Earlier conversation, oldest first:\nVisitor: «хочу купить томат»\nAssistant: «Томатов нет. Сок или кетчуп?»",
+	);
+	expect(request.indexOf("Earlier conversation")).toBeLessThan(
+		request.indexOf("Earlier assistant message the visitor answers"),
+	);
 });
 
 test("attributes: broken entries dropped, a missing list is empty", async () => {

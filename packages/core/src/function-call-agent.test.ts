@@ -156,6 +156,18 @@ describe("createFunctionCallAgent", () => {
 		expect(args).toEqual({ query: "cheese" });
 	});
 
+	test("drops fields the tool's schema does not have", async () => {
+		const { agent } = setup(() =>
+			completion('{"query":"cheese","sizes":"all","topping":"tomato"}'),
+		);
+		const args = await agent.fillArguments({
+			tool: SEARCH,
+			facts: {},
+			request: "what sizes of cheese are there",
+		});
+		expect(args).toEqual({ query: "cheese" });
+	});
+
 	test("records the call in the usage ledger as a decision by delta", async () => {
 		const { agent, records } = setup(() => completion('{"query":"a"}'));
 		await agent.fillArguments({

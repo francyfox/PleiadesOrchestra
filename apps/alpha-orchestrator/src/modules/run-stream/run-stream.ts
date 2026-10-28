@@ -5,7 +5,12 @@ import type {
 	WorldState,
 	WorldStateStore,
 } from "@repo/core";
-import { MISSING_PARAMS, runPlan, watchServerTrouble } from "@repo/core";
+import {
+	MISSING_PARAMS,
+	parameterFlag,
+	runPlan,
+	watchServerTrouble,
+} from "@repo/core";
 import { ALL_SESSION_FACTS } from "@repo/intent-presets";
 import type { ActiveRuns } from "../active-runs/active-runs.ts";
 import type { StoredStep } from "../database/database.schema.ts";
@@ -394,6 +399,8 @@ async function saveCheckpoint(
 			[`toolResult:${tool}`]: _failed,
 			...kept
 		} = reached ?? prepared.state;
+		// The asked parameters are chosen again from the answer.
+		for (const p of params) delete kept[parameterFlag(tool, p.name)];
 		await store.save(threadId, {
 			state: {
 				...sessionFacts(finalState),

@@ -278,4 +278,20 @@ describe("a run that asked after some steps already ran", () => {
 		expect(saved?.state["toolResult:bookSlot"]).toBeUndefined();
 		expect(saved?.state.visitorWait).toBeDefined();
 	});
+
+	test("the asked parameter's choice step is redone with the answer", async () => {
+		calls = [];
+		const ctx = setup({ [first]: understood("book for Danil") }, [
+			step("addItem", "added"),
+			step("chooseDate", "param:bookSlot:date"),
+			{
+				...dependent,
+				preconditions: { added: true, "param:bookSlot:date": true },
+			},
+		]);
+		await lines(ctx.service.startReply(ctx.visitor, ctx.threadId, first));
+		const saved = await ctx.worldStateStore.load(ctx.threadId);
+		expect(saved?.state.added).toBe(true);
+		expect(saved?.state["param:bookSlot:date"]).toBeUndefined();
+	});
 });

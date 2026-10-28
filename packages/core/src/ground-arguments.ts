@@ -62,6 +62,9 @@ export function groundArguments(
 
 	for (const [key, value] of Object.entries(args)) {
 		const property = properties?.[key];
+		// A field the schema does not have: a provider that does not enforce
+		// json_schema let it through (llama on OpenRouter wrote `query` for a size tool).
+		if (properties && !property) continue;
 		if (!property || required.has(key)) {
 			result[key] = value;
 			continue;

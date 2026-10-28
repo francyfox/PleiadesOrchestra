@@ -11,11 +11,13 @@ import type {
 	WorldState,
 } from "@repo/core";
 import {
+	askedOptions,
 	attributeFacts,
 	bindListScope,
 	chooseTool,
 	classifyMessageIntentDetailed,
 	collectTokens,
+	conversationContext,
 	decomposeMessage,
 	decompositionDescriptions,
 	goalForIntent,
@@ -40,6 +42,7 @@ import {
 } from "@repo/core";
 import { intentFromMessageCues, SHOP_TAXONOMY } from "@repo/intent-presets";
 import {
+	ASKED_OPTIONS_FACT,
 	customerFacts,
 	lastToolAnswer,
 	REMOVAL_REPLY_ACTION,
@@ -51,6 +54,7 @@ import {
 	LANG_CHOSEN_FACT,
 	PERSONA_LANG_FACT,
 	REPLY_TO_FACT,
+	REPLY_TO_MAX,
 	USER_STORED_FACT,
 } from "../goap/goap.types.ts";
 import { learnIntent } from "../intents/intents.service.ts";
@@ -136,7 +140,17 @@ async function initialState(
 	resumedGoal?: Partial<WorldState>;
 }> {
 	const userMessage = normalizeText.apply(text);
-	const replyTo = options.replyTo ? typedText(options.replyTo) : "";
+	// A typed answer has no replyTo (only a picked button sends it): the last
+	// assistant message is what it answers, read before this message is stored.
+	// A typed answer has no replyTo (only a picked button sends it): the
+	// thread's last reply is what it answers, read before this message is stored.
+	const said = conversationContext(
+		(await deps.history?.get(threadId, CONTEXT_MESSAGES)) ?? [],
+	);
+	const replyTo = (
+		options.replyTo ? typedText(options.replyTo) : (said.replyTo ?? "")
+	).slice(0, REPLY_TO_MAX);
+	const history = replyTo ? said.history : undefined;
 	const personaLang = deps.personaLang?.(visitor.channelId);
 	// Stored now, not when the run ends: a reload mid-run (or a run that never
 	// ends) still shows what the visitor said. The reply stores only itself.
@@ -163,7 +177,7 @@ async function initialState(
 				userMessage,
 				catalogLang,
 				{ ...context, actionName: "alpha-understand" },
-				{ replyTo, today, pending: wait },
+				{ replyTo, history, today, pending: wait },
 			)
 		: undefined;
 	const english = understood?.en;
@@ -607,6 +621,13 @@ export async function prepareNextTask(
 	);
 }
 
+/**
+ * Newest thread messages alpha-understand reads with a message: one exchange
+ * (the visitor's request and the reply it answers). shortcut: one exchange,
+ * widen when `eval:answers` shows chains that need more.
+ */
+const CONTEXT_MESSAGES = 2;
+
 /** Longest list of the site's actions handed to the reply model when it has to ask what the visitor means. */
 const CLARIFY_TOOLS = 12;
 
@@ -665,14 +686,31 @@ async function prepareByTool(
 			name: action.name,
 			description: action.description,
 			effects: action.effects,
+			options: action.options,
 		}));
 	const startedAt = performance.now();
-	const { value: choice, tokens } = await collectTokens(() =>
-		chooseTool(
+	const text = message.english ?? message.original;
+	const {
+		value: { choice, asked },
+		tokens,
+	} = await collectTokens(async () => {
+		const choice = await chooseTool(
 			{ decisionAgent: deps.decisionAgent, tools, taxonomy, intent: words },
-			message.english ?? message.original,
-		),
-	);
+			text,
+		);
+		const chosen =
+			choice.kind === "tool"
+				? tools.find((tool) => tool.name === choice.tool)
+				: undefined;
+		const asked = chosen
+			? await askedOptions(
+					{ decisionAgent: deps.decisionAgent, taxonomy },
+					chosen,
+					text,
+				)
+			: undefined;
+		return { choice, asked };
+	});
 	reportIntent(
 		deps,
 		{
@@ -689,6 +727,21 @@ async function prepareByTool(
 			latencyMs: Math.round(performance.now() - startedAt),
 		},
 	);
+	if (choice.kind === "tool" && asked) {
+		// «What sizes are there?»: the schema answers it, the site is not called.
+		return {
+			state: {
+				...run.state,
+				messageIntent: "chat",
+				[ASKED_OPTIONS_FACT]: JSON.stringify({
+					tool: choice.tool,
+					options: asked,
+				}),
+			},
+			goal: REPLY_GOAL,
+			actions: run.actions,
+		};
+	}
 	if (choice.kind === "tool") {
 		const goal = { ...REPLY_GOAL, [`toolResult:${choice.tool}`]: true };
 		return {

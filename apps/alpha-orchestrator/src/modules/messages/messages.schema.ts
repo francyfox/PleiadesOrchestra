@@ -1,4 +1,5 @@
 import { t } from "elysia";
+import { REPLY_TO_MAX } from "../goap/goap.types.ts";
 
 export const MessageBody = t.Object({
 	threadId: t.String(),
@@ -6,7 +7,7 @@ export const MessageBody = t.Object({
 	userId: t.String(),
 	text: t.String(),
 	/** The assistant message the sender answers (a picked option). */
-	replyTo: t.Optional(t.String({ maxLength: 2000 })),
+	replyTo: t.Optional(t.String({ maxLength: REPLY_TO_MAX })),
 	channel: t.Optional(t.String()),
 	displayName: t.Optional(t.String()),
 });

@@ -2,6 +2,7 @@ import { Elysia, t } from "elysia";
 import { isIpBlocked } from "../blocked-ips/blocked-ips.service.ts";
 import type { ChannelDirectory } from "../channel-directory/channel-directory.ts";
 import type { Db } from "../database/database.ts";
+import { REPLY_TO_MAX } from "../goap/goap.types.ts";
 import { recordCatalog } from "../mcp/mcp.service.ts";
 import { NDJSON_LINES } from "../messages/messages.schema.ts";
 import { pendingOf } from "../pending/pending.service.ts";
@@ -304,7 +305,7 @@ export function widgetRoutes(deps: WidgetDeps) {
 					body: t.Object({
 						threadId: t.String(),
 						text: t.String(),
-						replyTo: t.Optional(t.String({ maxLength: 2000 })),
+						replyTo: t.Optional(t.String({ maxLength: REPLY_TO_MAX })),
 						// The visitor's local day and zone: the models do not know today's date.
 						clientDate: t.Optional(
 							t.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}$" }),

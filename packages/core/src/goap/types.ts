@@ -78,6 +78,8 @@ export interface GoapAction {
 	describe?(state: WorldState, phase: StepPhase): string | undefined;
 	/** What the action does, in the site's own words (a WebMCP tool's description): the options of `chooseTool`. */
 	description?: string;
+	/** A WebMCP tool's enum parameters, parameter -> values: what the site offers (`askedOptions`). */
+	options?: Record<string, string[]>;
 	/**
 	 * For an action built once per catalog but wanted only by some requests: does
 	 * THIS request ask for it by name (a tool's option spoken in the message)?

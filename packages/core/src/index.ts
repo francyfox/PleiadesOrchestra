@@ -94,12 +94,14 @@ export type {
 	WorldStateStore,
 } from "#core/goap/index";
 export {
+	askedOptions,
 	attributeFacts,
 	bindListScope,
 	chooseTool,
 	classifyMessageIntent,
 	classifyMessageIntentDetailed,
 	connectStdioMcpClient,
+	conversationContext,
 	createDecisionAction,
 	createIntentModel,
 	createMcpToolSource,
@@ -137,6 +139,7 @@ export {
 	PAGE_FACT,
 	PAGE_LANG_FACT,
 	PRECONDITIONS_BY_INTENT,
+	parameterFlag,
 	parsePage,
 	parseProductRequest,
 	plan,

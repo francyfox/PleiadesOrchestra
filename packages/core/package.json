@@ -21,6 +21,7 @@
 		"eval:decompose": "bun eval/decompose.ts",
 		"eval:tools": "bun eval/tools.ts",
 		"eval:choose-tool": "bun eval/choose-tool.ts",
+		"eval:answers": "bun eval/answers.ts",
 		"bench:plan": "bun eval/plan-bench.ts"
 	},
 	"dependencies": {

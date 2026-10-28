@@ -307,15 +307,43 @@ function ranATool(state: WorldState): boolean {
 	return Object.keys(state).some((key) => key.startsWith("toolResult:"));
 }
 
+/** Turn fact: JSON `{tool, options: {parameter: values}}` — the visitor only asked which choices there are; the site was not called. */
+export const ASKED_OPTIONS_FACT = "askedOptions";
+
+/** The choices a question asked about (`askedOptions`), one line per parameter; `undefined` when none. */
+function askedChoices(state: WorldState): string | undefined {
+	if (typeof state[ASKED_OPTIONS_FACT] !== "string") return undefined;
+	try {
+		const { options } = JSON.parse(state[ASKED_OPTIONS_FACT]) as {
+			options: Record<string, string[]>;
+		};
+		return Object.entries(options)
+			.map(([name, values]) => `${name}: ${values.join(", ")}`)
+			.join("; ");
+	} catch {
+		return undefined;
+	}
+}
+
 /** The required details a tool step could not fill (`missingParams`), by meaning; `undefined` when none. */
 function missingDetails(state: WorldState): string | undefined {
 	if (typeof state[MISSING_PARAMS] !== "string") return undefined;
 	try {
 		const { params } = JSON.parse(state[MISSING_PARAMS]) as {
-			params: { name: string; description: string }[];
+			params: {
+				name: string;
+				description: string;
+				options?: string[];
+				notInList?: boolean;
+			}[];
 		};
 		return params
-			.map((p) => (p.description ? `${p.description} (${p.name})` : p.name))
+			.map((p) => {
+				const detail = p.description ? `${p.description} (${p.name})` : p.name;
+				return p.notInList
+					? `${detail}: what the visitor asked for is not offered; tell them so and offer these choices: ${p.options?.join(", ")}`
+					: detail;
+			})
 			.join("; ");
 	} catch {
 		return undefined;
@@ -388,6 +416,10 @@ function taskNote(state: WorldState): string | undefined {
 	}
 	if (typeof state.clarifyOptions === "string") {
 		return `It is unclear which action on the site the visitor wants. The site can: ${state.clarifyOptions}. Ask ONE short clarifying question and offer 2-3 fitting options from this list. Claim nothing about what is on the site now.`;
+	}
+	const choices = askedChoices(state);
+	if (choices) {
+		return `The visitor asks which choices there are; nothing was done on the site. The site offers exactly these: ${choices}. Answer from this list only, briefly, and offer to pick one.`;
 	}
 	const missing = missingDetails(state);
 	if (missing) {

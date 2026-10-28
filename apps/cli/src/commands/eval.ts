@@ -8,10 +8,13 @@ export default defineCommand({
 	description:
 		"Run a packages/core eval against the models the running alpha-orchestrator uses",
 	options: {
-		name: option(z.enum(["intents", "tools", "choose-tool", "decompose"]), {
-			description:
-				"intents (message intent), tools (tool intent), choose-tool (tool per message), decompose (tasks)",
-		}),
+		name: option(
+			z.enum(["intents", "tools", "choose-tool", "answers", "decompose"]),
+			{
+				description:
+					"intents (message intent), tools (tool intent), choose-tool (tool per message), answers (answers to the assistant's question), decompose (tasks)",
+			},
+		),
 		misses: option(z.boolean().default(false), {
 			description: "intents: also print every wrong answer",
 		}),
@@ -38,7 +41,7 @@ export default defineCommand({
 		}
 		const env = evalEnv(settings.stdout.toString());
 		console.log(
-			`decision ${env.DECISION_MODEL} @ ${env.DECISION_BASE_URL}\nfunction call ${env.FUNCTION_CALL_MODEL} @ ${env.FUNCTION_CALL_BASE_URL}`,
+			`decision ${env.DECISION_MODEL} @ ${env.DECISION_BASE_URL}\nfunction call ${env.FUNCTION_CALL_MODEL} @ ${env.FUNCTION_CALL_BASE_URL}${env.UNDERSTAND_MODEL ? `\nunderstand ${env.UNDERSTAND_MODEL} @ ${env.UNDERSTAND_BASE_URL}` : ""}`,
 		);
 		const { exitCode } =
 			await $`bun ${script} ${flags.misses ? ["--misses"] : []}`

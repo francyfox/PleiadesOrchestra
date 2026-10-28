@@ -34,6 +34,7 @@ if (process.argv[2] === "agent:settings") {
 		JSON.stringify({
 			decision: agentSettings.effective("gamma-decision"),
 			functionCall: agentSettings.effective("delta-function-call"),
+			understand: agentSettings.effective("alpha-understand"),
 		}),
 	);
 	process.exit(0);

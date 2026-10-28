@@ -59,6 +59,46 @@ describe("replyChunks", () => {
 		expect(chunk).not.toContain("failed (step");
 	});
 
+	test("a question about the choices: the reply answers from the tool's options", () => {
+		const [chunk] = replyChunks(
+			{
+				userMessage: "а какие размеры есть",
+				messageIntent: "chat",
+				askedOptions: JSON.stringify({
+					tool: "set_pizza_size",
+					options: { size: ["Small", "Medium", "Large"] },
+				}),
+			},
+			1000,
+		);
+		expect(chunk).toContain("size: Small, Medium, Large");
+		expect(chunk).toContain("nothing was done on the site");
+	});
+
+	test("a value the site does not offer: the reply says so and offers the list", () => {
+		const [chunk] = replyChunks(
+			{
+				userMessage: "добавь томаты",
+				"toolResult:add_topping": false,
+				missingParams: JSON.stringify({
+					tool: "add_topping",
+					params: [
+						{
+							name: "topping",
+							description: "The topping",
+							options: ["mushroom", "pepper"],
+							notInList: true,
+						},
+					],
+				}),
+			},
+			1000,
+		);
+		expect(chunk).toContain("mushroom, pepper");
+		expect(chunk).toContain("not offered");
+		expect(chunk).not.toContain("failed (step");
+	});
+
 	test("after an item went into the cart the reply is told what was done", () => {
 		const [chunk] = replyChunks(
 			{

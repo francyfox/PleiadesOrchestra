@@ -916,3 +916,99 @@ describe("choosing an optional enum parameter", () => {
 		).toEqual({ "param:set_pizza_size:size": true });
 	});
 });
+
+describe("a required enum asked for something it does not offer", () => {
+	const addTopping: WebMcpToolDescriptor = {
+		name: "add_topping",
+		description: "Add a topping",
+		inputSchema: {
+			type: "object",
+			properties: {
+				topping: {
+					type: "string",
+					enum: ["mushroom", "pepper"],
+					description: "The topping",
+				},
+				count: { type: "integer" },
+			},
+			required: ["topping"],
+		},
+	};
+
+	async function build(choice: string, seen: DecisionQuestion[] = []) {
+		const filled: FunctionCallRequest[] = [];
+		const actions = await createWebMcpActions({
+			tools: [addTopping],
+			decisionAgent: {
+				async decide(
+					_state,
+					questions,
+				): Promise<Record<string, DecisionAnswer>> {
+					if ("intent" in questions) {
+						return { intent: { type: "choice", choice: "other" } };
+					}
+					seen.push(...Object.values(questions));
+					return {
+						"add_topping.topping": {
+							type: "choice",
+							choice,
+							probabilities: { [choice]: 0.9 },
+						},
+					};
+				},
+			},
+			functionCallAgent: {
+				async fillArguments(request) {
+					filled.push(request);
+					return { topping: "pepper" };
+				},
+			},
+		});
+		const choose = actions.find((a) => a.name === "choose:add_topping.topping");
+		const tool = actions.find((a) => a.name === "add_topping");
+		if (!choose || !tool) throw new Error("missing actions");
+		return { choose, tool, filled };
+	}
+
+	test("the tool action carries its enum options", async () => {
+		const { tool } = await build("pepper");
+		expect(tool.options).toEqual({ topping: ["mushroom", "pepper"] });
+	});
+
+	test("the question has a 'not in the list' option after the values", async () => {
+		const seen: DecisionQuestion[] = [];
+		const { choose } = await build("pepper", seen);
+		await choose.execute({ state: { userMessage: "add pepper" } });
+		const question = seen[0];
+		if (question?.type !== "choice") throw new Error("not a choice");
+		expect(Object.keys(question.criteria)).toEqual([
+			"mushroom",
+			"pepper",
+			"not_in_list",
+		]);
+		expect(question.instructions).toContain("not_in_list");
+	});
+
+	test("picked: no value, the visitor is told what there is instead; the tool is not called", async () => {
+		const { choose, tool, filled } = await build("not_in_list");
+		const missingParams = JSON.stringify({
+			tool: "add_topping",
+			params: [
+				{
+					name: "topping",
+					description: "The topping",
+					options: ["mushroom", "pepper"],
+					notInList: true,
+				},
+			],
+		});
+		expect(
+			await choose.execute({ state: { userMessage: "add tomatoes" } }),
+		).toEqual({ "param:add_topping:topping": true, missingParams });
+		const result = await tool.execute({
+			state: { userMessage: "add tomatoes", missingParams },
+		});
+		expect(result).toEqual({ "toolResult:add_topping": false });
+		expect(filled).toHaveLength(0);
+	});
+});

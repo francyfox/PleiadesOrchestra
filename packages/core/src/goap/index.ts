@@ -96,7 +96,7 @@ export type {
 } from "#core/goap/text-action";
 export { createTextAction } from "#core/goap/text-action";
 export type { ToolChoice, ToolOption } from "#core/goap/tool-choice";
-export { chooseTool } from "#core/goap/tool-choice";
+export { askedOptions, chooseTool } from "#core/goap/tool-choice";
 export type {
 	McpCallToolResult,
 	McpClient,
@@ -126,6 +126,7 @@ export type {
 } from "#core/goap/understanding";
 export {
 	attributeFacts,
+	conversationContext,
 	STATED_ATTRIBUTES,
 	TIME_ZONE_FACT,
 	TODAY_FACT,
@@ -142,6 +143,7 @@ export {
 	firstListedProductName,
 	MAX_TOOL_TEXT_CHARS,
 	MISSING_PARAMS,
+	parameterFlag,
 } from "#core/goap/webmcp-actions";
 export type {
 	WorldStateCheckpoint,

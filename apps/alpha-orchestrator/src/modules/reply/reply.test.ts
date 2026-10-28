@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import type { GoapAction, LlmCallRecord } from "@repo/core";
 import {
 	createWebMcpActions,
+	InMemoryHistoryStore,
 	InMemoryWorldStateStore,
 	plan,
 	pruneUnproducibleFacts,
@@ -191,6 +192,95 @@ describe("prepareResume", () => {
 /** alpha-understand answering with this English text and no tasks. */
 const sayEnglish = (en: string) => ({
 	fillArguments: async () => ({ en, tasks: [] }),
+});
+
+describe("alpha-understand reads the assistant message the visitor answers", () => {
+	async function understandRequest(
+		history: { role: "user" | "assistant"; content: string }[],
+		replyTo?: string,
+	) {
+		const requests: string[] = [];
+		const store = new InMemoryHistoryStore(10);
+		await store.append(
+			{ threadId: "t1", userId: "u" },
+			history.map((m) => ({ ...m })),
+		);
+		const deps = {
+			worldStateStore: new InMemoryWorldStateStore(),
+			webmcpCatalog: new Map([["t1", [action("set_pizza_size")]]]),
+			actions: [],
+			history: store,
+			understandAgent: {
+				async fillArguments(call: { request: string }) {
+					requests.push(call.request);
+					return { en: "large", tasks: [] };
+				},
+			},
+			intentMemory: { classify: () => undefined },
+			now: () => 0,
+		} as unknown as ReplyDeps;
+		const visitor = { id: "u", channelId: "c" } as VisitorRow;
+		await prepareNewMessage(deps, visitor, "t1", "run-1", "большую", {
+			...(replyTo ? { replyTo } : {}),
+		});
+		return requests[0] ?? "";
+	}
+
+	test("a typed answer gets the last assistant message, as a picked button does", async () => {
+		const request = await understandRequest([
+			{ role: "user", content: "а какие размеры есть" },
+			{ role: "assistant", content: "Есть: 1. Small 2. Medium 3. Large" },
+		]);
+		expect(request).toContain(
+			"Earlier assistant message the visitor answers: «Есть: 1. Small 2. Medium 3. Large»",
+		);
+	});
+
+	test("the visitor's earlier message goes too: «yes» needs the action it agrees to", async () => {
+		const request = await understandRequest([
+			{ role: "user", content: "хочу купить томат" },
+			{
+				role: "assistant",
+				content: "Томата нет, могу предложить томатный сок?",
+			},
+		]);
+		expect(request).toContain("Visitor: «хочу купить томат»");
+		expect(request).toContain("«Томата нет, могу предложить томатный сок?»");
+	});
+
+	test("a lone greeting in the history is still what the visitor answers", async () => {
+		const request = await understandRequest([
+			{ role: "assistant", content: "Hi! Pizza or pasta?" },
+		]);
+		expect(request).toContain("«Hi! Pizza or pasta?»");
+		expect(request).not.toContain("Earlier conversation");
+	});
+
+	test("a long chain: only the newest exchange is quoted", async () => {
+		const request = await understandRequest([
+			{ role: "user", content: "хочу купить томат" },
+			{ role: "assistant", content: "Томатов нет. Сок или кетчуп?" },
+			{ role: "user", content: "а какой сок есть?" },
+			{ role: "assistant", content: "1. Tomato Juice 2. Organic Tomato Juice" },
+		]);
+		expect(request).toContain("Visitor: «а какой сок есть?»");
+		expect(request).toContain("«1. Tomato Juice 2. Organic Tomato Juice»");
+		expect(request).not.toContain("хочу купить томат");
+	});
+
+	test("the button's own replyTo wins over the history", async () => {
+		const request = await understandRequest(
+			[{ role: "assistant", content: "an older reply" }],
+			"1. Small 2. Large",
+		);
+		expect(request).toContain("«1. Small 2. Large»");
+		expect(request).not.toContain("an older reply");
+	});
+
+	test("no assistant message before it: nothing is quoted", async () => {
+		const request = await understandRequest([{ role: "user", content: "hi" }]);
+		expect(request).not.toContain("Earlier assistant message");
+	});
 });
 
 describe("prepareNewMessage: «now buy them» after a search", () => {
@@ -644,6 +734,8 @@ describe("prepareNewMessage: a channel without intent sets", () => {
 			probability?: number;
 			extra?: GoapAction[];
 			severalTasks?: boolean;
+			/** P(true) of «does the visitor only ask which choices there are?». */
+			asks?: number;
 		} = {},
 	) {
 		const asked: string[][] = [];
@@ -674,8 +766,13 @@ describe("prepareNewMessage: a channel without intent sets", () => {
 				async decide(_state: unknown, questions: Record<string, unknown>) {
 					const [key, question] = Object.entries(questions)[0] as [
 						string,
-						{ criteria: Record<string, string> },
+						{ type: string; criteria: Record<string, string> },
 					];
+					if (question.type === "boolean") {
+						return {
+							[key]: { type: "boolean", probability: options.asks ?? 0 },
+						};
+					}
 					asked.push(Object.keys(question.criteria));
 					return {
 						[key]: {
@@ -777,6 +874,33 @@ describe("prepareNewMessage: a channel without intent sets", () => {
 			const { asked } = await prepare("find sneakers", "get_cart");
 			expect(asked.flat()).toContain("get_cart");
 			expect(asked.flat()).toContain("set_pizza_size");
+		});
+	});
+
+	describe("a question about what a tool offers is answered from its schema", () => {
+		const sized: GoapAction = {
+			...tool("set_pizza_size", "Change the size of a pizza."),
+			name: "set_size",
+			effects: { "toolResult:set_size": true },
+			options: { size: ["Small", "Medium", "Large"] },
+		};
+
+		test("a question: no tool call, the reply gets the options", async () => {
+			const { prepared } = await prepare("what sizes are there?", "set_size", {
+				extra: [sized],
+				asks: 0.9,
+			});
+			expect(prepared.goal["toolResult:set_size"]).toBeUndefined();
+			expect(String(prepared.state.askedOptions)).toContain("Small");
+		});
+
+		test("a request still calls the tool", async () => {
+			const { prepared } = await prepare("make it large", "set_size", {
+				extra: [sized],
+				asks: 0.1,
+			});
+			expect(prepared.goal).toMatchObject({ "toolResult:set_size": true });
+			expect(prepared.state.askedOptions).toBeUndefined();
 		});
 	});
 

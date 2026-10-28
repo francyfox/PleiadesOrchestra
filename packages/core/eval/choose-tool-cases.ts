@@ -9,6 +9,7 @@ import type { ToolOption } from "#core/goap/tool-choice";
 export interface ToolChoiceSite {
 	site: string;
 	tools: ToolOption[];
+	/** A tool's name, `chat`/`unclear`, or `options:<tool>`: a question about that tool's options, answered from its schema (`askedOptions`). */
 	cases: { message: string; expected: string }[];
 }
 
@@ -21,11 +22,27 @@ export const TOOL_CHOICE_SITES: ToolChoiceSite[] = [
 				name: "choose_store",
 				description:
 					"Open one of Basketful's grocery stores so the shopper can browse and order from it. Each store has its own cart, prices, and delivery fee. Use this first when no store is open, or when the shopper asks to switch stores.",
+				options: {
+					store: ["Greenleaf Market", "Harbor Foods Co-op", "Penny Pantry"],
+				},
 			},
 			{
 				name: "search_products",
 				description:
 					"Search the open store's catalog and show the results on the page. Every filter is optional: combine a text query with a department, dietary needs, or a price cap, or pass only a department to browse an aisle.",
+				options: {
+					department: [
+						"Produce",
+						"Dairy & Eggs",
+						"Bakery",
+						"Meat & Seafood",
+						"Pantry",
+						"Frozen",
+						"Beverages",
+						"Snacks",
+						"Household",
+					],
+				},
 			},
 			{
 				name: "add_to_cart",
@@ -61,6 +78,15 @@ export const TOOL_CHOICE_SITES: ToolChoiceSite[] = [
 				name: "add_recipe_to_cart",
 				description:
 					"Add what a recipe needs to the open store's cart, skipping what the shopper already has. Use `recipe` for one of Basketful's recipes, or `ingredients` for a recipe from anywhere.",
+				options: {
+					recipe: [
+						"Simple Tomato Pasta",
+						"Weeknight Beef Tacos",
+						"Guacamole & Chips",
+						"Sheet-Pan Salmon & Broccoli",
+						"Cheddar & Spinach Scramble",
+					],
+				},
 			},
 			{
 				name: "get_order_status",
@@ -98,6 +124,20 @@ export const TOOL_CHOICE_SITES: ToolChoiceSite[] = [
 			{ message: "switch to Penny Pantry", expected: "choose_store" },
 			{ message: "change the milk to 3", expected: "update_cart_item" },
 			{ message: "hi there", expected: "chat" },
+			{
+				message: "which stores can I order from?",
+				expected: "options:choose_store",
+			},
+			{
+				message: "what recipes do you have?",
+				expected: "options:add_recipe_to_cart",
+			},
+			{
+				message: "can you switch me to Harbor Foods Co-op?",
+				expected: "choose_store",
+			},
+			// A search answers its own questions: called, not listed.
+			{ message: "what departments do you have?", expected: "search_products" },
 		],
 	},
 	{
@@ -108,21 +148,46 @@ export const TOOL_CHOICE_SITES: ToolChoiceSite[] = [
 				name: "set_pizza_size",
 				description:
 					"Set the pizza size directly or infer it based on the number of people.",
+				options: { size: ["Small", "Medium", "Large", "Extra Large"] },
 			},
 			{
 				name: "set_pizza_style",
 				description: "Set the style of the pizza (colors/theme)",
+				options: { style: ["Classic", "Bianca", "BBQ", "Pesto", "Wales"] },
 			},
 			{
 				name: "toggle_layer",
 				description:
 					'Control pizza layers (sauce, cheese). Use "add", "remove", or "toggle".',
+				options: {
+					layer: ["sauce-layer", "cheese-layer"],
+					action: ["add", "remove", "toggle"],
+				},
 			},
 			{
 				name: "add_topping",
 				description: "Add one or more toppings to the pizza",
+				options: {
+					topping: [
+						"🍕",
+						"🍄",
+						"🌿",
+						"🍍",
+						"🫑",
+						"🥓",
+						"🧅",
+						"🫒",
+						"🌽",
+						"🌶️",
+						"🐑",
+					],
+				},
 			},
-			{ name: "manage_pizza", description: "Manage pizza state" },
+			{
+				name: "manage_pizza",
+				description: "Manage pizza state",
+				options: { action: ["remove_last", "reset"] },
+			},
 			{
 				name: "share_pizza",
 				description: "Get a shareable URL for the current pizza creation",
@@ -136,6 +201,17 @@ export const TOOL_CHOICE_SITES: ToolChoiceSite[] = [
 			{ message: "give me a link to share it", expected: "share_pizza" },
 			{ message: "make it look neon", expected: "set_pizza_style" },
 			{ message: "thanks!", expected: "chat" },
+			{ message: "what sizes are there?", expected: "options:set_pizza_size" },
+			{
+				message: "which toppings do you have?",
+				expected: "options:add_topping",
+			},
+			{
+				message: "what styles can I choose from?",
+				expected: "options:set_pizza_style",
+			},
+			{ message: "can you make it medium?", expected: "set_pizza_size" },
+			{ message: "could you add olives?", expected: "add_topping" },
 		],
 	},
 	{

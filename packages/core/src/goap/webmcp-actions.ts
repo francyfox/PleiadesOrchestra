@@ -419,8 +419,37 @@ function needsItem(tool: WebMcpToolDescriptor): boolean {
 
 /** The extra option of an optional parameter: the message doesn't say. Never sent to the site. */
 const NOT_SAID = "not_said";
+/** The extra option of a required parameter: the visitor asked for something the list does not have. */
+const NOT_IN_LIST = "not_in_list";
 /** An optional parameter is set only when the model is at least this sure. */
 const OPTIONAL_MIN_PROBABILITY = 0.5;
+
+/** A required parameter the visitor asked for outside its list, as `missingParams` (the reply offers the list). */
+function notInListFacts(
+	state: Record<string, unknown>,
+	tool: string,
+	parameter: EnumParameter,
+): string {
+	let params: unknown[] = [];
+	try {
+		const earlier = JSON.parse(String(state[MISSING_PARAMS] ?? "null"));
+		if (earlier?.tool === tool && Array.isArray(earlier.params)) {
+			params = earlier.params;
+		}
+	} catch {}
+	return JSON.stringify({
+		tool,
+		params: [
+			...params,
+			{
+				name: parameter.name,
+				description: parameter.description ?? "",
+				options: parameter.values,
+				notInList: true,
+			},
+		],
+	});
+}
 
 function readStatedAttributes(
 	state: Record<string, unknown>,
@@ -437,7 +466,8 @@ function readStatedAttributes(
 	}
 }
 
-const parameterFlag = (tool: string, parameter: string) =>
+/** Fact set once the choice step of an enum parameter has run. */
+export const parameterFlag = (tool: string, parameter: string) =>
 	`param:${tool}:${parameter}`;
 
 /**
@@ -498,11 +528,15 @@ function createParameterChoiceAction(
 										: ""
 								} The options are listed in their order (${parameter.values.join(", ")}); when they form a scale, the most, biggest or highest means the last and the least or smallest the first. ${
 									parameter.required
-										? "When the request doesn't say, pick the first."
+										? `When the request doesn't say, pick the first. When it asks for something that is none of these options, pick ${NOT_IN_LIST}.`
 										: `When the request doesn't say, pick ${NOT_SAID}.`
 								}`,
 								criteria: parameter.required
-									? parameter.descriptions
+									? {
+											...parameter.descriptions,
+											[NOT_IN_LIST]:
+												"The request asks for something that is none of these options.",
+										}
 									: {
 											...parameter.descriptions,
 											[NOT_SAID]: "The request does not say.",
@@ -536,6 +570,12 @@ function createParameterChoiceAction(
 			const answer = answers[question];
 			const picked = answer?.type === "choice" ? answer.choice : undefined;
 			const valid = picked && parameter.values.includes(picked);
+			if (parameter.required && picked === NOT_IN_LIST) {
+				return {
+					[flag]: true,
+					[MISSING_PARAMS]: notInListFacts(ctx.state, tool.name, parameter),
+				};
+			}
 			if (parameter.required) {
 				return {
 					[parameter.name]: valid ? picked : (parameter.values[0] as string),
@@ -622,6 +662,13 @@ export async function createWebMcpActions(
 				effects: { ...effectsOf(intent, taxonomy), [toolResultKey]: true },
 				describe: describeTool(tool, intent),
 				description: tool.description,
+				...(parameters.length > 0
+					? {
+							options: Object.fromEntries(
+								parameters.map((p) => [p.name, p.values]),
+							),
+						}
+					: {}),
 				// «Remove everything» through a tool that removes one named thing:
 				// the list is read first (`bindListScope`). A tool that needs no
 				// item (clear_cart) has no such wait.
@@ -722,6 +769,16 @@ export async function createWebMcpActions(
 							[toolResultKey]: false,
 							[resultKey]: undefined,
 						};
+					}
+					// A choice step found the visitor asked for a value this tool does
+					// not offer: no call, the reply offers what there is.
+					if (
+						typeof callState[MISSING_PARAMS] === "string" &&
+						callState[MISSING_PARAMS].includes(
+							`"tool":${JSON.stringify(tool.name)}`,
+						)
+					) {
+						return { [toolResultKey]: false };
 					}
 					// A list of found things fills the tool's list parameter in code;
 					// no model is asked to copy names.

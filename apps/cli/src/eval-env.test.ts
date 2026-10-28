@@ -28,6 +28,12 @@ describe("evalEnv", () => {
 			reasoningEffort: "none",
 			extraBody: {},
 		},
+		understand: {
+			baseUrl: "https://openrouter.ai/api/v1",
+			apiKey: "sk-u",
+			model: "mistralai/voxtral-small-24b-2507",
+			extraBody: {},
+		},
 	};
 
 	test("the service's models become the evals' env; the last line is the answer", () => {
@@ -39,6 +45,9 @@ describe("evalEnv", () => {
 			FUNCTION_CALL_API_KEY: "",
 			FUNCTION_CALL_MODEL: "qwen3:1.7b-q8_0",
 			FUNCTION_CALL_REASONING_EFFORT: "none",
+			UNDERSTAND_BASE_URL: "https://openrouter.ai/api/v1",
+			UNDERSTAND_API_KEY: "sk-u",
+			UNDERSTAND_MODEL: "mistralai/voxtral-small-24b-2507",
 		});
 	});
 
