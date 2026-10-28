@@ -1,5 +1,9 @@
-import { and, eq, lt } from "drizzle-orm";
-import { threadWorldState, visitors } from "../database/database.schema.ts";
+import { and, eq, inArray, lt } from "drizzle-orm";
+import {
+	llmCalls,
+	threadWorldState,
+	visitors,
+} from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
 import { HOUR_MS } from "../http/http.service.ts";
 
@@ -28,27 +32,38 @@ export function retentionCutoff(now: number, retentionHours: number): number {
  * Anonymous chat visitors (widget visitors without an account on the host site)
  * are kept for `retentionHours` of inactivity. Deleting the visitor cascades to
  * their threads, messages, visitor tokens and plan traces; `llm_calls` rows
- * stay with `visitor_id` NULLed so usage totals per channel/day don't change.
+ * stay with `visitor_id` NULLed so usage totals per channel/day don't change,
+ * but lose what holds the visitor's text (prompt, response, choices).
  */
 export function deleteInactiveAnonymousVisitors(
 	db: Db,
 	now: number,
 	retentionHours: number,
 ): number {
-	return (
-		db
-			.delete(visitors)
+	const stale = and(
+		eq(visitors.kind, "anonymous"),
+		lt(visitors.lastSeenAt, retentionCutoff(now, retentionHours)),
+	);
+	return db.transaction((tx) => {
+		tx.update(llmCalls)
+			.set({ prompt: null, response: null, choices: null })
 			.where(
-				and(
-					eq(visitors.kind, "anonymous"),
-					lt(visitors.lastSeenAt, retentionCutoff(now, retentionHours)),
+				inArray(
+					llmCalls.visitorId,
+					tx.select({ id: visitors.id }).from(visitors).where(stale),
 				),
 			)
-			// Count via RETURNING: `changes` would also count the FK
-			// `ON DELETE SET NULL` updates on llm_calls.
-			.returning({ id: visitors.id })
-			.all().length
-	);
+			.run();
+		return (
+			tx
+				.delete(visitors)
+				.where(stale)
+				// Count via RETURNING: `changes` would also count the FK
+				// `ON DELETE SET NULL` updates on llm_calls.
+				.returning({ id: visitors.id })
+				.all().length
+		);
+	});
 }
 
 /**

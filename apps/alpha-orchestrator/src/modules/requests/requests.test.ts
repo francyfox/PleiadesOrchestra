@@ -289,6 +289,10 @@ describe("getRequest", () => {
 				kind: "generate",
 				provider: "albedo",
 				model: "vikhr",
+				prompt: '[{"role":"user","content":"hi"}]',
+				response: "Добавил",
+				attempts: 3,
+				failedStatuses: [429, 429],
 				inputTokens: 70,
 				outputTokens: 20,
 				latencyMs: 1_000,
@@ -353,6 +357,10 @@ describe("getRequest", () => {
 				choices: [
 					{ question: "intent", chosen: "chat", options: { chat: 0.7 } },
 				],
+				prompt: null,
+				response: null,
+				attempts: null,
+				failedStatuses: null,
 				at: T0 + 4_000,
 			},
 			{
@@ -367,6 +375,10 @@ describe("getRequest", () => {
 				ok: true,
 				error: null,
 				choices: null,
+				prompt: '[{"role":"user","content":"hi"}]',
+				response: "Добавил",
+				attempts: 3,
+				failedStatuses: [429, 429],
 				at: T0 + 4_400,
 			},
 		]);
@@ -413,6 +425,30 @@ describe("admin routes", () => {
 			durationMs: 1,
 			events: [ended(2, true)],
 		});
+		const choice = {
+			question: "tool",
+			chosen: "add_to_cart",
+			options: { add_to_cart: 0.9 },
+			state: { message: "buy soap" },
+			instructions: "Which action?",
+			criteria: { add_to_cart: "add to cart" },
+			round: "group 1 of 2",
+		};
+		db.insert(llmCalls)
+			.values({
+				at: 2,
+				visitorId: visitor.id,
+				threadId,
+				planRunId: "r",
+				actionName: "classify",
+				kind: "classify",
+				provider: "laya",
+				model: "gamma-decision",
+				latencyMs: 1,
+				ok: true,
+				choices: [choice],
+			})
+			.run();
 
 		const list = await json(await app.handle(admin("/requests?pageSize=5")));
 		expect(list.total).toBe(1);
@@ -420,6 +456,8 @@ describe("admin routes", () => {
 
 		const one = await json(await app.handle(admin("/requests/r")));
 		expect(one.request.id).toBe("r");
+		// The question itself reaches the panel, not only the probabilities.
+		expect(one.llmCalls[0].choices).toEqual([choice]);
 
 		expect((await app.handle(admin("/requests/nope"))).status).toBe(404);
 	});

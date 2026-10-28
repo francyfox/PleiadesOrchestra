@@ -82,6 +82,24 @@ describe("createFunctionCallAgent", () => {
 		expect(bodies[0]?.model).toBe("qwen3:1.7b-q8_0");
 	});
 
+	test("each attempt keeps what was sent, the raw answer and the HTTP retries it took", async () => {
+		let busy = 1;
+		const raw = ['{"nope":', '{"query":"cheese"}'];
+		const answers = [...raw];
+		const { agent, records } = setup(() => {
+			if (busy-- > 0) return new Response("busy", { status: 429 });
+			return completion(answers.shift() ?? "");
+		});
+		await agent.fillArguments({ tool: SEARCH, facts: {}, request: "cheese" });
+		expect(records.map((call) => call.response)).toEqual(raw);
+		expect(records.map((call) => call.attempts)).toEqual([2, 1]);
+		expect(records[0]?.failedStatuses).toEqual([429]);
+		expect(records[1]?.failedStatuses).toBeUndefined();
+		// The correction round sees the first answer, so its prompt is longer.
+		const sent = records.map((call) => JSON.parse(call.prompt ?? "[]").length);
+		expect(sent).toEqual([2, 4]);
+	});
+
 	test("temperature is 0 and no reasoning_effort without config", async () => {
 		const { agent, calls } = setup(() => completion('{"query":"cheese"}'));
 		await agent.fillArguments({ tool: SEARCH, facts: {}, request: "cheese" });
@@ -174,10 +192,10 @@ describe("createFunctionCallAgent", () => {
 	});
 
 	test("an HTTP error throws and is recorded as failed", async () => {
-		const { agent, records } = setup(() => new Response("no", { status: 503 }));
+		const { agent, records } = setup(() => new Response("no", { status: 400 }));
 		await expect(
 			agent.fillArguments({ tool: SEARCH, facts: {}, request: "r" }),
-		).rejects.toThrow("503");
+		).rejects.toThrow("400");
 		expect(records[0]?.ok).toBe(false);
 	});
 
@@ -242,11 +260,12 @@ describe("createFunctionCallAgent", () => {
 		expect(calls).toHaveLength(3);
 	});
 
-	test("a transport error is not retried", async () => {
-		const { agent, calls } = setup(() => new Response("no", { status: 503 }));
+	// 429/5xx are retried by the SDK (`maxRetries`); a request the server rejects is not.
+	test("a rejected request is not retried", async () => {
+		const { agent, calls } = setup(() => new Response("no", { status: 400 }));
 		await expect(
 			agent.fillArguments({ tool: SEARCH, facts: {}, request: "r" }),
-		).rejects.toThrow("503");
+		).rejects.toThrow("400");
 		expect(calls).toHaveLength(1);
 	});
 

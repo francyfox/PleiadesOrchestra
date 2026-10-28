@@ -1,6 +1,7 @@
 import { intentFromToolNameCues, SHOP_TAXONOMY } from "@repo/intent-presets";
 import { decideInRounds, planChoiceRounds } from "../choice-rounds";
 import type { DecisionAgent } from "../decision-types";
+import { withChoiceRound } from "../usage-collector";
 import { needsTheWords, type Taxonomy } from "./intent-taxonomy";
 
 export interface ToolOption {
@@ -89,20 +90,22 @@ export async function chooseTool(
 		[CHAT]: "greeting, thanks or small talk, nothing to do with the site",
 		[NONE]: "none of the site's actions fits the request",
 	};
-	const ask = (keys: string[]) =>
-		decideInRounds(
-			config.decisionAgent,
-			{ message },
-			{
-				questionKey: "tool",
-				instructions: TOOL_CHOICE_INSTRUCTIONS,
-				criteria: {
-					...framing,
-					...Object.fromEntries(
-						keys.map((key) => [key, toolCriteria[key] ?? ""]),
-					),
+	const ask = (keys: string[], round: string) =>
+		withChoiceRound(round, () =>
+			decideInRounds(
+				config.decisionAgent,
+				{ message },
+				{
+					questionKey: "tool",
+					instructions: TOOL_CHOICE_INSTRUCTIONS,
+					criteria: {
+						...framing,
+						...Object.fromEntries(
+							keys.map((key) => [key, toolCriteria[key] ?? ""]),
+						),
+					},
 				},
-			},
+			),
 		);
 
 	const groups = planChoiceRounds({
@@ -112,8 +115,11 @@ export async function chooseTool(
 	}).map((round) => round.filter((key) => key in toolCriteria));
 	const winners: { tool: string; probability?: number }[] = [];
 	let chat: number | undefined;
-	for (const group of groups) {
-		const { choice, rounds } = await ask(group);
+	for (const [index, group] of groups.entries()) {
+		const { choice, rounds } = await ask(
+			group,
+			`group ${index + 1} of ${groups.length}`,
+		);
 		const probability = rounds[rounds.length - 1]?.probability;
 		if (choice === CHAT) chat = Math.max(chat ?? 0, probability ?? 1);
 		else if (choice && choice in toolCriteria) {
@@ -123,7 +129,10 @@ export async function chooseTool(
 
 	let final = winners[0];
 	if (winners.length > 1) {
-		const { choice, rounds } = await ask(winners.map((w) => w.tool));
+		const { choice, rounds } = await ask(
+			winners.map((w) => w.tool),
+			"final",
+		);
 		const probability = rounds[rounds.length - 1]?.probability;
 		final =
 			choice && choice in toolCriteria

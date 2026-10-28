@@ -9,26 +9,29 @@ import type { CallChoice, RequestNode, RequestView } from "admin-api/types";
 
 const COLUMN_WIDTH = 230;
 const ROW_HEIGHT = 140;
-const OPTION_HEIGHT = 44;
+const OPTION_HEIGHT = 30;
+const QUESTION_HEADER = 20;
 const QUESTION_GAP = 28;
 /** Fans hang below the main flow, shifted right so their edges stay visible. */
 const FAN_OFFSET_X = 40;
 export const MAX_OPTIONS = 12;
+/** Options below this share one "the rest" row, unless chosen. */
+export const MIN_SHOWN_PROBABILITY = 0.05;
 
-/** One option of a decision model's question, or the "+N more" tail. */
+/** One decision-model question in the graph: its options in one node, one edge in. */
 export interface ChoiceNodeData {
 	[key: string]: unknown;
-	/** The decision node this option belongs to. */
+	/** The decision node this question belongs to. */
 	parentId: string;
 	question: string;
-	/** First option of its question: the question label is drawn on it. */
-	first: boolean;
-	option: string;
-	/** 0..1, `null` for the "+N more" tail. */
-	probability: number | null;
-	chosen: boolean;
-	/** How many options were cut off (set only on the tail). */
-	more: number | null;
+	/** Which round of a question asked in several, e.g. "group 1 of 2". */
+	round?: string;
+	/** Highest probability first: the chosen one and those from `MIN_SHOWN_PROBABILITY`, at most `MAX_OPTIONS`. */
+	options: { option: string; probability: number; chosen: boolean }[];
+	/** How many options were cut off. */
+	more: number;
+	/** Their probabilities summed. */
+	moreProbability: number;
 }
 
 export interface RequestNodeData {
@@ -139,7 +142,7 @@ export function viewToGraph(view: RequestView): RequestGraph {
 		data: { kind: edge.kind },
 	}));
 
-	// Decision-model choices: a fan of options per question, below every main row.
+	// Decision-model choices: one node per question, below every main row.
 	const fanTop = (lastRow + 1) * ROW_HEIGHT + QUESTION_GAP;
 	for (const node of placed) {
 		const source = view.nodes.find((n) => n.id === node.id);
@@ -149,44 +152,42 @@ export function viewToGraph(view: RequestView): RequestGraph {
 		let y = fanTop;
 		questions.forEach((choice, q) => {
 			const options = sortedOptions(choice);
-			const shown = options.slice(0, MAX_OPTIONS);
-			const rows: ChoiceNodeData[] = shown.map(([option, probability], i) => ({
-				parentId: node.id,
-				question: choice.question,
-				first: i === 0,
-				option,
-				probability,
-				chosen: option === choice.chosen,
-				more: null,
-			}));
-			if (options.length > shown.length) {
-				rows.push({
+			const shown = options
+				.filter(
+					([option, probability]) =>
+						option === choice.chosen || probability >= MIN_SHOWN_PROBABILITY,
+				)
+				.slice(0, MAX_OPTIONS);
+			const rest = options.filter((entry) => !shown.includes(entry));
+			const more = rest.length;
+			const id = `${node.id}#choice${q}`;
+			placed.push({
+				id,
+				type: "choice",
+				position: { x: node.position.x + FAN_OFFSET_X, y },
+				data: {
 					parentId: node.id,
 					question: choice.question,
-					first: false,
-					option: "",
-					probability: null,
-					chosen: false,
-					more: options.length - shown.length,
-				});
-			}
-			rows.forEach((data, i) => {
-				const id = `${node.id}#choice${q}.${i}`;
-				placed.push({
-					id,
-					type: "choice",
-					position: { x: node.position.x + FAN_OFFSET_X, y },
-					data,
-				});
-				edges.push({
-					id: `${node.id}->${id}`,
-					source: node.id,
-					target: id,
-					data: { kind: "choice" },
-				});
-				y += OPTION_HEIGHT;
+					round: choice.round,
+					options: shown.map(([option, probability]) => ({
+						option,
+						probability,
+						chosen: option === choice.chosen,
+					})),
+					more,
+					moreProbability: rest.reduce((sum, [, p]) => sum + p, 0),
+				},
 			});
-			y += QUESTION_GAP;
+			edges.push({
+				id: `${node.id}->${id}`,
+				source: node.id,
+				target: id,
+				data: { kind: "choice" },
+			});
+			y +=
+				QUESTION_HEADER +
+				(shown.length + (more > 0 ? 1 : 0)) * OPTION_HEIGHT +
+				QUESTION_GAP;
 		});
 	}
 

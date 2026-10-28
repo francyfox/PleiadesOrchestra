@@ -527,6 +527,10 @@ describe("prepareNewMessage: what Laya is sure about is learned on its own", () 
 				classify: () => undefined,
 				invalidate: (id: string) => invalidated.push(id),
 			},
+			decisionModel: () => ({
+				provider: "openrouter",
+				model: "liquid/d1-ultra",
+			}),
 			layaAutoApproveConfidence: autoApproveAt ?? undefined,
 			usageRecorder: {
 				flush() {},
@@ -560,7 +564,8 @@ describe("prepareNewMessage: what Laya is sure about is learned on its own", () 
 		});
 		expect(invalidated).toEqual([channel]);
 		expect(recorded.find((c) => c.kind === "classify")).toMatchObject({
-			provider: "laya",
+			provider: "openrouter",
+			model: "liquid/d1-ultra",
 			confidence: 0.9,
 			inputTokens: 30,
 			outputTokens: 0,

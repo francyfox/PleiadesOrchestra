@@ -12,6 +12,13 @@ import { groundArguments } from "./ground-arguments";
 import { recordCall } from "./record-call";
 import { repairArguments } from "./repair-arguments";
 import {
+	type AttemptTally,
+	attemptsOf,
+	newTally,
+	reportingTrouble,
+	tallyingAttempts,
+} from "./server-trouble";
+import {
 	type createTelemetry,
 	telemetry as defaultTelemetry,
 } from "./telemetry";
@@ -136,7 +143,7 @@ export function createFunctionCallModel(config: {
 		apiKey: config.apiKey,
 		supportsStructuredOutputs: true,
 		includeUsage: true,
-		fetch: config.fetch,
+		fetch: reportingTrouble(config.fetch),
 	})(config.model);
 }
 
@@ -177,7 +184,8 @@ export async function fillOnce(input: FillOnceInput): Promise<FillOnceResult> {
 			}),
 			temperature: input.temperature ?? 0,
 			maxOutputTokens: input.maxOutputTokens,
-			maxRetries: 0,
+			// A hosted model (OpenRouter) answers 429 under load; the SDK backs off and retries.
+			maxRetries: 3,
 			abortSignal: input.abortSignal,
 			providerOptions: {
 				[PROVIDER_NAME]: {
@@ -246,6 +254,7 @@ export function createFunctionCallAgent(
 		outcome:
 			| { ok: true; inputTokens?: number; outputTokens?: number }
 			| { ok: false; error: string },
+		trace: { prompt: string; tally: AttemptTally; response?: string },
 	) {
 		const latencyMs = Date.now() - startedAt;
 		recordCall(
@@ -259,6 +268,8 @@ export function createFunctionCallAgent(
 				model: config.model,
 				latencyMs,
 				at: Date.now(),
+				...trace,
+				...attemptsOf(trace.tally),
 				...outcome,
 			},
 			telemetry,
@@ -272,21 +283,31 @@ export function createFunctionCallAgent(
 			let lastProblem = "";
 			for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
 				const startedAt = Date.now();
+				// Snapshot: `messages` grows with each correction below.
+				const prompt = JSON.stringify(messages);
+				const tally = newTally();
 				let filled: FillOnceResult;
 				try {
-					filled = await fillOnce({
-						model,
-						messages,
-						schema,
-						maxOutputTokens: config.maxOutputTokens ?? 256,
-						temperature: config.temperature,
-						providerOptions: config.providerOptions,
-					});
+					filled = await tallyingAttempts(tally, () =>
+						fillOnce({
+							model,
+							messages,
+							schema,
+							maxOutputTokens: config.maxOutputTokens ?? 256,
+							temperature: config.temperature,
+							providerOptions: config.providerOptions,
+						}),
+					);
 				} catch (error) {
-					report(request, startedAt, {
-						ok: false,
-						error: error instanceof Error ? error.message : String(error),
-					});
+					report(
+						request,
+						startedAt,
+						{
+							ok: false,
+							error: error instanceof Error ? error.message : String(error),
+						},
+						{ prompt, tally },
+					);
 					throw error;
 				}
 
@@ -301,16 +322,26 @@ export function createFunctionCallAgent(
 					? validateArguments(schema, args).join("; ")
 					: "the answer is not a complete JSON object (it may have been cut off)";
 				if (args && !problems) {
-					report(request, startedAt, {
-						ok: true,
-						inputTokens: filled.usage.inputTokens,
-						outputTokens: filled.usage.outputTokens,
-					});
+					report(
+						request,
+						startedAt,
+						{
+							ok: true,
+							inputTokens: filled.usage.inputTokens,
+							outputTokens: filled.usage.outputTokens,
+						},
+						{ prompt, tally, response: text },
+					);
 					return args;
 				}
 
 				lastProblem = problems;
-				report(request, startedAt, { ok: false, error: problems });
+				report(
+					request,
+					startedAt,
+					{ ok: false, error: problems },
+					{ prompt, tally, response: text },
+				);
 				messages.push(
 					{ role: "assistant", content: text },
 					{

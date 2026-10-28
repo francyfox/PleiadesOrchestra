@@ -18,6 +18,8 @@ export interface ReplyDeps {
 	db: Db;
 	agent: Agent;
 	decisionAgent: DecisionAgent;
+	/** The provider and model `decisionAgent` currently runs on (providers.toml / admin settings); the ledger names them on the classify row. */
+	decisionModel?: () => { provider: string; model: string };
 	/** Text model with the "reply with {query, quantity} JSON" prompt; without it a task has no `query`/`quantity` facts. */
 	productRequestAgent?: Agent;
 	/** The language the channel's site writes its catalog in (`en` when unknown). */

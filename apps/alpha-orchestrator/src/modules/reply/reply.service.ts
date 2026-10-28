@@ -284,7 +284,7 @@ const NOT_ENGLISH = /(?!\p{Script=Latin})\p{L}/u;
 const INTENT_PROVIDERS = {
 	words: { provider: "rules", model: "message-cues" },
 	memory: { provider: "memory", model: "intent-memory" },
-	laya: { provider: "laya", model: "gamma-decision" },
+	laya: { provider: "laya", model: "gamma-decision" }, // unset decisionModel (tests)
 	fallback: { provider: "rules", model: "message-cues" },
 } as const;
 
@@ -302,6 +302,7 @@ function reportIntent(
 		actionName: "classify",
 		kind: "classify",
 		...INTENT_PROVIDERS[verdict.source],
+		...(verdict.source === "laya" ? deps.decisionModel?.() : undefined),
 		latencyMs,
 		at: deps.now(),
 		ok: verdict.source !== "fallback",

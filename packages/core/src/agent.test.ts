@@ -23,7 +23,10 @@ function fakeLlm(options: {
 	ingestUsage?: Usage | null;
 	finalUsage?: Usage | null;
 	failFinal?: boolean;
+	/** The final generation answers 429 this many times before it works. */
+	overloaded?: number;
 }) {
+	let overloaded = options.overloaded ?? 0;
 	const requests: {
 		stream: boolean;
 		messages: unknown[];
@@ -63,6 +66,10 @@ function fakeLlm(options: {
 				});
 			}
 
+			if (overloaded > 0) {
+				overloaded -= 1;
+				return new Response("busy", { status: 429 });
+			}
 			if (options.failFinal) {
 				return new Response("boom", { status: 400 });
 			}
@@ -200,6 +207,35 @@ describe("createAgent", () => {
 			outputTokens: 5,
 			ok: true,
 		});
+	});
+
+	test("keeps the prompt and the raw answer of a call, and the retries the SDK made", async () => {
+		const { agent, usageRecorder } = setup({ overloaded: 1 });
+
+		await collect(
+			agent.handleMessageStream(message({ systemPrompt: "Be brief." })),
+		);
+
+		const call = usageRecorder.calls[0];
+		expect(JSON.parse(call?.prompt ?? "")).toEqual([
+			{ role: "system", content: "Be brief." },
+			{ role: "user", content: "hello" },
+		]);
+		expect(call?.response).toBeString();
+		expect(call).toMatchObject({ attempts: 2, failedStatuses: [429] });
+	});
+
+	test("a call that never got through still says how it was tried", async () => {
+		const { agent, usageRecorder } = setup({ failFinal: true });
+
+		await expect(
+			collect(agent.handleMessageStream(message())),
+		).rejects.toThrow();
+
+		const call = usageRecorder.calls[0];
+		expect(call?.prompt).toContain("hello");
+		expect(call).toMatchObject({ attempts: 1, failedStatuses: [400] });
+		expect(call?.response).toBeUndefined();
 	});
 
 	test("records every ingest pass and sums totals across all calls in done", async () => {

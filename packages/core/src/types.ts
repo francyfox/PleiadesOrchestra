@@ -98,6 +98,12 @@ export interface DecisionChoice {
 	question: string;
 	chosen: string | null;
 	options: Record<string, number>;
+	/** What was asked: the state the model read, the question's instructions and each option's text. */
+	state?: unknown;
+	instructions?: string;
+	criteria?: Record<string, string>;
+	/** Which round of a question asked in several ("group 1 of 2", "final"); absent for a single ask. */
+	round?: string;
 }
 
 /** One model call. Token fields are `undefined` when the provider didn't report usage — never coerce to 0. */
@@ -114,6 +120,13 @@ export interface LlmCallRecord extends CallContext {
 	confidence?: number;
 	/** Every choice question the call answered, with all its probabilities; absent for non-decision calls. */
 	choices?: DecisionChoice[];
+	/** The messages sent, as JSON `[{role, content}]`; absent for decision-model calls. Visitor text: kept with the row, never in telemetry. */
+	prompt?: string;
+	/** The raw text the model returned (before any repair); absent when it failed or for decision-model calls. */
+	response?: string;
+	/** HTTP attempts the call took (the SDK retries 429/5xx) and the status of each failed one (0 = no response). */
+	attempts?: number;
+	failedStatuses?: number[];
 	/** Epoch ms when the call finished. */
 	at: number;
 }

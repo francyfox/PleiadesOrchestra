@@ -6,6 +6,7 @@ import type {
 	DecisionQuestion,
 	DecisionState,
 } from "./decision-types";
+import { reportingTrouble } from "./server-trouble";
 import {
 	type createTelemetry,
 	telemetry as defaultTelemetry,
@@ -42,7 +43,7 @@ export function createDecisionAgent(
 ): DecisionAgent {
 	// OpenRouter serves the same wire shape at `/api/alpha/decisions`; the SDK always appends `/v1/systemone`.
 	const wholeEndpoint = config.baseURL.endsWith("/decisions");
-	const send = config.fetchImpl ?? fetch;
+	const send = reportingTrouble(config.fetchImpl);
 	const model =
 		config.model ??
 		createTypeSafeAi({
@@ -50,7 +51,7 @@ export function createDecisionAgent(
 			apiKey: config.apiKey,
 			fetch: wholeEndpoint
 				? (((_url, init) => send(config.baseURL, init)) as typeof fetch)
-				: config.fetchImpl,
+				: send,
 		}).decisionModel(config.modelId ?? "laya");
 	const telemetry = config.telemetry ?? defaultTelemetry;
 	const provider = config.provider ?? "laya";
@@ -70,7 +71,8 @@ export function createDecisionAgent(
 					model,
 					state,
 					questions,
-					maxRetries: 0,
+					// A hosted model (OpenRouter) answers 429 under load; the SDK backs off and retries.
+					maxRetries: 3,
 				});
 
 				const tokens = {

@@ -179,6 +179,30 @@ describe("runPlan tracer", () => {
 		for (const event of events) expect(event.at).toBeNumber();
 	});
 
+	test("planned lists the unused actions that could produce the same facts, with a short reason", async () => {
+		const cheap = action("cheap", 1, {}, { done: true });
+		const guarded = action("guarded", 1, { allowed: true }, { done: true });
+		const dear = action("dear", 9, {}, { done: true });
+		const other = action("other", 1, {}, { unrelated: true });
+		const { events, tracer } = traced();
+
+		await runPlan({
+			state: {},
+			goal: { done: true },
+			actions: [cheap, guarded, dear, other],
+			ctx: {},
+			tracer,
+		});
+
+		expect(events[0]).toMatchObject({
+			type: "planned",
+			alternatives: [
+				{ name: "guarded", cost: 1, why: "needs allowed" },
+				{ name: "dear", cost: 9, why: "costs more" },
+			],
+		});
+	});
+
 	test("emits replan with the state execution actually reached, and numbers attempts from 0", async () => {
 		const cheapAttempt = action(
 			"cheapAttempt",

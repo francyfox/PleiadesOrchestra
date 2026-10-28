@@ -61,6 +61,7 @@ export class ReplyService implements WidgetReply {
 					options,
 				),
 			text,
+			options.lang,
 		);
 	}
 
@@ -73,8 +74,13 @@ export class ReplyService implements WidgetReply {
 	): ReadableStream<Uint8Array> {
 		if (toolResult.cancelled)
 			return this.cancelStream(visitor, threadId, toolResult);
-		return this.openStream(visitor, threadId, signal, (planRunId) =>
-			prepareResume(this.deps, threadId, planRunId, toolResult),
+		return this.openStream(
+			visitor,
+			threadId,
+			signal,
+			(planRunId) => prepareResume(this.deps, threadId, planRunId, toolResult),
+			undefined,
+			toolResult.lang,
 		);
 	}
 
@@ -200,6 +206,7 @@ export class ReplyService implements WidgetReply {
 		signal: AbortSignal | undefined,
 		prepare: (planRunId: string) => Promise<PreparedRun>,
 		prompt?: string,
+		lang?: string,
 	): ReadableStream<Uint8Array> {
 		const { deps } = this;
 		const planRunId = crypto.randomUUID();
@@ -218,6 +225,7 @@ export class ReplyService implements WidgetReply {
 		return streamPlanRun(deps, {
 			run: { planRunId, threadId },
 			signal,
+			lang,
 			prepare: async () => {
 				// The widget does not wait for the catalog's classification.
 				await this.pending.get(threadId);

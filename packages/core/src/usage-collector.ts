@@ -11,6 +11,12 @@ export interface CollectedTokens {
 
 const collectors = new AsyncLocalStorage<CollectedTokens>();
 
+const rounds = new AsyncLocalStorage<string>();
+
+/** Labels every choice answered inside `fn` with the round it belongs to; the label never reaches the model. */
+export const withChoiceRound = <T>(round: string, fn: () => Promise<T>) =>
+	rounds.run(round, fn);
+
 const sum = (a: number | undefined, b: number | undefined) =>
 	a === undefined && b === undefined ? undefined : (a ?? 0) + (b ?? 0);
 
@@ -36,6 +42,10 @@ export function reportTokens(usage: CollectedTokens): void {
 	into.outputTokens = sum(into.outputTokens, usage.outputTokens);
 }
 
+/** A question's text may be JSON on the wire; the ledger keeps it as text. */
+const asText = (value: unknown): string =>
+	typeof value === "string" ? value : (JSON.stringify(value) ?? "");
+
 /**
  * The decision agent that also reports each choice answer with all its
  * probabilities to the surrounding `collectTokens`. Wrap the outermost agent so
@@ -47,16 +57,31 @@ export function withChoiceReport(agent: DecisionAgent): DecisionAgent {
 			const answers = await agent.decide(state, questions);
 			const into = collectors.getStore();
 			if (into) {
-				const choices = Object.entries(answers).flatMap(([question, answer]) =>
-					answer.type === "choice"
-						? [
-								{
-									question,
-									chosen: answer.choice ?? null,
-									options: answer.probabilities ?? {},
-								},
-							]
-						: [],
+				const choices = Object.entries(answers).flatMap(
+					([question, answer]) => {
+						if (answer.type !== "choice") return [];
+						const asked = questions[question];
+						return [
+							{
+								question,
+								chosen: answer.choice ?? null,
+								options: answer.probabilities ?? {},
+								state,
+								...(rounds.getStore() ? { round: rounds.getStore() } : {}),
+								...(asked?.type === "choice"
+									? {
+											instructions: asText(asked.instructions),
+											criteria: Object.fromEntries(
+												Object.entries(asked.criteria).map(([key, text]) => [
+													key,
+													asText(text),
+												]),
+											),
+										}
+									: {}),
+							},
+						];
+					},
 				);
 				if (choices.length > 0)
 					into.choices = [...(into.choices ?? []), ...choices];

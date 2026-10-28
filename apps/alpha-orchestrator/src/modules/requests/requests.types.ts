@@ -63,6 +63,12 @@ export interface RequestLlmCall {
 	error: string | null;
 	/** Every choice question of the call with all its probabilities; null for non-decision calls. */
 	choices: DecisionChoice[] | null;
+	/** What was sent (JSON `[{role, content}]`) and the raw answer; null when not kept (decision-model calls, failures). */
+	prompt: string | null;
+	response: string | null;
+	/** HTTP attempts and the status of each failed one (0 = no response); null = not measured. */
+	attempts: number | null;
+	failedStatuses: number[] | null;
 	at: number;
 }
 

@@ -23,7 +23,7 @@ describe("retentionCutoff", () => {
 });
 
 describe("deleteInactiveAnonymousVisitors", () => {
-	test("deletes only anonymous visitors inactive longer than the retention; their usage rows survive unlinked", () => {
+	test("deletes only anonymous visitors inactive longer than the retention; their usage rows survive unlinked and without the visitor's text", () => {
 		const db = testDb();
 		const now = 100 * HOUR;
 		const anon = (id: string, lastSeenAt: number) =>
@@ -57,6 +57,11 @@ describe("deleteInactiveAnonymousVisitors", () => {
 				inputTokens: 5,
 				latencyMs: 1,
 				ok: true,
+				prompt: '[{"role":"user","content":"my address is …"}]',
+				response: "ok",
+				choices: [
+					{ question: "q", chosen: "a", options: { a: 1 }, state: { m: "…" } },
+				],
 			})
 			.run();
 
@@ -73,6 +78,9 @@ describe("deleteInactiveAnonymousVisitors", () => {
 			visitorId: null,
 			channelId: "ch_cli",
 			inputTokens: 5,
+			prompt: null,
+			response: null,
+			choices: null,
 		});
 	});
 });

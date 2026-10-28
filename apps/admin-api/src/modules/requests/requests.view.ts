@@ -1,15 +1,18 @@
 import type {
 	NodeCall,
 	NodeDetail,
+	NodePlan,
 	NodeStatus,
 	RequestEdge,
 	RequestNode,
 	RequestView,
+	Understood,
 	UpstreamRequestDetails,
 } from "./requests.schema.ts";
 
 type Upstream = UpstreamRequestDetails;
 type Facts = Record<string, unknown>;
+type Fact = string | number | boolean;
 
 const record = (value: unknown): Facts =>
 	value && typeof value === "object" && !Array.isArray(value)
@@ -27,7 +30,10 @@ const emptyDetail = (): NodeDetail => ({
 	browserMs: null,
 	expected: null,
 	effects: null,
+	changes: null,
+	plan: null,
 	error: null,
+	understood: null,
 	calls: [],
 });
 
@@ -40,7 +46,52 @@ const toNodeCall = (call: Upstream["llmCalls"][number]): NodeCall => ({
 	ok: call.ok,
 	error: call.error,
 	choices: call.choices ?? null,
+	prompt: call.prompt ?? null,
+	response: call.response ?? null,
+	attempts: call.attempts ?? null,
+	failedStatuses: call.failedStatuses ?? null,
 });
+
+/** alpha-understand's raw JSON answer, kept only where it has the shape; a half-broken item is dropped. */
+function parseUnderstood(
+	response: string | null | undefined,
+): Understood | null {
+	let answer: Facts;
+	try {
+		answer = record(JSON.parse(response ?? ""));
+	} catch {
+		return null;
+	}
+	if (typeof answer.en !== "string" || !Array.isArray(answer.tasks))
+		return null;
+	const list = (value: unknown) => (Array.isArray(value) ? value : []);
+	return {
+		en: answer.en,
+		tasks: answer.tasks.flatMap((raw) => {
+			const task = record(raw);
+			if (typeof task.intent !== "string" || typeof task.text !== "string")
+				return [];
+			return [
+				{
+					intent: task.intent,
+					text: task.text,
+					items: list(task.items).flatMap((item) => {
+						const { name, quantity } = record(item);
+						return typeof name === "string" && typeof quantity === "number"
+							? [{ name, quantity }]
+							: [];
+					}),
+					attributes: list(task.attributes).flatMap((attribute) => {
+						const { name, value } = record(attribute);
+						return typeof name === "string" && typeof value === "string"
+							? [{ name, value }]
+							: [];
+					}),
+				},
+			];
+		}),
+	};
+}
 
 /** One action as the run went through it, possibly across several runs (a browser tool pauses the run). */
 interface Step {
@@ -48,6 +99,24 @@ interface Step {
 	runIds: Set<string>;
 	waitingAt: number | null;
 	finishedAt: number | null;
+}
+
+/** The trace's plan payload, kept only where it has the shape. */
+function parsePlan(payload: Facts): NodePlan {
+	const list = (value: unknown) => (Array.isArray(value) ? value : []);
+	const str = (value: unknown) => (typeof value === "string" ? value : "");
+	const num = (value: unknown) => (typeof value === "number" ? value : 0);
+	return {
+		steps: list(payload.plan).map((raw) => {
+			const step = record(raw);
+			return { name: str(step.name), cost: num(step.cost) };
+		}),
+		totalCost: num(payload.totalCost),
+		alternatives: list(payload.alternatives).map((raw) => {
+			const alt = record(raw);
+			return { name: str(alt.name), cost: num(alt.cost), why: str(alt.why) };
+		}),
+	};
 }
 
 /** The planned facts an action promised but did not deliver. */
@@ -139,6 +208,12 @@ export function buildRequestView(upstream: Upstream): RequestView {
 	const classifyMs = classification?.latencyMs ?? 0;
 	const beforePlanMs = translateMs + classifyMs;
 
+	// alpha-understand runs once per new message, before the first plan.
+	const understandCalls = llmCalls.filter(
+		(call) =>
+			call.actionName === "alpha-understand" && call.planRunId === runs[0]?.id,
+	);
+	const understood = understandCalls.findLast((call) => call.ok);
 	nodes.push({
 		id: "understand",
 		kind: "understand",
@@ -157,7 +232,13 @@ export function buildRequestView(upstream: Upstream): RequestView {
 			: live
 				? Math.max(0, now - request.startedAt - beforePlanMs)
 				: null,
-		detail: { ...emptyDetail(), intent: request.intent, goal: request.goal },
+		detail: {
+			...emptyDetail(),
+			intent: request.intent,
+			goal: request.goal,
+			understood: parseUnderstood(understood?.response),
+			calls: understandCalls.map(toNodeCall),
+		},
 	});
 
 	// --- plan steps ---------------------------------------------------------
@@ -165,6 +246,9 @@ export function buildRequestView(upstream: Upstream): RequestView {
 	const order: Step[] = [];
 	let round = 1;
 	let lastPlan: { round: number; names: string[] } | undefined;
+	// The world as the trace last showed it, to tell what a step changed; the first plan of a round is the one shown.
+	let world: Facts = {};
+	const roundPlans = new Map<number, NodePlan>();
 
 	const keyOf = (action: string) => `${round}:${action}`;
 	const addStep = (key: string, node: RequestNode, runId: string): Step => {
@@ -194,6 +278,8 @@ export function buildRequestView(upstream: Upstream): RequestView {
 						names: plan.map((step) => String(record(step).name)),
 					};
 					if (!sawPlan && index > 0) resumeState = record(payload.state);
+					world = record(payload.state);
+					if (!roundPlans.has(round)) roundPlans.set(round, parsePlan(payload));
 					sawPlan = true;
 					break;
 				}
@@ -266,6 +352,14 @@ export function buildRequestView(upstream: Upstream): RequestView {
 					step.finishedAt = event.at;
 					step.node.detail.expected = facts(expected);
 					step.node.detail.effects = facts(observed);
+					step.node.detail.changes = Object.entries(observed)
+						.filter(([key, value]) => world[key] !== value)
+						.map(([key, after]) => ({
+							key,
+							before: (world[key] ?? null) as Fact | null,
+							after: after as Fact,
+						}));
+					world = { ...world, ...observed };
 					step.node.status =
 						observed[`toolResult:${action}`] === false
 							? "failed"
@@ -373,6 +467,14 @@ export function buildRequestView(upstream: Upstream): RequestView {
 			});
 		}
 		rounds.set(lastPlan.round, list);
+	}
+
+	for (const [number, plan] of roundPlans) {
+		const holder =
+			number === 1
+				? nodes.find((node) => node.kind === "understand")
+				: rounds.get(number)?.[0];
+		if (holder) holder.detail.plan = plan;
 	}
 
 	const roundNumbers = [...rounds.keys()].sort((a, b) => a - b);

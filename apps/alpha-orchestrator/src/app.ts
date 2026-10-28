@@ -70,6 +70,8 @@ export interface AppDeps {
 	adminCorsOrigins?: string;
 	agent: Agent;
 	decisionAgent: DecisionAgent;
+	/** See `ReplyDeps.decisionModel`. */
+	decisionModel?: () => { provider: string; model: string };
 	/** See `ReplyDeps.layaAutoApproveConfidence`; unset = Laya's intents always wait for a person. */
 	layaAutoApproveConfidence?: number;
 	/** Extracts `{query, quantity}` from a shopping message; optional (tests leave it out). */
@@ -144,6 +146,7 @@ export function createApp(deps: AppDeps) {
 		db: deps.db,
 		agent: deps.agent,
 		decisionAgent: deps.decisionAgent,
+		decisionModel: deps.decisionModel,
 		productRequestAgent: deps.productRequestAgent,
 		intentMemory,
 		layaAutoApproveConfidence: deps.layaAutoApproveConfidence,

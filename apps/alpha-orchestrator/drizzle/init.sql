@@ -48,7 +48,7 @@ CREATE TABLE `llm_calls` (
 	`output_tokens` integer,
 	`latency_ms` integer NOT NULL,
 	`ok` integer NOT NULL,
-	`error` text, `confidence` real, `choices` text,
+	`error` text, `confidence` real, `choices` text, `prompt` text, `response` text, `attempts` integer, `failed_statuses` text,
 	FOREIGN KEY ("visitor_id") REFERENCES "visitors"(`id`) ON UPDATE no action ON DELETE set null,
 	FOREIGN KEY (`channel_id`) REFERENCES `channels`(`id`) ON UPDATE no action ON DELETE set null,
 	FOREIGN KEY (`thread_id`) REFERENCES `threads`(`id`) ON UPDATE no action ON DELETE set null,
@@ -257,6 +257,7 @@ INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '9
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '555cc4b3858a7c414ba147b6360efacb3c624028bab5af0c6871b6140f09a56a', 1792835818788);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '666ad99db66df0b89698ed63efb805345a120c25a8a21dde9f4b289da78900de', 1793096967842);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '65c2b0eaa9c0371015fae62b58c6244026366551b62be9c1e2f475c038ad2dc3', 1793114232741);
+INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '7d3e282d6b5f74416d6aad3a3f82537e0f9666081d3abb4eb1a215e728514add', 1793172844282);
 INSERT INTO "channels" ("id", "slug", "kind", "name", "access_mode", "publishable_key", "secret_key_hash", "allowed_origins", "disabled_at", "created_at", "catalog_language", "owner_id", "intent_sets", "several_tasks") VALUES ('ch_telegram', 'telegram', 'telegram', 'Telegram', 'whitelist', NULL, NULL, '[]', NULL, CAST(strftime('%s', 'now') AS INTEGER) * 1000, 'en', NULL, '["shop"]', 0);
 INSERT INTO "channels" ("id", "slug", "kind", "name", "access_mode", "publishable_key", "secret_key_hash", "allowed_origins", "disabled_at", "created_at", "catalog_language", "owner_id", "intent_sets", "several_tasks") VALUES ('ch_cli', 'cli', 'cli', 'CLI', 'open', NULL, NULL, '[]', NULL, CAST(strftime('%s', 'now') AS INTEGER) * 1000, 'en', NULL, '["shop"]', 0);
 COMMIT;

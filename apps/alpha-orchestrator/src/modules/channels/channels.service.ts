@@ -1,5 +1,5 @@
-import { asc, count, eq, type SQL } from "drizzle-orm";
-import { channels } from "../database/database.schema.ts";
+import { asc, count, eq, inArray, type SQL } from "drizzle-orm";
+import { channels, llmCalls } from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
 import { limitOffset, type PageParams } from "../http/http.service.ts";
 import { randomToken, sha256Hex } from "../security/security.service.ts";
@@ -172,12 +172,22 @@ export function rotateChannelKeys(db: Db, id: string) {
 /**
  * Deletes every channel of an owner; visitors, messages, threads, runs… go with
  * them (FK cascade). `llm_calls` and subscriptions keep their rows with the
- * channel reference set to NULL (FK `set null`), so spend totals survive.
+ * channel reference set to NULL (FK `set null`), so spend totals survive; what
+ * holds visitor text (prompt, response, choices) is cleared.
  */
 export function deleteOwnerChannels(db: Db, ownerId: string) {
-	return db
-		.delete(channels)
-		.where(eq(channels.ownerId, ownerId))
-		.returning({ id: channels.id })
-		.all().length;
+	const owned = eq(channels.ownerId, ownerId);
+	return db.transaction((tx) => {
+		tx.update(llmCalls)
+			.set({ prompt: null, response: null, choices: null })
+			.where(
+				inArray(
+					llmCalls.channelId,
+					tx.select({ id: channels.id }).from(channels).where(owned),
+				),
+			)
+			.run();
+		return tx.delete(channels).where(owned).returning({ id: channels.id }).all()
+			.length;
+	});
 }

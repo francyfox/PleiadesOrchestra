@@ -148,12 +148,12 @@ describe("createDecisionAgent", () => {
 			baseURL: BASE_URL,
 			apiKey: API_KEY,
 			fetchImpl: fakeFetch(
-				() => new Response("boom", { status: 500, statusText: "Server Error" }),
+				() => new Response("boom", { status: 400, statusText: "Bad Request" }),
 			),
 		});
 
 		await expect(agent.decide({}, urgentQuestion)).rejects.toThrow(
-			/Server Error/,
+			/Bad Request/,
 		);
 	});
 
@@ -192,12 +192,12 @@ describe("createDecisionAgent", () => {
 			apiKey: API_KEY,
 			telemetry: createTelemetry([reporter]),
 			fetchImpl: fakeFetch(
-				() => new Response("boom", { status: 500, statusText: "Server Error" }),
+				() => new Response("boom", { status: 400, statusText: "Bad Request" }),
 			),
 		});
 
 		await expect(agent.decide({}, urgentQuestion)).rejects.toThrow(
-			/Server Error/,
+			/Bad Request/,
 		);
 
 		expect(logs.length).toBe(1);

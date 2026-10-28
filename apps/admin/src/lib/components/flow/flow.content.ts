@@ -222,6 +222,22 @@ const flowContent = {
 			answer: t({ ru: "Ответ тула", en: "Tool answer", kk: "Тул жауабы" }),
 			expected: t({ ru: "Ожидалось", en: "Expected", kk: "Күтілген" }),
 			effects: t({ ru: "Получено", en: "Observed", kk: "Алынған" }),
+			changes: t({
+				ru: "Изменил факты",
+				en: "Changed facts",
+				kk: "Өзгерген фактілер",
+			}),
+			plan: t({ ru: "План", en: "Plan", kk: "Жоспар" }),
+			planCost: t({
+				ru: insert("стоимость {{cost}}"),
+				en: insert("cost {{cost}}"),
+				kk: insert("құны {{cost}}"),
+			}),
+			alternatives: t({
+				ru: "Не выбрано",
+				en: "Not chosen",
+				kk: "Таңдалмаған",
+			}),
 			error: t({ ru: "Ошибка", en: "Error", kk: "Қате" }),
 			calls: t({
 				ru: "Вызовы моделей",
@@ -238,6 +254,20 @@ const flowContent = {
 				en: insert("{{input}} → {{output}} tok."),
 				kk: insert("{{input}} → {{output}} ток."),
 			}),
+			attempts: t({
+				ru: insert("{{count}} попытки, сбои: {{failed}}"),
+				en: insert("{{count}} attempts, failed: {{failed}}"),
+				kk: insert("{{count}} әрекет, сәтсіз: {{failed}}"),
+			}),
+			prompt: t({ ru: "Промпт", en: "Prompt", kk: "Промпт" }),
+			response: t({
+				ru: "Ответ модели (как пришёл)",
+				en: "Raw model response",
+				kk: "Модель жауабы (шикі)",
+			}),
+			english: t({ ru: "По-английски", en: "In English", kk: "Ағылшынша" }),
+			tasks: t({ ru: "Задачи", en: "Tasks", kk: "Тапсырмалар" }),
+			noItems: t({ ru: "без товаров", en: "no items", kk: "тауарсыз" }),
 			reply: t({
 				ru: "Ответ пользователю",
 				en: "Reply to the user",

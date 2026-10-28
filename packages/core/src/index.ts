@@ -154,6 +154,7 @@ export {
 	STATED_ATTRIBUTES,
 	samePage,
 	scopeFacts,
+	stepLanguage,
 	TIME_ZONE_FACT,
 	TODAY_FACT,
 	TOOL_INTENTS,
@@ -185,6 +186,7 @@ export {
 } from "./laya-fit";
 export { recordCall } from "./record-call";
 export { repairArguments } from "./repair-arguments";
+export { reportingTrouble, watchServerTrouble } from "./server-trouble";
 export type { LlmStateFields, MessageEventFields } from "./telemetry";
 export { createTelemetry, jsonReporter, telemetry } from "./telemetry";
 export { withTimeout } from "./timeout";

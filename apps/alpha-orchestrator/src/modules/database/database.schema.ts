@@ -261,6 +261,12 @@ export const llmCalls = sqliteTable(
 		confidence: real("confidence"),
 		// Every choice question of a decision call with all its probabilities (`DecisionChoice[]`); NULL otherwise.
 		choices: text("choices", { mode: "json" }).$type<DecisionChoice[]>(),
+		// What was sent (JSON messages) and the raw answer: visitor text, cleared with the visitor (`deleteInactiveAnonymousVisitors`). NULL for decision-model calls.
+		prompt: text("prompt"),
+		response: text("response"),
+		// HTTP attempts (the SDK retries 429/5xx) and the status of each failed one; NULL = not measured.
+		attempts: integer("attempts"),
+		failedStatuses: text("failed_statuses", { mode: "json" }).$type<number[]>(),
 	},
 	(table) => [
 		index("llm_calls_visitor_at_idx").on(table.visitorId, table.at),

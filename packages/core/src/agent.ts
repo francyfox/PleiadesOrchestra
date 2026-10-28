@@ -8,6 +8,13 @@ import {
 import { InMemoryHistoryStore } from "./history";
 import { recordCall } from "./record-call";
 import {
+	type AttemptTally,
+	attemptsOf,
+	newTally,
+	reportingTrouble,
+	tallyingAttempts,
+} from "./server-trouble";
+import {
 	type createTelemetry,
 	telemetry as defaultTelemetry,
 } from "./telemetry";
@@ -60,6 +67,10 @@ const INGEST_SYSTEM_PROMPT =
 	"В 1-2 предложениях выпиши только факты и детали из этой части, которые пригодятся для финального ответа.\n" +
 	"Не отвечай пользователю и не задавай вопросов — только сжатый конспект.";
 
+/** The ledger keeps what was sent as JSON, system message first. */
+const promptOf = (system: string, messages: ModelMessage[]) =>
+	JSON.stringify([{ role: "system", content: system }, ...messages]);
+
 export function createAgent(config: AgentConfig): Agent {
 	const provider = createOpenAICompatible({
 		name: PROVIDER_NAME,
@@ -69,6 +80,7 @@ export function createAgent(config: AgentConfig): Agent {
 		// `stream_options: { include_usage: true }` on the wire) — `usage.inputTokens`/
 		// `outputTokens` silently come back undefined instead of erroring.
 		includeUsage: true,
+		fetch: reportingTrouble(),
 	});
 	const model = provider(config.model);
 	const systemPrompt = config.systemPrompt ?? DEFAULT_SYSTEM_PROMPT;
@@ -91,6 +103,7 @@ export function createAgent(config: AgentConfig): Agent {
 		outcome:
 			| { ok: true; inputTokens?: number; outputTokens?: number }
 			| { ok: false; error: string },
+		trace: { prompt: string; tally: AttemptTally; response?: string },
 	) {
 		const latencyMs = Date.now() - startedAt;
 		recordCall(
@@ -102,6 +115,9 @@ export function createAgent(config: AgentConfig): Agent {
 				model: config.model,
 				latencyMs,
 				at: Date.now(),
+				prompt: trace.prompt,
+				response: trace.response,
+				...attemptsOf(trace.tally),
 				...outcome,
 			},
 			telemetry,
@@ -143,7 +159,14 @@ export function createAgent(config: AgentConfig): Agent {
 			// The model call currently in flight, if any — so the catch below
 			// reports a failure against the right call, and doesn't report a
 			// failed history write as a failed model call.
-			let inFlight: { kind: LlmCallKind; startedAt: number } | undefined;
+			let inFlight:
+				| {
+						kind: LlmCallKind;
+						startedAt: number;
+						prompt: string;
+						tally: AttemptTally;
+				  }
+				| undefined;
 
 			try {
 				for (let chunkIndex = 0; chunkIndex < lastIndex; chunkIndex++) {
@@ -159,21 +182,40 @@ export function createAgent(config: AgentConfig): Agent {
 						contextChars: processedChars,
 					};
 
-					inFlight = { kind: "ingest", startedAt: Date.now() };
-					const { text: digest, usage } = await generateText({
-						model,
-						system: INGEST_SYSTEM_PROMPT,
-						messages: [{ role: "user", content: chunk }],
-						maxOutputTokens: maxIngestTokens,
-						temperature: config.temperature,
-						providerOptions,
-					});
+					const ingestMessages: ModelMessage[] = [
+						{ role: "user", content: chunk },
+					];
+					inFlight = {
+						kind: "ingest",
+						startedAt: Date.now(),
+						prompt: promptOf(INGEST_SYSTEM_PROMPT, ingestMessages),
+						tally: newTally(),
+					};
+					const { text: digest, usage } = await tallyingAttempts(
+						inFlight.tally,
+						() =>
+							generateText({
+								model,
+								system: INGEST_SYSTEM_PROMPT,
+								messages: ingestMessages,
+								maxOutputTokens: maxIngestTokens,
+								temperature: config.temperature,
+								providerOptions,
+								maxRetries: 3,
+							}),
+					);
 
-					reportCall(callContext, "ingest", inFlight.startedAt, {
-						ok: true,
-						inputTokens: usage.inputTokens,
-						outputTokens: usage.outputTokens,
-					});
+					reportCall(
+						callContext,
+						"ingest",
+						inFlight.startedAt,
+						{
+							ok: true,
+							inputTokens: usage.inputTokens,
+							outputTokens: usage.outputTokens,
+						},
+						{ ...inFlight, response: digest },
+					);
 					addUsage(usage);
 					inFlight = undefined;
 
@@ -216,15 +258,26 @@ export function createAgent(config: AgentConfig): Agent {
 						? fetched.slice(0, -1)
 						: fetched;
 				const generationStartedAt = Date.now();
-				inFlight = { kind: "generate", startedAt: generationStartedAt };
-				const result = streamText({
-					model,
-					system: message.systemPrompt ?? systemPrompt,
-					messages: [...past, userMessage],
-					maxOutputTokens,
-					temperature: config.temperature,
-					providerOptions,
-				});
+				const system = message.systemPrompt ?? systemPrompt;
+				const messages = [...past, userMessage];
+				inFlight = {
+					kind: "generate",
+					startedAt: generationStartedAt,
+					prompt: promptOf(system, messages),
+					tally: newTally(),
+				};
+				const result = tallyingAttempts(inFlight.tally, () =>
+					streamText({
+						model,
+						system,
+						messages,
+						maxOutputTokens,
+						temperature: config.temperature,
+						providerOptions,
+						// A hosted model (OpenRouter) answers 429 under load; the SDK backs off and retries.
+						maxRetries: 3,
+					}),
+				);
 
 				for await (const delta of result.textStream) {
 					yield { type: "delta", text: delta };
@@ -235,11 +288,17 @@ export function createAgent(config: AgentConfig): Agent {
 					result.usage,
 				]);
 
-				reportCall(callContext, "generate", generationStartedAt, {
-					ok: true,
-					inputTokens: usage.inputTokens,
-					outputTokens: usage.outputTokens,
-				});
+				reportCall(
+					callContext,
+					"generate",
+					generationStartedAt,
+					{
+						ok: true,
+						inputTokens: usage.inputTokens,
+						outputTokens: usage.outputTokens,
+					},
+					{ ...inFlight, response: fullText },
+				);
 				addUsage(usage);
 				inFlight = undefined;
 
@@ -265,10 +324,16 @@ export function createAgent(config: AgentConfig): Agent {
 				};
 			} catch (error) {
 				if (inFlight) {
-					reportCall(callContext, inFlight.kind, inFlight.startedAt, {
-						ok: false,
-						error: error instanceof Error ? error.message : String(error),
-					});
+					reportCall(
+						callContext,
+						inFlight.kind,
+						inFlight.startedAt,
+						{
+							ok: false,
+							error: error instanceof Error ? error.message : String(error),
+						},
+						inFlight,
+					);
 				}
 				throw error;
 			}

@@ -81,6 +81,41 @@ function unmet(
 	);
 }
 
+const MAX_ALTERNATIVES = 8;
+
+/** Actions outside `chosen` that write a fact the plan or the goal is about, and why each lost. */
+function unusedAlternatives(
+	state: WorldState,
+	goal: Goal,
+	chosen: GoapAction[],
+	actions: GoapAction[],
+): { name: string; cost: number; why: string }[] {
+	const keys = new Set([
+		...Object.keys(goal),
+		...chosen.flatMap(({ effects }) => Object.keys(effects)),
+	]);
+	const afterPlan = Object.assign({}, state, ...chosen.map((a) => a.effects));
+	return actions
+		.filter(
+			(a) =>
+				!chosen.includes(a) &&
+				Object.keys(a.effects).some((key) => keys.has(key)),
+		)
+		.slice(0, MAX_ALTERNATIVES)
+		.map(({ name, cost, preconditions, effects }) => {
+			const needs = Object.keys(unmet(preconditions, afterPlan));
+			const rivals = chosen.filter((a) =>
+				Object.keys(a.effects).some((key) => key in effects),
+			);
+			const why = needs.length
+				? `needs ${needs.join(", ")}`
+				: cost > Math.min(...rivals.map((a) => a.cost))
+					? "costs more"
+					: "not cheaper";
+			return { name, cost, why };
+		});
+}
+
 /** WebMCP tool actions are the ones that can return `waiting` (they carry a `toolResult:<name>` effect); the visitor's browser runs one call at a time. */
 function canWait(action: GoapAction): boolean {
 	return Object.keys(action.effects).some((key) =>
@@ -202,6 +237,7 @@ async function attempt(
 		attempt: attemptIndex,
 		plan: currentPlan.map(({ name, cost }) => ({ name, cost })),
 		totalCost: currentPlan.reduce((sum, { cost }) => sum + cost, 0),
+		alternatives: unusedAlternatives(state, goal, currentPlan, actions),
 		state,
 	});
 

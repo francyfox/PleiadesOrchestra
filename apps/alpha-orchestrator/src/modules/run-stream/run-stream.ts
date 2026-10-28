@@ -5,7 +5,7 @@ import type {
 	WorldState,
 	WorldStateStore,
 } from "@repo/core";
-import { MISSING_PARAMS, runPlan } from "@repo/core";
+import { MISSING_PARAMS, runPlan, watchServerTrouble } from "@repo/core";
 import { ALL_SESSION_FACTS } from "@repo/intent-presets";
 import type { ActiveRuns } from "../active-runs/active-runs.ts";
 import type { StoredStep } from "../database/database.schema.ts";
@@ -22,6 +22,7 @@ import {
 	awaitedTool,
 	errorMessage,
 	outcomeEvent,
+	serverTroubleStep,
 	VISITOR_WAIT_FACT,
 } from "./run-stream.service.ts";
 import type {
@@ -56,6 +57,8 @@ export interface RunStreamInput {
 	 * happens *inside* the stream, after the response has already started.
 	 */
 	prepare: () => Promise<PreparedRun>;
+	/** The visitor's language (`page:lang`), for lines sent before the run's state exists. */
+	lang?: string;
 	/**
 	 * A run with tasks queued behind it (`hasQueuedTasks`) ends without a
 	 * terminal line when it finishes (or fails) and `next` makes the run of the
@@ -150,19 +153,35 @@ async function streamOneRun(
 		prepared: undefined,
 		steps: new Map(),
 	};
+	// A model server that answers 429/5xx is retried by the SDK: the visitor hears why it is slow.
+	let trouble: StoredStep["phase"] | undefined;
+	const tell = (phase: StoredStep["phase"]) => {
+		trouble = phase;
+		const step = serverTroubleStep(input.lang, phase);
+		outcome.steps.set(step.id, step);
+		send({ type: "step", ...step });
+	};
 	try {
-		await executeRun(
-			deps,
-			{ ...input, ...current },
-			outcome,
-			trace,
-			send,
-			startedAt,
+		await watchServerTrouble(
+			(ok) => {
+				if (!ok && trouble !== "running") tell("running");
+				else if (ok && trouble === "running") tell("done");
+			},
+			() =>
+				executeRun(
+					deps,
+					{ ...input, ...current },
+					outcome,
+					trace,
+					send,
+					startedAt,
+				),
 		);
 	} catch (error) {
 		outcome.continues = false;
 		send({ type: "error", message: errorMessage(error) });
 	} finally {
+		if (trouble === "running") tell("failed");
 		// The terminal line is already sent, so the client has its answer; the
 		// work below only delays the end of the stream, which keeps
 		// "response finished ⇒ persisted".

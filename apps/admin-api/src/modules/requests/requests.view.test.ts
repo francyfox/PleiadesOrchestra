@@ -92,6 +92,46 @@ const byLabel = (view: ReturnType<typeof buildRequestView>, label: string) =>
 	view.nodes.find((node) => node.label === label);
 
 describe("buildRequestView", () => {
+	test("a step lists the facts it changed (before → after); the plan and what lost sit on the understand node, a replan's on its first step", () => {
+		const alternatives = [{ name: "add_to_cart", cost: 3, why: "needs a" }];
+		const view = buildRequestView(
+			details([
+				run("r1", T0, [
+					ev("planned", T0 + 100, null, {
+						plan: [{ name: "a", cost: 2 }],
+						totalCost: 2,
+						alternatives,
+						state: { x: 1, same: true },
+					}),
+					started(T0 + 110, "a"),
+					finished(T0 + 120, "a", { y: true }, { y: true, x: 2, same: true }),
+					ev("replan", T0 + 130, null, { state: { x: 2 } }),
+					ev("planned", T0 + 140, null, {
+						plan: [{ name: "b", cost: 1 }],
+						totalCost: 1,
+						alternatives: [],
+						state: { x: 2, y: true },
+					}),
+					started(T0 + 150, "b"),
+					finished(T0 + 160, "b", { z: 1 }),
+				]),
+			]),
+		);
+
+		expect(byLabel(view, "a")?.detail.changes).toEqual([
+			{ key: "y", before: null, after: true },
+			{ key: "x", before: 1, after: 2 },
+		]);
+		const understand = view.nodes.find((n) => n.kind === "understand");
+		expect(understand?.detail.plan).toEqual({
+			steps: [{ name: "a", cost: 2 }],
+			totalCost: 2,
+			alternatives,
+		});
+		expect(byLabel(view, "b")?.detail.plan).toMatchObject({ totalCost: 1 });
+		expect(byLabel(view, "a")?.detail.plan).toBeNull();
+	});
+
 	test("prompt → understanding → steps → result, each with its time", () => {
 		const view = buildRequestView(
 			details(
@@ -182,6 +222,10 @@ describe("buildRequestView", () => {
 				ok: true,
 				error: null,
 				choices: null,
+				prompt: null,
+				response: null,
+				attempts: null,
+				failedStatuses: null,
 			},
 		]);
 		expect(view.nodes[2]?.durationMs).toBe(350);
@@ -378,6 +422,10 @@ describe("buildRequestView", () => {
 				ok: true,
 				error: null,
 				choices: null,
+				prompt: null,
+				response: null,
+				attempts: null,
+				failedStatuses: null,
 			},
 		]);
 		expect(
@@ -547,5 +595,62 @@ describe("buildRequestView", () => {
 		expect(byLabel(view, "boom")?.detail.error).toBe("model down");
 		expect(byLabel(view, "later")).toMatchObject({ status: "skipped" });
 		expect(byLabel(view, "later")?.detail.error).toContain("checkoutComplete");
+	});
+
+	test("what alpha-understand read is on the understand node, parsed from the raw answer, with the call's prompt and retries", () => {
+		const raw = JSON.stringify({
+			en: "buy 2 red shirts",
+			tasks: [
+				{
+					intent: "addToCart",
+					text: "buy 2 red shirts",
+					items: [{ name: "shirt", quantity: 2 }, { name: 5 }],
+					attributes: [{ name: "colour", value: "red" }],
+				},
+			],
+		});
+		const call = (response: string | null, ok: boolean, at: number) => ({
+			planRunId: "r1",
+			actionName: "alpha-understand",
+			kind: "decision",
+			provider: "alpha",
+			model: "m",
+			inputTokens: null,
+			outputTokens: null,
+			latencyMs: 90,
+			ok,
+			error: null,
+			prompt: "[]",
+			response,
+			attempts: 3,
+			failedStatuses: [429, 429],
+			at,
+		});
+		const view = buildRequestView(
+			details([run("r1", T0, [planned(T0 + 400, ["generateReply"])])], {
+				calls: [call("not json", false, T0 + 100), call(raw, true, T0 + 200)],
+			}),
+		);
+		const understand = view.nodes.find((n) => n.kind === "understand");
+		expect(understand?.detail.understood).toEqual({
+			en: "buy 2 red shirts",
+			tasks: [
+				{
+					intent: "addToCart",
+					text: "buy 2 red shirts",
+					items: [{ name: "shirt", quantity: 2 }],
+					attributes: [{ name: "colour", value: "red" }],
+				},
+			],
+		});
+		expect(understand?.detail.calls).toHaveLength(2);
+		expect(understand?.detail.calls[1]).toMatchObject({
+			prompt: "[]",
+			response: raw,
+			attempts: 3,
+			failedStatuses: [429, 429],
+		});
+		// Other nodes read nothing from it.
+		expect(view.nodes[0]?.detail.understood).toBeNull();
 	});
 });

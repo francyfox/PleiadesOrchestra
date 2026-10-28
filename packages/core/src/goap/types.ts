@@ -105,6 +105,8 @@ export type PlanTraceEvent =
 			attempt: number;
 			plan: { name: string; cost: number }[];
 			totalCost: number;
+			/** Unused actions that could have produced the same facts, with why they lost. */
+			alternatives?: { name: string; cost: number; why: string }[];
 			state: WorldState;
 			at: number;
 	  }

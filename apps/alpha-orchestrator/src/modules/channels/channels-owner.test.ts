@@ -77,6 +77,8 @@ function seedTraffic(
 			outputTokens: 0,
 			latencyMs: 1,
 			ok: true,
+			prompt: `[{"role":"user","content":"hi from ${external}"}]`,
+			response: "hello",
 		})
 		.run();
 }
@@ -125,7 +127,7 @@ describe("channel ownership", () => {
 		expect(unscoped.usage.last7d.inputTokens).toBe(1107);
 	});
 
-	test("deleting an owner's channels cascades but keeps llm_calls, cut loose", async () => {
+	test("deleting an owner's channels cascades but keeps llm_calls, cut loose and without visitor text", async () => {
 		const { app, db } = setupAdminApp();
 		const mine = await create(app, "mine", "acc-1");
 		const second = await create(app, "second", "acc-1");
@@ -154,6 +156,14 @@ describe("channel ownership", () => {
 		expect(calls).toHaveLength(3);
 		expect(calls.filter((c) => c.channelId === null)).toHaveLength(2);
 		expect(calls.reduce((sum, c) => sum + (c.inputTokens ?? 0), 0)).toBe(112);
+		expect(
+			calls
+				.filter((c) => c.channelId === null)
+				.map((c) => c.prompt ?? c.response),
+		).toEqual([null, null]);
+		expect(calls.find((c) => c.channelId === theirs.id)?.prompt).toContain(
+			"hi from c",
+		);
 
 		const again = await json(
 			await app.handle(admin("/owners/acc-1/channels", { method: "DELETE" })),

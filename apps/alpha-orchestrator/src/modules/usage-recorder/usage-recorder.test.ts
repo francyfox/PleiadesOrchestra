@@ -88,6 +88,28 @@ describe("SqliteUsageRecorder", () => {
 		expect(rows.map((row) => row.choices)).toEqual([choices, null]);
 	});
 
+	test("stores the prompt, the raw answer and the HTTP attempts, NULL when absent", () => {
+		const db = testDb();
+		const recorder = new SqliteUsageRecorder(db, new RunBinding());
+		recorder.record(
+			call({
+				prompt: "[]",
+				response: "hi",
+				attempts: 3,
+				failedStatuses: [429, 503],
+			}),
+		);
+		recorder.record(call({}));
+		recorder.flush();
+		const rows = db.select().from(llmCalls).all();
+		expect(
+			rows.map((r) => [r.prompt, r.response, r.attempts, r.failedStatuses]),
+		).toEqual([
+			["[]", "hi", 3, [429, 503]],
+			[null, null, null, null],
+		]);
+	});
+
 	test("keeps missing usage as NULL, never 0", () => {
 		const db = testDb();
 		const recorder = new SqliteUsageRecorder(db, new RunBinding());

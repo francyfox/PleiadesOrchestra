@@ -1,6 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import type { RequestNode, RequestView } from "admin-api/types";
-import { elapsedMs, MAX_OPTIONS, viewToGraph } from "./request-graph.ts";
+import {
+	type ChoiceNodeData,
+	elapsedMs,
+	MAX_OPTIONS,
+	viewToGraph,
+} from "./request-graph.ts";
 
 const detail = {
 	text: null,
@@ -9,8 +14,11 @@ const detail = {
 	tool: null,
 	toolArgs: null,
 	browserMs: null,
+	understood: null,
 	expected: null,
 	effects: null,
+	changes: null,
+	plan: null,
 	error: null,
 	calls: [],
 };
@@ -213,6 +221,11 @@ describe("viewToGraph choices", () => {
 								Array.from({ length: 15 }, (_, i) => [`x${i}`, 1 - i / 20]),
 							),
 						},
+						{
+							question: "q3",
+							chosen: "z",
+							options: { y: 0.96, z: 0.01, w: 0.02, v: 0.01 },
+						},
 					]),
 				],
 			},
@@ -232,18 +245,28 @@ describe("viewToGraph choices", () => {
 	);
 	const choice = graph.nodes.filter((n) => n.type === "choice");
 
-	test("a fan per question: sorted, chosen marked, capped with a tail", () => {
-		const first = choice.filter((n) => n.data.question === "q1");
-		expect(first.map((n) => n.data.option)).toEqual(["b", "c", "a"]);
-		expect(
-			first.filter((n) => n.data.chosen).map((n) => n.data.option),
-		).toEqual(["b"]);
-		const second = choice.filter((n) => n.data.question === "q2");
-		expect(second).toHaveLength(MAX_OPTIONS + 1);
-		expect(second.at(-1)?.data.more).toBe(15 - MAX_OPTIONS);
+	test("one node and one edge per question: sorted, chosen marked, capped with a tail", () => {
+		expect(choice.map((n) => n.data.question)).toEqual(["q1", "q2", "q3"]);
+		const [first, second] = choice.map((n) => n.data as ChoiceNodeData);
+		expect(first?.options.map((o) => o.option)).toEqual(["b", "c", "a"]);
+		expect(first?.options.filter((o) => o.chosen).map((o) => o.option)).toEqual(
+			["b"],
+		);
+		expect(first?.more).toBe(0);
+		expect(second?.options).toHaveLength(MAX_OPTIONS);
+		expect(second?.more).toBe(15 - MAX_OPTIONS);
+		expect(second?.moreProbability).toBeCloseTo(0.4 + 0.35 + 0.3);
+		expect(graph.edges.filter((e) => e.data.kind === "choice")).toHaveLength(3);
 	});
 
-	test("fans sit below the main flow, ids are unique, edges point to existing nodes", () => {
+	test("unlikely options share one row; the chosen one stays even when unlikely", () => {
+		const third = choice[2]?.data as ChoiceNodeData;
+		expect(third.options.map((o) => o.option)).toEqual(["y", "z"]);
+		expect(third.more).toBe(2);
+		expect(third.moreProbability).toBeCloseTo(0.03);
+	});
+
+	test("questions sit below the main flow without overlapping, ids are unique, edges point to existing nodes", () => {
 		const mainBottom = Math.max(
 			...graph.nodes
 				.filter((n) => n.type === "request")
@@ -257,8 +280,11 @@ describe("viewToGraph choices", () => {
 		for (const e of graph.edges) {
 			expect(known.has(e.source) && known.has(e.target)).toBe(true);
 		}
-		const ys = choice.map((n) => n.position.y);
-		expect(new Set(ys).size).toBe(ys.length);
+		const [q1, q2] = choice;
+		// q1 shows three options, so q2 starts at least three rows lower.
+		expect((q2?.position.y ?? 0) - (q1?.position.y ?? 0)).toBeGreaterThan(
+			3 * 30,
+		);
 	});
 
 	test("without choices the graph has only request nodes", () => {

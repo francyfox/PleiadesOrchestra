@@ -4,10 +4,35 @@ import type {
 	WebMcpToolCallPayload,
 	WorldState,
 } from "@repo/core";
+import { PAGE_LANG_FACT, stepLanguage } from "@repo/core";
+import type { StoredStep } from "../database/database.schema.ts";
 import type { StreamEvent } from "./run-stream.types.ts";
 
 export function errorMessage(error: unknown): string {
 	return error instanceof Error ? error.message : String(error);
+}
+
+const SERVER_TROUBLE_TEXT = {
+	running: {
+		ru: "Сервер перегружен, повторяю запрос — ответ может занять больше времени…",
+		en: "The server is overloaded, retrying — the answer may take longer…",
+	},
+	done: { ru: "Сервер снова отвечает", en: "The server is answering again" },
+	failed: { ru: "Сервер не отвечает", en: "The server is not answering" },
+} as const;
+
+/** The step line that tells the visitor why the answer is slow: a model server is retried (`watchServerTrouble`). */
+export function serverTroubleStep(
+	lang: string | undefined,
+	phase: StoredStep["phase"],
+): StoredStep {
+	return {
+		id: "serverTrouble",
+		phase,
+		text: SERVER_TROUBLE_TEXT[phase][
+			stepLanguage(lang ? { [PAGE_LANG_FACT]: lang } : {})
+		],
+	};
 }
 
 function numberOrUndefined(value: WorldState[string]): number | undefined {

@@ -86,9 +86,17 @@ const RequestLlmCall = t.Object({
 				question: t.String(),
 				chosen: t.Nullable(t.String()),
 				options: t.Record(t.String(), t.Number()),
+				state: t.Optional(t.Unknown()),
+				instructions: t.Optional(t.String()),
+				criteria: t.Optional(t.Record(t.String(), t.String())),
+				round: t.Optional(t.String()),
 			}),
 		),
 	),
+	prompt: t.Nullable(t.String()),
+	response: t.Nullable(t.String()),
+	attempts: t.Nullable(t.Number()),
+	failedStatuses: t.Nullable(t.Array(t.Number())),
 	at: t.Number(),
 });
 

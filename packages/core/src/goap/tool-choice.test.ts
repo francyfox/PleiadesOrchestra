@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { DecisionAgent } from "../decision-types";
+import { collectTokens, withChoiceReport } from "../usage-collector";
 import { chooseTool } from "./tool-choice";
 
 /** Answers every choice question with `pick(options)`, and keeps what it was asked. */
@@ -86,6 +87,22 @@ describe("chooseTool", () => {
 		for (const round of decisionAgent.asked) {
 			expect(round.length).toBeLessThanOrEqual(10);
 		}
+	});
+
+	test("each round of the tool question is recorded with its place", async () => {
+		const many = Array.from({ length: 12 }, (_, i) => ({
+			name: `tool_${i}`,
+			description: `does thing number ${i}`,
+		}));
+		const inner = agent((options) => options[2] as string);
+		const { tokens } = await collectTokens(() =>
+			chooseTool({ decisionAgent: withChoiceReport(inner), tools: many }, "x"),
+		);
+		expect(tokens.choices?.map((c) => c.round)).toEqual([
+			"group 1 of 2",
+			"group 2 of 2",
+			"final",
+		]);
 	});
 
 	test("the right tool of an early group is not lost to the options of later groups", async () => {

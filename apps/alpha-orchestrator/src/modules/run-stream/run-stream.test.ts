@@ -1,11 +1,19 @@
 import { describe, expect, test } from "bun:test";
 import type { RunPlanResult } from "@repo/core";
 import {
+	createRunLock,
+	InMemoryWorldStateStore,
+	reportingTrouble,
+} from "@repo/core";
+import { testDb } from "../database/database.testing.ts";
+import { RunBinding } from "../run-binding/run-binding.ts";
+import {
 	doneEvent,
 	errorMessage,
 	outcomeEvent,
 	toolCallEvent,
 } from "./run-stream.service.ts";
+import { streamPlanRun } from "./run-stream.ts";
 
 function result(overrides: Partial<RunPlanResult>): RunPlanResult {
 	return {
@@ -148,5 +156,73 @@ describe("errorMessage", () => {
 	test("uses the message of Errors and stringifies anything else", () => {
 		expect(errorMessage(new Error("boom"))).toBe("boom");
 		expect(errorMessage("plain")).toBe("plain");
+	});
+});
+
+describe("a model server in trouble", () => {
+	/** Streams one run whose preparation asks a model server that answers `statuses` in turn. */
+	async function lines(statuses: number[], lang?: string) {
+		const prepare = async () => {
+			for (const status of statuses) {
+				await reportingTrouble(
+					(async () => new Response("", { status })) as unknown as typeof fetch,
+				)("http://model");
+			}
+			return { state: {}, goal: {}, actions: [] };
+		};
+		const stream = streamPlanRun(
+			{
+				db: testDb(),
+				runs: new RunBinding(),
+				worldStateStore: new InMemoryWorldStateStore(),
+				runLock: createRunLock(),
+				now: Date.now,
+			},
+			{
+				run: { planRunId: "r", threadId: "t" },
+				signal: undefined,
+				prepare,
+				lang,
+			},
+		);
+		const text = await new Response(stream).text();
+		return text
+			.trim()
+			.split("\n")
+			.map((line) => JSON.parse(line))
+			.filter((line) => line.type === "step");
+	}
+
+	test("the visitor is told once that the answer may take longer, then that it answers again", async () => {
+		expect(await lines([429, 503, 200])).toEqual([
+			{
+				type: "step",
+				id: "serverTrouble",
+				phase: "running",
+				text: "Сервер перегружен, повторяю запрос — ответ может занять больше времени…",
+			},
+			{
+				type: "step",
+				id: "serverTrouble",
+				phase: "done",
+				text: "Сервер снова отвечает",
+			},
+		]);
+	});
+
+	test("in the visitor's language; a server that never recovers is said to be down", async () => {
+		expect(await lines([429], "en")).toEqual([
+			expect.objectContaining({ phase: "running" }),
+			{
+				type: "step",
+				id: "serverTrouble",
+				phase: "failed",
+				text: "The server is not answering",
+			},
+		]);
+	});
+
+	test("a healthy server says nothing", async () => {
+		expect(await lines([200, 200])).toEqual([]);
 	});
 });

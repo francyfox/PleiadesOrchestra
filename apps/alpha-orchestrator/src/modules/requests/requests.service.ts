@@ -321,15 +321,16 @@ export function getRequest(
 
 	const llmCalls = sqlite
 		.query<
-			Omit<RequestLlmCall, "ok" | "choices"> & {
+			Omit<RequestLlmCall, "ok" | "choices" | "failedStatuses"> & {
 				ok: number;
 				choices: string | null;
+				failedStatuses: string | null;
 			},
 			string[]
 		>(
 			`SELECT plan_run_id AS planRunId, action_name AS actionName, kind, provider, model,
 				input_tokens AS inputTokens, output_tokens AS outputTokens, latency_ms AS latencyMs,
-				ok, error, choices, at
+				ok, error, choices, prompt, response, attempts, failed_statuses AS failedStatuses, at
 			FROM llm_calls WHERE plan_run_id IN (${marks(runIds.length)}) ORDER BY at, id`,
 		)
 		.all(...runIds)
@@ -337,6 +338,9 @@ export function getRequest(
 			...call,
 			ok: call.ok === 1,
 			choices: call.choices ? JSON.parse(call.choices) : null,
+			failedStatuses: call.failedStatuses
+				? JSON.parse(call.failedStatuses)
+				: null,
 		}));
 
 	return {

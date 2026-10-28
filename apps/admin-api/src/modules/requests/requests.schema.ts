@@ -65,6 +65,11 @@ export const CallChoice = t.Object({
 	question: t.String(),
 	chosen: nullable(t.String()),
 	options: t.Record(t.String(), t.Number()),
+	/** What was asked: the state the model read, the instructions, each option's text. */
+	state: t.Optional(t.Unknown()),
+	instructions: t.Optional(t.String()),
+	criteria: t.Optional(t.Record(t.String(), t.String())),
+	round: t.Optional(t.String()),
 });
 
 export const UpstreamLlmCall = t.Object({
@@ -79,6 +84,10 @@ export const UpstreamLlmCall = t.Object({
 	ok: t.Boolean(),
 	error: nullable(t.String()),
 	choices: t.Optional(nullable(t.Array(CallChoice))),
+	prompt: t.Optional(nullable(t.String())),
+	response: t.Optional(nullable(t.String())),
+	attempts: t.Optional(nullable(t.Number())),
+	failedStatuses: t.Optional(nullable(t.Array(t.Number()))),
 	at: t.Number(),
 });
 
@@ -135,6 +144,34 @@ export const NodeCall = t.Object({
 	error: nullable(t.String()),
 	/** Every choice the call answered with all its probabilities; null for calls that decide nothing. */
 	choices: nullable(t.Array(CallChoice)),
+	/** What was sent (JSON `[{role, content}]`) and the raw answer; null when not kept. */
+	prompt: nullable(t.String()),
+	response: nullable(t.String()),
+	/** HTTP attempts the call took and the status of each failed one (0 = no response); null = not measured. */
+	attempts: nullable(t.Number()),
+	failedStatuses: nullable(t.Array(t.Number())),
+});
+
+/** What alpha-understand read: the message in English and its tasks. */
+export const Understood = t.Object({
+	en: t.String(),
+	tasks: t.Array(
+		t.Object({
+			intent: t.String(),
+			text: t.String(),
+			items: t.Array(t.Object({ name: t.String(), quantity: t.Number() })),
+			attributes: t.Array(t.Object({ name: t.String(), value: t.String() })),
+		}),
+	),
+});
+
+/** The plan the planner chose, and the actions it could have used instead. */
+export const NodePlan = t.Object({
+	steps: t.Array(t.Object({ name: t.String(), cost: t.Number() })),
+	totalCost: t.Number(),
+	alternatives: t.Array(
+		t.Object({ name: t.String(), cost: t.Number(), why: t.String() }),
+	),
 });
 
 export const NodeDetail = t.Object({
@@ -149,7 +186,21 @@ export const NodeDetail = t.Object({
 	browserMs: nullable(t.Number()),
 	expected: nullable(WorldState),
 	effects: nullable(WorldState),
+	/** Facts this step changed in the world state; `before` is null for a fact that was not there. */
+	changes: nullable(
+		t.Array(
+			t.Object({
+				key: t.String(),
+				before: nullable(t.Union([t.Boolean(), t.Number(), t.String()])),
+				after: t.Union([t.Boolean(), t.Number(), t.String()]),
+			}),
+		),
+	),
+	/** The plan chosen at the start of this node's round (understand node: the first plan; a replan: the round's first step). */
+	plan: nullable(NodePlan),
 	error: nullable(t.String()),
+	/** The understand node only: alpha-understand's answer, parsed. */
+	understood: nullable(Understood),
 	calls: t.Array(NodeCall),
 });
 
@@ -189,6 +240,8 @@ export type UpstreamRequestDetails = Static<typeof UpstreamRequestDetails>;
 export type NodeStatus = Static<typeof NodeStatus>;
 export type CallChoice = Static<typeof CallChoice>;
 export type NodeCall = Static<typeof NodeCall>;
+export type Understood = Static<typeof Understood>;
+export type NodePlan = Static<typeof NodePlan>;
 export type NodeDetail = Static<typeof NodeDetail>;
 export type RequestNode = Static<typeof RequestNode>;
 export type RequestEdge = Static<typeof RequestEdge>;

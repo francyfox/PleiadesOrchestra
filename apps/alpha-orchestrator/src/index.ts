@@ -59,6 +59,10 @@ const app = createApp({
 	decisionAgent: withChoiceReport(
 		withEnglishOnly(decisionAgent, { translate: translateWithAlpha }),
 	),
+	decisionModel: () => {
+		const { provider, model } = agentSettings.effective("gamma-decision");
+		return { provider: provider ?? "laya", model };
+	},
 	layaAutoApproveConfidence: config.LAYA_AUTO_APPROVE_CONFIDENCE,
 	productRequestAgent,
 	functionCallAgent,
