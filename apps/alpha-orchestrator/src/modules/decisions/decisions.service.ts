@@ -1,2 +1,2 @@
-/** The calibration table was fitted on Laya's probabilities; TypeSafe's hosted Jev (`jev-*`) is a different model, so its probabilities stay as they are. */
-export const usesLayaCalibration = (model: string) => !model.startsWith("jev");
+/** The calibration table was fitted on Laya's probabilities; any other decision model (Jev, d1, pplx-decider…) keeps its probabilities as they are. */
+export const usesLayaCalibration = (model: string) => model.startsWith("laya");

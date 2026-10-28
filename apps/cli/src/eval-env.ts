@@ -1,3 +1,24 @@
+import { dirname } from "node:path";
+
+/**
+ * `packages/core/` of the checkout: next to albedo's source, else in the
+ * working directory or above (a compiled albedo has a virtual import.meta.url).
+ */
+export async function findCore(
+	cwd: string,
+	exists = (path: string) => Bun.file(path).exists(),
+): Promise<string | undefined> {
+	const dirs = [new URL("../../../packages/core/", import.meta.url).pathname];
+	for (let dir = cwd; ; dir = dirname(dir)) {
+		dirs.push(`${dir === "/" ? "" : dir}/packages/core/`);
+		if (dir === dirname(dir)) break;
+	}
+	for (const dir of dirs) {
+		if (await exists(`${dir}eval/intents.ts`)) return dir;
+	}
+	return undefined;
+}
+
 interface Settings {
 	baseUrl: string;
 	apiKey: string;

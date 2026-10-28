@@ -1,9 +1,7 @@
 import { defineCommand, option } from "@bunli/core";
 import { $ } from "bun";
 import { z } from "zod";
-import { evalEnv } from "../eval-env.ts";
-
-const CORE = new URL("../../../../packages/core/", import.meta.url).pathname;
+import { evalEnv, findCore } from "../eval-env.ts";
 
 export default defineCommand({
 	name: "eval",
@@ -19,11 +17,14 @@ export default defineCommand({
 		}),
 	},
 	handler: async ({ flags }) => {
-		const script = `${CORE}eval/${flags.name}.ts`;
-		if (!(await Bun.file(script).exists())) {
-			console.error(`${script} not found: run albedo from the repo checkout`);
+		const core = await findCore(process.cwd());
+		if (!core) {
+			console.error(
+				"packages/core/eval not found: run albedo inside the repo checkout",
+			);
 			process.exit(1);
 		}
+		const script = `${core}eval/${flags.name}.ts`;
 		// -T: no TTY under Bun's shell; -p: works from any directory, no compose file needed.
 		const settings =
 			await $`docker compose -p pleiades-orchestra exec -T alpha-orchestrator alpha-orchestrator agent:settings`
@@ -36,12 +37,12 @@ export default defineCommand({
 			process.exit(settings.exitCode);
 		}
 		const env = evalEnv(settings.stdout.toString());
-		console.error(
+		console.log(
 			`decision ${env.DECISION_MODEL} @ ${env.DECISION_BASE_URL}\nfunction call ${env.FUNCTION_CALL_MODEL} @ ${env.FUNCTION_CALL_BASE_URL}`,
 		);
 		const { exitCode } =
 			await $`bun ${script} ${flags.misses ? ["--misses"] : []}`
-				.cwd(CORE)
+				.cwd(core)
 				.env({ ...process.env, ...env })
 				.nothrow();
 		process.exit(exitCode);

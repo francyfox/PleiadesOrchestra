@@ -1,5 +1,17 @@
 import { describe, expect, test } from "bun:test";
-import { evalEnv } from "./eval-env.ts";
+import { evalEnv, findCore } from "./eval-env.ts";
+
+describe("findCore", () => {
+	test("found from any directory of the checkout, nothing outside it", async () => {
+		const exists = async (path: string) =>
+			path === "/repo/packages/core/eval/intents.ts";
+		expect(await findCore("/repo/apps/cli", exists)).toBe(
+			"/repo/packages/core/",
+		);
+		expect(await findCore("/repo", exists)).toBe("/repo/packages/core/");
+		expect(await findCore("/elsewhere", exists)).toBeUndefined();
+	});
+});
 
 describe("evalEnv", () => {
 	const settings = {
