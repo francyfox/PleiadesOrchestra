@@ -17,7 +17,7 @@
 	];
 </script>
 
-<Pane title="guest@pleiades — security and money" header={false} id="security" class="lg:col-span-2">
+<Pane title="guest@pleiades — security and money" header={false} id="security">
 	<h2 class="text-xl font-bold">{t.heading}</h2>
 	<p class="mt-2 max-w-3xl text-sm" style:color="var(--dim)">{t.lead}</p>
 

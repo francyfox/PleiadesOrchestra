@@ -175,4 +175,65 @@ describe("createHarnessClient", () => {
 			`${BASE_URL}/v1/threads/${encodeURIComponent("thread/with slash")}/reset`,
 		);
 	});
+
+	test("complete asks one agent's model through /v1/chat/completions", async () => {
+		let captured: { url: string; body: unknown } | undefined;
+		const client = createHarnessClient({
+			baseURL: BASE_URL,
+			apiKey: API_KEY,
+			fetchImpl: fakeFetch((input, init) => {
+				captured = { url: String(input), body: JSON.parse(String(init?.body)) };
+				return Response.json({
+					choices: [{ message: { content: "Hello" } }],
+					usage: { prompt_tokens: 3, completion_tokens: 1 },
+				});
+			}),
+		});
+
+		const answer = await client.complete("delta-function-call", "hi");
+
+		expect(captured).toEqual({
+			url: `${BASE_URL}/v1/chat/completions`,
+			body: {
+				model: "delta-function-call",
+				messages: [{ role: "user", content: "hi" }],
+			},
+		});
+		expect(answer).toEqual({ text: "Hello", inputTokens: 3, outputTokens: 1 });
+	});
+
+	test("decide posts the state and questions to /v1/decisions", async () => {
+		let captured: { url: string; body: unknown } | undefined;
+		const client = createHarnessClient({
+			baseURL: BASE_URL,
+			apiKey: API_KEY,
+			fetchImpl: fakeFetch((input, init) => {
+				captured = { url: String(input), body: JSON.parse(String(init?.body)) };
+				return Response.json({
+					answers: { q: { type: "boolean", value: true, probability: 0.9 } },
+				});
+			}),
+		});
+		const questions = { q: { type: "boolean", instructions: "Is it?" } };
+
+		const answers = await client.decide("state", questions);
+
+		expect(captured).toEqual({
+			url: `${BASE_URL}/v1/decisions`,
+			body: { state: "state", questions },
+		});
+		expect(answers).toEqual({
+			q: { type: "boolean", value: true, probability: 0.9 },
+		});
+	});
+
+	test("complete and decide throw on an error status", async () => {
+		const client = createHarnessClient({
+			baseURL: BASE_URL,
+			apiKey: API_KEY,
+			fetchImpl: fakeFetch(() => new Response("nope", { status: 502 })),
+		});
+		await expect(client.complete("beta-text", "hi")).rejects.toThrow("502");
+		await expect(client.decide("s", {})).rejects.toThrow("502");
+	});
 });

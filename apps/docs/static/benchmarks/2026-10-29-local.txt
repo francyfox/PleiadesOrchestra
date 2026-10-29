@@ -1,0 +1,63 @@
+Pleiades efficiency benchmark
+beta alone: 3/3 iterations
+orchestra + beta: 3/3 iterations
+at 2026-10-29T17:10:16.689Z, shop seed 1, 3 iterations of every case (averages below), cost: each call at its model's OpenRouter price, a model without one at $0.05 in / $0.08 out per 1M tokens
+
+setup
+  beta alone: qvikhr-3-4b, temperature 0
+  orchestra + beta:
+    beta-text: qvikhr-3-4b, temperature 0 (was 0.3)
+    delta-function-call: qvikhr-3-4b, temperature 0 (was 0.3)
+    gamma-decision: d3-lite, temperature n/a
+    alpha-understand: qvikhr-3-4b, temperature 0
+
+metric                     beta alone  orchestra + beta
+case runs                  42          42
+errors                     0           0
+success                    86%         100%
+latency p50                0.91 s      2.22 s
+latency mean               1.02 s      2.08 s
+steps / case               3.0         5.9
+  model calls              2.0         3.9
+  tool calls               1.0         2.0
+input tokens / iteration   14286       34706
+output tokens / iteration  807         1093
+cost / iteration           $0.000779   $0.001823
+cost / success             $0.000065   $0.000130
+
+tokens of beta alone: every call of the model (usage of each step)
+tokens of orchestra + beta: every model call of the request (Laya, delta, alpha-understand, beta) from /v1/admin/requests
+
+== beta alone
+case             ok   errors  time    model  tools  tokens  reply / error
+add-one          3/3  0       1.00 s  2.0    1.0    1059    The item "Handmade Plastic Bacon" has been added to your cart. You now have 1 item.
+add-count        3/3  0       0.95 s  2.0    1.0    1060    The gloves have been added to your cart. You now have 3 Handcrafted Marble Gloves.
+add-list         3/3  0       1.65 s  2.0    1.0    1166    Your cart now contains 1 Handmade Marble Car, 1 Small Steel Bike, and 1 Tasty Granite Salad. Let me
+price            3/3  0       0.78 s  2.0    1.0    1105    The Tasty Granite Salad costs $206.59.
+remove-one       3/3  0       0.87 s  2.0    1.0    1041    The item "Handmade Plastic Bacon" has been successfully removed from your cart.
+remove-all       0/3  0       0.87 s  2.0    1.0    1036    I can't remove all items at once. Could you please specify which products you want to remove?
+out-of-stock     3/3  0       1.07 s  2.0    1.0    1062    The product "Small Metal Shirt" is currently out of stock. Would you like to check another item or t
+add-one-ru       3/3  0       0.90 s  2.0    1.0    1059    Продукт Handmade Plastic Bacon добавлен в корзину.
+add-count-ru     3/3  0       1.02 s  2.0    1.0    1074    Товары успешно добавлены в корзину: 3 шт. Handcrafted Marble Gloves.
+add-list-ru      3/3  0       1.83 s  2.0    1.0    1184    Ваша корзина обновлена: 1 × Handmade Marble Car 1 × Small Steel Bike 1 × Tasty Granite Salad Если ну
+price-ru         3/3  0       0.77 s  2.0    1.0    1104    Tasty Granite Salad costs $206.59.
+remove-one-ru    3/3  0       0.87 s  2.0    1.0    1048    Продукт "Handmade Plastic Bacon" успешно удален из корзины.
+remove-all-ru    0/3  0       0.70 s  2.0    1.0    1030    Корзина пуста.
+out-of-stock-ru  3/3  0       1.04 s  2.0    1.0    1065    Product "Small Metal Shirt" is currently out of stock. Would you like to check another item or look
+
+== orchestra + beta
+case             ok   errors  time    model  tools  tokens  reply / error
+add-one          3/3  0       1.59 s  4.0    2.0    2624    Added to your cart: 1 × Handmade Plastic Bacon.
+add-count        3/3  0       2.44 s  4.0    2.0    2674    Added to your cart: 3 × Handcrafted Marble Gloves.
+add-list         3/3  0       3.13 s  5.0    4.0    3198    Added to your cart: 1 × Handmade Marble Car, 1 × Small Steel Bike, 1 × Tasty Granite Salad.
+price            3/3  0       2.81 s  4.0    1.0    2858    Tasty Granite Salad costs $206.59. 1. Add to cart 2. View details 3. Proceed to checkout
+remove-one       3/3  0       1.70 s  4.0    1.0    2522    Removed Handmade Plastic Bacon. 1. Proceed to checkout.
+remove-all       3/3  0       0.83 s  2.0    3.0    1384    Removed from your cart: 1 × Handmade Marble Car, 2 × Small Steel Bike.
+out-of-stock     3/3  0       2.21 s  4.0    1.0    2610    The product "Small Metal Shirt" is out of stock. Try "Small Steel Bike" at $52.69 or "Oriental Metal
+add-one-ru       3/3  0       1.76 s  4.0    2.0    2670    Добавил в корзину: 1 × Handmade Plastic Bacon.
+add-count-ru     3/3  0       2.43 s  4.0    2.0    2682    Добавил в корзину: 3 × Handcrafted Marble Gloves.
+add-list-ru      3/3  0       3.06 s  5.0    4.0    3203    Добавил в корзину: 1 × Handmade Marble Car, 1 × Small Steel Bike, 1 × Tasty Granite Salad.
+price-ru         3/3  0       2.43 s  4.0    1.0    2825    Tasty Granite Salad — $206.59 (in stock)
+remove-one-ru    3/3  0       1.68 s  4.0    1.0    2531    Removed Handmade Plastic Bacon. 1. Proceed with checkout.
+remove-all-ru    3/3  0       0.81 s  2.0    3.0    1385    Убрал из корзины: 1 × Handmade Marble Car, 2 × Small Steel Bike.
+out-of-stock-ru  3/3  0       2.25 s  4.0    1.0    2633    The product "Small Metal Shirt" is out of stock. Try "Small Steel Bike" at $52.69 or "Oriental Metal

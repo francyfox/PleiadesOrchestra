@@ -336,14 +336,15 @@ describe("FUNCTION_CALL_SYSTEM_PROMPT", () => {
 		);
 	});
 
-	test("its examples come from different domains", () => {
+	test("its examples stay clear of the measured cases", () => {
 		const examples = FUNCTION_CALL_SYSTEM_PROMPT.split("\n").filter((line) =>
 			line.startsWith("Request:"),
 		);
 		expect(examples.length).toBeGreaterThanOrEqual(4);
-		expect(FUNCTION_CALL_SYSTEM_PROMPT).toMatch(/laptop|headphones/i);
-		expect(FUNCTION_CALL_SYSTEM_PROMPT).toMatch(/hotel|flight|room/i);
-		expect(FUNCTION_CALL_SYSTEM_PROMPT).toMatch(/jacket|shirt|shoes/i);
+		// Words of the benchmark/eval cases and demo sites: an example matching one inflates its score.
+		expect(examples.join("\n")).not.toMatch(
+			/laptop|headphones|hotel|flight|jacket|shirt|size M|book|stay|curry|USB|cart|in stock/i,
+		);
 	});
 });
 

@@ -144,3 +144,17 @@ html body {
 	padding-block: 0.25rem;
 	margin-block: 0;
 }
+
+/* A raw <a> in a page (links to static files, see CLAUDE.md) styled like the theme's scoped Link. */
+:root .content a:not([class]) {
+	color: var(--svp-primary);
+	font-weight: 500;
+	text-decoration: underline;
+	text-decoration-thickness: 1px;
+	text-underline-offset: 3px;
+	text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+	transition: text-decoration-color 0.2s;
+}
+:root .content a:not([class]):hover {
+	text-decoration-color: currentColor;
+}

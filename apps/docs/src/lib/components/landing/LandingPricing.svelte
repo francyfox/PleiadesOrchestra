@@ -22,7 +22,7 @@
 	const cloudPrice = "$20";
 </script>
 
-<Pane title="guest@pleiades — pricing" header={false} class="lg:col-span-2" id="pricing">
+<Pane title="guest@pleiades — pricing" header={false} id="pricing">
 	<h2 class="text-xl font-bold">{t.heading}</h2>
 
 	<div class="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">

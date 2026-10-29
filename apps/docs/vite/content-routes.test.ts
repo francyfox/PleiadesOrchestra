@@ -7,9 +7,9 @@ import {
 	buildPage,
 	cleanMarkdown,
 	contentRouteFile,
-	DRAFTS_DIR,
 	folderRedirects,
 	headingSlugs,
+	isEnglishOnly,
 	listMarkdown,
 	llmsFiles,
 	loadContent,
@@ -174,7 +174,7 @@ describe("buildPage", () => {
 describe("translations mirror English", () => {
 	const en = new Map(
 		[...(content.get(DEFAULT_LOCALE) ?? [])].filter(
-			([rel]) => !rel.startsWith(DRAFTS_DIR),
+			([rel]) => !isEnglishOnly(rel),
 		),
 	);
 

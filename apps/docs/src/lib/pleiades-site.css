@@ -19,6 +19,7 @@
 	--danger: var(--destructive);
 	/* Height of the SveltePress navbar above the page. */
 	--po-nav: 73px;
+	--gradient-panel: linear-gradient(var(--accent), var(--fg));
 
 	/* Transparent: the page background (glows + photo) from docs-theme.css shows through. */
 	color: var(--fg);
@@ -96,6 +97,14 @@
 }
 
 /* Plain text links: the underline fills in like a progress bar. */
+/* A full-width landing section keeps its content here (max-w-7xl, a 0.5rem gutter on each side).
+ * Scoped: Uno and Tailwind each have a `.container` utility of their own. */
+.po-site .container {
+	width: 100%;
+	max-width: min(80rem, calc(100% - 1rem));
+	margin-inline: auto;
+}
+
 .po-site .link-underline {
 	position: relative;
 	text-decoration: none;

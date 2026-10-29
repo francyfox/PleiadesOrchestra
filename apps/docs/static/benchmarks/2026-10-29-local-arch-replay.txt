@@ -1,0 +1,13 @@
+Replay of results/efficiency/clean-local-2026-10-29 at 2026-10-29T18:00:32.429Z on a local llama-server router
+Every language-model call replayed on a warm model (grouped by model, the first call of a model untimed), generating its recorded output length; code, tools and decision calls kept as recorded.
+
+case runs  42
+success    100% (42/42; the recorded run, minus runs where arch-function-3b answered a delta call differently)
+latency p50  1.61 s warm  (2.22 s recorded, model swaps included)
+latency mean 1.67 s warm  (2.08 s recorded)
+
+model calls (warm):
+  qvikhr-3-4b: 60 calls, p50 763 ms, mean 810 ms
+  arch-function-3b: 60 calls, p50 307 ms, mean 336 ms
+
+delta answers of arch-function-3b unlike the recorded ones: 0

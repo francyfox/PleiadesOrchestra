@@ -17,6 +17,12 @@ export type PageSet = Map<string, string>;
 
 /** English-only working notes (`content/en/drafts/`): not translated, so translations don't mirror them. */
 export const DRAFTS_DIR = "drafts/";
+/** English-only benchmark results (`content/en/benchmarks/`): numbers and setups, not translated either. */
+export const BENCHMARKS_DIR = "benchmarks/";
+
+/** A page that exists only in English: translations don't mirror it. */
+export const isEnglishOnly = (rel: string) =>
+	rel.startsWith(DRAFTS_DIR) || rel.startsWith(BENCHMARKS_DIR);
 
 /**
  * SveltePress renders pages only from `src/routes/**\/+page.md`. The docs pages are

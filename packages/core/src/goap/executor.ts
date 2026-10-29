@@ -11,6 +11,9 @@ import type {
 	WorldState,
 } from "#core/goap/types";
 
+// Epoch ms with a fraction: code steps (planning, a template reply) take microseconds.
+const preciseNow = () => performance.timeOrigin + performance.now();
+
 export interface RunPlanOptions {
 	state: WorldState;
 	goal: Goal;
@@ -284,7 +287,7 @@ async function attempt(
 					action: action.name,
 				});
 				reportStep(run, action, waveState, "running");
-				const actionStartedAt = Date.now();
+				const actionStartedAt = preciseNow();
 				try {
 					// Live state as of this wave, not just what was true when this
 					// attempt started — earlier waves' real effects are already in it.
@@ -299,7 +302,7 @@ async function attempt(
 						type: "action_failed",
 						attempt: attemptIndex,
 						action: action.name,
-						durationMs: Date.now() - actionStartedAt,
+						durationMs: preciseNow() - actionStartedAt,
 						error: error instanceof Error ? error.message : String(error),
 					});
 					throw error;
@@ -329,7 +332,7 @@ async function attempt(
 				type: "action_finished",
 				attempt: attemptIndex,
 				action: action.name,
-				durationMs: Date.now() - actionStartedAt,
+				durationMs: preciseNow() - actionStartedAt,
 				expectedEffects: action.effects,
 				observedEffects,
 			});
@@ -420,7 +423,7 @@ export async function runPlan(options: RunPlanOptions): Promise<RunPlanResult> {
 		maxActionFailures,
 		onStep,
 	} = options;
-	const startedAt = Date.now();
+	const startedAt = preciseNow();
 	const run: Run = {
 		goal,
 		actions,
@@ -435,7 +438,7 @@ export async function runPlan(options: RunPlanOptions): Promise<RunPlanResult> {
 			if (!tracer) return;
 			// Tracing is observability — a buggy tracer must never change the run.
 			try {
-				tracer({ ...event, at: Date.now() } as PlanTraceEvent);
+				tracer({ ...event, at: preciseNow() } as PlanTraceEvent);
 			} catch {}
 		},
 	};
@@ -444,7 +447,7 @@ export async function runPlan(options: RunPlanOptions): Promise<RunPlanResult> {
 			type: "finished",
 			succeeded,
 			attempts: run.attempts,
-			durationMs: Date.now() - startedAt,
+			durationMs: preciseNow() - startedAt,
 		});
 
 	try {

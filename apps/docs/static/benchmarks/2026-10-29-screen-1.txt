@@ -1,0 +1,75 @@
+Pleiades efficiency benchmark
+PARTIAL REPORT: the run is not finished (interrupted, stopped or still going); averages cover what is done
+anthropic/claude-haiku-5.5: 1/1 iterations
+openai/gpt-6-luna: 1/1 iterations
+google/gemini-2.5-flash-lite: 1/1 iterations
+deepseek/deepseek-v4-flash: 0/1 iterations
+mistralai/mistral-small-2603: 0/1 iterations
+qwen/qwen3.7-flash: 0/1 iterations
+at 2026-10-29T07:58:18.331Z, shop seed 1, 1 iterations of every case (averages below), cost: each call at its model's OpenRouter price, a model without one at $0.05 in / $0.08 out per 1M tokens
+
+setup
+
+metric                     anthropic/claude-haiku-5.5  openai/gpt-6-luna  google/gemini-2.5-flash-lite  deepseek/deepseek-v4-flash  mistralai/mistral-small-2603  qwen/qwen3.7-flash
+case runs                  14                          14                 6                             -                           -                             -
+errors                     0                           0                  6                             -                           -                             -
+success                    100%                        100%               0%                            -                           -                             -
+latency p50                5.52 s                      3.96 s             0.00 s                        -                           -                             -
+latency mean               5.52 s                      4.12 s             0.00 s                        -                           -                             -
+steps / case               3.4                         4.7                0.0                           -                           -                             -
+  model calls              2.1                         2.6                0.0                           -                           -                             -
+  tool calls               1.3                         2.1                0.0                           -                           -                             -
+input tokens / iteration   26276                       11814              0                             -                           -                             -
+output tokens / iteration  1916                        1126               0                             -                           -                             -
+cost / iteration           $0.003586                   $0.001744          $0.000000                     -                           -                             -
+cost / success             $0.000256                   $0.000125          -                             -                           -                             -
+
+tokens of anthropic/claude-haiku-5.5: every call of the model (usage of each step)
+tokens of openai/gpt-6-luna: every call of the model (usage of each step)
+tokens of google/gemini-2.5-flash-lite: every call of the model (usage of each step)
+tokens of deepseek/deepseek-v4-flash: every call of the model (usage of each step)
+tokens of mistralai/mistral-small-2603: every call of the model (usage of each step)
+tokens of qwen/qwen3.7-flash: every call of the model (usage of each step)
+
+== anthropic/claude-haiku-5.5
+case             ok   errors  time    model  tools  tokens  reply / error
+add-one          1/1  0       5.61 s  2.0    1.0    1796    I've added one Handmade Plastic Bacon to your cart.
+add-count        1/1  0       4.30 s  2.0    1.0    1810    I've added 3 Handcrafted Marble Gloves to your cart.
+add-list         1/1  0       5.87 s  2.0    1.0    1971    I've added the Handmade Marble Car, the Small Steel Bike, and the Tasty Granite Salad to your cart,
+price            1/1  0       5.54 s  2.0    1.0    1850    Tasty Granite Salad costs $206.59 and is in stock.
+remove-one       1/1  0       5.52 s  2.0    1.0    1808    I've removed Handmade Plastic Bacon from your cart.
+remove-all       1/1  0       6.69 s  3.0    3.0    3022    I've removed everything from your cart: the Handmade Marble Car and the 2 Small Steel Bikes.
+out-of-stock     1/1  0       5.11 s  2.0    1.0    1810    I couldn't add the Small Metal Shirt because it's out of stock. Would you like me to search for a si
+add-one-ru       1/1  0       5.35 s  2.0    1.0    1807    Я добавил в корзину 1 шт. Handmade Plastic Bacon.
+add-count-ru     1/1  0       4.13 s  2.0    1.0    1814    Я добавил 3 Handcrafted Marble Gloves в корзину.
+add-list-ru      1/1  0       4.58 s  2.0    1.0    1976    В корзину добавлены по одной штуке: Handmade Marble Car, Small Steel Bike и Tasty Granite Salad.
+price-ru         1/1  0       5.90 s  2.0    1.0    1857    Tasty Granite Salad стоит $206.59 и есть в наличии.
+remove-one-ru    1/1  0       6.31 s  2.0    1.0    1807    Handmade Plastic Bacon удалён из корзины.
+remove-all-ru    1/1  0       7.47 s  3.0    3.0    3044    Корзина пуста: я удалил из неё Handmade Marble Car (1 шт.) и Small Steel Bike (2 шт.).
+out-of-stock-ru  1/1  0       4.86 s  2.0    1.0    1820    Я не смог добавить Small Metal Shirt в корзину, так как этого товара нет в наличии. Могу поискать по
+
+== openai/gpt-6-luna
+case             ok   errors  time    model  tools  tokens  reply / error
+add-one          1/1  0       4.23 s  3.0    2.0    988     Added 1 × Handmade Plastic Bacon to your cart.
+add-count        1/1  0       3.96 s  3.0    2.0    1002    Added 3 Handcrafted Marble Gloves to your cart.
+add-list         1/1  0       5.83 s  3.0    4.0    1577    Added one each of the Handmade Marble Car, Small Steel Bike, and Tasty Granite Salad to your cart.
+price            1/1  0       2.96 s  2.0    1.0    588     Tasty Granite Salad costs $206.59.
+remove-one       1/1  0       4.78 s  3.0    2.0    890     Handmade Plastic Bacon has been removed from your cart.
+remove-all       1/1  0       5.06 s  3.0    3.0    955     Your cart is now empty.
+out-of-stock     1/1  0       3.27 s  2.0    1.0    621     Small Metal Shirt is out of stock, so I couldn’t add it to your cart.
+add-one-ru       1/1  0       3.96 s  3.0    2.0    999     Добавил Handmade Plastic Bacon в корзину — 1 шт. за $45.79.
+add-count-ru     1/1  0       3.61 s  3.0    2.0    1010    Добавил в корзину 3 пары Handcrafted Marble Gloves.
+add-list-ru      1/1  0       4.46 s  3.0    4.0    1563    Добавил в корзину по одному: Handmade Marble Car, Small Steel Bike и Tasty Granite Salad.
+price-ru         1/1  0       2.88 s  2.0    1.0    586     Tasty Granite Salad стоит $206.59.
+remove-one-ru    1/1  0       3.77 s  2.0    1.0    549     Handmade Plastic Bacon удалён из корзины.
+remove-all-ru    1/1  0       4.69 s  3.0    3.0    978     Корзина очищена — все товары удалены.
+out-of-stock-ru  1/1  0       4.27 s  2.0    1.0    634     Small Metal Shirt отсутствует в наличии, поэтому добавить его в корзину не удалось.
+
+== google/gemini-2.5-flash-lite
+case        ok   errors  time    model  tools  tokens  reply / error
+add-one     0/0  1       0.00 s  0.0    0.0    0       HTTP 404 https://openrouter.ai/api/v1/chat/completions: {"error":{"message":"Provider returned error
+add-count   0/0  1       0.00 s  0.0    0.0    0       HTTP 404 https://openrouter.ai/api/v1/chat/completions: {"error":{"message":"Provider returned error
+add-list    0/0  1       0.00 s  0.0    0.0    0       HTTP 404 https://openrouter.ai/api/v1/chat/completions: {"error":{"message":"Provider returned error
+price       0/0  1       0.00 s  0.0    0.0    0       HTTP 404 https://openrouter.ai/api/v1/chat/completions: {"error":{"message":"Provider returned error
+remove-one  0/0  1       0.00 s  0.0    0.0    0       HTTP 404 https://openrouter.ai/api/v1/chat/completions: {"error":{"message":"Provider returned error
+remove-all  0/0  1       0.00 s  0.0    0.0    0       HTTP 404 https://openrouter.ai/api/v1/chat/completions: {"error":{"message":"Provider returned error

@@ -22,11 +22,11 @@
 	} = $props();
 </script>
 
-<section
-	{id}
-	class="flex min-h-0 flex-col border {className}"
+<!-- The section spans the page; its box (border, header, content) sits in the .container. -->
+<section {id} class="w-full" aria-label={title}>
+<div
+	class="container flex min-h-0 flex-col border {className}"
 	style:border-color={focused ? 'var(--accent)' : 'var(--rule)'}
-	aria-label={title}
 >
 	{#if header}
 	<div
@@ -43,4 +43,5 @@
 	<div class="min-h-0 flex-1 {flush ? '' : 'p-4'} {scroll ? 'overflow-auto' : 'overflow-hidden'}">
 		{@render children()}
 	</div>
+</div>
 </section>

@@ -78,6 +78,57 @@ export function createHarnessClient(config: HarnessClientConfig) {
 			}
 		},
 
+		/** One message straight to a language agent's model (`model` = the agent id), no planner. */
+		async complete(
+			agent: string,
+			text: string,
+		): Promise<{ text: string; inputTokens?: number; outputTokens?: number }> {
+			const response = await fetchImpl(
+				`${config.baseURL}/v1/chat/completions`,
+				{
+					method: "POST",
+					headers,
+					body: JSON.stringify({
+						model: agent,
+						messages: [{ role: "user", content: text }],
+					}),
+				},
+			);
+			if (!response.ok) {
+				throw new Error(
+					`harness complete failed: ${response.status} ${response.statusText}`,
+				);
+			}
+			const body = (await response.json()) as {
+				choices?: { message?: { content?: string } }[];
+				usage?: { prompt_tokens?: number; completion_tokens?: number };
+			};
+			return {
+				text: body.choices?.[0]?.message?.content ?? "",
+				inputTokens: body.usage?.prompt_tokens,
+				outputTokens: body.usage?.completion_tokens,
+			};
+		},
+
+		/** Typed decision questions answered by the decision agent (gamma). */
+		async decide(
+			state: unknown,
+			questions: Record<string, unknown>,
+		): Promise<Record<string, unknown>> {
+			const response = await fetchImpl(`${config.baseURL}/v1/decisions`, {
+				method: "POST",
+				headers,
+				body: JSON.stringify({ state, questions }),
+			});
+			if (!response.ok) {
+				throw new Error(
+					`harness decide failed: ${response.status} ${response.statusText}`,
+				);
+			}
+			return ((await response.json()) as { answers: Record<string, unknown> })
+				.answers;
+		},
+
 		async resetThread(threadId: string): Promise<void> {
 			const response = await fetchImpl(
 				`${config.baseURL}/v1/threads/${encodeURIComponent(threadId)}/reset`,

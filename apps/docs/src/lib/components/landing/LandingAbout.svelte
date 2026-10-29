@@ -7,7 +7,7 @@
 	let t = $derived(landingContent(localeFromPath(page.url.pathname)).about);
 </script>
 
-<Pane title="guest@pleiades — about" header={false} id="about" class="lg:col-span-2">
+<Pane title="guest@pleiades — about" header={false} id="about">
 	<h2 class="text-xl font-bold">{t.heading}</h2>
 	<p class="mt-2 max-w-3xl text-sm">{t.text}</p>
 

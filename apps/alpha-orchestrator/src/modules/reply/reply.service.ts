@@ -419,7 +419,8 @@ export async function prepareNewMessage(
 		threadId,
 		userId: visitor.id,
 		planRunId,
-		latencyMs: Math.round(performance.now() - startedAt),
+		// Unrounded: rules and site memory decide in microseconds.
+		latencyMs: performance.now() - startedAt,
 	});
 	// Only what Laya decided is kept for a person to judge: the words are
 	// rules, and memory is already what a person approved.
@@ -724,7 +725,7 @@ async function prepareByTool(
 			threadId: run.threadId,
 			userId: visitor.id,
 			planRunId: run.planRunId,
-			latencyMs: Math.round(performance.now() - startedAt),
+			latencyMs: performance.now() - startedAt,
 		},
 	);
 	if (choice.kind === "tool" && asked) {

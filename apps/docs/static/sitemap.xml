@@ -73,6 +73,14 @@
     <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/api/widget/"/>
   </url>
   <url>
+    <loc>/docs/benchmarks/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="/docs/benchmarks/"/>
+  </url>
+  <url>
+    <loc>/docs/benchmarks/overview/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="/docs/benchmarks/overview/"/>
+  </url>
+  <url>
     <loc>/docs/drafts/</loc>
     <xhtml:link rel="alternate" hreflang="en" href="/docs/drafts/"/>
   </url>

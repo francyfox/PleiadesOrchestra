@@ -38,6 +38,13 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			ORCHESTRA_PUBLISHABLE_KEY: z.string().optional(),
 			ORCHESTRA_ORIGIN: z.string().optional(),
 			ORCHESTRA_ADMIN_API_KEY: z.string().optional(),
+			// `bun replay`: the OpenAI-compatible server of the local models (a llama-server
+			// router, `/v1` included) and its key.
+			REPLAY_BASE_URL: z
+				.url()
+				.transform((url) => url.replace(/\/+$/, ""))
+				.optional(),
+			REPLAY_API_KEY: z.string().optional(),
 		},
 		runtimeEnv: env,
 		emptyStringAsUndefined: true,

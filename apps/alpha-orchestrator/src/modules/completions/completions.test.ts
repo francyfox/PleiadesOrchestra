@@ -62,6 +62,38 @@ describe("POST /v1/chat/completions", () => {
 		});
 	});
 
+	test("a `model` naming a language agent asks that agent's model; anything else stays on beta", async () => {
+		const asked: string[] = [];
+		const app = completionsRoutes({
+			settings: {
+				effective: (id) => {
+					asked.push(id);
+					return { ...SETTINGS, model: `${id}-model` };
+				},
+			},
+			agent: "beta-text",
+			fetch: (async () => new Response("{}")) as unknown as typeof fetch,
+		});
+		const post = (model: string) =>
+			app.handle(
+				new Request("http://localhost/v1/chat/completions", {
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({ model, messages: [] }),
+				}),
+			);
+		await post("delta-function-call");
+		await post("alpha-understand");
+		await post("gamma-decision");
+		await post("gpt-4");
+		expect(asked).toEqual([
+			"delta-function-call",
+			"alpha-understand",
+			"beta-text",
+			"beta-text",
+		]);
+	});
+
 	test("the upstream's error status and body reach the caller", async () => {
 		const app = completionsRoutes({
 			settings: { effective: () => SETTINGS },

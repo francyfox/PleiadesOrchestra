@@ -182,120 +182,207 @@ const en = {
 			],
 		},
 	},
-	// One message through the roles, step by step (LandingFlow). Texts per scenario and step id; the step order, the options fan and its probabilities live in the component.
+	// Measured runs, step by step (LandingFlow), and the totals (LandingFlowResults). Texts per task, tab and step id; times, prices and the options fan live in flow.data.ts.
 	flow: {
-		heading: "How the orchestrator answers",
-		lead: "One message: alpha understands and plans, gamma chooses, delta fills in the parameters and calls the site’s tool, beta writes the reply.",
-		note: "An example run: the probabilities are illustrative.",
-		aria: "Diagram: one message passing through the orchestrator",
-		tabsLabel: "Scenario",
-		scenarios: {
-			a: {
-				label: "Default",
-				steps: {
+		heading: "The model does not decide alone",
+		lead: "gpt-6-luna alone decides every step itself, so every step is one more call of a big model. In the orchestrator the model never decides alone: rules, the site’s memory and a decision model name the kind of request, the GOAP planner builds the steps to the goal, a small model only fills in a call, and code does what needs no model. A 24B and an 8B model, both small next to gpt-6-luna.",
+		note: "Measured runs of the benchmark, all models hosted through OpenRouter, each call at its model’s OpenRouter price. Times include the network. The orchestrator ran on a channel with the shop intent set.",
+		aria: "Diagram: one message, step by step, with each step’s time and price",
+		casesLabel: "Task",
+		tabsLabel: "Setup",
+		tabs: {
+			llm: "Only LLM (gpt-6-luna)",
+			orchestra: "Orchestrator (LLM + decision)",
+		},
+		legend: {
+			total: "total",
+			calls: "model calls",
+			done: "task done",
+			failed: "task failed",
+		},
+		cases: {
+			"remove-all": {
+				label: "Empty the cart",
+				llm: {
 					widget: {
 						tag: "widget · site",
-						text: "“Find a 27-inch monitor under $300”",
+						text: "“Remove everything from my cart.”",
+					},
+					llm1: {
+						tag: "LLM · decides the next step",
+						text: "Read the cart first: get_cart()",
+					},
+					llm2: {
+						tag: "LLM · decides the next step",
+						text: 'Remove each: update_cart_item({ product: "Handmade Marble Car", quantity: 0 }), the same for Small Steel Bike',
+					},
+					llm3: {
+						tag: "LLM · decides the next step",
+						text: "No more tools: writes the reply",
+					},
+					answer: {
+						tag: "widget · site",
+						text: "“Your cart is now empty.”",
+					},
+				},
+				orchestra: {
+					widget: {
+						tag: "widget · site",
+						text: "“Remove everything from my cart.”",
 					},
 					understand: {
 						tag: "alpha · understanding",
-						text: "English, one task, attributes: 27 inch, under $300. One call: translation + tasks + quantities",
+						text: "English, one task: remove, the whole cart",
 					},
 					rules: {
 						tag: "alpha · rules",
-						text: "no checkout or removal words, so gamma decides",
-					},
-					gamma: {
-						tag: "gamma · action choice",
-						text: "Which site action? The site’s tools by name, plus chat and other",
+						text: "removal words and “everything”: no decision model needed",
 					},
 					plan: {
 						tag: "alpha · GOAP plan",
-						text: "goal: the search_products result; plan: search_products → reply",
+						text: "goal: the cart is empty; plan: get_cart → remove each → reply from a template",
 					},
-					delta: {
-						tag: "delta · parameters and call",
-						text: 'search_products({ query: "monitor 27", max_price: 300 }) → in the browser, 4 products',
+					tool1: {
+						tag: "alpha · site call",
+						text: "get_cart() → in the browser, 2 items",
 					},
-					beta: {
-						tag: "beta · reply",
-						text: "“The cheapest is Vista 27 for $249.” Buttons: 1. Add to cart 2. Show others",
+					tool2: {
+						tag: "alpha · site call",
+						text: 'update_cart_item({ product: "Handmade Marble Car", quantity: 0 }): arguments from the cart, no model',
 					},
-					answer: {
-						tag: "widget · site",
-						text: "The reply and the option buttons appear in the chat",
-					},
-				},
-			},
-			b: {
-				label: "Several tasks",
-				steps: {
-					widget: {
-						tag: "widget · site",
-						text: "“Find a monitor under $300 and add two to the cart”",
-					},
-					understand: {
-						tag: "alpha · understanding",
-						text: "2 tasks: search with under $300; add with quantity 2",
-					},
-					queue: {
-						tag: "alpha · task queue",
-						text: "tasks run in order, each with its own plan; no gamma needed, the intents come from alpha",
-					},
-					plan1: { tag: "alpha · GOAP plan 1", text: "search_products" },
-					delta1: {
-						tag: "delta · parameters and call",
-						text: 'search_products({ query: "monitor", max_price: 300 }) → in the browser, 4 products',
-					},
-					plan2: {
-						tag: "alpha · GOAP plan 2",
-						text: "add_to_cart; the product comes from the search answer",
-					},
-					delta2: {
-						tag: "delta · parameters and call",
-						text: 'add_to_cart({ product: "Vista 27", quantity: 2 }) → added',
-					},
-					beta: {
-						tag: "beta · reply",
-						text: "A short consultant reply that does not repeat the steps: “Need an HDMI cable too?”",
-					},
-					answer: {
-						tag: "widget · site",
-						text: "The reply appears in the chat",
-					},
-				},
-			},
-			c: {
-				label: "With a classifier",
-				steps: {
-					widget: { tag: "widget · site", text: "“Add two red T-shirts”" },
-					understand: {
-						tag: "alpha · understanding",
-						text: "task: add; item: red T-shirt × 2",
-					},
-					rules: {
-						tag: "alpha · rules and site memory",
-						text: "no checkout words, no approved example in memory",
-					},
-					gamma: {
-						tag: "gamma · intent",
-						text: "Which of the channel’s intents does the message ask for?",
-					},
-					plan: {
-						tag: "alpha · GOAP plan",
-						text: "goal: the item is in the cart; plan: search → add_to_cart",
-					},
-					delta1: {
-						tag: "delta · parameters and call",
-						text: 'search_products({ query: "red t-shirt" }) → found',
-					},
-					delta2: {
-						tag: "delta · parameters and call",
-						text: 'add_to_cart({ product: "Red T-Shirt", quantity: 2 }) → added',
+					tool3: {
+						tag: "alpha · site call",
+						text: 'update_cart_item({ product: "Small Steel Bike", quantity: 0 })',
 					},
 					template: {
 						tag: "alpha · reply template",
-						text: "“Added: 2 × Red T-Shirt”; no beta call",
+						text: "“Removed from your cart: 1 × Handmade Marble Car, 2 × Small Steel Bike.” No model call",
+					},
+					answer: {
+						tag: "widget · site",
+						text: "The reply appears in the chat, the cart is empty",
+					},
+				},
+			},
+			"add-list": {
+				label: "Add three products",
+				llm: {
+					widget: {
+						tag: "widget · site",
+						text: "“Add to my cart: Handmade Marble Car, Small Steel Bike and Tasty Granite Salad.”",
+					},
+					llm1: {
+						tag: "LLM · decides the next step",
+						text: "Search each: three search_products calls",
+					},
+					llm2: {
+						tag: "LLM · decides the next step",
+						text: "add_to_cart({ items: 3 products }) with the names it found",
+					},
+					llm3: {
+						tag: "LLM · decides the next step",
+						text: "No more tools: writes the reply",
+					},
+					answer: {
+						tag: "widget · site",
+						text: "“Added one Handmade Marble Car, one Small Steel Bike, and one Tasty Granite Salad to your cart.”",
+					},
+				},
+				orchestra: {
+					widget: {
+						tag: "widget · site",
+						text: "“Add to my cart: Handmade Marble Car, Small Steel Bike and Tasty Granite Salad.”",
+					},
+					understand: {
+						tag: "alpha · understanding",
+						text: "English, one task, three products",
+					},
+					rules: {
+						tag: "alpha · rules",
+						text: "adding words: no decision model needed",
+					},
+					memory: {
+						tag: "alpha · site memory",
+						text: "an approved example of this site: adding to the cart, no decision model call",
+					},
+					plan: {
+						tag: "alpha · GOAP plan",
+						text: "goal: three products in the cart; plan: search each → add_to_cart → reply",
+					},
+					delta1: {
+						tag: "delta · parameters and call",
+						text: 'search_products({ query: "Handmade Marble Car" }) → found',
+					},
+					delta2: {
+						tag: "delta · parameters and call",
+						text: 'search_products({ query: "Small Steel Bike" }) → found',
+					},
+					delta3: {
+						tag: "delta · parameters and call",
+						text: 'search_products({ query: "Tasty Granite Salad" }) → found',
+					},
+					tool1: {
+						tag: "alpha · site call",
+						text: "add_to_cart({ items: 3 products }): arguments from the search answers, no model",
+					},
+					template: {
+						tag: "alpha · reply template",
+						text: "“Added to your cart: 1 × Handmade Marble Car, 1 × Small Steel Bike, 1 × Tasty Granite Salad.” No model call",
+					},
+					answer: {
+						tag: "widget · site",
+						text: "The reply appears in the chat, three products in the cart",
+					},
+				},
+			},
+			price: {
+				label: "Ask a price",
+				llm: {
+					widget: {
+						tag: "widget · site",
+						text: "“How much does Tasty Granite Salad cost?”",
+					},
+					llm1: {
+						tag: "LLM · decides the next step",
+						text: 'search_products({ query: "Tasty Granite Salad" })',
+					},
+					llm2: {
+						tag: "LLM · decides the next step",
+						text: "No more tools: writes the reply",
+					},
+					answer: {
+						tag: "widget · site",
+						text: "“Tasty Granite Salad costs $206.59.”",
+					},
+				},
+				orchestra: {
+					widget: {
+						tag: "widget · site",
+						text: "“How much does Tasty Granite Salad cost?”",
+					},
+					understand: {
+						tag: "alpha · understanding",
+						text: "English, one task: the price of one product",
+					},
+					rules: {
+						tag: "alpha · rules",
+						text: "no cue words for a known kind of request, so gamma decides",
+					},
+					gamma: {
+						tag: "gamma · decision",
+						text: "Which kind of request? One of the channel’s intents",
+					},
+					plan: {
+						tag: "alpha · GOAP plan",
+						text: "goal: a reply from facts; plan: search_products → reply",
+					},
+					delta1: {
+						tag: "delta · parameters and call",
+						text: 'search_products({ query: "Tasty Granite Salad" }) → in the browser, $206.59',
+					},
+					beta: {
+						tag: "beta · reply",
+						text: "“Tasty Granite Salad costs $206.59.”",
 					},
 					answer: {
 						tag: "widget · site",
@@ -304,6 +391,21 @@ const en = {
 				},
 			},
 		},
+	},
+	results: {
+		heading: "Measured",
+		claims: {
+			success: "more tasks done than {model} alone",
+			speed: "faster than {model} alone",
+			cost: "per done task than {model} alone, which also does 100%",
+		},
+		metrics: {
+			success: "tasks done",
+			p50Ms: "reply time, p50",
+			usdPerSuccess: "cost per done task",
+		},
+		link: "All the benchmarks and how to rerun them",
+		note: "Unless marked “local”, every model, the orchestrator’s too, ran hosted through OpenRouter: each call includes the network and the provider’s queue, and the orchestrator makes about 4 calls per message. The local run had every model of the orchestrator on one RTX 2060 (6 GB), no API calls at all, so it has no cost bar; the card holds two models besides d3, so the run went end to end with QVikhr as delta too, then Arch-Function answered the same 60 delta calls (all 60 the same) and the time counts every model warm. 14 shop tasks in English and Russian, 3 passes each (the orchestrator without an intent set 2), judged by the cart and the shown product, not by the reply’s words. Prices from OpenRouter, {date}. Benchmark: apps/benchmark, bun efficiency.",
 	},
 	about: {
 		heading: "About Pleiades",
@@ -669,123 +771,228 @@ const ru: LandingContent = {
 		},
 	},
 	flow: {
-		heading: "Как отвечает оркестратор",
-		lead: "Одно сообщение: alpha понимает и планирует, gamma выбирает, delta подставляет параметры и вызывает инструмент сайта, beta пишет ответ.",
-		note: "Пример прогона: вероятности условные.",
-		aria: "Схема: одно сообщение проходит через оркестратор",
-		tabsLabel: "Сценарий",
-		scenarios: {
-			a: {
-				label: "Обычный",
-				steps: {
+		heading: "Модель не решает одна",
+		lead: "gpt-6-luna одна решает каждый шаг сама, поэтому каждый шаг — ещё один вызов большой модели. В оркестраторе модель никогда не решает одна: правила, память сайта и модель решений определяют вид запроса, GOAP-планировщик строит шаги к цели, маленькая модель только заполняет вызов, а то, где модель не нужна, делает код. Модели на 24B и 8B, обе маленькие рядом с gpt-6-luna.",
+		note: "Измеренные прогоны бенчмарка, все модели на хостинге через OpenRouter, каждый вызов по цене его модели на OpenRouter. Время включает сеть. Оркестратор работал на канале с набором намерений shop.",
+		aria: "Схема: одно сообщение по шагам, у каждого шага время и цена",
+		casesLabel: "Задача",
+		tabsLabel: "Схема",
+		tabs: {
+			llm: "Только LLM (gpt-6-luna)",
+			orchestra: "Оркестратор (LLM + решения)",
+		},
+		legend: {
+			total: "итого",
+			calls: "вызовов модели",
+			done: "задача выполнена",
+			failed: "задача не выполнена",
+		},
+		cases: {
+			"remove-all": {
+				label: "Очистить корзину",
+				llm: {
 					widget: {
 						tag: "виджет · сайт",
-						text: "«Найди монитор 27 дюймов дешевле $300»",
+						text: "«Удали всё из моей корзины.»",
 					},
-					understand: {
-						tag: "alpha · понимание",
-						text: "английский, одна задача, атрибуты: 27 дюймов, дешевле $300. Один вызов: перевод + задачи + количества",
+					llm1: {
+						tag: "LLM · решает следующий шаг",
+						text: "Сначала прочитать корзину: get_cart()",
 					},
-					rules: {
-						tag: "alpha · правила",
-						text: "слов оформления или удаления нет, поэтому решает gamma",
+					llm2: {
+						tag: "LLM · решает следующий шаг",
+						text: 'Удалить каждый: update_cart_item({ product: "Handmade Marble Car", quantity: 0 }), так же Small Steel Bike',
 					},
-					gamma: {
-						tag: "gamma · выбор действия",
-						text: "Какое действие сайта нужно? Инструменты сайта по именам, плюс chat и other",
-					},
-					plan: {
-						tag: "alpha · план GOAP",
-						text: "цель: результат search_products; план: search_products → ответ",
-					},
-					delta: {
-						tag: "delta · параметры и вызов",
-						text: 'search_products({ query: "monitor 27", max_price: 300 }) → в браузере, 4 товара',
-					},
-					beta: {
-						tag: "beta · ответ",
-						text: "«Самый дешёвый — Vista 27 за $249.» Кнопки: 1. Добавить в корзину 2. Показать другие",
+					llm3: {
+						tag: "LLM · решает следующий шаг",
+						text: "Инструменты больше не нужны: пишет ответ",
 					},
 					answer: {
 						tag: "виджет · сайт",
-						text: "Ответ и кнопки вариантов появляются в чате",
+						text: "«Корзина пуста.»",
 					},
 				},
-			},
-			b: {
-				label: "Несколько задач",
-				steps: {
+				orchestra: {
 					widget: {
 						tag: "виджет · сайт",
-						text: "«Найди монитор дешевле $300 и добавь два в корзину»",
+						text: "«Удали всё из моей корзины.»",
 					},
 					understand: {
 						tag: "alpha · понимание",
-						text: "2 задачи: поиск с ценой до $300; добавление с количеством 2",
-					},
-					queue: {
-						tag: "alpha · очередь задач",
-						text: "задачи идут по порядку, у каждой свой план; gamma не нужна, намерения даёт alpha",
-					},
-					plan1: { tag: "alpha · план GOAP 1", text: "search_products" },
-					delta1: {
-						tag: "delta · параметры и вызов",
-						text: 'search_products({ query: "monitor", max_price: 300 }) → в браузере, 4 товара',
-					},
-					plan2: {
-						tag: "alpha · план GOAP 2",
-						text: "add_to_cart; товар берётся из ответа поиска",
-					},
-					delta2: {
-						tag: "delta · параметры и вызов",
-						text: 'add_to_cart({ product: "Vista 27", quantity: 2 }) → добавлено',
-					},
-					beta: {
-						tag: "beta · ответ",
-						text: "Короткий ответ консультанта, не повторяющий шаги: «Нужен ещё кабель HDMI?»",
-					},
-					answer: { tag: "виджет · сайт", text: "Ответ появляется в чате" },
-				},
-			},
-			c: {
-				label: "С классификатором",
-				steps: {
-					widget: {
-						tag: "виджет · сайт",
-						text: "«Добавь две красные футболки»",
-					},
-					understand: {
-						tag: "alpha · понимание",
-						text: "задача: добавить; товар: красная футболка × 2",
+						text: "Одна задача: удалить, вся корзина",
 					},
 					rules: {
-						tag: "alpha · правила и память сайта",
-						text: "слов оформления нет, одобренного примера в памяти нет",
-					},
-					gamma: {
-						tag: "gamma · намерение",
-						text: "Какое из намерений канала просит сообщение?",
+						tag: "alpha · правила",
+						text: "слова удаления и «всё»: модель решений не нужна",
 					},
 					plan: {
 						tag: "alpha · план GOAP",
-						text: "цель: товар в корзине; план: поиск → add_to_cart",
+						text: "цель: корзина пуста; план: get_cart → удалить каждый → ответ по шаблону",
 					},
-					delta1: {
-						tag: "delta · параметры и вызов",
-						text: 'search_products({ query: "red t-shirt" }) → найдено',
+					tool1: {
+						tag: "alpha · вызов сайта",
+						text: "get_cart() → в браузере, 2 товара",
 					},
-					delta2: {
-						tag: "delta · параметры и вызов",
-						text: 'add_to_cart({ product: "Red T-Shirt", quantity: 2 }) → добавлено',
+					tool2: {
+						tag: "alpha · вызов сайта",
+						text: 'update_cart_item({ product: "Handmade Marble Car", quantity: 0 }): аргументы из корзины, без модели',
+					},
+					tool3: {
+						tag: "alpha · вызов сайта",
+						text: 'update_cart_item({ product: "Small Steel Bike", quantity: 0 })',
 					},
 					template: {
 						tag: "alpha · шаблон ответа",
-						text: "«Добавлено: 2 × Red T-Shirt»; beta не вызывается",
+						text: "«Убрал из корзины: 1 × Handmade Marble Car, 2 × Small Steel Bike.» Без вызова модели",
 					},
-					answer: { tag: "виджет · сайт", text: "Ответ появляется в чате" },
+					answer: {
+						tag: "виджет · сайт",
+						text: "Ответ появляется в чате, корзина пуста",
+					},
+				},
+			},
+			"add-list": {
+				label: "Добавить три товара",
+				llm: {
+					widget: {
+						tag: "виджет · сайт",
+						text: "«Добавь в корзину: Handmade Marble Car, Small Steel Bike и Tasty Granite Salad.»",
+					},
+					llm1: {
+						tag: "LLM · решает следующий шаг",
+						text: "Найти каждый: три вызова search_products",
+					},
+					llm2: {
+						tag: "LLM · решает следующий шаг",
+						text: "add_to_cart({ items: 3 товара }) с найденными названиями",
+					},
+					llm3: {
+						tag: "LLM · решает следующий шаг",
+						text: "Инструменты больше не нужны: пишет ответ",
+					},
+					answer: {
+						tag: "виджет · сайт",
+						text: "«Добавил в корзину Handmade Marble Car, Small Steel Bike и Tasty Granite Salad.»",
+					},
+				},
+				orchestra: {
+					widget: {
+						tag: "виджет · сайт",
+						text: "«Добавь в корзину: Handmade Marble Car, Small Steel Bike и Tasty Granite Salad.»",
+					},
+					understand: {
+						tag: "alpha · понимание",
+						text: "Одна задача, три товара",
+					},
+					rules: {
+						tag: "alpha · правила",
+						text: "слова добавления: модель решений не нужна",
+					},
+					memory: {
+						tag: "alpha · память сайта",
+						text: "одобренный пример этого сайта: добавление в корзину, без вызова модели решений",
+					},
+					plan: {
+						tag: "alpha · план GOAP",
+						text: "цель: три товара в корзине; план: найти каждый → add_to_cart → ответ",
+					},
+					delta1: {
+						tag: "delta · параметры и вызов",
+						text: 'search_products({ query: "Handmade Marble Car" }) → найден',
+					},
+					delta2: {
+						tag: "delta · параметры и вызов",
+						text: 'search_products({ query: "Small Steel Bike" }) → найден',
+					},
+					delta3: {
+						tag: "delta · параметры и вызов",
+						text: 'search_products({ query: "Tasty Granite Salad" }) → найден',
+					},
+					tool1: {
+						tag: "alpha · вызов сайта",
+						text: "add_to_cart({ items: 3 товара }): аргументы из ответов поиска, без модели",
+					},
+					template: {
+						tag: "alpha · шаблон ответа",
+						text: "«Добавил в корзину: 1 × Handmade Marble Car, 1 × Small Steel Bike, 1 × Tasty Granite Salad.» Без вызова модели",
+					},
+					answer: {
+						tag: "виджет · сайт",
+						text: "Ответ появляется в чате, в корзине три товара",
+					},
+				},
+			},
+			price: {
+				label: "Узнать цену",
+				llm: {
+					widget: {
+						tag: "виджет · сайт",
+						text: "«Сколько стоит Tasty Granite Salad?»",
+					},
+					llm1: {
+						tag: "LLM · решает следующий шаг",
+						text: 'search_products({ query: "Tasty Granite Salad" })',
+					},
+					llm2: {
+						tag: "LLM · решает следующий шаг",
+						text: "Инструменты больше не нужны: пишет ответ",
+					},
+					answer: {
+						tag: "виджет · сайт",
+						text: "«Tasty Granite Salad стоит $206.59.»",
+					},
+				},
+				orchestra: {
+					widget: {
+						tag: "виджет · сайт",
+						text: "«Сколько стоит Tasty Granite Salad?»",
+					},
+					understand: {
+						tag: "alpha · понимание",
+						text: "Одна задача: цена одного товара",
+					},
+					rules: {
+						tag: "alpha · правила",
+						text: "нет слов-подсказок известного вида запроса, решает gamma",
+					},
+					gamma: {
+						tag: "gamma · решение",
+						text: "Какой это запрос? Одно из намерений канала",
+					},
+					plan: {
+						tag: "alpha · план GOAP",
+						text: "цель: ответ по фактам; план: search_products → ответ",
+					},
+					delta1: {
+						tag: "delta · параметры и вызов",
+						text: 'search_products({ query: "Tasty Granite Salad" }) → в браузере, $206.59',
+					},
+					beta: {
+						tag: "beta · ответ",
+						text: "«Tasty Granite Salad стоит $206.59.»",
+					},
+					answer: {
+						tag: "виджет · сайт",
+						text: "Ответ появляется в чате",
+					},
 				},
 			},
 		},
+	},
+	results: {
+		heading: "Замеры",
+		claims: {
+			success: "больше выполненных задач, чем у {model} без оркестратора",
+			speed: "быстрее, чем {model} без оркестратора",
+			cost: "за выполненную задачу против {model} без оркестратора, которая тоже делает 100%",
+		},
+		metrics: {
+			success: "задач выполнено",
+			p50Ms: "время ответа, p50",
+			usdPerSuccess: "цена выполненной задачи",
+		},
+		link: "Все бенчмарки и как их повторить (на английском)",
+		note: "Кроме строки «local», все модели, в том числе модели оркестратора, работали на хостинге через OpenRouter: в каждый вызов входят сеть и очередь провайдера, а оркестратор делает около 4 вызовов на сообщение. В локальном прогоне все модели оркестратора стояли на одной RTX 2060 (6 ГБ), без единого вызова API, поэтому столбика цены у него нет; кроме d3 карта вмещает две модели, поэтому прогон целиком шёл с QVikhr и в роли delta, затем Arch-Function ответила на те же 60 вызовов delta (все 60 так же), а время считано на тёплых моделях. 14 задач магазина на английском и русском, по 3 прохода (у оркестратора без набора намерений 2), оценка по корзине и показанному товару, а не по словам ответа. Цены OpenRouter, {date}. Бенчмарк: apps/benchmark, bun efficiency.",
 	},
 	about: {
 		heading: "О Pleiades",
@@ -1151,120 +1358,228 @@ const kk: LandingContent = {
 		},
 	},
 	flow: {
-		heading: "Оркестратор қалай жауап береді",
-		lead: "Бір хабарлама: alpha түсініп, жоспарлайды, gamma таңдайды, delta параметрлерді толтырып, сайттың құралын шақырады, beta жауап жазады.",
-		note: "Іске қосу мысалы: ықтималдықтар шартты.",
-		aria: "Сызба: бір хабарлама оркестратор арқылы өтеді",
-		tabsLabel: "Сценарий",
-		scenarios: {
-			a: {
-				label: "Әдеттегі",
-				steps: {
+		heading: "Модель жалғыз шешпейді",
+		lead: "gpt-6-luna жалғыз әр қадамды өзі шешеді, сондықтан әр қадам — үлкен модельдің тағы бір шақыруы. Оркестраторда модель ешқашан жалғыз шешпейді: ережелер, сайт жады және шешім моделі сұраныс түрін анықтайды, GOAP жоспарлаушы мақсатқа қадамдар құрады, шағын модель тек шақыруды толтырады, ал модель қажет емес жерді код орындайды. 24B және 8B модельдер, екеуі де gpt-6-luna-мен салыстырғанда шағын.",
+		note: "Бенчмарктың өлшенген іске қосылулары, барлық модельдер OpenRouter арқылы хостингте, әр шақыру өз моделінің OpenRouter бағасымен. Уақытқа желі кіреді. Оркестратор shop ниеттер жиынтығы бар арнада жұмыс істеді.",
+		aria: "Сызба: бір хабарлама қадаммен, әр қадамның уақыты мен бағасы",
+		casesLabel: "Тапсырма",
+		tabsLabel: "Сызба",
+		tabs: {
+			llm: "Тек LLM (gpt-6-luna)",
+			orchestra: "Оркестратор (LLM + шешімдер)",
+		},
+		legend: {
+			total: "барлығы",
+			calls: "модель шақыруы",
+			done: "тапсырма орындалды",
+			failed: "тапсырма орындалмады",
+		},
+		cases: {
+			"remove-all": {
+				label: "Себетті тазалау",
+				llm: {
 					widget: {
 						tag: "виджет · сайт",
-						text: "«300 доллардан арзан 27 дюймдік монитор тап»",
+						text: "«Себетімдегінің бәрін өшір.»",
 					},
-					understand: {
-						tag: "alpha · түсіну",
-						text: "ағылшынша, бір тапсырма, атрибуттар: 27 дюйм, $300-тан арзан. Бір шақыру: аударма + тапсырмалар + саны",
+					llm1: {
+						tag: "LLM · келесі қадамды шешеді",
+						text: "Алдымен себетті оқу: get_cart()",
 					},
-					rules: {
-						tag: "alpha · ережелер",
-						text: "рәсімдеу немесе жою сөздері жоқ, сондықтан gamma шешеді",
+					llm2: {
+						tag: "LLM · келесі қадамды шешеді",
+						text: 'Әрқайсысын өшіру: update_cart_item({ product: "Handmade Marble Car", quantity: 0 }), Small Steel Bike үшін де солай',
 					},
-					gamma: {
-						tag: "gamma · әрекетті таңдау",
-						text: "Сайттың қандай әрекеті керек? Сайт құралдары аты бойынша, плюс chat және other",
-					},
-					plan: {
-						tag: "alpha · GOAP жоспары",
-						text: "мақсат: search_products нәтижесі; жоспар: search_products → жауап",
-					},
-					delta: {
-						tag: "delta · параметрлер және шақыру",
-						text: 'search_products({ query: "monitor 27", max_price: 300 }) → браузерде, 4 тауар',
-					},
-					beta: {
-						tag: "beta · жауап",
-						text: "«Ең арзаны — Vista 27, $249.» Түймелер: 1. Себетке қосу 2. Басқаларын көрсету",
+					llm3: {
+						tag: "LLM · келесі қадамды шешеді",
+						text: "Құралдар енді керек емес: жауап жазады",
 					},
 					answer: {
 						tag: "виджет · сайт",
-						text: "Жауап пен нұсқа түймелері чатта пайда болады",
+						text: "«Себетіңіз бос.»",
 					},
 				},
-			},
-			b: {
-				label: "Бірнеше тапсырма",
-				steps: {
+				orchestra: {
 					widget: {
 						tag: "виджет · сайт",
-						text: "«300 доллардан арзан монитор тауып, екеуін себетке сал»",
+						text: "«Себетімдегінің бәрін өшір.»",
 					},
 					understand: {
 						tag: "alpha · түсіну",
-						text: "2 тапсырма: бағасы $300-қа дейін іздеу; саны 2 қосу",
-					},
-					queue: {
-						tag: "alpha · тапсырмалар кезегі",
-						text: "тапсырмалар ретімен орындалады, әрқайсысының өз жоспары бар; gamma қажет емес, ниеттерді alpha береді",
-					},
-					plan1: { tag: "alpha · GOAP жоспары 1", text: "search_products" },
-					delta1: {
-						tag: "delta · параметрлер және шақыру",
-						text: 'search_products({ query: "monitor", max_price: 300 }) → браузерде, 4 тауар',
-					},
-					plan2: {
-						tag: "alpha · GOAP жоспары 2",
-						text: "add_to_cart; тауар іздеу жауабынан алынады",
-					},
-					delta2: {
-						tag: "delta · параметрлер және шақыру",
-						text: 'add_to_cart({ product: "Vista 27", quantity: 2 }) → қосылды',
-					},
-					beta: {
-						tag: "beta · жауап",
-						text: "Қадамдарды қайталамайтын қысқа кеңесші жауабы: «HDMI кабелі де керек пе?»",
-					},
-					answer: { tag: "виджет · сайт", text: "Жауап чатта пайда болады" },
-				},
-			},
-			c: {
-				label: "Классификатормен",
-				steps: {
-					widget: { tag: "виджет · сайт", text: "«Екі қызыл футболка қос»" },
-					understand: {
-						tag: "alpha · түсіну",
-						text: "тапсырма: қосу; тауар: қызыл футболка × 2",
+						text: "Бір тапсырма: өшіру, бүкіл себет",
 					},
 					rules: {
-						tag: "alpha · ережелер және сайт жады",
-						text: "рәсімдеу сөздері жоқ, жадта бекітілген мысал жоқ",
-					},
-					gamma: {
-						tag: "gamma · ниет",
-						text: "Хабарлама арна ниеттерінің қайсысын сұрайды?",
+						tag: "alpha · ережелер",
+						text: "өшіру сөздері және «бәрі»: шешім моделі қажет емес",
 					},
 					plan: {
 						tag: "alpha · GOAP жоспары",
-						text: "мақсат: тауар себетте; жоспар: іздеу → add_to_cart",
+						text: "мақсат: себет бос; жоспар: get_cart → әрқайсысын өшіру → үлгі бойынша жауап",
 					},
-					delta1: {
-						tag: "delta · параметрлер және шақыру",
-						text: 'search_products({ query: "red t-shirt" }) → табылды',
+					tool1: {
+						tag: "alpha · сайт шақыруы",
+						text: "get_cart() → браузерде, 2 тауар",
 					},
-					delta2: {
-						tag: "delta · параметрлер және шақыру",
-						text: 'add_to_cart({ product: "Red T-Shirt", quantity: 2 }) → қосылды',
+					tool2: {
+						tag: "alpha · сайт шақыруы",
+						text: 'update_cart_item({ product: "Handmade Marble Car", quantity: 0 }): аргументтер себеттен, модельсіз',
+					},
+					tool3: {
+						tag: "alpha · сайт шақыруы",
+						text: 'update_cart_item({ product: "Small Steel Bike", quantity: 0 })',
 					},
 					template: {
 						tag: "alpha · жауап үлгісі",
-						text: "«Қосылды: 2 × Red T-Shirt»; beta шақырылмайды",
+						text: "«Себеттен алынды: 1 × Handmade Marble Car, 2 × Small Steel Bike.» Модель шақырусыз",
 					},
-					answer: { tag: "виджет · сайт", text: "Жауап чатта пайда болады" },
+					answer: {
+						tag: "виджет · сайт",
+						text: "Жауап чатта шығады, себет бос",
+					},
+				},
+			},
+			"add-list": {
+				label: "Үш тауар қосу",
+				llm: {
+					widget: {
+						tag: "виджет · сайт",
+						text: "«Себетке қос: Handmade Marble Car, Small Steel Bike және Tasty Granite Salad.»",
+					},
+					llm1: {
+						tag: "LLM · келесі қадамды шешеді",
+						text: "Әрқайсысын іздеу: үш search_products шақыруы",
+					},
+					llm2: {
+						tag: "LLM · келесі қадамды шешеді",
+						text: "add_to_cart({ items: 3 тауар }) табылған атаулармен",
+					},
+					llm3: {
+						tag: "LLM · келесі қадамды шешеді",
+						text: "Құралдар енді керек емес: жауап жазады",
+					},
+					answer: {
+						tag: "виджет · сайт",
+						text: "«Handmade Marble Car, Small Steel Bike және Tasty Granite Salad себетке қосылды.»",
+					},
+				},
+				orchestra: {
+					widget: {
+						tag: "виджет · сайт",
+						text: "«Себетке қос: Handmade Marble Car, Small Steel Bike және Tasty Granite Salad.»",
+					},
+					understand: {
+						tag: "alpha · түсіну",
+						text: "Бір тапсырма, үш тауар",
+					},
+					rules: {
+						tag: "alpha · ережелер",
+						text: "қосу сөздері: шешім моделі қажет емес",
+					},
+					memory: {
+						tag: "alpha · сайт жады",
+						text: "осы сайттың мақұлданған мысалы: себетке қосу, шешім моделін шақырусыз",
+					},
+					plan: {
+						tag: "alpha · GOAP жоспары",
+						text: "мақсат: себетте үш тауар; жоспар: әрқайсысын іздеу → add_to_cart → жауап",
+					},
+					delta1: {
+						tag: "delta · параметрлер және шақыру",
+						text: 'search_products({ query: "Handmade Marble Car" }) → табылды',
+					},
+					delta2: {
+						tag: "delta · параметрлер және шақыру",
+						text: 'search_products({ query: "Small Steel Bike" }) → табылды',
+					},
+					delta3: {
+						tag: "delta · параметрлер және шақыру",
+						text: 'search_products({ query: "Tasty Granite Salad" }) → табылды',
+					},
+					tool1: {
+						tag: "alpha · сайт шақыруы",
+						text: "add_to_cart({ items: 3 тауар }): аргументтер іздеу жауаптарынан, модельсіз",
+					},
+					template: {
+						tag: "alpha · жауап үлгісі",
+						text: "«Себетке қосылды: 1 × Handmade Marble Car, 1 × Small Steel Bike, 1 × Tasty Granite Salad.» Модель шақырусыз",
+					},
+					answer: {
+						tag: "виджет · сайт",
+						text: "Жауап чатта шығады, себетте үш тауар",
+					},
+				},
+			},
+			price: {
+				label: "Бағасын сұрау",
+				llm: {
+					widget: {
+						tag: "виджет · сайт",
+						text: "«Tasty Granite Salad қанша тұрады?»",
+					},
+					llm1: {
+						tag: "LLM · келесі қадамды шешеді",
+						text: 'search_products({ query: "Tasty Granite Salad" })',
+					},
+					llm2: {
+						tag: "LLM · келесі қадамды шешеді",
+						text: "Құралдар енді керек емес: жауап жазады",
+					},
+					answer: {
+						tag: "виджет · сайт",
+						text: "«Tasty Granite Salad бағасы $206.59.»",
+					},
+				},
+				orchestra: {
+					widget: {
+						tag: "виджет · сайт",
+						text: "«Tasty Granite Salad қанша тұрады?»",
+					},
+					understand: {
+						tag: "alpha · түсіну",
+						text: "Бір тапсырма: бір тауардың бағасы",
+					},
+					rules: {
+						tag: "alpha · ережелер",
+						text: "белгілі сұраныс түрінің сөз-белгілері жоқ, gamma шешеді",
+					},
+					gamma: {
+						tag: "gamma · шешім",
+						text: "Бұл қандай сұраныс? Арнаның ниеттерінің бірі",
+					},
+					plan: {
+						tag: "alpha · GOAP жоспары",
+						text: "мақсат: деректерге сүйенген жауап; жоспар: search_products → жауап",
+					},
+					delta1: {
+						tag: "delta · параметрлер және шақыру",
+						text: 'search_products({ query: "Tasty Granite Salad" }) → браузерде, $206.59',
+					},
+					beta: {
+						tag: "beta · жауап",
+						text: "«Tasty Granite Salad бағасы $206.59.»",
+					},
+					answer: {
+						tag: "виджет · сайт",
+						text: "Жауап чатта шығады",
+					},
 				},
 			},
 		},
+	},
+	results: {
+		heading: "Өлшемдер",
+		claims: {
+			success: "оркестраторсыз {model} моделінен көбірек орындалған тапсырма",
+			speed: "оркестраторсыз {model} моделінен жылдамырақ",
+			cost: "орындалған тапсырмаға, оркестраторсыз {model} моделімен салыстырғанда, ол да 100% орындайды",
+		},
+		metrics: {
+			success: "орындалған тапсырмалар",
+			p50Ms: "жауап уақыты, p50",
+			usdPerSuccess: "орындалған тапсырманың бағасы",
+		},
+		link: "Барлық бенчмарктар және оларды қайталау (ағылшынша)",
+		note: "«local» жолынан басқа барлық модельдер, оркестратордың модельдері де, OpenRouter арқылы хостингте жұмыс істеді: әр шақыруға желі мен провайдер кезегі кіреді, ал оркестратор бір хабарламаға шамамен 4 шақыру жасайды. Жергілікті өлшемде оркестратордың барлық модельдері бір RTX 2060 (6 ГБ) картасында тұрды, бірде-бір API шақыруынсыз, сондықтан оның баға бағаны жоқ; d3-тен басқа карта екі модельді ғана сыйғызады, сондықтан өлшем толығымен delta рөлінде де QVikhr-мен өтті, содан кейін Arch-Function сол 60 delta шақыруына жауап берді (60-ы да бірдей), ал уақыт жылы модельдермен есептелді. Дүкеннің 14 тапсырмасы ағылшын және орыс тілдерінде, әрқайсысы 3 рет (ниеттер жиынтығы жоқ оркестратор 2 рет), жауаптың сөзімен емес, себет пен көрсетілген тауар бойынша бағаланады. Бағалар OpenRouter-ден, {date}. Бенчмарк: apps/benchmark, bun efficiency.",
 	},
 	about: {
 		heading: "Pleiades туралы",

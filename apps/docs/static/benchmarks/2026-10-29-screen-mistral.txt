@@ -1,0 +1,76 @@
+Pleiades efficiency benchmark
+mistralai/mistral-small-3.2-24b-instruct: 1/1 iterations
+mistralai/mistral-medium-3.1: 1/1 iterations
+mistralai/mistral-large-2512: 1/1 iterations
+at 2026-10-29T08:04:04.311Z, shop seed 1, 1 iterations of every case (averages below), cost: each call at its model's OpenRouter price, a model without one at $0.05 in / $0.08 out per 1M tokens
+
+setup
+
+metric                     mistralai/mistral-small-3.2-24b-instruct  mistralai/mistral-medium-3.1  mistralai/mistral-large-2512
+case runs                  14                                        14                            14
+errors                     0                                         0                             10
+success                    93%                                       100%                          75%
+latency p50                2.36 s                                    1.91 s                        10.00 s
+latency mean               2.70 s                                    1.84 s                        13.62 s
+steps / case               3.3                                       4.4                           3.5
+  model calls              2.1                                       2.6                           2.3
+  tool calls               1.2                                       1.9                           1.3
+input tokens / iteration   12615                                     17282                         4117
+output tokens / iteration  590                                       781                           221
+cost / iteration           $0.001064                                 $0.008475                     $0.002390
+cost / success             $0.000082                                 $0.000605                     $0.000797
+
+tokens of mistralai/mistral-small-3.2-24b-instruct: every call of the model (usage of each step)
+tokens of mistralai/mistral-medium-3.1: every call of the model (usage of each step)
+tokens of mistralai/mistral-large-2512: every call of the model (usage of each step)
+
+== mistralai/mistral-small-3.2-24b-instruct
+case             ok   errors  time    model  tools  tokens  reply / error
+add-one          0/1  0       1.04 s  1.0    0.0    396     How many do you want to add?
+add-count        1/1  0       1.86 s  2.0    1.0    874     Done.
+add-list         1/1  0       2.18 s  2.0    1.0    968     Done.
+price            1/1  0       4.34 s  2.0    1.0    941     The Tasty Granite Salad costs $206.59.
+remove-one       1/1  0       2.13 s  2.0    1.0    854     Handmade Plastic Bacon has been removed from your cart.
+remove-all       1/1  0       2.90 s  3.0    3.0    1419    Your cart is now empty.
+out-of-stock     1/1  0       1.76 s  2.0    1.0    864     The product is out of stock.
+add-one-ru       1/1  0       1.91 s  2.0    1.0    876     Handmade Plastic Bacon добавлен в корзину.
+add-count-ru     1/1  0       3.06 s  2.0    1.0    896     Added 3 Handcrafted Marble Gloves to the cart.
+add-list-ru      1/1  0       3.45 s  2.0    1.0    1001    Добавлено: Handmade Marble Car, Small Steel Bike и Tasty Granite Salad.
+price-ru         1/1  0       3.03 s  2.0    1.0    946     Tasty Granite Salad costs $206.59.
+remove-one-ru    1/1  0       3.42 s  2.0    1.0    858     Handmade Plastic Bacon был удалён из корзины.
+remove-all-ru    1/1  0       4.40 s  3.0    3.0    1431    Корзина пуста.
+out-of-stock-ru  1/1  0       2.36 s  2.0    1.0    881     К сожалению, Small Metal Shirt отсутствует на складе.
+
+== mistralai/mistral-medium-3.1
+case             ok   errors  time    model  tools  tokens  reply / error
+add-one          1/1  0       2.04 s  3.0    2.0    1495    Done! Handmade Plastic Bacon has been added to your cart.
+add-count        1/1  0       2.09 s  3.0    2.0    1546    Done! 3 Handcrafted Marble Gloves are now in your cart.
+add-list         1/1  0       3.01 s  3.0    4.0    2098    Done! Your cart now has the Handmade Marble Car, Small Steel Bike, and Tasty Granite Salad.
+price            1/1  0       1.22 s  2.0    1.0    954     The Tasty Granite Salad costs **$206.59**.
+remove-one       1/1  0       1.07 s  2.0    1.0    860     Handmade Plastic Bacon has been removed from your cart.
+remove-all       1/1  0       1.90 s  3.0    3.0    1391    Your cart is now empty.
+out-of-stock     1/1  0       2.15 s  3.0    2.0    1500    The **Small Metal Shirt** is currently out of stock and cannot be added to your cart.
+add-one-ru       1/1  0       2.09 s  3.0    2.0    1510    Добавлен 1 × Handmade Plastic Bacon в корзину.
+add-count-ru     1/1  0       1.97 s  3.0    2.0    1558    Добавлено 3 пары Handcrafted Marble Gloves в корзину.
+add-list-ru      1/1  0       1.26 s  2.0    1.0    994     Товары добавлены в корзину.
+price-ru         1/1  0       1.48 s  2.0    1.0    953     Tasty Granite Salad стоит **$206.59**.
+remove-one-ru    1/1  0       1.30 s  2.0    1.0    871     Готово, Handmade Plastic Bacon удалён из корзины.
+remove-all-ru    1/1  0       2.26 s  3.0    3.0    1397    Корзина пуста.
+out-of-stock-ru  1/1  0       1.91 s  2.0    1.0    936     Извините, Small Metal Shirt отсутствует на складе.
+
+== mistralai/mistral-large-2512
+case             ok   errors  time     model  tools  tokens  reply / error
+add-one          0/0  1       0.00 s   0.0    0.0    0       HTTP 429 https://openrouter.ai/api/v1/chat/completions: {"error":{"message":"Provider returned error
+add-count        0/0  1       0.00 s   0.0    0.0    0       HTTP 429 https://openrouter.ai/api/v1/chat/completions: {"error":{"message":"Provider returned error
+add-list         0/0  1       0.00 s   0.0    0.0    0       HTTP 429 https://openrouter.ai/api/v1/chat/completions: {"error":{"message":"Provider returned error
+price            1/1  0       26.49 s  2.0    1.0    938     The **Tasty Granite Salad** costs **$206.59** and it's in stock.
+remove-one       0/0  1       0.00 s   0.0    0.0    0       HTTP 429 https://openrouter.ai/api/v1/chat/completions: {"error":{"message":"Provider returned error
+remove-all       0/0  1       0.00 s   0.0    0.0    0       HTTP 429 https://openrouter.ai/api/v1/chat/completions: {"error":{"message":"Provider returned error
+out-of-stock     0/0  1       0.00 s   0.0    0.0    0       HTTP 429 https://openrouter.ai/api/v1/chat/completions: {"error":{"message":"Provider returned error
+add-one-ru       0/1  0       11.77 s  2.0    1.0    947     Я нашла несколько похожих товаров. Какой именно "Handmade Plastic Bacon" вы хотели бы добавить в кор
+add-count-ru     1/1  0       6.22 s   3.0    2.0    1528    В корзину добавлено 3 пары *Handcrafted Marble Gloves*. Нужно что-то ещё?
+add-list-ru      0/0  1       0.00 s   0.0    0.0    0       HTTP 429 https://openrouter.ai/api/v1/chat/completions: {"error":{"message":"Provider returned error
+price-ru         0/0  1       0.00 s   0.0    0.0    0       HTTP 429 https://openrouter.ai/api/v1/chat/completions: {"error":{"message":"Provider returned error
+remove-one-ru    0/0  1       0.00 s   0.0    0.0    0       HTTP 429 https://openrouter.ai/api/v1/chat/completions: {"error":{"message":"Provider returned error
+remove-all-ru    0/0  1       0.00 s   0.0    0.0    0       HTTP 429 https://openrouter.ai/api/v1/chat/completions: {"error":{"message":"Provider returned error
+out-of-stock-ru  1/1  0       10.00 s  2.0    1.0    925     К сожалению, *Small Metal Shirt* нет в наличии. Могу предложить что-то другое?

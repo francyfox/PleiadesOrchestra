@@ -4,13 +4,14 @@ import choices from "./modules/choices/choices.command.ts";
 import efficiency from "./modules/efficiency/efficiency.command.ts";
 import { menuText, pick } from "./modules/menu/menu.service.ts";
 import openrouter from "./modules/openrouter/openrouter.command.ts";
+import replay from "./modules/replay/replay.command.ts";
 import snake from "./modules/snake/snake.command.ts";
 import tools from "./modules/tools/tools.command.ts";
 
 // Every benchmark of the repo: `bun start` asks which one, `bun start tools …`
 // `bun start openrouter …` `bun start laya …` `bun start snake …` or `bun start efficiency …` runs it directly (`--help` after the name lists flags).
 
-const commands = [tools, openrouter, choices, snake, efficiency];
+const commands = [tools, openrouter, choices, snake, efficiency, replay];
 
 const cli = await createCLI({
 	name: "benchmark",

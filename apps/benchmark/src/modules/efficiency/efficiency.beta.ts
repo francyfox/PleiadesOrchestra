@@ -22,9 +22,11 @@ const textOf = (result: { content: { text?: string }[] }) =>
  * orchestrator replies with.
  */
 export function createBetaContender(deps: {
-	/** The orchestrator's root and its HARNESS_API_KEY. */
+	/** The orchestrator's root and its HARNESS_API_KEY, or OpenRouter's root and key with `model`. */
 	baseUrl: string;
 	apiKey: string;
+	/** A hosted model asked directly (`--models`); unset: the orchestrator's beta-text. */
+	model?: string;
 	maxSteps: number;
 	priceOf: PriceOf;
 	fetch?: typeof fetch;
@@ -35,12 +37,12 @@ export function createBetaContender(deps: {
 	const model = createFunctionCallModel({
 		baseURL: `${deps.baseUrl}/v1`,
 		apiKey: deps.apiKey,
-		model: "beta-text",
+		model: deps.model ?? "beta-text",
 		fetch: createInfraFetch({ ...deps.infra, fetch: deps.fetch }),
 	});
 
 	return {
-		name: "beta alone",
+		name: deps.model ?? "beta alone",
 		tokensNote: "every call of the model (usage of each step)",
 		async run(shop, test) {
 			const { tools: list } = await shop.listTools();
@@ -58,6 +60,9 @@ export function createBetaContender(deps: {
 				]),
 			);
 			const started = performance.now();
+			// Wall time of each step (the model call plus its tools), for per-step timings.
+			const stepMs: number[] = [];
+			let stepStarted = started;
 			try {
 				const result = await generateText({
 					model,
@@ -68,6 +73,11 @@ export function createBetaContender(deps: {
 					temperature: 0,
 					// createInfraFetch retries; the SDK would retry on top of it.
 					maxRetries: 0,
+					onStepFinish: () => {
+						const now = performance.now();
+						stepMs.push(now - stepStarted);
+						stepStarted = now;
+					},
 				});
 				return {
 					id: test.id,
@@ -88,8 +98,9 @@ export function createBetaContender(deps: {
 					),
 					reply: result.text,
 					model: result.steps.at(-1)?.response.modelId,
-					detail: result.steps.map((step) => ({
+					detail: result.steps.map((step, i) => ({
 						modelId: step.response.modelId,
+						ms: stepMs[i],
 						usage: step.usage,
 						toolCalls: step.toolCalls,
 						toolResults: step.toolResults,

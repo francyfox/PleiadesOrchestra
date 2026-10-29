@@ -46,7 +46,7 @@ Registers a channel visitor (if not there yet), updates `lastSeenAt`/`displayNam
 
 `POST /v1/decisions` does not change.
 
-`POST /v1/chat/completions` (`HARNESS_API_KEY`): an OpenAI-compatible pass-through to the reply model in effect (`beta-text` agent settings), no planner. The body is sent as given with `model` replaced by beta's (its key, `reasoning_effort` and extra body added); the upstream status and body, a stream included, come back unchanged. Not in the usage ledger. Used by `apps/benchmark` (`bun efficiency`) to run the same text model without the orchestrator.
+`POST /v1/chat/completions` (`HARNESS_API_KEY`): an OpenAI-compatible pass-through to the reply model in effect (`beta-text` agent settings), no planner. The body is sent as given with `model` replaced by beta's (its key, `reasoning_effort` and extra body added); the upstream status and body, a stream included, come back unchanged. A `model` that is a language agent's id (`alpha-understand`, `delta-function-call`) asks that agent's model instead (`albedo send --agent`). Not in the usage ledger. Used by `apps/benchmark` (`bun efficiency`) to run the same text model without the orchestrator.
 
 ## Admin API (`Authorization: Bearer <ADMIN_API_KEY>`)
 

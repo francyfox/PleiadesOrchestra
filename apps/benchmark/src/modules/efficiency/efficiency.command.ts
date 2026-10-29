@@ -26,7 +26,7 @@ import { renderReport } from "./efficiency.view.ts";
 // (efficiency.shop.ts) and the same cases: success, time, steps, tokens, cost.
 //
 //   bun efficiency [--runs N] [--seed N] [--price-in X --price-out Y] [--max-steps N]
-//                  [--concurrency N] [--output results/x]
+//                  [--concurrency N] [--models a/b,c/d] [--output results/x]
 //
 // Both go through the orchestrator (ORCHESTRA_* in .env): beta alone through
 // its POST /v1/chat/completions (the reply model in effect), so the text model
@@ -63,6 +63,10 @@ export default defineCommand({
 			description:
 				"Case runs of one contender at a time (default 1; latency then includes contention)",
 		}),
+		models: option(z.string().optional(), {
+			description:
+				"Comma-separated OpenRouter models, each alone with the tools (OPENROUTER_API_KEY); no orchestrator",
+		}),
 		output: option(z.string().optional(), {
 			description:
 				"The run folder (default results/efficiency/<timestamp>/): report.txt and beta-alone/, orchestra/ with one JSON file per case run",
@@ -70,7 +74,14 @@ export default defineCommand({
 	},
 	handler: async ({ flags }) => {
 		const base = config.ORCHESTRA_BASE_URL;
-		if (!base || !config.ORCHESTRA_API_KEY) {
+		const models = flags.models?.split(",").filter(Boolean);
+		if (models) {
+			if (!config.OPENROUTER_API_KEY) {
+				console.error("Set OPENROUTER_API_KEY (apps/benchmark/.env).");
+				process.exitCode = 1;
+				return;
+			}
+		} else if (!base || !config.ORCHESTRA_API_KEY) {
 			console.error(
 				"Set ORCHESTRA_BASE_URL and ORCHESTRA_API_KEY (apps/benchmark/.env).",
 			);
@@ -79,18 +90,30 @@ export default defineCommand({
 		}
 		const price = { input: flags["price-in"], output: flags["price-out"] };
 		const prices = priceOf(await loadPrices(), price);
-		const contenders: Contender[] = [
-			createBetaContender({
-				baseUrl: base,
-				apiKey: config.ORCHESTRA_API_KEY,
-				maxSteps: flags["max-steps"],
-				priceOf: prices,
-			}),
-		];
-		if (config.ORCHESTRA_PUBLISHABLE_KEY && config.ORCHESTRA_ORIGIN)
+		const contenders: Contender[] = models
+			? models.map((model) =>
+					createBetaContender({
+						baseUrl: "https://openrouter.ai/api",
+						apiKey: config.OPENROUTER_API_KEY as string,
+						model,
+						maxSteps: flags["max-steps"],
+						priceOf: prices,
+					}),
+				)
+			: [
+					createBetaContender({
+						baseUrl: base as string,
+						apiKey: config.ORCHESTRA_API_KEY as string,
+						maxSteps: flags["max-steps"],
+						priceOf: prices,
+					}),
+				];
+		if (models) {
+			// Hosted models alone: no orchestrator to check or to run.
+		} else if (config.ORCHESTRA_PUBLISHABLE_KEY && config.ORCHESTRA_ORIGIN)
 			contenders.push(
 				createOrchestraContender({
-					baseUrl: base,
+					baseUrl: base as string,
 					publishableKey: config.ORCHESTRA_PUBLISHABLE_KEY,
 					origin: config.ORCHESTRA_ORIGIN,
 					adminApiKey: config.ORCHESTRA_ADMIN_API_KEY,
@@ -103,10 +126,11 @@ export default defineCommand({
 			);
 
 		try {
-			await checkInfrastructure({
-				baseUrl: base,
-				apiKey: config.ORCHESTRA_API_KEY,
-			});
+			if (!models)
+				await checkInfrastructure({
+					baseUrl: base as string,
+					apiKey: config.ORCHESTRA_API_KEY as string,
+				});
 		} catch (error) {
 			console.error((error as Error).message);
 			process.exitCode = 1;
@@ -122,12 +146,21 @@ export default defineCommand({
 		const dir =
 			flags.output ?? resultPath("efficiency", "x").replace(/\.x$/, "");
 		const output = join(dir, "report.txt");
-		const folders = ["beta-alone", "orchestra"].map((name) => join(dir, name));
+		const folders = contenders.map(({ name }) =>
+			join(
+				dir,
+				name === "beta alone"
+					? "beta-alone"
+					: name === "orchestra + beta"
+						? "orchestra"
+						: name.replace(/[^\w.-]+/g, "-"),
+			),
+		);
 		for (const folder of folders) mkdirSync(folder, { recursive: true });
 
 		// The report of what is done so far, rewritten after every iteration and at the end.
 		const writeReport = () => {
-			const beta = runsOf[0]?.find((run) => run.model)?.model;
+			const beta = !models && runsOf[0]?.find((run) => run.model)?.model;
 			const report = renderReport({
 				at: new Date().toISOString(),
 				seed: flags.seed,
@@ -147,9 +180,11 @@ export default defineCommand({
 		// Pin the orchestrator's text models to temperature 0 for the run.
 		let restore = async () => {};
 		const admin = config.ORCHESTRA_ADMIN_API_KEY;
-		if (admin && contenders.length > 1) {
+		// The orchestrator's contender is the second one, never there with --models.
+		const orchestra = !models && contenders.length > 1;
+		if (admin && orchestra) {
 			const settings = createOrchestraSettings({
-				baseUrl: base,
+				baseUrl: base as string,
 				adminApiKey: admin,
 			});
 			const before = await settings.agents();
@@ -159,7 +194,7 @@ export default defineCommand({
 				"orchestra + beta:",
 				...during.map((one, i) => `  ${agentLine(before[i] ?? one, one)}`),
 			);
-		} else if (contenders.length > 1)
+		} else if (orchestra)
 			setup.push(
 				"orchestra + beta: models not read and temperatures unchanged (ORCHESTRA_ADMIN_API_KEY unset)",
 			);

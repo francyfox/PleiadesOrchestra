@@ -1,11 +1,15 @@
 import { Elysia, t } from "elysia";
 import type { AgentSettings } from "../agent-settings/agent-settings.service.ts";
-import type { AgentId } from "../agent-settings/agent-settings.types.ts";
+import {
+	AGENT_IDS,
+	type AgentId,
+	modelTypeOf,
+} from "../agent-settings/agent-settings.types.ts";
 
 export interface CompletionsDeps {
 	/** Read per request: an admin's save applies at once. */
 	settings: Pick<AgentSettings, "effective">;
-	/** Whose model answers (the reply model, `beta-text`). */
+	/** Whose model answers when the body's `model` names no language agent (the reply model, `beta-text`). */
 	agent: AgentId;
 	fetch?: typeof fetch;
 }
@@ -15,7 +19,8 @@ export interface CompletionsDeps {
  * endpoint, no planner: what `apps/benchmark` (`bun efficiency`) compares the
  * orchestrator against with the very same text model. The caller's body goes
  * on as it is (tools, stream, …); the model, key, reasoning effort and extra
- * body are beta's. Not recorded in the usage ledger.
+ * body are beta's, or another language agent's when `model` is its id
+ * (`albedo send --agent`). Not recorded in the usage ledger.
  */
 export function completionsRoutes({
 	settings,
@@ -25,7 +30,10 @@ export function completionsRoutes({
 	return new Elysia({ tags: ["Transport"] }).post(
 		"/v1/chat/completions",
 		async ({ body, request }) => {
-			const s = settings.effective(agent);
+			const named = AGENT_IDS.find(
+				(id) => id === body.model && modelTypeOf(id) === "language",
+			);
+			const s = settings.effective(named ?? agent);
 			const upstream = await fetchFn(
 				`${s.baseUrl.replace(/\/+$/, "")}/chat/completions`,
 				{
@@ -59,7 +67,7 @@ export function completionsRoutes({
 			detail: {
 				summary: "Chat completion on beta's model",
 				description:
-					"OpenAI-compatible pass-through to the reply model in effect (`beta-text` agent settings): the body is sent as given with `model` replaced; the upstream status and body (a stream included) come back unchanged.",
+					"OpenAI-compatible pass-through to the reply model in effect (`beta-text` agent settings), or to another language agent's model when `model` is its id (`alpha-understand`, `delta-function-call`): the body is sent as given with `model` replaced; the upstream status and body (a stream included) come back unchanged.",
 			},
 		},
 	);

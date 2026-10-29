@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Handle, type NodeProps, type Position } from "@xyflow/svelte";
 
-	/** One step of the flow demo: who does it (tag), what happens (text), how far the run is (status). */
+	/** One step of the flow demo: who does it (tag), what happens (text), its time and price (meta), how far the run is (status). */
 	let { data }: NodeProps = $props();
 
 	const status = $derived(String(data.status));
@@ -19,13 +19,13 @@
 >
 	<Handle type="target" position={data.in as Position} isConnectable={false} />
 	{#if option}
-		<span class="flex items-center justify-between gap-2 text-xs">
-			<code>{data.text}</code>
-			<span style:color={status === "rejected" ? "var(--dim)" : "var(--accent)"}>{data.tag}</span>
-		</span>
+		<span class="text-xs"><code>{data.text}</code></span>
 	{:else}
 		<span class="text-xs font-bold" style:color="var(--accent)">{data.tag}</span>
 		<span class="text-xs" style:color="var(--fg)">{data.text}</span>
+		{#if data.meta}
+			<span class="text-xs tabular-nums" style:color="var(--dim)">{data.meta}</span>
+		{/if}
 	{/if}
 	<Handle type="source" position={data.out as Position} isConnectable={false} />
 </div>

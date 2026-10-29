@@ -8,7 +8,7 @@
 	let t = $derived(c.mcp);
 </script>
 
-<Pane title="guest@pleiades — mcp vs webmcp" header={false} id="mcp" class="lg:col-span-2">
+<Pane title="guest@pleiades — mcp vs webmcp" header={false} id="mcp">
 	<h2 class="text-xl font-bold">{t.heading}</h2>
 	<p class="mt-2 max-w-3xl text-sm" style:color="var(--dim)">{t.lead}</p>
 

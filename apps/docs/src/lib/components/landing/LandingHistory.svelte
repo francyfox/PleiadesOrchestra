@@ -54,10 +54,10 @@
 	});
 </script>
 
-<Pane title="guest@pleiades — world market" header={false} id="history" class="min-h-screen lg:col-span-2 !border-0">
-	<div class="container h-full">
+<section title="guest@pleiades — world market" id="history" class="min-h-screen flex items-center !border-0">
+	<div class="container">
 		<div
-			class="flex h-full flex-col justify-center gap-10 py-16 lg:flex-row lg:items-center lg:justify-between"
+			class="flex h-full flex-col justify-center gap-10 lg:flex-row lg:items-center lg:justify-between"
 		>
 			<h2 class="flex flex-col gap-3 font-normal">
 				<span class="text-3xl sm:text-4xl">{t.heading[0]}</span>
@@ -136,5 +136,5 @@
 			</div>
 		</div>
 	</div>
-</Pane>
+</section>
 

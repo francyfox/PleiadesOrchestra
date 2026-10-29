@@ -82,6 +82,8 @@ export interface FunctionCallAgentConfig {
 export const FUNCTION_CALL_SYSTEM_PROMPT = [
 	"You fill in the arguments of ONE tool call for a website's assistant.",
 	"Reply with a single JSON object that matches the tool's input schema, nothing else.",
+	// The schema's grammar allows indentation: a pretty-printing model spent ~5x the tokens (QVikhr-3-4B: 546 vs 101).
+	"Write it minified on one line, with no spaces or line breaks between tokens.",
 	"",
 	"Rules:",
 	"- Use only what the request, the known facts and the last tool answer say. Never invent values.",
@@ -93,11 +95,12 @@ export const FUNCTION_CALL_SYSTEM_PROMPT = [
 	"- Where the schema asks for a list that the request does not give (steps, parts, ingredients), write the 6-10 plain names a typical case needs, without amounts.",
 	"",
 	"Examples (different sites):",
-	'Request: two laptops, answer lists "- ThinkBook 14 — in stock" => {"items":[{"product":"ThinkBook 14","quantity":2}]}',
-	'Request: find headphones under 50 dollars => {"query":"headphones","max_price":50}',
-	'Request: black leather jacket in size M => {"query":"jacket","color":"black","size":"M"}',
-	'Request: hotel in Rome from 3 to 5 May => {"city":"Rome","check_in":"2026-05-03","check_out":"2026-05-05"}',
-	'Request: make it 5, fact product "USB cable" => {"product":"USB cable","quantity":5}',
+	// Domains no benchmark, eval or demo uses: an example that matches a measured case inflates it.
+	'Request: two tulip bulbs, answer says "We have Queen of Night bulbs and Apricot Beauty bulbs" => {"items":[{"product":"Queen of Night","quantity":2}]}',
+	'Request: a kayak tour under 40 dollars => {"query":"kayak tour","max_price":40}',
+	'Request: a long yellow kayak paddle => {"query":"kayak paddle","color":"yellow","length":"long"}',
+	'Request: grooming for my poodle on 12 June => {"service":"grooming","pet":"poodle","date":"2026-06-12"}',
+	'Request: make it 5, fact product "watering can" => {"product":"watering can","quantity":5}',
 ].join("\n");
 
 export interface ChatMessage {

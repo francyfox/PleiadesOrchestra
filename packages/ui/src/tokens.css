@@ -10,8 +10,8 @@
  * shadows; chroma cut 15% from the original, its pink swapped for violet.
  */
 :root {
-	--background: oklch(1 0 0);
-	--foreground: oklch(0.4712 0 0);
+	--background: oklch(0.95 0 0);
+	--foreground: oklch(0.3712 0 0);
 	--card: oklch(1 0 0);
 	--card-foreground: oklch(0.4712 0 0);
 	--popover: oklch(1 0 0);
@@ -21,7 +21,7 @@
 	--secondary: oklch(0.8835 0.0486 161.6932);
 	--secondary-foreground: oklch(0.3211 0 0);
 	--muted: oklch(0.9808 0.0121 169.2551);
-	--muted-foreground: oklch(0.5795 0 0);
+	--muted-foreground: oklch(0.4795 0 0);
 	--accent: oklch(0.9754 0.0101 23.7027);
 	--accent-foreground: oklch(0.3211 0 0);
 	--destructive: oklch(0.577 0.183 27.325);

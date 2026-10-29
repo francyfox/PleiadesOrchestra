@@ -79,8 +79,8 @@
                     <h1 class="hidden">PleiadesOrchestra</h1>
                     <div class="text-[clamp(2rem,8vw,4rem)] font-bold leading-none text-white mix-blend-difference">PleiadesOrchestra</div>
                 </div>
-                <p class="max-w-2xl text-sm text-white/80 sm:text-base">{t.lead}</p>
-                <p class="text-xs text-white/70">{t.early}</p>
+                <p class="max-w-2xl text-sm  sm:text-base">{t.lead}</p>
+                <p class="text-xs">{t.early}</p>
                 <div class="flex flex-wrap items-center gap-2 text-sm">
                     <a
                             href="#pricing"
