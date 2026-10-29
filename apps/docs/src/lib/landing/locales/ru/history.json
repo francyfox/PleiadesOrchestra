@@ -1,0 +1,148 @@
+{
+	"heading": {
+		"line1": "Агенты не просто подсказывают",
+		"line2": "Они действуют!"
+	},
+	"lead": "Через MCP ИИ-агент может пользоваться продуктом, как человек: положить товар в корзину, купить, создать сделку, записать звонок. Вот как к этому пришли крупные платформы.",
+	"canLabel": "Что может агент",
+	"pageLabel": "Перейти к событию %s",
+	"events": {
+		"mcp-moves-to-the": {
+			"date": "2025-12",
+			"title": "MCP переходит под Linux Foundation",
+			"text": "Anthropic передаёт протокол фонду Agentic AI Foundation, который основали вместе с Block и OpenAI при поддержке Google, Microsoft, AWS и Cloudflare. Его поддерживают ChatGPT, Gemini, Copilot, Cursor и VS Code.",
+			"can": {
+				"one-standard-for-every": "единый стандарт для всех агентов"
+			}
+		},
+		"every-store-gets-its": {
+			"date": "Shopify",
+			"title": "У каждого магазина свой MCP-эндпоинт",
+			"text": "Storefront MCP-сервер позволяет агенту искать по каталогу, читать карточки товаров и правила магазина, собирать и менять корзину и отдавать покупателю ссылку на оплату. Новые интеграции Shopify теперь направляет на эндпоинт Universal Commerce Protocol.",
+			"can": {
+				"search": "поиск",
+				"add-to-cart": "добавить в корзину",
+				"edit-cart": "изменить корзину",
+				"checkout-link": "ссылка на оплату",
+				"answer-policy-questions": "ответы по правилам магазина"
+			}
+		},
+		"hubspot-remote-mcp-server": {
+			"date": "2026-04-13",
+			"title": "Удалённый MCP-сервер HubSpot вышел в GA",
+			"text": "Чтение и запись по OAuth 2.1: контакты, компании, сделки, тикеты, а также звонки, встречи, заметки и задачи. Каждое действие соблюдает права самого пользователя.",
+			"can": {
+				"create-contacts": "создать контакт",
+				"update-deals": "обновить сделку",
+				"log-calls": "записать звонок",
+				"create-tasks": "создать задачу"
+			}
+		},
+		"salesforce-hosted-mcp-servers": {
+			"date": "2026-04-29",
+			"title": "Hosted MCP-серверы Salesforce вышли в GA",
+			"text": "Управляемый Salesforce эндпоинт открывает данные организации, flows, Apex-действия и запросы любому MCP-совместимому клиенту, начиная с Enterprise Edition.",
+			"can": {
+				"query-data": "запросить данные",
+				"run-flows": "запустить flow",
+				"run-apex-actions": "вызвать Apex-действие"
+			}
+		},
+		"typesafe-launches-jev-the": {
+			"date": "2026-09-15",
+			"title": "TypeSafe выпускает Jev — первую модель System One",
+			"text": "Модель для решений, а не для текста: приложение передаёт состояние и типизированные вопросы, Jev отвечает вероятностями за 70–500 мс (по данным компании). System 1 по Канеману — быстрый рефлекс рядом с медленными рассуждающими моделями. Агент решений Pleiades говорит на том же протоколе system_one.",
+			"can": {
+				"choose": "выбрать",
+				"classify": "классифицировать",
+				"route": "маршрутизировать",
+				"yes-no-with-a": "да/нет с вероятностью"
+			}
+		}
+	},
+	"cis": {
+		"heading": "СНГ: у кого есть ассистент, кто действует",
+		"legend": "✓ найдено · – не найдено",
+		"yes": "да",
+		"no": "нет",
+		"cols": {
+			"country": "Страна",
+			"assistant": "Ассистент покупателя",
+			"acts": "Действует: корзина, оплата",
+			"mcp": "MCP",
+			"note": "Примечание"
+		},
+		"rows": {
+			"russia": {
+				"country": "Россия",
+				"assistant": true,
+				"acts": true,
+				"mcp": false,
+				"note": "Ozon и Wildberries только советуют. Действует лишь Яндекс, по собственному закрытому протоколу."
+			},
+			"kazakhstan": {
+				"country": "Казахстан",
+				"assistant": true,
+				"acts": false,
+				"mcp": false,
+				"note": "Kasper от Kaspi (пилот) рекомендует, но не покупает. У Halyk и Freedom ничего."
+			},
+			"uzbekistan": {
+				"country": "Узбекистан",
+				"assistant": false,
+				"acts": false,
+				"mcp": false,
+				"note": "У Uzum нет. Ассистент Wildberries, доступность неясна."
+			},
+			"belarus": {
+				"country": "Беларусь",
+				"assistant": true,
+				"acts": false,
+				"mcp": false,
+				"note": "Только ассистент Wildberries, ограниченный запуск."
+			},
+			"kyrgyzstan": {
+				"country": "Кыргызстан",
+				"assistant": false,
+				"acts": false,
+				"mcp": false,
+				"note": "Только голосовые ассистенты банков."
+			},
+			"azerbaijan": {
+				"country": "Азербайджан",
+				"assistant": false,
+				"acts": false,
+				"mcp": false,
+				"note": "Чат в кошельке для платежей, ассистента для покупок нет."
+			},
+			"armenia": {
+				"country": "Армения",
+				"assistant": false,
+				"acts": false,
+				"mcp": false,
+				"note": ""
+			},
+			"georgia": {
+				"country": "Грузия",
+				"assistant": false,
+				"acts": false,
+				"mcp": false,
+				"note": ""
+			},
+			"tajikistan": {
+				"country": "Таджикистан",
+				"assistant": false,
+				"acts": false,
+				"mcp": false,
+				"note": ""
+			},
+			"turkmenistan": {
+				"country": "Туркменистан",
+				"assistant": false,
+				"acts": false,
+				"mcp": false,
+				"note": ""
+			}
+		}
+	}
+}

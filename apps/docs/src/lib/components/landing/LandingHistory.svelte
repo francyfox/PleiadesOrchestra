@@ -60,8 +60,8 @@
 			class="flex h-full flex-col justify-center gap-10 lg:flex-row lg:items-center lg:justify-between"
 		>
 			<h2 class="flex flex-col gap-3 font-normal">
-				<span class="text-3xl sm:text-4xl">{t.heading[0]}</span>
-				<span class="pl-5 text-5xl sm:text-6xl">{t.heading[1]}</span>
+				<span class="text-3xl sm:text-4xl">{t.heading.line1}</span>
+				<span class="pl-5 text-5xl sm:text-6xl">{t.heading.line2}</span>
 			</h2>
 
 			<!-- Timeline on the right: a progress fill down to the event in view, one bullet per event. -->
@@ -75,12 +75,12 @@
 				<!-- Transforms only, in step with the slide (speed/easing above): animating height or size re-laid out the page every frame and stuttered. -->
 				<span
 					class="absolute inset-y-0 right-[9px] w-0.5 origin-top rounded-full transition-transform duration-[800ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
-					style:transform="scaleY({(active + 0.5) / t.events.length})"
+					style:transform="scaleY({(active + 0.5) / Object.keys(t.events).length})"
 					style:background="var(--accent)"
 					aria-hidden="true"
 				></span>
 				<div class="absolute inset-y-0 right-0 flex w-5 flex-col items-center justify-around">
-					{#each t.events as event, i (event.title)}
+					{#each Object.values(t.events) as event, i (event.title)}
 						<!-- A 20px hit area around a small dot. -->
 						<button
 							type="button"
@@ -103,10 +103,10 @@
 					{/each}
 				</div>
 				<!-- Splide: vertical, one event in view, wheel/drag/arrow keys move one at a time. -->
-				<section class="splide" bind:this={slider} aria-label={t.heading.join(" ")}>
+				<section class="splide" bind:this={slider} aria-label={`${t.heading.line1} ${t.heading.line2}`}>
 				<div class="splide__track">
 				<ul class="splide__list">
-				{#each t.events as event, i (event.title)}
+				{#each Object.values(t.events) as event, i (event.title)}
 					<li class="splide__slide flex flex-col items-end justify-center text-right">
 						{#if /^\d/.test(event.date)}
 							<time class="text-xs" style:color="var(--accent-2)" datetime={event.date}
@@ -118,7 +118,7 @@
 						<h3 class="font-bold">{event.title}</h3>
 						<p class="ml-auto max-w-2xl text-sm" style:color="var(--dim)">{event.text}</p>
 						<ul class="mt-2 flex flex-wrap justify-end gap-1.5 text-xs" aria-label={t.canLabel}>
-							{#each event.can as action (action)}
+							{#each Object.values(event.can) as action (action)}
 								<li class="chip border px-2 py-0.5">{action}</li>
 							{/each}
 						</ul>

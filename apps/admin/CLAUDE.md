@@ -84,6 +84,8 @@ en default / ru / kk. Every UI string in a `*.content.ts` dictionary (`t({ ru, e
 
 `admin-api` returns error **codes** (`{ error: "weak_password", min: 8 }`), never text — client localizes. Numbers/dates/ms/GB via `useFormat()` (`lib/i18n/format.ts`, Intl-based). TanStack column headers must be functions (`header: () => $content.x.value`), not strings, or they won't follow a locale switch.
 
+Visual editor (`intlayer-editor`, pinned to the installed Intlayer version): `bun run dev:editor` (the panel on :3002 with the editor enabled) plus `bun run editor` (http://localhost:8000); it writes edits back into the `*.content.ts` files. Opt-in through `INTLAYER_EDITOR=true` (both scripts set it), so a build or a plain `dev` never enables it.
+
 Dev gotcha: vite-intlayer rewrites every `.intlayer/dictionary/*.json` on content change, Vite sends one `full-reload` per file — 18–46 reloads/second. Fixed by `vite/coalesce-intlayer-reloads.ts` (swallows per-file reloads under `.intlayer/`, one debounced `full-reload`). SvelteKit narrows `server.fs.allow` to `src`/`node_modules`/`.svelte-kit`, so `vite.config.ts` adds `.intlayer` (otherwise "outside of Vite serving allow list" on a dictionary JSON).
 
 ## Sentry

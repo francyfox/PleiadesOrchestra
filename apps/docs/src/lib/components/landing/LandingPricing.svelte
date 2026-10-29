@@ -43,7 +43,7 @@
 			<p class="mt-1 text-3xl font-bold">{cloudPrice} <span class="text-sm font-normal">{t.cloud.perMonth}</span></p>
 			<p class="mt-2 text-sm" style:color="var(--dim)">{t.cloud.text}</p>
 			<ul class="mt-2 list-disc pl-5 text-sm">
-				{#each t.cloud.includes as item (item)}<li>{item}</li>{/each}
+				{#each Object.values(t.cloud.includes) as item (item)}<li>{item}</li>{/each}
 			</ul>
 			<p class="mt-2 text-sm" style:color="var(--dim)">{t.cloud.privacy}</p>
 			<div class="mt-6 flex flex-wrap items-center gap-2 text-sm">

@@ -43,19 +43,23 @@
 
 <Pane title="guest@pleiades — flow" header={false} id="flow" class="!border-0 min-h-screen py-10">
 	<div class="flex flex-col gap-5">
-		<div class="text-3xl font-bold">{t.heading}</div>
-		<p class="mt-2 max-w-3xl text-sm">{t.lead}</p>
+		<div class="text-6xl">{t.heading}</div>
+		<p class="mt-2 max-w-3xl text-sm italic">{t.lead}</p>
 
 		<div
 				class="p-3 grid gap-4 "
 				style:margin-top="1rem"
-				style:grid-template-columns={phone.current ? "1fr" : "12rem 1fr"}
+				style:background-color="var(--panel)"
+				style:background-image="var(--gradient-card-odd)"
+				style:grid-template-columns={phone.current ? "1fr" : "14rem 1fr"}
 		>
 			<div
 					role="tablist"
 					aria-label={t.casesLabel}
 					aria-orientation={phone.current ? "horizontal" : "vertical"}
-					class="flex flex-wrap content-start gap-2"
+					class="p-2 flex flex-wrap content-start gap-2"
+					style:background-color="var(--panel)"
+					style:background-image="var(--gradient-card)"
 			>
 				{#each FLOW_CASE_KEYS as key, i (key)}
 					<button
@@ -80,7 +84,7 @@
 			</div>
 
 			<div class="min-w-0">
-				<div role="tablist" aria-label={t.tabsLabel} class="flex flex-wrap gap-2">
+				<div role="tablist" aria-label={t.tabsLabel} class="pt-2 flex flex-wrap gap-2">
 					{#each FLOW_KEYS as key, i (key)}
 						<button
 								type="button"

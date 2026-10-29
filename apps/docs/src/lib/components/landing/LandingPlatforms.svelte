@@ -21,7 +21,7 @@
 	<p class="mt-2 max-w-3xl text-sm" style:color="var(--dim)">{t.lead}</p>
 
 	<ul class="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
-		{#each t.items as platform, i (platform.name)}
+		{#each Object.values(t.items) as platform, i (platform.name)}
 			<li class="flex flex-col border p-4">
 				<h3 class="font-bold" style:color="var(--accent)">{platform.name}</h3>
 				<span class="chip mt-1 self-start border px-2 py-0.5 text-xs">{platform.status}</span>

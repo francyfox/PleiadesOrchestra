@@ -18,7 +18,7 @@
 	onMount(() => {
 		if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
 			reduced = true;
-			shown = t.lines.length;
+			shown = Object.keys(t.lines).length;
 			return;
 		}
 		const timer = setInterval(() => {
@@ -45,7 +45,7 @@
         {t.title}
     </figcaption>
     <ol class="flex h-80 list-none lg:h-80 flex-col justify-end gap-2 overflow-hidden !p-3 text-sm">
-        {#each t.lines.slice(0, shown) as line, i (i)}
+        {#each Object.values(t.lines).slice(0, shown) as line, i (i)}
             <li
                     in:fly={{ y: 8, duration: reduced ? 0 : 200 }}
                     class={line.from === "user"

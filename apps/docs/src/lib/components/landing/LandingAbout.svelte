@@ -12,14 +12,14 @@
 	<p class="mt-2 max-w-3xl text-sm">{t.text}</p>
 
 	<dl class="mt-6 grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-[auto_1fr]">
-		{#each t.stars as star (star.name)}
+		{#each Object.values(t.stars) as star (star.name)}
 			<dt style:color="var(--accent)">{star.name}</dt>
 			<dd style:color="var(--dim)">{star.role}</dd>
 		{/each}
 	</dl>
 
 	<ul class="mt-6 grid grid-cols-1 gap-2 text-sm sm:grid-cols-3">
-		{#each t.stats as stat (stat.label)}
+		{#each Object.values(t.stats) as stat (stat.label)}
 			<li class="border p-3">
 				<span class="block text-xs" style:color="var(--dim)">{stat.label}</span>
 				<strong style:color="var(--accent)">{stat.value}</strong>

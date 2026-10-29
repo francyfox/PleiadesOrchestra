@@ -37,6 +37,7 @@
 		"elysia": "catalog:",
 		"fuse.js": "^7.5.0",
 		"intlayer": "^9.5.9",
+		"intlayer-editor": "9.5.9",
 		"layerchart": "^2.0.0",
 		"mode-watcher": "^1.1.0",
 		"prismjs": "^1.30.0",
@@ -57,6 +58,8 @@
 	"private": true,
 	"scripts": {
 		"dev": "bun --bun vite dev --port 3002",
+		"dev:editor": "INTLAYER_EDITOR=true bun --bun vite dev --port 3002",
+		"editor": "INTLAYER_EDITOR=true intlayer-editor start",
 		"build": "bun --bun vite build",
 		"preview": "bun --bun vite preview",
 		"prepare": "svelte-kit sync || echo ''",

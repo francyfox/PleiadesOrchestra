@@ -38,7 +38,7 @@
 				</tr>
 			</thead>
 			<tbody>
-				{#each t.rows as row (row.label)}
+				{#each Object.values(t.rows) as row (row.label)}
 					<tr class="border-b align-top">
 						<th scope="row" class="py-3 pr-4 font-normal" style:color="var(--dim)"
 							>{row.label}</th

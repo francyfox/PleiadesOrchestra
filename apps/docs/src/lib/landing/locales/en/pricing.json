@@ -1,0 +1,29 @@
+{
+	"heading": "Community, cloud or business",
+	"community": {
+		"title": "Community",
+		"price": "free",
+		"text": "Open code under the GNU AGPLv3. Run it for yourself, change it, contribute. If you let people use a modified version over a network, you publish your changes.",
+		"cta": "get the source"
+	},
+	"cloud": {
+		"title": "Cloud",
+		"perMonth": "per month",
+		"text": "We host it for you. Install the WordPress plugin, paste the key, done.",
+		"includes": {
+			"the-hosted-agent-no": "The hosted agent, no servers of your own",
+			"the-wordpress-woocommerce-plugin": "The WordPress / WooCommerce plugin",
+			"paid-models-for-replies": "Paid models for replies and tool arguments"
+		},
+		"privacy": "Privacy: messages go to the model providers through OpenRouter.",
+		"buy": "subscribe"
+	},
+	"business": {
+		"title": "Business",
+		"oneTime": "one time",
+		"text": "Private code: build it into a closed-source product or run a modified version without publishing it. Perpetual license, covers all versions. No support included.",
+		"buy": "buy license",
+		"ask": "ask for a license",
+		"terms": "license terms"
+	}
+}

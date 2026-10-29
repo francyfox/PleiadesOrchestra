@@ -10,7 +10,7 @@
 <Pane title="guest@pleiades — benefits" header={false} id="benefits">
 	<h2 class="text-xl font-bold">{t.heading}</h2>
 	<ul class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-		{#each t.items as benefit (benefit.title)}
+		{#each Object.values(t.items) as benefit (benefit.title)}
 			<li class="border p-4">
 				<h3 class="font-bold" style:color="var(--accent)">{benefit.title}</h3>
 				<p class="mt-1 text-sm" style:color="var(--dim)">{benefit.text}</p>

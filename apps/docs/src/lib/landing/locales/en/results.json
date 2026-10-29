@@ -1,0 +1,15 @@
+{
+	"heading": "Measured",
+	"claims": {
+		"success": "more tasks done than {model} alone",
+		"speed": "faster than {model} alone",
+		"cost": "per done task than {model} alone, which also does 100%"
+	},
+	"metrics": {
+		"success": "tasks done",
+		"p50Ms": "reply time, p50",
+		"usdPerSuccess": "cost per done task"
+	},
+	"link": "All the benchmarks and how to rerun them",
+	"note": "Unless marked “local”, every model, the orchestrator’s too, ran hosted through OpenRouter: each call includes the network and the provider’s queue, and the orchestrator makes about 4 calls per message. The local run had every model of the orchestrator on one RTX 2060 (6 GB), no API calls at all, so it has no cost bar; the card holds two models besides d3, so the run went end to end with QVikhr as delta too, then Arch-Function answered the same 60 delta calls (all 60 the same) and the time counts every model warm. 14 shop tasks in English and Russian, 3 passes each (the orchestrator without an intent set 2), judged by the cart and the shown product, not by the reply’s words. Prices from OpenRouter, {date}. Benchmark: apps/benchmark, bun efficiency."
+}

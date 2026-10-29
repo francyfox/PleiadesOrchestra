@@ -20,8 +20,11 @@ const config: IntlayerConfig = {
 		mode: "no-prefix",
 		storage: "cookie",
 	},
+	// Visual editor (`bun run dev:editor` + `bun run editor`, http://localhost:8000): opt-in only, so a
+	// build or a plain `dev` never ships it; it writes the edited texts back into the *.content.ts files.
 	editor: {
-		enabled: false,
+		enabled: process.env.INTLAYER_EDITOR === "true",
+		applicationURL: "http://localhost:3002",
 	},
 	dictionary: {
 		importMode: "static",

@@ -1,0 +1,36 @@
+{
+	"heading": "About Pleiades",
+	"text": "PleiadesOrchestra is a self-hosted orchestrator for tiny models. Instead of one huge prompt it builds a chain of actions towards a goal (GOAP), so a 1B-parameter model can find a product, add it to the cart or compare items on a real site. It works with facts and prepared answers — it does not pretend to be a professional consultant.",
+	"stars": {
+		"alpha-orchestrator": {
+			"name": "alpha-orchestrator",
+			"role": "GOAP planner, users, access, history, token usage"
+		},
+		"beta-text": {
+			"name": "beta-text",
+			"role": "Small text model (llama-server, Vulkan or CPU)"
+		},
+		"gamma-decision": {
+			"name": "gamma-decision",
+			"role": "Fast typed decisions on Laya"
+		},
+		"delta-function-call": {
+			"name": "delta-function-call",
+			"role": "Fills in the JSON arguments of tool calls"
+		}
+	},
+	"stats": {
+		"idle-ram-whole-stack": {
+			"label": "idle RAM, whole stack",
+			"value": "~2 GiB"
+		},
+		"gpu": {
+			"label": "GPU",
+			"value": "optional"
+		},
+		"deploy": {
+			"label": "deploy",
+			"value": "docker compose up"
+		}
+	}
+}

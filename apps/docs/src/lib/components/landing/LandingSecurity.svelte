@@ -22,7 +22,7 @@
 	<p class="mt-2 max-w-3xl text-sm" style:color="var(--dim)">{t.lead}</p>
 
 	<ul class="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
-		{#each t.points as point, i (point.title)}
+		{#each Object.values(t.points) as point, i (point.title)}
 			<li class="flex flex-col border p-4">
 				<h3 class="font-bold" style:color="var(--accent)">{point.title}</h3>
 				<p class="mt-1 text-sm" style:color="var(--dim)">{point.text}</p>

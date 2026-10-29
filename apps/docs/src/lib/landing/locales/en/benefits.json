@@ -1,0 +1,29 @@
+{
+	"heading": "Benefits",
+	"items": {
+		"tiny-models": {
+			"title": "Tiny models",
+			"text": "Built for small businesses without a GPU or a budget for expensive models."
+		},
+		"a-plan-not-a": {
+			"title": "A plan, not a prompt",
+			"text": "GOAP builds a chain of actions towards the goal, so a small model stays on track."
+		},
+		"uses-your-site-s": {
+			"title": "Uses your site’s tools",
+			"text": "Find a product, add to cart, compare — through the MCP / WebMCP tools you already have."
+		},
+		"self-hosted": {
+			"title": "Self-hosted",
+			"text": "The whole stack runs on one Linux machine with Docker Compose. Your data stays yours."
+		},
+		"light-widget": {
+			"title": "Light widget",
+			"text": "One web component, under 40 kB brotli, works in React, Vue, Svelte or plain HTML."
+		},
+		"see-every-decision": {
+			"title": "See every decision",
+			"text": "The admin panel draws each request as a graph: prompt, steps, tool answers, result."
+		}
+	}
+}

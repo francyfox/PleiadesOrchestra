@@ -1,0 +1,48 @@
+{
+	"aria": "PleiadesOrchestra demo",
+	"videoAria": "PleiadesOrchestra: prompt, decision, action",
+	"lead": "Open-source orchestrator with GOAP for small models, with a widget for your website. The widget works with your site’s WebMCP/MCP. Cloud and self-hosted.",
+	"early": "Early stage · in active development",
+	"get": "get it",
+	"github": "source on GitHub",
+	"playground": "playground",
+	"docs": "docs",
+	"panel": "sign in",
+	"pause": "pause",
+	"play": "play",
+	"demo": {
+		"aria": "Widget demo chat",
+		"title": "Shop assistant",
+		"placeholder": "Message…",
+		"lines": {
+			"user": {
+				"from": "user",
+				"text": "Find a 27-inch monitor under $300"
+			},
+			"step": {
+				"from": "step",
+				"text": "searching the catalog"
+			},
+			"step-2": {
+				"from": "step",
+				"text": "found 4 products"
+			},
+			"bot": {
+				"from": "bot",
+				"text": "The cheapest is Vista 27 for $249. Add it to the cart?"
+			},
+			"user-2": {
+				"from": "user",
+				"text": "Yes, two of them"
+			},
+			"step-3": {
+				"from": "step",
+				"text": "add_to_cart · Vista 27 × 2"
+			},
+			"bot-2": {
+				"from": "bot",
+				"text": "Done: 2 × Vista 27 in your cart, $498. Go to checkout?"
+			}
+		}
+	}
+}

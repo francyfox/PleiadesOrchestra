@@ -1,0 +1,209 @@
+{
+	"heading": "The model does not decide alone",
+	"lead": "gpt-6-luna alone decides every step itself, so every step is one more call of a big model. In the orchestrator the model never decides alone: rules, the site’s memory and a decision model name the kind of request, the GOAP planner builds the steps to the goal, a small model only fills in a call, and code does what needs no model. A 24B and an 8B model, both small next to gpt-6-luna.",
+	"note": "Measured runs of the benchmark, all models hosted through OpenRouter, each call at its model’s OpenRouter price. Times include the network. The orchestrator ran on a channel with the shop intent set.",
+	"aria": "Diagram: one message, step by step, with each step’s time and price",
+	"casesLabel": "Task",
+	"tabsLabel": "Setup",
+	"tabs": {
+		"llm": "Only LLM (gpt-6-luna)",
+		"orchestra": "Orchestrator (LLM + decision)"
+	},
+	"legend": {
+		"total": "total",
+		"calls": "model calls",
+		"done": "task done",
+		"failed": "task failed"
+	},
+	"cases": {
+		"remove-all": {
+			"label": "Empty the cart",
+			"llm": {
+				"widget": {
+					"tag": "widget · site",
+					"text": "“Remove everything from my cart.”"
+				},
+				"llm1": {
+					"tag": "LLM · decides the next step",
+					"text": "Read the cart first: get_cart()"
+				},
+				"llm2": {
+					"tag": "LLM · decides the next step",
+					"text": "Remove each: update_cart_item({ product: \"Handmade Marble Car\", quantity: 0 }), the same for Small Steel Bike"
+				},
+				"llm3": {
+					"tag": "LLM · decides the next step",
+					"text": "No more tools: writes the reply"
+				},
+				"answer": {
+					"tag": "widget · site",
+					"text": "“Your cart is now empty.”"
+				}
+			},
+			"orchestra": {
+				"widget": {
+					"tag": "widget · site",
+					"text": "“Remove everything from my cart.”"
+				},
+				"understand": {
+					"tag": "alpha · understanding",
+					"text": "English, one task: remove, the whole cart"
+				},
+				"rules": {
+					"tag": "alpha · rules",
+					"text": "removal words and “everything”: no decision model needed"
+				},
+				"plan": {
+					"tag": "alpha · GOAP plan",
+					"text": "goal: the cart is empty; plan: get_cart → remove each → reply from a template"
+				},
+				"tool1": {
+					"tag": "alpha · site call",
+					"text": "get_cart() → in the browser, 2 items"
+				},
+				"tool2": {
+					"tag": "alpha · site call",
+					"text": "update_cart_item({ product: \"Handmade Marble Car\", quantity: 0 }): arguments from the cart, no model"
+				},
+				"tool3": {
+					"tag": "alpha · site call",
+					"text": "update_cart_item({ product: \"Small Steel Bike\", quantity: 0 })"
+				},
+				"template": {
+					"tag": "alpha · reply template",
+					"text": "“Removed from your cart: 1 × Handmade Marble Car, 2 × Small Steel Bike.” No model call"
+				},
+				"answer": {
+					"tag": "widget · site",
+					"text": "The reply appears in the chat, the cart is empty"
+				}
+			}
+		},
+		"add-list": {
+			"label": "Add three products",
+			"llm": {
+				"widget": {
+					"tag": "widget · site",
+					"text": "“Add to my cart: Handmade Marble Car, Small Steel Bike and Tasty Granite Salad.”"
+				},
+				"llm1": {
+					"tag": "LLM · decides the next step",
+					"text": "Search each: three search_products calls"
+				},
+				"llm2": {
+					"tag": "LLM · decides the next step",
+					"text": "add_to_cart({ items: 3 products }) with the names it found"
+				},
+				"llm3": {
+					"tag": "LLM · decides the next step",
+					"text": "No more tools: writes the reply"
+				},
+				"answer": {
+					"tag": "widget · site",
+					"text": "“Added one Handmade Marble Car, one Small Steel Bike, and one Tasty Granite Salad to your cart.”"
+				}
+			},
+			"orchestra": {
+				"widget": {
+					"tag": "widget · site",
+					"text": "“Add to my cart: Handmade Marble Car, Small Steel Bike and Tasty Granite Salad.”"
+				},
+				"understand": {
+					"tag": "alpha · understanding",
+					"text": "English, one task, three products"
+				},
+				"rules": {
+					"tag": "alpha · rules",
+					"text": "adding words: no decision model needed"
+				},
+				"memory": {
+					"tag": "alpha · site memory",
+					"text": "an approved example of this site: adding to the cart, no decision model call"
+				},
+				"plan": {
+					"tag": "alpha · GOAP plan",
+					"text": "goal: three products in the cart; plan: search each → add_to_cart → reply"
+				},
+				"delta1": {
+					"tag": "delta · parameters and call",
+					"text": "search_products({ query: \"Handmade Marble Car\" }) → found"
+				},
+				"delta2": {
+					"tag": "delta · parameters and call",
+					"text": "search_products({ query: \"Small Steel Bike\" }) → found"
+				},
+				"delta3": {
+					"tag": "delta · parameters and call",
+					"text": "search_products({ query: \"Tasty Granite Salad\" }) → found"
+				},
+				"tool1": {
+					"tag": "alpha · site call",
+					"text": "add_to_cart({ items: 3 products }): arguments from the search answers, no model"
+				},
+				"template": {
+					"tag": "alpha · reply template",
+					"text": "“Added to your cart: 1 × Handmade Marble Car, 1 × Small Steel Bike, 1 × Tasty Granite Salad.” No model call"
+				},
+				"answer": {
+					"tag": "widget · site",
+					"text": "The reply appears in the chat, three products in the cart"
+				}
+			}
+		},
+		"price": {
+			"label": "Ask a price",
+			"llm": {
+				"widget": {
+					"tag": "widget · site",
+					"text": "“How much does Tasty Granite Salad cost?”"
+				},
+				"llm1": {
+					"tag": "LLM · decides the next step",
+					"text": "search_products({ query: \"Tasty Granite Salad\" })"
+				},
+				"llm2": {
+					"tag": "LLM · decides the next step",
+					"text": "No more tools: writes the reply"
+				},
+				"answer": {
+					"tag": "widget · site",
+					"text": "“Tasty Granite Salad costs $206.59.”"
+				}
+			},
+			"orchestra": {
+				"widget": {
+					"tag": "widget · site",
+					"text": "“How much does Tasty Granite Salad cost?”"
+				},
+				"understand": {
+					"tag": "alpha · understanding",
+					"text": "English, one task: the price of one product"
+				},
+				"rules": {
+					"tag": "alpha · rules",
+					"text": "no cue words for a known kind of request, so gamma decides"
+				},
+				"gamma": {
+					"tag": "gamma · decision",
+					"text": "Which kind of request? One of the channel’s intents"
+				},
+				"plan": {
+					"tag": "alpha · GOAP plan",
+					"text": "goal: a reply from facts; plan: search_products → reply"
+				},
+				"delta1": {
+					"tag": "delta · parameters and call",
+					"text": "search_products({ query: \"Tasty Granite Salad\" }) → in the browser, $206.59"
+				},
+				"beta": {
+					"tag": "beta · reply",
+					"text": "“Tasty Granite Salad costs $206.59.”"
+				},
+				"answer": {
+					"tag": "widget · site",
+					"text": "The reply appears in the chat"
+				}
+			}
+		}
+	}
+}

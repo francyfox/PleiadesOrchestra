@@ -1,0 +1,36 @@
+{
+	"heading": "Pleiades туралы",
+	"text": "PleiadesOrchestra — шағын модельдерге арналған self-hosted оркестратор. Бір үлкен промптың орнына ол мақсатқа жететін әрекеттер тізбегін құрады (GOAP), сондықтан 1 млрд параметрлі модель нақты сайтта тауар тауып, себетке сала алады немесе тауарларды салыстыра алады. Ол фактілермен және дайын жауаптармен жұмыс істейді — кәсіби кеңесшіні бейнелемейді.",
+	"stars": {
+		"alpha-orchestrator": {
+			"name": "alpha-orchestrator",
+			"role": "GOAP жоспарлаушысы, пайдаланушылар, қолжетімділік, тарих, токен шығыны"
+		},
+		"beta-text": {
+			"name": "beta-text",
+			"role": "Шағын мәтіндік модель (llama-server, Vulkan немесе CPU)"
+		},
+		"gamma-decision": {
+			"name": "gamma-decision",
+			"role": "Laya-дағы жылдам типтелген шешімдер"
+		},
+		"delta-function-call": {
+			"name": "delta-function-call",
+			"role": "Құрал шақыруларының JSON аргументтерін толтырады"
+		}
+	},
+	"stats": {
+		"idle-ram-whole-stack": {
+			"label": "бос RAM, бүкіл стек",
+			"value": "~2 GiB"
+		},
+		"gpu": {
+			"label": "GPU",
+			"value": "міндетті емес"
+		},
+		"deploy": {
+			"label": "орнату",
+			"value": "docker compose up"
+		}
+	}
+}
