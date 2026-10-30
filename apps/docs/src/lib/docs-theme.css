@@ -34,6 +34,11 @@
 	--docsearch-hit-background: var(--card);
 }
 
+/* Light: the token's veil (2% transparent) hid the photo; let it through. shortcut: one value for light, upgrade if dark needs it too */
+:root:not(.dark) {
+	--photo-opacity: 10%;
+}
+
 html body {
 	margin: 0;
 	background-color: var(--background);

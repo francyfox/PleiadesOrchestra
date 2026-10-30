@@ -1,9 +1,9 @@
 {
-	"history": "тарих",
 	"about": "жоба туралы",
+	"benefits": "артықшылықтар",
+	"history": "тарих",
 	"mcp": "mcp",
 	"platforms": "платформалар",
-	"benefits": "артықшылықтар",
-	"security": "қауіпсіздік",
-	"pricing": "бағасы"
+	"pricing": "бағасы",
+	"security": "қауіпсіздік"
 }

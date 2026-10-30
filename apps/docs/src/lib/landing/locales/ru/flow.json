@@ -1,90 +1,12 @@
 {
-	"heading": "Модель не решает одна",
-	"lead": "gpt-6-luna одна решает каждый шаг сама, поэтому каждый шаг — ещё один вызов большой модели. В оркестраторе модель никогда не решает одна: правила, память сайта и модель решений определяют вид запроса, GOAP-планировщик строит шаги к цели, маленькая модель только заполняет вызов, а то, где модель не нужна, делает код. Модели на 24B и 8B, обе маленькие рядом с gpt-6-luna.",
-	"note": "Измеренные прогоны бенчмарка, все модели на хостинге через OpenRouter, каждый вызов по цене его модели на OpenRouter. Время включает сеть. Оркестратор работал на канале с набором намерений shop.",
 	"aria": "Схема: одно сообщение по шагам, у каждого шага время и цена",
-	"casesLabel": "Задача",
-	"tabsLabel": "Схема",
-	"tabs": {
-		"llm": "Только LLM (gpt-6-luna)",
-		"orchestra": "Оркестратор (LLM + решения)"
-	},
-	"legend": {
-		"total": "итого",
-		"calls": "вызовов модели",
-		"done": "задача выполнена",
-		"failed": "задача не выполнена"
-	},
 	"cases": {
-		"remove-all": {
-			"label": "Очистить корзину",
-			"llm": {
-				"widget": {
-					"tag": "виджет · сайт",
-					"text": "«Удали всё из моей корзины.»"
-				},
-				"llm1": {
-					"tag": "LLM · решает следующий шаг",
-					"text": "Сначала прочитать корзину: get_cart()"
-				},
-				"llm2": {
-					"tag": "LLM · решает следующий шаг",
-					"text": "Удалить каждый: update_cart_item({ product: \"Handmade Marble Car\", quantity: 0 }), так же Small Steel Bike"
-				},
-				"llm3": {
-					"tag": "LLM · решает следующий шаг",
-					"text": "Инструменты больше не нужны: пишет ответ"
-				},
-				"answer": {
-					"tag": "виджет · сайт",
-					"text": "«Корзина пуста.»"
-				}
-			},
-			"orchestra": {
-				"widget": {
-					"tag": "виджет · сайт",
-					"text": "«Удали всё из моей корзины.»"
-				},
-				"understand": {
-					"tag": "alpha · понимание",
-					"text": "Одна задача: удалить, вся корзина"
-				},
-				"rules": {
-					"tag": "alpha · правила",
-					"text": "слова удаления и «всё»: модель решений не нужна"
-				},
-				"plan": {
-					"tag": "alpha · план GOAP",
-					"text": "цель: корзина пуста; план: get_cart → удалить каждый → ответ по шаблону"
-				},
-				"tool1": {
-					"tag": "alpha · вызов сайта",
-					"text": "get_cart() → в браузере, 2 товара"
-				},
-				"tool2": {
-					"tag": "alpha · вызов сайта",
-					"text": "update_cart_item({ product: \"Handmade Marble Car\", quantity: 0 }): аргументы из корзины, без модели"
-				},
-				"tool3": {
-					"tag": "alpha · вызов сайта",
-					"text": "update_cart_item({ product: \"Small Steel Bike\", quantity: 0 })"
-				},
-				"template": {
-					"tag": "alpha · шаблон ответа",
-					"text": "«Убрал из корзины: 1 × Handmade Marble Car, 2 × Small Steel Bike.» Без вызова модели"
-				},
-				"answer": {
-					"tag": "виджет · сайт",
-					"text": "Ответ появляется в чате, корзина пуста"
-				}
-			}
-		},
 		"add-list": {
 			"label": "Добавить три товара",
 			"llm": {
-				"widget": {
+				"answer": {
 					"tag": "виджет · сайт",
-					"text": "«Добавь в корзину: Handmade Marble Car, Small Steel Bike и Tasty Granite Salad.»"
+					"text": "«Добавил в корзину Handmade Marble Car, Small Steel Bike и Tasty Granite Salad.»"
 				},
 				"llm1": {
 					"tag": "LLM · решает следующий шаг",
@@ -98,31 +20,15 @@
 					"tag": "LLM · решает следующий шаг",
 					"text": "Инструменты больше не нужны: пишет ответ"
 				},
-				"answer": {
-					"tag": "виджет · сайт",
-					"text": "«Добавил в корзину Handmade Marble Car, Small Steel Bike и Tasty Granite Salad.»"
-				}
-			},
-			"orchestra": {
 				"widget": {
 					"tag": "виджет · сайт",
 					"text": "«Добавь в корзину: Handmade Marble Car, Small Steel Bike и Tasty Granite Salad.»"
-				},
-				"understand": {
-					"tag": "alpha · понимание",
-					"text": "Одна задача, три товара"
-				},
-				"rules": {
-					"tag": "alpha · правила",
-					"text": "слова добавления: модель решений не нужна"
-				},
-				"memory": {
-					"tag": "alpha · память сайта",
-					"text": "одобренный пример этого сайта: добавление в корзину, без вызова модели решений"
-				},
-				"plan": {
-					"tag": "alpha · план GOAP",
-					"text": "цель: три товара в корзине; план: найти каждый → add_to_cart → ответ"
+				}
+			},
+			"orchestra": {
+				"answer": {
+					"tag": "виджет · сайт",
+					"text": "Ответ появляется в чате, в корзине три товара"
 				},
 				"delta1": {
 					"tag": "delta · параметры и вызов",
@@ -136,26 +42,42 @@
 					"tag": "delta · параметры и вызов",
 					"text": "search_products({ query: \"Tasty Granite Salad\" }) → найден"
 				},
-				"tool1": {
-					"tag": "alpha · вызов сайта",
-					"text": "add_to_cart({ items: 3 товара }): аргументы из ответов поиска, без модели"
+				"memory": {
+					"tag": "alpha · память сайта",
+					"text": "одобренный пример этого сайта: добавление в корзину, без вызова модели решений"
+				},
+				"plan": {
+					"tag": "alpha · план GOAP",
+					"text": "цель: три товара в корзине; план: найти каждый → add_to_cart → ответ"
+				},
+				"rules": {
+					"tag": "alpha · правила",
+					"text": "слова добавления: модель решений не нужна"
 				},
 				"template": {
 					"tag": "alpha · шаблон ответа",
 					"text": "«Добавил в корзину: 1 × Handmade Marble Car, 1 × Small Steel Bike, 1 × Tasty Granite Salad.» Без вызова модели"
 				},
-				"answer": {
+				"tool1": {
+					"tag": "alpha · вызов сайта",
+					"text": "add_to_cart({ items: 3 товара }): аргументы из ответов поиска, без модели"
+				},
+				"understand": {
+					"tag": "alpha · понимание",
+					"text": "Одна задача, три товара"
+				},
+				"widget": {
 					"tag": "виджет · сайт",
-					"text": "Ответ появляется в чате, в корзине три товара"
+					"text": "«Добавь в корзину: Handmade Marble Car, Small Steel Bike и Tasty Granite Salad.»"
 				}
 			}
 		},
 		"price": {
 			"label": "Узнать цену",
 			"llm": {
-				"widget": {
+				"answer": {
 					"tag": "виджет · сайт",
-					"text": "«Сколько стоит Tasty Granite Salad?»"
+					"text": "«Tasty Granite Salad стоит $206.59.»"
 				},
 				"llm1": {
 					"tag": "LLM · решает следующий шаг",
@@ -165,23 +87,23 @@
 					"tag": "LLM · решает следующий шаг",
 					"text": "Инструменты больше не нужны: пишет ответ"
 				},
-				"answer": {
-					"tag": "виджет · сайт",
-					"text": "«Tasty Granite Salad стоит $206.59.»"
-				}
-			},
-			"orchestra": {
 				"widget": {
 					"tag": "виджет · сайт",
 					"text": "«Сколько стоит Tasty Granite Salad?»"
+				}
+			},
+			"orchestra": {
+				"answer": {
+					"tag": "виджет · сайт",
+					"text": "Ответ появляется в чате"
 				},
-				"understand": {
-					"tag": "alpha · понимание",
-					"text": "Одна задача: цена одного товара"
+				"beta": {
+					"tag": "beta · ответ",
+					"text": "«Tasty Granite Salad стоит $206.59.»"
 				},
-				"rules": {
-					"tag": "alpha · правила",
-					"text": "нет слов-подсказок известного вида запроса, решает gamma"
+				"delta1": {
+					"tag": "delta · параметры и вызов",
+					"text": "search_products({ query: \"Tasty Granite Salad\" }) → в браузере, $206.59"
 				},
 				"gamma": {
 					"tag": "gamma · решение",
@@ -191,19 +113,96 @@
 					"tag": "alpha · план GOAP",
 					"text": "цель: ответ по фактам; план: search_products → ответ"
 				},
-				"delta1": {
-					"tag": "delta · параметры и вызов",
-					"text": "search_products({ query: \"Tasty Granite Salad\" }) → в браузере, $206.59"
+				"rules": {
+					"tag": "alpha · правила",
+					"text": "нет слов-подсказок известного вида запроса, решает gamma"
 				},
-				"beta": {
-					"tag": "beta · ответ",
-					"text": "«Tasty Granite Salad стоит $206.59.»"
+				"understand": {
+					"tag": "alpha · понимание",
+					"text": "Одна задача: цена одного товара"
 				},
+				"widget": {
+					"tag": "виджет · сайт",
+					"text": "«Сколько стоит Tasty Granite Salad?»"
+				}
+			}
+		},
+		"remove-all": {
+			"label": "Очистить корзину",
+			"llm": {
 				"answer": {
 					"tag": "виджет · сайт",
-					"text": "Ответ появляется в чате"
+					"text": "«Корзина пуста.»"
+				},
+				"llm1": {
+					"tag": "LLM · решает следующий шаг",
+					"text": "Сначала прочитать корзину: get_cart()"
+				},
+				"llm2": {
+					"tag": "LLM · решает следующий шаг",
+					"text": "Удалить каждый: update_cart_item({ product: \"Handmade Marble Car\", quantity: 0 }), так же Small Steel Bike"
+				},
+				"llm3": {
+					"tag": "LLM · решает следующий шаг",
+					"text": "Инструменты больше не нужны: пишет ответ"
+				},
+				"widget": {
+					"tag": "виджет · сайт",
+					"text": "«Удали всё из моей корзины.»"
+				}
+			},
+			"orchestra": {
+				"answer": {
+					"tag": "виджет · сайт",
+					"text": "Ответ появляется в чате, корзина пуста"
+				},
+				"plan": {
+					"tag": "alpha · план GOAP",
+					"text": "цель: корзина пуста; план: get_cart → удалить каждый → ответ по шаблону"
+				},
+				"rules": {
+					"tag": "alpha · правила",
+					"text": "слова удаления и «всё»: модель решений не нужна"
+				},
+				"template": {
+					"tag": "alpha · шаблон ответа",
+					"text": "«Убрал из корзины: 1 × Handmade Marble Car, 2 × Small Steel Bike.» Без вызова модели"
+				},
+				"tool1": {
+					"tag": "alpha · вызов сайта",
+					"text": "get_cart() → в браузере, 2 товара"
+				},
+				"tool2": {
+					"tag": "alpha · вызов сайта",
+					"text": "update_cart_item({ product: \"Handmade Marble Car\", quantity: 0 }): аргументы из корзины, без модели"
+				},
+				"tool3": {
+					"tag": "alpha · вызов сайта",
+					"text": "update_cart_item({ product: \"Small Steel Bike\", quantity: 0 })"
+				},
+				"understand": {
+					"tag": "alpha · понимание",
+					"text": "Одна задача: удалить, вся корзина"
+				},
+				"widget": {
+					"tag": "виджет · сайт",
+					"text": "«Удали всё из моей корзины.»"
 				}
 			}
 		}
-	}
+	},
+	"casesLabel": "Задача",
+	"heading": "Модель не решает одна",
+	"lead": "gpt-6-luna одна решает каждый шаг сама, поэтому каждый шаг — ещё один вызов большой модели. В оркестраторе модель никогда не решает одна: правила, память сайта и модель решений определяют вид запроса, GOAP-планировщик строит шаги к цели, маленькая модель только заполняет вызов, а то, где модель не нужна, делает код. Модели на 24B и 8B, обе маленькие рядом с gpt-6-luna.",
+	"legend": {
+		"calls": "вызовов модели",
+		"done": "задача выполнена",
+		"failed": "задача не выполнена",
+		"total": "итого"
+	},
+	"tabs": {
+		"llm": "Только LLM (gpt-6-luna)",
+		"orchestra": "Оркестратор (LLM + решения)"
+	},
+	"tabsLabel": "Схема"
 }

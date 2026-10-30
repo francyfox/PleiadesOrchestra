@@ -1,9 +1,9 @@
 {
-	"history": "история",
 	"about": "о проекте",
+	"benefits": "плюсы",
+	"history": "история",
 	"mcp": "mcp",
 	"platforms": "платформы",
-	"benefits": "плюсы",
-	"security": "безопасность",
-	"pricing": "цена"
+	"pricing": "цена",
+	"security": "безопасность"
 }

@@ -1,36 +1,36 @@
 {
 	"heading": "О Pleiades",
-	"text": "PleiadesOrchestra — это self-hosted оркестратор для маленьких моделей. Вместо одного огромного промпта он строит цепочку действий к цели (GOAP), поэтому модель на 1 млрд параметров может найти товар, добавить его в корзину или сравнить позиции на реальном сайте. Он работает с фактами и заготовленными ответами и не притворяется профессиональным консультантом.",
 	"stars": {
-		"alpha-orchestrator": {
-			"name": "alpha-orchestrator",
-			"role": "GOAP-планировщик, пользователи, доступы, история, расход токенов"
+		"alpha-understand": {
+			"name": "alpha-understand",
+			"role": "понимание, перевод"
 		},
 		"beta-text": {
 			"name": "beta-text",
-			"role": "Небольшая текстовая модель (llama-server, Vulkan или CPU)"
-		},
-		"gamma-decision": {
-			"name": "gamma-decision",
-			"role": "Быстрые типизированные решения на Laya"
+			"role": "текст, коммуникация с пользователем"
 		},
 		"delta-function-call": {
 			"name": "delta-function-call",
-			"role": "Заполняет JSON-аргументы вызовов инструментов"
+			"role": "вызов функций, работа с JSON схемой"
+		},
+		"gamma-decision": {
+			"name": "gamma-decision",
+			"role": "решения, выбор инструмента"
 		}
 	},
 	"stats": {
-		"idle-ram-whole-stack": {
-			"label": "RAM в простое, весь стек",
-			"value": "~2 GiB"
+		"deploy": {
+			"label": "запуск",
+			"value": "docker compose up"
 		},
 		"gpu": {
 			"label": "GPU",
 			"value": "по желанию"
 		},
-		"deploy": {
-			"label": "запуск",
-			"value": "docker compose up"
+		"idle-ram-whole-stack": {
+			"label": "RAM в простое, весь стек",
+			"value": "~2 GiB"
 		}
-	}
+	},
+	"text": "PleiadesOrchestra — это self-hosted | cloud оркестратор для маленьких моделей. Вместо одного огромного промпта он строит цепочку действий к цели (GOAP). Основная задача — работа с инструментами MCP."
 }

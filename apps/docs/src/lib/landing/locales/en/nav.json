@@ -1,9 +1,9 @@
 {
-	"history": "history",
 	"about": "about",
+	"benefits": "benefits",
+	"history": "history",
 	"mcp": "mcp",
 	"platforms": "platforms",
-	"benefits": "benefits",
-	"security": "security",
-	"pricing": "pricing"
+	"pricing": "pricing",
+	"security": "security"
 }

@@ -1,148 +1,148 @@
 {
-	"heading": {
-		"line1": "Агенттер жай ғана кеңес бермейді",
-		"line2": "Олар әрекет етеді!"
-	},
-	"lead": "MCP арқылы ЖИ-агент өнімді адам сияқты пайдалана алады: тауарды себетке салу, сатып алу, мәміле құру, қоңырауды тіркеу. Ірі платформалар бұған осылай келді.",
 	"canLabel": "Агент не істей алады",
-	"pageLabel": "%s-оқиғаға өту",
-	"events": {
-		"mcp-moves-to-the": {
-			"date": "2025-12",
-			"title": "MCP Linux Foundation-ға өтеді",
-			"text": "Anthropic протоколды Block және OpenAI бірлесіп құрған, Google, Microsoft, AWS және Cloudflare қолдайтын Agentic AI Foundation-ға тапсырады. ChatGPT, Gemini, Copilot, Cursor және VS Code қолдайды.",
-			"can": {
-				"one-standard-for-every": "барлық агенттерге арналған бір стандарт"
+	"cis": {
+		"cols": {
+			"acts": "Әрекет етеді: себет, төлем",
+			"assistant": "Сатып алушы көмекшісі",
+			"country": "Ел",
+			"mcp": "MCP",
+			"note": "Ескерту"
+		},
+		"heading": "ТМД: кімде көмекші бар, кім әрекет етеді",
+		"legend": "✓ табылды · – табылмады",
+		"no": "жоқ",
+		"rows": {
+			"armenia": {
+				"acts": "false",
+				"assistant": "false",
+				"country": "Армения",
+				"mcp": "false",
+				"note": ""
+			},
+			"azerbaijan": {
+				"acts": "false",
+				"assistant": "false",
+				"country": "Әзірбайжан",
+				"mcp": "false",
+				"note": "Төлемдерге арналған әмиян чаты, дүкен көмекшісі жоқ."
+			},
+			"belarus": {
+				"acts": "false",
+				"assistant": "true",
+				"country": "Беларусь",
+				"mcp": "false",
+				"note": "Тек Wildberries көмекшісі, шектеулі іске қосу."
+			},
+			"georgia": {
+				"acts": "false",
+				"assistant": "false",
+				"country": "Грузия",
+				"mcp": "false",
+				"note": ""
+			},
+			"kazakhstan": {
+				"acts": "false",
+				"assistant": "true",
+				"country": "Қазақстан",
+				"mcp": "false",
+				"note": "Kaspi-дің Kasper (пилот) ұсыныс береді, сатып алмайды. Halyk пен Freedom-да ештеңе жоқ."
+			},
+			"kyrgyzstan": {
+				"acts": "false",
+				"assistant": "false",
+				"country": "Қырғызстан",
+				"mcp": "false",
+				"note": "Тек банктердің дауыстық көмекшілері."
+			},
+			"russia": {
+				"acts": "true",
+				"assistant": "true",
+				"country": "Ресей",
+				"mcp": "false",
+				"note": "Ozon мен Wildberries тек кеңес береді. Тек Yandex әрекет етеді, өзінің жабық протоколы арқылы."
+			},
+			"tajikistan": {
+				"acts": "false",
+				"assistant": "false",
+				"country": "Тәжікстан",
+				"mcp": "false",
+				"note": ""
+			},
+			"turkmenistan": {
+				"acts": "false",
+				"assistant": "false",
+				"country": "Түрікменстан",
+				"mcp": "false",
+				"note": ""
+			},
+			"uzbekistan": {
+				"acts": "false",
+				"assistant": "false",
+				"country": "Өзбекстан",
+				"mcp": "false",
+				"note": "Uzum-да жоқ. Wildberries көмекшісі, қолжетімділігі белгісіз."
 			}
 		},
+		"yes": "иә"
+	},
+	"events": {
 		"every-store-gets-its": {
-			"date": "Shopify",
-			"title": "Әр дүкен өз MCP эндпоинтін алады",
-			"text": "Storefront MCP сервері агентке каталогтан іздеуге, тауар мәліметтері мен дүкен ережелерін оқуға, себетті құру және өзгертуге, сатып алушыға төлем сілтемесін беруге мүмкіндік береді. Қазір Shopify жаңа интеграцияларды өзінің Universal Commerce Protocol эндпоинтіне бағыттайды.",
 			"can": {
-				"search": "іздеу",
 				"add-to-cart": "себетке салу",
-				"edit-cart": "себетті өзгерту",
+				"answer-policy-questions": "ереже сұрақтарына жауап беру",
 				"checkout-link": "төлем сілтемесі",
-				"answer-policy-questions": "ереже сұрақтарына жауап беру"
-			}
+				"edit-cart": "себетті өзгерту",
+				"search": "іздеу"
+			},
+			"date": "Shopify",
+			"text": "Storefront MCP сервері агентке каталогтан іздеуге, тауар мәліметтері мен дүкен ережелерін оқуға, себетті құру және өзгертуге, сатып алушыға төлем сілтемесін беруге мүмкіндік береді. Қазір Shopify жаңа интеграцияларды өзінің Universal Commerce Protocol эндпоинтіне бағыттайды.",
+			"title": "Әр дүкен өз MCP эндпоинтін алады"
 		},
 		"hubspot-remote-mcp-server": {
-			"date": "2026-04-13",
-			"title": "HubSpot remote MCP сервері жалпыға қолжетімді",
-			"text": "OAuth 2.1 арқылы оқу және жазу рұқсаты: контактілер, компаниялар, мәмілелер, тикеттер, сонымен қатар қоңыраулар, кездесулер, жазбалар және тапсырмалар. Әр әрекет пайдаланушының өз рұқсаттарын сақтайды.",
 			"can": {
 				"create-contacts": "контактілер құру",
-				"update-deals": "мәмілелерді жаңарту",
+				"create-tasks": "тапсырмалар құру",
 				"log-calls": "қоңырауларды тіркеу",
-				"create-tasks": "тапсырмалар құру"
-			}
+				"update-deals": "мәмілелерді жаңарту"
+			},
+			"date": "2026-04-13",
+			"text": "OAuth 2.1 арқылы оқу және жазу рұқсаты: контактілер, компаниялар, мәмілелер, тикеттер, сонымен қатар қоңыраулар, кездесулер, жазбалар және тапсырмалар. Әр әрекет пайдаланушының өз рұқсаттарын сақтайды.",
+			"title": "HubSpot remote MCP сервері жалпыға қолжетімді"
+		},
+		"mcp-moves-to-the": {
+			"can": {
+				"one-standard-for-every": "барлық агенттерге арналған бір стандарт"
+			},
+			"date": "2025-12",
+			"text": "Anthropic протоколды Block және OpenAI бірлесіп құрған, Google, Microsoft, AWS және Cloudflare қолдайтын Agentic AI Foundation-ға тапсырады. ChatGPT, Gemini, Copilot, Cursor және VS Code қолдайды.",
+			"title": "MCP Linux Foundation-ға өтеді"
 		},
 		"salesforce-hosted-mcp-servers": {
-			"date": "2026-04-29",
-			"title": "Salesforce hosted MCP серверлері жалпыға қолжетімді",
-			"text": "Salesforce басқаратын эндпоинт ұйымның деректерін, flow-ларын, Apex әрекеттерін және сұраныстарын кез келген MCP-үйлесімді клиентке ұсынады, Enterprise Edition және одан жоғары.",
 			"can": {
 				"query-data": "деректерге сұраныс",
-				"run-flows": "flow іске қосу",
-				"run-apex-actions": "Apex әрекеттерін іске қосу"
-			}
+				"run-apex-actions": "Apex әрекеттерін іске қосу",
+				"run-flows": "flow іске қосу"
+			},
+			"date": "2026-04-29",
+			"text": "Salesforce басқаратын эндпоинт ұйымның деректерін, flow-ларын, Apex әрекеттерін және сұраныстарын кез келген MCP-үйлесімді клиентке ұсынады, Enterprise Edition және одан жоғары.",
+			"title": "Salesforce hosted MCP серверлері жалпыға қолжетімді"
 		},
 		"typesafe-launches-jev-the": {
-			"date": "2026-09-15",
-			"title": "TypeSafe Jev-ті шығарды — алғашқы System One моделі",
-			"text": "Мәтін емес, шешім қабылдайтын модель: қолданба күй мен типтелген сұрақтарды береді, Jev 70–500 мс ішінде ықтималдықпен жауап береді (компания деректері). Канеман бойынша System 1 — баяу ойлайтын модельдердің жанындағы жылдам рефлекс. Pleiades шешім агенті де сол system_one протоколымен жұмыс істейді.",
 			"can": {
 				"choose": "таңдау",
 				"classify": "жіктеу",
 				"route": "бағыттау",
 				"yes-no-with-a": "иә/жоқ ықтималдықпен"
-			}
+			},
+			"date": "2026-09-15",
+			"text": "Мәтін емес, шешім қабылдайтын модель: қолданба күй мен типтелген сұрақтарды береді, Jev 70–500 мс ішінде ықтималдықпен жауап береді (компания деректері). Канеман бойынша System 1 — баяу ойлайтын модельдердің жанындағы жылдам рефлекс. Pleiades шешім агенті де сол system_one протоколымен жұмыс істейді.",
+			"title": "TypeSafe Jev-ті шығарды — алғашқы System One моделі"
 		}
 	},
-	"cis": {
-		"heading": "ТМД: кімде көмекші бар, кім әрекет етеді",
-		"legend": "✓ табылды · – табылмады",
-		"yes": "иә",
-		"no": "жоқ",
-		"cols": {
-			"country": "Ел",
-			"assistant": "Сатып алушы көмекшісі",
-			"acts": "Әрекет етеді: себет, төлем",
-			"mcp": "MCP",
-			"note": "Ескерту"
-		},
-		"rows": {
-			"russia": {
-				"country": "Ресей",
-				"assistant": true,
-				"acts": true,
-				"mcp": false,
-				"note": "Ozon мен Wildberries тек кеңес береді. Тек Yandex әрекет етеді, өзінің жабық протоколы арқылы."
-			},
-			"kazakhstan": {
-				"country": "Қазақстан",
-				"assistant": true,
-				"acts": false,
-				"mcp": false,
-				"note": "Kaspi-дің Kasper (пилот) ұсыныс береді, сатып алмайды. Halyk пен Freedom-да ештеңе жоқ."
-			},
-			"uzbekistan": {
-				"country": "Өзбекстан",
-				"assistant": false,
-				"acts": false,
-				"mcp": false,
-				"note": "Uzum-да жоқ. Wildberries көмекшісі, қолжетімділігі белгісіз."
-			},
-			"belarus": {
-				"country": "Беларусь",
-				"assistant": true,
-				"acts": false,
-				"mcp": false,
-				"note": "Тек Wildberries көмекшісі, шектеулі іске қосу."
-			},
-			"kyrgyzstan": {
-				"country": "Қырғызстан",
-				"assistant": false,
-				"acts": false,
-				"mcp": false,
-				"note": "Тек банктердің дауыстық көмекшілері."
-			},
-			"azerbaijan": {
-				"country": "Әзірбайжан",
-				"assistant": false,
-				"acts": false,
-				"mcp": false,
-				"note": "Төлемдерге арналған әмиян чаты, дүкен көмекшісі жоқ."
-			},
-			"armenia": {
-				"country": "Армения",
-				"assistant": false,
-				"acts": false,
-				"mcp": false,
-				"note": ""
-			},
-			"georgia": {
-				"country": "Грузия",
-				"assistant": false,
-				"acts": false,
-				"mcp": false,
-				"note": ""
-			},
-			"tajikistan": {
-				"country": "Тәжікстан",
-				"assistant": false,
-				"acts": false,
-				"mcp": false,
-				"note": ""
-			},
-			"turkmenistan": {
-				"country": "Түрікменстан",
-				"assistant": false,
-				"acts": false,
-				"mcp": false,
-				"note": ""
-			}
-		}
-	}
+	"heading": {
+		"line1": "Агенттер жай ғана кеңес бермейді",
+		"line2": "Олар әрекет етеді!"
+	},
+	"lead": "MCP арқылы ЖИ-агент өнімді адам сияқты пайдалана алады: тауарды себетке салу, сатып алу, мәміле құру, қоңырауды тіркеу. Ірі платформалар бұған осылай келді.",
+	"pageLabel": "%s-оқиғаға өту"
 }

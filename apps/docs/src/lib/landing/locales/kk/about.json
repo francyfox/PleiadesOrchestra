@@ -1,36 +1,36 @@
 {
 	"heading": "Pleiades туралы",
-	"text": "PleiadesOrchestra — шағын модельдерге арналған self-hosted оркестратор. Бір үлкен промптың орнына ол мақсатқа жететін әрекеттер тізбегін құрады (GOAP), сондықтан 1 млрд параметрлі модель нақты сайтта тауар тауып, себетке сала алады немесе тауарларды салыстыра алады. Ол фактілермен және дайын жауаптармен жұмыс істейді — кәсіби кеңесшіні бейнелемейді.",
 	"stars": {
-		"alpha-orchestrator": {
-			"name": "alpha-orchestrator",
-			"role": "GOAP жоспарлаушысы, пайдаланушылар, қолжетімділік, тарих, токен шығыны"
+		"alpha-understand": {
+			"name": "alpha-understand",
+			"role": "түсіну, аударма"
 		},
 		"beta-text": {
 			"name": "beta-text",
-			"role": "Шағын мәтіндік модель (llama-server, Vulkan немесе CPU)"
-		},
-		"gamma-decision": {
-			"name": "gamma-decision",
-			"role": "Laya-дағы жылдам типтелген шешімдер"
+			"role": "мәтін, пайдаланушымен байланыс"
 		},
 		"delta-function-call": {
 			"name": "delta-function-call",
-			"role": "Құрал шақыруларының JSON аргументтерін толтырады"
+			"role": "функция шақыру, JSON схемасымен жұмыс"
+		},
+		"gamma-decision": {
+			"name": "gamma-decision",
+			"role": "шешімдер, құрал таңдау"
 		}
 	},
 	"stats": {
-		"idle-ram-whole-stack": {
-			"label": "бос RAM, бүкіл стек",
-			"value": "~2 GiB"
+		"deploy": {
+			"label": "орнату",
+			"value": "docker compose up"
 		},
 		"gpu": {
 			"label": "GPU",
 			"value": "міндетті емес"
 		},
-		"deploy": {
-			"label": "орнату",
-			"value": "docker compose up"
+		"idle-ram-whole-stack": {
+			"label": "бос RAM, бүкіл стек",
+			"value": "~2 GiB"
 		}
-	}
+	},
+	"text": "PleiadesOrchestra — шағын модельдерге арналған self-hosted | cloud оркестратор. Бір үлкен промпттың орнына ол мақсатқа жету үшін әрекеттер тізбегін құрады (GOAP). Негізгі міндеті — MCP құралдарымен жұмыс істеу."
 }

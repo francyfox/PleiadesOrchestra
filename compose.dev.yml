@@ -1,0 +1,267 @@
+name: pleiades-orchestra
+
+services:
+  alpha-orchestrator:
+    build:
+      context: .
+      dockerfile: apps/alpha-orchestrator/Dockerfile
+    env_file:
+      - apps/alpha-orchestrator/.env
+    environment:
+      # Each model runs locally in compose (default: the compose-network URL of its
+      # service) or on another machine: drop its profile from COMPOSE_PROFILES
+      # (beta / gamma / delta) and set its *_BASE_URL in the root .env. Empty
+      # model/concurrency = the app default (the orchestrator treats empty
+      # strings as unset). Model parameters (temperature, reasoning effort) live
+      # in apps/alpha-orchestrator/configs/providers.toml, seeded from these servers. apps/alpha-orchestrator/.env(.example)
+      # defaults to localhost ports, for running it standalone outside compose.
+      # Each *_MAX_CONCURRENCY should match the parallel slots of the server it
+      # talks to (beta: PARALLEL, delta: DELTA_PARALLEL, gamma: its own threads).
+      LLM_BASE_URL: ${LLM_BASE_URL:-http://beta-text:8080/v1}
+      LLM_MODEL: ${LLM_MODEL:-}
+      LLM_MAX_CONCURRENCY: ${LLM_MAX_CONCURRENCY:-}
+      LLM_API_KEY: ${LLM_API_KEY:?set LLM_API_KEY in .env (same value as beta-text)}
+      LAYA_API_BASE_URL: ${LAYA_API_BASE_URL:-http://gamma-decision:8080}
+      LAYA_MODEL: ${LAYA_MODEL:-}
+      LAYA_MAX_CONCURRENCY: ${LAYA_MAX_CONCURRENCY:-}
+      LAYA_API_KEY: ${LAYA_API_KEY:?set LAYA_API_KEY in .env (same value as gamma-decision)}
+      # Shared secret with telegram-bot — sourced from the root .env so both
+      # services always agree on it, instead of syncing it by hand across
+      # apps/alpha-orchestrator/.env and apps/telegram-bot/.env.
+      HARNESS_API_KEY: ${HARNESS_API_KEY:?set HARNESS_API_KEY in .env (same value as telegram-bot)}
+      # Shared with the admin service — same root-.env pattern as HARNESS_API_KEY.
+      ADMIN_API_KEY: ${ADMIN_API_KEY:?set ADMIN_API_KEY in .env (same value as admin)}
+      DATABASE_PATH: /data/orchestrator.db
+      # Public traffic arrives via the `tunnel` service (compose profile `tunnel`),
+      # so the socket address is cloudflared's; take the visitor IP from the
+      # CF-Connecting-IP header Cloudflare sets (per-IP widget rate limits and IP
+      # blocks depend on it). Not X-Forwarded-For's head — clients write that.
+      # Without the header (local calls, no tunnel) it falls back to the socket.
+      # Safe only while port 3000 stays on 127.0.0.1 (else the header is forgeable).
+      CLIENT_IP_SOURCE: cf-connecting-ip
+      # Tool-call arguments are written by delta-function-call (no depends_on — the
+      # model downloads on first start), local or external, see above. Same key as
+      # the delta service below.
+      FUNCTION_CALL_BASE_URL: ${FUNCTION_CALL_BASE_URL:-http://delta-function-call:8080/v1}
+      FUNCTION_CALL_MODEL: ${FUNCTION_CALL_MODEL:-}
+      FUNCTION_CALL_MAX_CONCURRENCY: ${FUNCTION_CALL_MAX_CONCURRENCY:-}
+      FUNCTION_CALL_API_KEY: ${FUNCTION_CALL_API_KEY:?set FUNCTION_CALL_API_KEY in .env (same value as delta-function-call)}
+    # SQLite on the host, not in a Docker volume: visible, easy to back up,
+    # survives `docker compose down -v`. ./data is gitignored.
+    volumes:
+      - ./data/alpha-orchestrator:/data
+      # providers.toml (keys inside: gitignored, dockerignored, 0600); the
+      # directory, not the file, so it can be created on first start.
+      - ./apps/alpha-orchestrator/configs:/configs
+    # Loopback only: the orchestrator also serves /v1/admin/*. Public traffic goes
+    # through the `tunnel` profile over the compose network, not this port.
+    ports:
+      - "127.0.0.1:3000:3000"
+    # required: false — with the beta/gamma profile off (model runs on another
+    # machine) the dependency is skipped instead of failing or force-starting it.
+    depends_on:
+      beta-text:
+        condition: service_healthy
+        required: false
+      gamma-decision:
+        condition: service_healthy
+        required: false
+
+  beta-text:
+    build:
+      context: .
+      dockerfile: apps/beta-text/Dockerfile
+    # Local reply model; off when COMPOSE_PROFILES has no `beta`.
+    profiles:
+      - beta
+    env_file:
+      - .env
+    # Loopback only. Published for standalone alpha-orchestrator on the host
+    # (apps/alpha-orchestrator/.env.example points at localhost:8181); other services
+    # reach it over the compose network.
+    ports:
+      - "127.0.0.1:8181:8080"
+    volumes:
+      - beta-text-models:/models
+    # Vulkan на встроенном Radeon: рендер-нода GPU внутрь контейнера.
+    # renderD128 на хосте и так crw-rw-rw-, group_add — на случай более строгих прав.
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "${RENDER_GID:-989}"
+      - "${VIDEO_GID:-985}"
+
+  # Fills in tool-call arguments for the GOAP planner (packages/core FunctionCallAgent).
+  delta-function-call:
+    build:
+      context: .
+      dockerfile: apps/delta-function-call/Dockerfile
+    # Local function-call model; off when COMPOSE_PROFILES has no `delta`.
+    profiles:
+      - delta
+    environment:
+      # Server-side slots/threads; keep FUNCTION_CALL_MAX_CONCURRENCY equal to PARALLEL.
+      PARALLEL: ${DELTA_PARALLEL:-1}
+      THREADS: ${DELTA_THREADS:-2}
+      # Required, like LLM_API_KEY: an empty key makes llama-server accept
+      # unauthenticated requests.
+      API_KEY: ${FUNCTION_CALL_API_KEY:?set FUNCTION_CALL_API_KEY in .env (same value as alpha-orchestrator)}
+    # Loopback only: for standalone alpha-orchestrator on the host (FUNCTION_CALL_BASE_URL
+    # defaults to localhost:8282 in its .env.example).
+    ports:
+      - "127.0.0.1:8282:8080"
+    volumes:
+      - delta-function-call-models:/models
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "${RENDER_GID:-989}"
+      - "${VIDEO_GID:-985}"
+
+  gamma-decision:
+    build:
+      context: .
+      dockerfile: apps/gamma-decision/Dockerfile
+    # Local Laya; off when COMPOSE_PROFILES has no `gamma`.
+    profiles:
+      - gamma
+    env_file:
+      - apps/gamma-decision/.env
+    # Loopback only: for standalone alpha-orchestrator on the host (LAYA_API_BASE_URL).
+    ports:
+      - "127.0.0.1:8090:8080"
+    volumes:
+      - gamma-decision-models:/root/.cache/receptron-laya
+
+#  # Backend of the admin panel (Elysia): admin accounts (better-auth) and the
+#  # orchestrator's /v1/admin/* behind a session. Swagger UI: /api/docs.
+  admin-api:
+    build:
+      context: .
+      dockerfile: apps/admin-api/Dockerfile
+    env_file:
+      - apps/admin-api/.env
+    environment:
+      # Explicit: a relative path in apps/admin-api/.env (right for bare `bun run dev`)
+      # would override the image's ENV and resolve inside the container — the DB
+      # to the container layer (wiped on every recreate), the migrations to
+      # nowhere ("Can't find meta/_journal.json").
+      ADMIN_DATABASE_PATH: /data/admin.db
+      ADMIN_MIGRATIONS_DIR: /app/drizzle
+      HARNESS_BASE_URL: http://alpha-orchestrator:3000
+      ADMIN_API_KEY: ${ADMIN_API_KEY:?set ADMIN_API_KEY in .env (same value as alpha-orchestrator)}
+      # better-auth and the origin check compare against the URL the panel is
+      # actually opened at (Caddy in the `admin` service below).
+      BETTER_AUTH_URL: http://localhost:3002
+      ADMIN_TRUSTED_ORIGINS: http://localhost:3002,http://127.0.0.1:3002
+    # Same host dir the old SvelteKit admin used, so existing accounts carry over.
+    volumes:
+      - ./data/admin:/data
+    # Loopback only. The panel's Caddy reaches it over the compose network; the
+    # port is published for `bun --cwd apps/admin run dev` on the host, whose
+    # /api proxy targets http://localhost:3003.
+    ports:
+      - "127.0.0.1:3003:3003"
+    depends_on:
+      - alpha-orchestrator
+
+#  # The panel itself: static files only. Caddy serves them and proxies /api to admin-api.
+#  admin:
+#    build:
+#      context: .
+#      dockerfile: apps/admin/Dockerfile
+#    # Loopback only — the admin panel is never exposed beyond this machine.
+#    ports:
+#      - "127.0.0.1:3002:80"
+#    depends_on:
+#      - admin-api
+
+#  memory:
+#    build:
+#      context: .
+#      dockerfile: apps/memory/Dockerfile
+#    ports:
+#      - "6666:6666"
+#      - "8082:8080"
+#    volumes:
+#      - turingdb-data:/data
+
+#  telegram-bot:
+#    build:
+#      context: .
+#      dockerfile: apps/telegram-bot/Dockerfile
+#    env_file:
+#      - apps/telegram-bot/.env
+#    environment:
+#      # Talk to the alpha-orchestrator service over the compose network — same
+#      # localhost-default idea as alpha-orchestrator's own env above.
+#      HARNESS_BASE_URL: http://alpha-orchestrator:3000
+#      HARNESS_API_KEY: ${HARNESS_API_KEY:?set HARNESS_API_KEY in .env (same value as alpha-orchestrator)}
+#    ports:
+#      - "127.0.0.1:3001:3000"
+#    depends_on:
+#      - alpha-orchestrator
+#    # Webhook mode: Telegram reaches it through the `tunnel` service below
+#    # (TELEGRAM_WEBHOOK_URL = that tunnel's public hostname).
+
+  # Named Cloudflare Tunnel (albedo.shalotts.site) -> alpha-orchestrator's
+  # public agent routes only; cloudflared/config.yml whitelists the paths and
+  # 404s the rest (admin, transport, swagger). Token auth instead of mounting
+  # the credentials JSON: the image runs as uid 65532 and can't read a 0400
+  # file owned by the host user. CLOUDFLARE_TUNNEL_TOKEN = base64 {a: AccountTag,
+  # t: TunnelID, s: TunnelSecret} from ~/.cloudflared/<tunnel-id>.json (see .env.example).
+  # Opt-in: `docker compose --profile tunnel up -d tunnel`. Not `:?` — a required-var
+  # error would break `docker compose up` for every service while the profile is off.
+#  tunnel:
+#    image: cloudflare/cloudflared:2026.3.0
+#    profiles:
+#      - tunnel
+#    command: tunnel --config /etc/cloudflared/config.yml run
+#    environment:
+#      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+#    volumes:
+#      - ./cloudflared/config.yml:/etc/cloudflared/config.yml:ro
+#    restart: unless-stopped
+#    depends_on:
+#      - alpha-orchestrator
+
+  # Gemini web-API MCP server (apps/gemini-webapi-mcp, vendored + hardened).
+  # Opt-in: `docker compose --profile gemini up -d gemini-mcp`. Holds a
+  # whole-account Google session — use a separate Google account's cookies.
+  # MCP endpoint: http://127.0.0.1:8765/mcp with `Authorization: Bearer
+  # $GEMINI_MCP_API_KEY`; other services reach it as http://gemini-mcp:8000/mcp.
+#  gemini-mcp:
+#    build:
+#      context: .
+#      dockerfile: apps/gemini-webapi-mcp/Dockerfile
+#    profiles:
+#      - gemini
+#    environment:
+#      # `:-` not `:?` — a required-var error would break `docker compose up`
+#      # for every service even with this profile off; the server itself
+#      # refuses to start without MCP_API_KEY and to log in without GEMINI_PSID.
+#      GEMINI_PSID: ${GEMINI_PSID:-}
+#      GEMINI_PSIDTS: ${GEMINI_PSIDTS:-}
+#      MCP_API_KEY: ${GEMINI_MCP_API_KEY:-}
+#    ports:
+#      - "127.0.0.1:8765:8000"
+#    volumes:
+#      # Cookie cache (0700) + generated images.
+#      - gemini-mcp-state:/data
+#      # The only files the server may upload to Google — read-only.
+#      - ./data/gemini-mcp/files:/data/files:ro
+#    read_only: true
+#    tmpfs:
+#      - /tmp
+#    cap_drop:
+#      - ALL
+#    security_opt:
+#      - no-new-privileges:true
+#    restart: unless-stopped
+
+volumes:
+  beta-text-models:
+  delta-function-call-models:
+  gamma-decision-models:
+#  gemini-mcp-state:
+#  turingdb-data:

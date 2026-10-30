@@ -7,8 +7,10 @@
 	import LandingHistory from "#lib/components/landing/LandingHistory.svelte";
 	import LandingMcpCompare from "#lib/components/landing/LandingMcpCompare.svelte";
 	import LandingPlatforms from "#lib/components/landing/LandingPlatforms.svelte";
+	import LandingPleiades from "#lib/components/landing/LandingPleiades.svelte";
 	import LandingPricing from "#lib/components/landing/LandingPricing.svelte";
 	import LandingSecurity from "#lib/components/landing/LandingSecurity.svelte";
+	import LandingTvGallery from "#lib/components/landing/LandingTvGallery.svelte";
 	import LandingVideo from "#lib/components/landing/LandingVideo.svelte";
 </script>
 
@@ -20,9 +22,11 @@
 <main id="main-content" class="flex flex-col gap-2">
 	<LandingVideo />
 	<LandingHistory />
-	<LandingFlow />
-	<LandingFlowResults />
 	<LandingAbout />
+	<LandingFlow />
+	<LandingPleiades />
+	<LandingFlowResults />
+	<LandingTvGallery />
 	<LandingMcpCompare />
 	<LandingPlatforms />
 	<LandingBenefits />

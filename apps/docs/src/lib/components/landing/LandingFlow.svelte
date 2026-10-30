@@ -41,16 +41,14 @@
 	}));
 </script>
 
-<Pane title="guest@pleiades — flow" header={false} id="flow" class="!border-0 min-h-screen py-10">
+<Pane title="guest@pleiades — flow" header={false} id="flow" class="!border-0 min-h-screen py-10 ">
 	<div class="flex flex-col gap-5">
 		<div class="text-6xl">{t.heading}</div>
 		<p class="mt-2 max-w-3xl text-sm italic">{t.lead}</p>
 
 		<div
-				class="p-3 grid gap-4 "
+				class="p-3 grid gap-4 dark:bg-white/5 bg-black/5 border-1"
 				style:margin-top="1rem"
-				style:background-color="var(--panel)"
-				style:background-image="var(--gradient-card-odd)"
 				style:grid-template-columns={phone.current ? "1fr" : "14rem 1fr"}
 		>
 			<div
@@ -127,7 +125,7 @@
 									zoomOnPinch={false}
 									zoomOnDoubleClick={false}
 									preventScrolling={false}
-									minZoom={0.1}
+									minZoom={0.5}
 									proOptions={{ hideAttribution: true }}
 							/>{/key}
 						{/if}
@@ -148,7 +146,6 @@
 				</div>
 			</div>
 		</div>
-		<p class="text-xs" style:margin-top="0.75rem" style:color="var(--dim)">{t.note}</p>
 	</div>
 </Pane>
 
@@ -160,5 +157,9 @@
 	}
 	.landing-flow :global(.svelte-flow__handle) {
 		opacity: 0;
+	}
+	/* xyflow's pane is touch-action: none, which stops the page scrolling over the canvas on phones; pan the page vertically instead. */
+	.landing-flow :global(.svelte-flow__pane) {
+		touch-action: pan-y;
 	}
 </style>

@@ -1,148 +1,148 @@
 {
-	"heading": {
-		"line1": "Agents don’t just suggest",
-		"line2": "They act!"
-	},
-	"lead": "Through MCP, an AI agent can use a product the way a person does: put an item in the cart, buy it, create a deal, log a call. This is how the big platforms got there.",
 	"canLabel": "What the agent can do",
-	"pageLabel": "Go to event %s",
-	"events": {
-		"mcp-moves-to-the": {
-			"date": "2025-12",
-			"title": "MCP moves to the Linux Foundation",
-			"text": "Anthropic donates the protocol to the Agentic AI Foundation, co-founded with Block and OpenAI and backed by Google, Microsoft, AWS and Cloudflare. Supported by ChatGPT, Gemini, Copilot, Cursor and VS Code.",
-			"can": {
-				"one-standard-for-every": "one standard for every agent"
+	"cis": {
+		"cols": {
+			"acts": "Acts: cart, checkout",
+			"assistant": "Buyer assistant",
+			"country": "Country",
+			"mcp": "MCP",
+			"note": "Note"
+		},
+		"heading": "CIS: who has an assistant, who acts",
+		"legend": "✓ found · – not found",
+		"no": "no",
+		"rows": {
+			"armenia": {
+				"acts": "false",
+				"assistant": "false",
+				"country": "Armenia",
+				"mcp": "false",
+				"note": ""
+			},
+			"azerbaijan": {
+				"acts": "false",
+				"assistant": "false",
+				"country": "Azerbaijan",
+				"mcp": "false",
+				"note": "A wallet chat for payments, no shop assistant."
+			},
+			"belarus": {
+				"acts": "false",
+				"assistant": "true",
+				"country": "Belarus",
+				"mcp": "false",
+				"note": "Only Wildberries’ assistant, limited rollout."
+			},
+			"georgia": {
+				"acts": "false",
+				"assistant": "false",
+				"country": "Georgia",
+				"mcp": "false",
+				"note": ""
+			},
+			"kazakhstan": {
+				"acts": "false",
+				"assistant": "true",
+				"country": "Kazakhstan",
+				"mcp": "false",
+				"note": "Kaspi’s Kasper (pilot) recommends, does not buy. Nothing at Halyk or Freedom."
+			},
+			"kyrgyzstan": {
+				"acts": "false",
+				"assistant": "false",
+				"country": "Kyrgyzstan",
+				"mcp": "false",
+				"note": "Bank voice assistants only."
+			},
+			"russia": {
+				"acts": "true",
+				"assistant": "true",
+				"country": "Russia",
+				"mcp": "false",
+				"note": "Ozon and Wildberries only advise. Only Yandex acts, through its own closed protocol."
+			},
+			"tajikistan": {
+				"acts": "false",
+				"assistant": "false",
+				"country": "Tajikistan",
+				"mcp": "false",
+				"note": ""
+			},
+			"turkmenistan": {
+				"acts": "false",
+				"assistant": "false",
+				"country": "Turkmenistan",
+				"mcp": "false",
+				"note": ""
+			},
+			"uzbekistan": {
+				"acts": "false",
+				"assistant": "false",
+				"country": "Uzbekistan",
+				"mcp": "false",
+				"note": "None at Uzum. Wildberries’ assistant, availability unclear."
 			}
 		},
+		"yes": "yes"
+	},
+	"events": {
 		"every-store-gets-its": {
-			"date": "Shopify",
-			"title": "Every store gets its own MCP endpoint",
-			"text": "The Storefront MCP server lets an agent search the catalog, read product details and store policies, build and edit a cart, and hand the shopper a checkout link. Shopify now steers new integrations to its Universal Commerce Protocol endpoint.",
 			"can": {
-				"search": "search",
 				"add-to-cart": "add to cart",
-				"edit-cart": "edit cart",
+				"answer-policy-questions": "answer policy questions",
 				"checkout-link": "checkout link",
-				"answer-policy-questions": "answer policy questions"
-			}
+				"edit-cart": "edit cart",
+				"search": "search"
+			},
+			"date": "Shopify",
+			"text": "The Storefront MCP server lets an agent search the catalog, read product details and store policies, build and edit a cart, and hand the shopper a checkout link. Shopify now steers new integrations to its Universal Commerce Protocol endpoint.",
+			"title": "Every store gets its own MCP endpoint"
 		},
 		"hubspot-remote-mcp-server": {
-			"date": "2026-04-13",
-			"title": "HubSpot remote MCP server is generally available",
-			"text": "Read and write access over OAuth 2.1: contacts, companies, deals, tickets, plus calls, meetings, notes and tasks. Every action respects the user’s own permissions.",
 			"can": {
 				"create-contacts": "create contacts",
-				"update-deals": "update deals",
+				"create-tasks": "create tasks",
 				"log-calls": "log calls",
-				"create-tasks": "create tasks"
-			}
+				"update-deals": "update deals"
+			},
+			"date": "2026-04-13",
+			"text": "Read and write access over OAuth 2.1: contacts, companies, deals, tickets, plus calls, meetings, notes and tasks. Every action respects the user’s own permissions.",
+			"title": "HubSpot remote MCP server is generally available"
+		},
+		"mcp-moves-to-the": {
+			"can": {
+				"one-standard-for-every": "one standard for every agent"
+			},
+			"date": "2025-12",
+			"text": "Anthropic donates the protocol to the Agentic AI Foundation, co-founded with Block and OpenAI and backed by Google, Microsoft, AWS and Cloudflare. Supported by ChatGPT, Gemini, Copilot, Cursor and VS Code.",
+			"title": "MCP moves to the Linux Foundation"
 		},
 		"salesforce-hosted-mcp-servers": {
-			"date": "2026-04-29",
-			"title": "Salesforce hosted MCP servers are generally available",
-			"text": "A Salesforce-managed endpoint exposes an org’s data, flows, Apex actions and queries to any MCP-compatible client, Enterprise Edition and above.",
 			"can": {
 				"query-data": "query data",
-				"run-flows": "run flows",
-				"run-apex-actions": "run Apex actions"
-			}
+				"run-apex-actions": "run Apex actions",
+				"run-flows": "run flows"
+			},
+			"date": "2026-04-29",
+			"text": "A Salesforce-managed endpoint exposes an org’s data, flows, Apex actions and queries to any MCP-compatible client, Enterprise Edition and above.",
+			"title": "Salesforce hosted MCP servers are generally available"
 		},
 		"typesafe-launches-jev-the": {
-			"date": "2026-09-15",
-			"title": "TypeSafe launches Jev, the first System One model",
-			"text": "A model for decisions, not text: the app passes state and typed questions, Jev answers with probabilities in 70–500 ms (vendor figures). System 1 in Kahneman’s sense: a quick reflex beside slow reasoning models. Pleiades’ decision agent speaks the same system_one protocol.",
 			"can": {
 				"choose": "choose",
 				"classify": "classify",
 				"route": "route",
 				"yes-no-with-a": "yes/no with a probability"
-			}
+			},
+			"date": "2026-09-15",
+			"text": "A model for decisions, not text: the app passes state and typed questions, Jev answers with probabilities in 70–500 ms (vendor figures). System 1 in Kahneman’s sense: a quick reflex beside slow reasoning models. Pleiades’ decision agent speaks the same system_one protocol.",
+			"title": "TypeSafe launches Jev, the first System One model"
 		}
 	},
-	"cis": {
-		"heading": "CIS: who has an assistant, who acts",
-		"legend": "✓ found · – not found",
-		"yes": "yes",
-		"no": "no",
-		"cols": {
-			"country": "Country",
-			"assistant": "Buyer assistant",
-			"acts": "Acts: cart, checkout",
-			"mcp": "MCP",
-			"note": "Note"
-		},
-		"rows": {
-			"russia": {
-				"country": "Russia",
-				"assistant": true,
-				"acts": true,
-				"mcp": false,
-				"note": "Ozon and Wildberries only advise. Only Yandex acts, through its own closed protocol."
-			},
-			"kazakhstan": {
-				"country": "Kazakhstan",
-				"assistant": true,
-				"acts": false,
-				"mcp": false,
-				"note": "Kaspi’s Kasper (pilot) recommends, does not buy. Nothing at Halyk or Freedom."
-			},
-			"uzbekistan": {
-				"country": "Uzbekistan",
-				"assistant": false,
-				"acts": false,
-				"mcp": false,
-				"note": "None at Uzum. Wildberries’ assistant, availability unclear."
-			},
-			"belarus": {
-				"country": "Belarus",
-				"assistant": true,
-				"acts": false,
-				"mcp": false,
-				"note": "Only Wildberries’ assistant, limited rollout."
-			},
-			"kyrgyzstan": {
-				"country": "Kyrgyzstan",
-				"assistant": false,
-				"acts": false,
-				"mcp": false,
-				"note": "Bank voice assistants only."
-			},
-			"azerbaijan": {
-				"country": "Azerbaijan",
-				"assistant": false,
-				"acts": false,
-				"mcp": false,
-				"note": "A wallet chat for payments, no shop assistant."
-			},
-			"armenia": {
-				"country": "Armenia",
-				"assistant": false,
-				"acts": false,
-				"mcp": false,
-				"note": ""
-			},
-			"georgia": {
-				"country": "Georgia",
-				"assistant": false,
-				"acts": false,
-				"mcp": false,
-				"note": ""
-			},
-			"tajikistan": {
-				"country": "Tajikistan",
-				"assistant": false,
-				"acts": false,
-				"mcp": false,
-				"note": ""
-			},
-			"turkmenistan": {
-				"country": "Turkmenistan",
-				"assistant": false,
-				"acts": false,
-				"mcp": false,
-				"note": ""
-			}
-		}
-	}
+	"heading": {
+		"line1": "Agents don’t just suggest",
+		"line2": "They act!"
+	},
+	"lead": "Through MCP, an AI agent can use a product the way a person does: put an item in the cart, buy it, create a deal, log a call. This is how the big platforms got there.",
+	"pageLabel": "Go to event %s"
 }

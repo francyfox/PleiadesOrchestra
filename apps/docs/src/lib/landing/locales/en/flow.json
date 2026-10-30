@@ -1,90 +1,12 @@
 {
-	"heading": "The model does not decide alone",
-	"lead": "gpt-6-luna alone decides every step itself, so every step is one more call of a big model. In the orchestrator the model never decides alone: rules, the site’s memory and a decision model name the kind of request, the GOAP planner builds the steps to the goal, a small model only fills in a call, and code does what needs no model. A 24B and an 8B model, both small next to gpt-6-luna.",
-	"note": "Measured runs of the benchmark, all models hosted through OpenRouter, each call at its model’s OpenRouter price. Times include the network. The orchestrator ran on a channel with the shop intent set.",
 	"aria": "Diagram: one message, step by step, with each step’s time and price",
-	"casesLabel": "Task",
-	"tabsLabel": "Setup",
-	"tabs": {
-		"llm": "Only LLM (gpt-6-luna)",
-		"orchestra": "Orchestrator (LLM + decision)"
-	},
-	"legend": {
-		"total": "total",
-		"calls": "model calls",
-		"done": "task done",
-		"failed": "task failed"
-	},
 	"cases": {
-		"remove-all": {
-			"label": "Empty the cart",
-			"llm": {
-				"widget": {
-					"tag": "widget · site",
-					"text": "“Remove everything from my cart.”"
-				},
-				"llm1": {
-					"tag": "LLM · decides the next step",
-					"text": "Read the cart first: get_cart()"
-				},
-				"llm2": {
-					"tag": "LLM · decides the next step",
-					"text": "Remove each: update_cart_item({ product: \"Handmade Marble Car\", quantity: 0 }), the same for Small Steel Bike"
-				},
-				"llm3": {
-					"tag": "LLM · decides the next step",
-					"text": "No more tools: writes the reply"
-				},
-				"answer": {
-					"tag": "widget · site",
-					"text": "“Your cart is now empty.”"
-				}
-			},
-			"orchestra": {
-				"widget": {
-					"tag": "widget · site",
-					"text": "“Remove everything from my cart.”"
-				},
-				"understand": {
-					"tag": "alpha · understanding",
-					"text": "English, one task: remove, the whole cart"
-				},
-				"rules": {
-					"tag": "alpha · rules",
-					"text": "removal words and “everything”: no decision model needed"
-				},
-				"plan": {
-					"tag": "alpha · GOAP plan",
-					"text": "goal: the cart is empty; plan: get_cart → remove each → reply from a template"
-				},
-				"tool1": {
-					"tag": "alpha · site call",
-					"text": "get_cart() → in the browser, 2 items"
-				},
-				"tool2": {
-					"tag": "alpha · site call",
-					"text": "update_cart_item({ product: \"Handmade Marble Car\", quantity: 0 }): arguments from the cart, no model"
-				},
-				"tool3": {
-					"tag": "alpha · site call",
-					"text": "update_cart_item({ product: \"Small Steel Bike\", quantity: 0 })"
-				},
-				"template": {
-					"tag": "alpha · reply template",
-					"text": "“Removed from your cart: 1 × Handmade Marble Car, 2 × Small Steel Bike.” No model call"
-				},
-				"answer": {
-					"tag": "widget · site",
-					"text": "The reply appears in the chat, the cart is empty"
-				}
-			}
-		},
 		"add-list": {
 			"label": "Add three products",
 			"llm": {
-				"widget": {
+				"answer": {
 					"tag": "widget · site",
-					"text": "“Add to my cart: Handmade Marble Car, Small Steel Bike and Tasty Granite Salad.”"
+					"text": "“Added one Handmade Marble Car, one Small Steel Bike, and one Tasty Granite Salad to your cart.”"
 				},
 				"llm1": {
 					"tag": "LLM · decides the next step",
@@ -98,31 +20,15 @@
 					"tag": "LLM · decides the next step",
 					"text": "No more tools: writes the reply"
 				},
-				"answer": {
-					"tag": "widget · site",
-					"text": "“Added one Handmade Marble Car, one Small Steel Bike, and one Tasty Granite Salad to your cart.”"
-				}
-			},
-			"orchestra": {
 				"widget": {
 					"tag": "widget · site",
 					"text": "“Add to my cart: Handmade Marble Car, Small Steel Bike and Tasty Granite Salad.”"
-				},
-				"understand": {
-					"tag": "alpha · understanding",
-					"text": "English, one task, three products"
-				},
-				"rules": {
-					"tag": "alpha · rules",
-					"text": "adding words: no decision model needed"
-				},
-				"memory": {
-					"tag": "alpha · site memory",
-					"text": "an approved example of this site: adding to the cart, no decision model call"
-				},
-				"plan": {
-					"tag": "alpha · GOAP plan",
-					"text": "goal: three products in the cart; plan: search each → add_to_cart → reply"
+				}
+			},
+			"orchestra": {
+				"answer": {
+					"tag": "widget · site",
+					"text": "The reply appears in the chat, three products in the cart"
 				},
 				"delta1": {
 					"tag": "delta · parameters and call",
@@ -136,26 +42,42 @@
 					"tag": "delta · parameters and call",
 					"text": "search_products({ query: \"Tasty Granite Salad\" }) → found"
 				},
-				"tool1": {
-					"tag": "alpha · site call",
-					"text": "add_to_cart({ items: 3 products }): arguments from the search answers, no model"
+				"memory": {
+					"tag": "alpha · site memory",
+					"text": "an approved example of this site: adding to the cart, no decision model call"
+				},
+				"plan": {
+					"tag": "alpha · GOAP plan",
+					"text": "goal: three products in the cart; plan: search each → add_to_cart → reply"
+				},
+				"rules": {
+					"tag": "alpha · rules",
+					"text": "adding words: no decision model needed"
 				},
 				"template": {
 					"tag": "alpha · reply template",
 					"text": "“Added to your cart: 1 × Handmade Marble Car, 1 × Small Steel Bike, 1 × Tasty Granite Salad.” No model call"
 				},
-				"answer": {
+				"tool1": {
+					"tag": "alpha · site call",
+					"text": "add_to_cart({ items: 3 products }): arguments from the search answers, no model"
+				},
+				"understand": {
+					"tag": "alpha · understanding",
+					"text": "English, one task, three products"
+				},
+				"widget": {
 					"tag": "widget · site",
-					"text": "The reply appears in the chat, three products in the cart"
+					"text": "“Add to my cart: Handmade Marble Car, Small Steel Bike and Tasty Granite Salad.”"
 				}
 			}
 		},
 		"price": {
 			"label": "Ask a price",
 			"llm": {
-				"widget": {
+				"answer": {
 					"tag": "widget · site",
-					"text": "“How much does Tasty Granite Salad cost?”"
+					"text": "“Tasty Granite Salad costs $206.59.”"
 				},
 				"llm1": {
 					"tag": "LLM · decides the next step",
@@ -165,23 +87,23 @@
 					"tag": "LLM · decides the next step",
 					"text": "No more tools: writes the reply"
 				},
-				"answer": {
-					"tag": "widget · site",
-					"text": "“Tasty Granite Salad costs $206.59.”"
-				}
-			},
-			"orchestra": {
 				"widget": {
 					"tag": "widget · site",
 					"text": "“How much does Tasty Granite Salad cost?”"
+				}
+			},
+			"orchestra": {
+				"answer": {
+					"tag": "widget · site",
+					"text": "The reply appears in the chat"
 				},
-				"understand": {
-					"tag": "alpha · understanding",
-					"text": "English, one task: the price of one product"
+				"beta": {
+					"tag": "beta · reply",
+					"text": "“Tasty Granite Salad costs $206.59.”"
 				},
-				"rules": {
-					"tag": "alpha · rules",
-					"text": "no cue words for a known kind of request, so gamma decides"
+				"delta1": {
+					"tag": "delta · parameters and call",
+					"text": "search_products({ query: \"Tasty Granite Salad\" }) → in the browser, $206.59"
 				},
 				"gamma": {
 					"tag": "gamma · decision",
@@ -191,19 +113,96 @@
 					"tag": "alpha · GOAP plan",
 					"text": "goal: a reply from facts; plan: search_products → reply"
 				},
-				"delta1": {
-					"tag": "delta · parameters and call",
-					"text": "search_products({ query: \"Tasty Granite Salad\" }) → in the browser, $206.59"
+				"rules": {
+					"tag": "alpha · rules",
+					"text": "no cue words for a known kind of request, so gamma decides"
 				},
-				"beta": {
-					"tag": "beta · reply",
-					"text": "“Tasty Granite Salad costs $206.59.”"
+				"understand": {
+					"tag": "alpha · understanding",
+					"text": "English, one task: the price of one product"
 				},
+				"widget": {
+					"tag": "widget · site",
+					"text": "“How much does Tasty Granite Salad cost?”"
+				}
+			}
+		},
+		"remove-all": {
+			"label": "Empty the cart",
+			"llm": {
 				"answer": {
 					"tag": "widget · site",
-					"text": "The reply appears in the chat"
+					"text": "“Your cart is now empty.”"
+				},
+				"llm1": {
+					"tag": "LLM · decides the next step",
+					"text": "Read the cart first: get_cart()"
+				},
+				"llm2": {
+					"tag": "LLM · decides the next step",
+					"text": "Remove each: update_cart_item({ product: \"Handmade Marble Car\", quantity: 0 }), the same for Small Steel Bike"
+				},
+				"llm3": {
+					"tag": "LLM · decides the next step",
+					"text": "No more tools: writes the reply"
+				},
+				"widget": {
+					"tag": "widget · site",
+					"text": "“Remove everything from my cart.”"
+				}
+			},
+			"orchestra": {
+				"answer": {
+					"tag": "widget · site",
+					"text": "The reply appears in the chat, the cart is empty"
+				},
+				"plan": {
+					"tag": "alpha · GOAP plan",
+					"text": "goal: the cart is empty; plan: get_cart → remove each → reply from a template"
+				},
+				"rules": {
+					"tag": "alpha · rules",
+					"text": "removal words and “everything”: no decision model needed"
+				},
+				"template": {
+					"tag": "alpha · reply template",
+					"text": "“Removed from your cart: 1 × Handmade Marble Car, 2 × Small Steel Bike.” No model call"
+				},
+				"tool1": {
+					"tag": "alpha · site call",
+					"text": "get_cart() → in the browser, 2 items"
+				},
+				"tool2": {
+					"tag": "alpha · site call",
+					"text": "update_cart_item({ product: \"Handmade Marble Car\", quantity: 0 }): arguments from the cart, no model"
+				},
+				"tool3": {
+					"tag": "alpha · site call",
+					"text": "update_cart_item({ product: \"Small Steel Bike\", quantity: 0 })"
+				},
+				"understand": {
+					"tag": "alpha · understanding",
+					"text": "English, one task: remove, the whole cart"
+				},
+				"widget": {
+					"tag": "widget · site",
+					"text": "“Remove everything from my cart.”"
 				}
 			}
 		}
-	}
+	},
+	"casesLabel": "Task",
+	"heading": "The model does not decide alone",
+	"lead": "gpt-6-luna alone decides every step itself, so every step is one more call of a big model. In the orchestrator the model never decides alone: rules, the site’s memory and a decision model name the kind of request, the GOAP planner builds the steps to the goal, a small model only fills in a call, and code does what needs no model. A 24B and an 8B model, both small next to gpt-6-luna.",
+	"legend": {
+		"calls": "model calls",
+		"done": "task done",
+		"failed": "task failed",
+		"total": "total"
+	},
+	"tabs": {
+		"llm": "Only LLM (gpt-6-luna)",
+		"orchestra": "Orchestrator (LLM + decision)"
+	},
+	"tabsLabel": "Setup"
 }

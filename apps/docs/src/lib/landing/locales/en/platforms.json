@@ -1,21 +1,21 @@
 {
 	"heading": "Where small CIS shops actually live",
-	"lead": "Most small shops run on WooCommerce, OpenCart or 1C-Bitrix, not on Shopify. None of them gives a ready shopping agent out of the box. Pleiades is a widget on the page, so it does not wait for the CMS to become agent-ready.",
 	"items": {
-		"wordpress-woocommerce": {
-			"name": "WordPress + WooCommerce",
-			"text": "WordPress has an official MCP Adapter, and WooCommerce ships an MCP integration since 10.3. Both are still early: WooCommerce calls it a developer preview.",
-			"status": "official, early"
-		},
 		"1c-bitrix": {
 			"name": "1C-Bitrix",
-			"text": "The most used store engine in Russia (about 29% of shops, though over half run a custom CMS). Bitrix24 has official MCP servers; for the store engine we found only third-party developer tools.",
-			"status": "CRM official, store: none"
+			"status": "CRM official, store: none",
+			"text": "The most used store engine in Russia (about 29% of shops, though over half run a custom CMS). Bitrix24 has official MCP servers; for the store engine we found only third-party developer tools."
 		},
 		"opencart": {
 			"name": "OpenCart",
-			"text": "A separate store CMS, not a WordPress plugin. No official MCP; third-party extensions exist, such as EcomAiBridge in the OpenCart marketplace.",
-			"status": "third-party only"
+			"status": "third-party only",
+			"text": "A separate store CMS, not a WordPress plugin. No official MCP; third-party extensions exist, such as EcomAiBridge in the OpenCart marketplace."
+		},
+		"wordpress-woocommerce": {
+			"name": "WordPress + WooCommerce",
+			"status": "official, early",
+			"text": "WordPress has an official MCP Adapter, and WooCommerce ships an MCP integration since 10.3. Both are still early: WooCommerce calls it a developer preview."
 		}
-	}
+	},
+	"lead": "Most small shops run on WooCommerce, OpenCart or 1C-Bitrix, not on Shopify. None of them gives a ready shopping agent out of the box. Pleiades is a widget on the page, so it does not wait for the CMS to become agent-ready."
 }

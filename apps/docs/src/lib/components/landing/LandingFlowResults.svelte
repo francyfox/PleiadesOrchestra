@@ -12,7 +12,7 @@
 </script>
 
 <Pane title="guest@pleiades — results" header={false} id="results">
-	<h2 class="text-xl font-bold">{t.heading}</h2>
+	<div class="text-6xl font-bold mb-5 md:mb-15">{t.heading}</div>
 
 	<div class="mt-6 grid grid-cols-1 gap-8 md:grid-cols-[minmax(10rem,14rem)_1fr]">
 		<ul class="flex flex-wrap gap-8 md:flex-col">

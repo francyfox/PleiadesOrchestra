@@ -1,15 +1,30 @@
 {
-	"heading": "MCP server vs WebMCP",
-	"lead": "Two different transports, not one catalog reachable two ways. Pleiades supports both.",
-	"noteStrong": "WebMCP is experimental.",
-	"noteBefore": " It is a W3C Community Group draft, shipped in Chrome as an early preview and not yet a stable cross-browser feature. The API surface is still changing: the draft moves from",
-	"noteTo": "to",
-	"noteAfter": "Chrome Status lists Chrome 157, due 3 November 2026, as the anticipated release — a target, not a committed date.",
-	"releaseTarget": "release target",
 	"colMcp": "MCP server",
 	"colWeb": "WebMCP",
 	"experimental": "(experimental)",
+	"heading": "MCP server vs WebMCP",
+	"lead": "Two different transports, not one catalog reachable two ways. Pleiades supports both.",
+	"noteAfter": "Chrome Status lists Chrome 157, due 3 November 2026, as the anticipated release — a target, not a committed date.",
+	"noteBefore": " It is a W3C Community Group draft, shipped in Chrome as an early preview and not yet a stable cross-browser feature. The API surface is still changing: the draft moves from",
+	"noteStrong": "WebMCP is experimental.",
+	"noteTo": "to",
+	"releaseTarget": "release target",
 	"rows": {
+		"maturity": {
+			"label": "maturity",
+			"mcp": "Established protocol.",
+			"web": "Experimental browser API; behind a flag in Chrome today."
+		},
+		"sees-the-visitor-s": {
+			"label": "sees the visitor’s state",
+			"mcp": "Only what the server knows.",
+			"web": "Yes: the open page, the cart, the chosen city — as the visitor sees it."
+		},
+		"what-the-site-needs": {
+			"label": "what the site needs",
+			"mcp": "A real MCP server next to the shop or service.",
+			"web": "Only the tools it already exposes on its pages — no backend integration."
+		},
 		"where-the-tools-live": {
 			"label": "where the tools live",
 			"mcp": "On an MCP server the orchestrator can reach (stdio / SSE).",
@@ -19,21 +34,6 @@
 			"label": "who runs the call",
 			"mcp": "The server calls the tool itself.",
 			"web": "The widget calls it in the browser; the server pauses the plan and resumes it with the result."
-		},
-		"what-the-site-needs": {
-			"label": "what the site needs",
-			"mcp": "A real MCP server next to the shop or service.",
-			"web": "Only the tools it already exposes on its pages — no backend integration."
-		},
-		"sees-the-visitor-s": {
-			"label": "sees the visitor’s state",
-			"mcp": "Only what the server knows.",
-			"web": "Yes: the open page, the cart, the chosen city — as the visitor sees it."
-		},
-		"maturity": {
-			"label": "maturity",
-			"mcp": "Established protocol.",
-			"web": "Experimental browser API; behind a flag in Chrome today."
 		}
 	}
 }

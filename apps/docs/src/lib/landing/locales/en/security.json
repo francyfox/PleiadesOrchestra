@@ -1,26 +1,26 @@
 {
-	"heading": "Security and who gets paid",
-	"lead": "Whoever owns the agent owns the recommendation, the ad and the customer. That is the real question behind every protocol on this page.",
-	"points": {
-		"yandex-is-the-one": {
-			"title": "Yandex is the one to watch",
-			"text": "Its Commerce Protocol is closed and proprietary, not MCP. A closed platform that ranks the recommendations in the dialogue and sells the ads around them has every reason to favour its own results. The shop becomes a supplier; the customer relationship and the ad budget go to the platform."
-		},
-		"google-s-open-protocols": {
-			"title": "Google’s open protocols are not charity",
-			"text": "WebMCP and the Universal Commerce Protocol are open — and they feed Google’s own search, ads and Merchant Center. The more sites expose tools in the open, the more of the traffic is automated: corporate agents and bots of every kind that the shop does not control."
-		},
-		"open-means-exposed": {
-			"title": "Open means exposed",
-			"text": "Browser vendors are not aligned: Mozilla has filed concerns about agents acting without the user seeing it, and WebKit opposes sites telling agents from people. Limits, permissions and an audit trail belong on the shop’s side."
-		},
-		"the-shop-keeps-its": {
-			"title": "The shop keeps its own customer",
-			"text": "Pleiades is self-hosted. Recommendations, customer data and the ad slot stay on the shop’s own site instead of moving into someone else’s results. The plan behind every answer is a readable graph, and the tools are the ones the site itself exposes."
-		}
-	},
 	"early": {
 		"heading": "Early stage, in active development",
 		"text": "Pleiades is at an early stage and under active development: the first commit is from August 2026. Features and APIs change, and we do not promise security guarantees we have not shown. Free under AGPLv3; a one-time commercial license is for closed-source use."
+	},
+	"heading": "Security and who gets paid",
+	"lead": "Whoever owns the agent owns the recommendation, the ad and the customer. That is the real question behind every protocol on this page.",
+	"points": {
+		"google-s-open-protocols": {
+			"text": "WebMCP and the Universal Commerce Protocol are open — and they feed Google’s own search, ads and Merchant Center. The more sites expose tools in the open, the more of the traffic is automated: corporate agents and bots of every kind that the shop does not control.",
+			"title": "Google’s open protocols are not charity"
+		},
+		"open-means-exposed": {
+			"text": "Browser vendors are not aligned: Mozilla has filed concerns about agents acting without the user seeing it, and WebKit opposes sites telling agents from people. Limits, permissions and an audit trail belong on the shop’s side.",
+			"title": "Open means exposed"
+		},
+		"the-shop-keeps-its": {
+			"text": "Pleiades is self-hosted. Recommendations, customer data and the ad slot stay on the shop’s own site instead of moving into someone else’s results. The plan behind every answer is a readable graph, and the tools are the ones the site itself exposes.",
+			"title": "The shop keeps its own customer"
+		},
+		"yandex-is-the-one": {
+			"text": "Its Commerce Protocol is closed and proprietary, not MCP. A closed platform that ranks the recommendations in the dialogue and sells the ads around them has every reason to favour its own results. The shop becomes a supplier; the customer relationship and the ad budget go to the platform.",
+			"title": "Yandex is the one to watch"
+		}
 	}
 }
