@@ -3,33 +3,33 @@
 	"demo": {
 		"aria": "Widget demo chat",
 		"lines": {
-			"bot": {
-				"from": "bot",
-				"text": "The cheapest is Vista 27 for $249. Add it to the cart?"
-			},
-			"bot-2": {
-				"from": "bot",
-				"text": "Done: 2 × Vista 27 in your cart, $498. Go to checkout?"
-			},
-			"step": {
-				"from": "step",
-				"text": "searching the catalog"
-			},
-			"step-2": {
-				"from": "step",
-				"text": "found 4 products"
-			},
-			"step-3": {
-				"from": "step",
-				"text": "add_to_cart · Vista 27 × 2"
-			},
-			"user": {
+			"1": {
 				"from": "user",
 				"text": "Find a 27-inch monitor under $300"
 			},
-			"user-2": {
+			"2": {
+				"from": "step",
+				"text": "searching the catalog"
+			},
+			"3": {
+				"from": "step",
+				"text": "found 4 products"
+			},
+			"4": {
+				"from": "bot",
+				"text": "The cheapest is Vista 27 for $249. Add it to the cart?"
+			},
+			"5": {
 				"from": "user",
 				"text": "Yes, two of them"
+			},
+			"6": {
+				"from": "step",
+				"text": "add_to_cart · Vista 27 × 2"
+			},
+			"7": {
+				"from": "bot",
+				"text": "Done: 2 × Vista 27 in your cart, $498. Go to checkout?"
 			}
 		},
 		"placeholder": "Message…",
