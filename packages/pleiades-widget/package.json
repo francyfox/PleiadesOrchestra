@@ -1,6 +1,6 @@
 {
 	"name": "@shalotts/pleiades-widget",
-	"version": "0.4.0",
+	"version": "0.5.0",
 	"license": "BSD-3-Clause",
 	"author": "Danil Golota",
 	"homepage": "https://github.com/francyfox/PleiadesOrchestra/tree/master/packages/pleiades-widget#readme",
@@ -39,6 +39,10 @@
 			"types": "./types/style.d.ts",
 			"default": "./dist/pleiades-widget.css"
 		},
+		"./webmcp-polyfill": {
+			"types": "./types/webmcp-polyfill.d.ts",
+			"default": "./dist/webmcp-polyfill.js"
+		},
 		"./package.json": "./package.json"
 	},
 	"files": [
@@ -49,7 +53,7 @@
 	],
 	"scripts": {
 		"dev": "vite --port 5199 --host 0.0.0.0",
-		"build": "vite build && node scripts/postbuild.mjs && size-limit",
+		"build": "vite build && vite build --config vite.polyfill.config.ts && node scripts/postbuild.mjs && size-limit",
 		"test": "bun test src",
 		"check-types": "bun check && bun check -p types-test",
 		"lint": "biome check .",

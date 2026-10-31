@@ -9,26 +9,7 @@ lang: ru
 
 ## Установка
 
-Из npm:
-
-```sh
-npm install @shalotts/pleiades-widget
-```
-
-```js
-import "@shalotts/pleiades-widget"; // registers <pleiades-chat>; there are no exports
-```
-
-Или тегом script (jsDelivr и unpkg отдают один и тот же файл):
-
-```html
-<script src="https://cdn.jsdelivr.net/npm/@shalotts/pleiades-widget/dist/pleiades-widget.js" defer></script>
-
-<pleiades-chat
-  agent-url="https://agent.example.com"
-  publishable-key="pk_your_channel_key"
-></pleiades-chat>
-```
+<WidgetInstall />
 
 `agent-url` и `publishable-key` берутся из вашего канала в админ-панели. На страницах без нативной поддержки виджет также устанавливает полифил WebMCP, поэтому ваши [инструменты](/docs/tools/) работают в любом браузере.
 

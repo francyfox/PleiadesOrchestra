@@ -10,26 +10,7 @@ review: pending
 
 ## Орнату
 
-npm арқылы:
-
-```sh
-npm install @shalotts/pleiades-widget
-```
-
-```js
-import "@shalotts/pleiades-widget"; // registers <pleiades-chat>; there are no exports
-```
-
-Немесе script тегі арқылы (jsDelivr мен unpkg бірдей файлды береді):
-
-```html
-<script src="https://cdn.jsdelivr.net/npm/@shalotts/pleiades-widget/dist/pleiades-widget.js" defer></script>
-
-<pleiades-chat
-  agent-url="https://agent.example.com"
-  publishable-key="pk_your_channel_key"
-></pleiades-chat>
-```
+<WidgetInstall />
 
 `agent-url` және `publishable-key` мәндері әкімші панеліндегі арнаңыздан алынады. Виджет сондай-ақ нативті қолдауы жоқ беттерде WebMCP polyfill орнатады, сондықтан [құралдарыңыз](/docs/tools/) кез келген браузерде жұмыс істейді.
 

@@ -23,7 +23,7 @@ Modules: `access`, `active-runs`, `agent-settings`, `agents`, `alpha-understand`
 
 `packages/core/src/goap/` — `plan`, `runPlan`, `createTextAction`, `createDecisionAction`, MCP-backed `ToolSource`. `WorldState` is a flat key→value fact bag; actions declare preconditions/effects; the executor reconciles actual effects against expected ones.
 
-`buildActions` in `modules/goap/goap.service.ts` builds the action catalog once per app instance. `POST /v1/messages` streams `runPlan` as NDJSON (`delta`/`done`/`error`). Design and phase status: `apps/docs/content/en/drafts/goap-actions.md`.
+`buildActions` in `modules/goap/goap.service.ts` builds the action catalog once per app instance. `POST /v1/messages` streams `runPlan` as NDJSON (`delta`/`done`/`error`). Design and phase status: `docs/trust/drafts/goap-actions.md`.
 
 **Only SESSION_FACTS survive between requests** — a failed or completed run keeps only `SESSION_FACTS` (`storeOpen`, `store`, `lastProduct`); only a WAITING run (paused for a browser tool) keeps its full state for `resumeReply`. This prevents stale `webmcp:*:result` facts from poisoning the next message.
 

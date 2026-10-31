@@ -19,6 +19,7 @@ import {
 	parseFrontmatter,
 	rewriteLinks,
 	sidebarItems,
+	withEnglishFallback,
 } from "./content-routes.ts";
 
 const root = join(import.meta.dirname, "..");
@@ -239,24 +240,17 @@ describe("sidebar", () => {
 			new Map([
 				["api/server.md", "---\ntitle: API\n---\n"],
 				["intro.md", "---\ntitle: Intro\n---\n"],
-				["drafts/plan.md", "---\ntitle: Plan\n---\n"],
-				["drafts/overview.md", "---\ntitle: Drafts\n---\n"],
+				["api/overview.md", "---\ntitle: Overview\n---\n"],
 			]),
 		);
-		expect(items.map((i) => i.title)).toEqual([
-			"Intro",
-			"API",
-			"Drafts",
-			"Plan",
-		]);
+		expect(items.map((i) => i.title)).toEqual(["Intro", "Overview", "API"]);
 	});
 
-	test("/docs/ and /docs/drafts/ redirect to their first page", () => {
+	test("/docs/ and /ru/docs/ redirect to their first page", () => {
 		expect(folderRedirects(content)).toEqual(
 			expect.arrayContaining([
 				{ route: "docs", to: "/docs/intro/" },
 				{ route: "ru/docs", to: "/ru/docs/intro/" },
-				{ route: "docs/drafts", to: "/docs/drafts/overview/" },
 			]),
 		);
 	});
@@ -296,24 +290,20 @@ describe("llms.txt (llmstxt.org)", () => {
 		expect(cleanMarkdown(md)).toBe("# T\n\nUse `${VAR}` here.\n");
 	});
 
-	test("H1, summary, the docs list, drafts and other languages under Optional", () => {
+	test("H1, summary, the docs list and other languages under Optional", () => {
 		const txt = buildLlmsTxt(
 			"en",
-			pages(
-				{ "index.md": page("Home"), "drafts/plan.md": page("Plan") },
-				{ "index.md": page("Басты") },
-			),
+			pages({ "index.md": page("Home") }, { "index.md": page("Басты") }),
 			site,
 		);
 		expect(txt).toStartWith("# Site\n\n> What it is.\n");
 		expect(txt).toContain("## Docs\n\n- [Home](/docs/index.html.md)\n");
 		const optional = txt.slice(txt.indexOf("## Optional"));
-		expect(optional).toContain("- [Plan](/docs/drafts/plan/index.html.md)");
 		expect(optional).toContain("(/kk/llms.txt)");
 		expect(txt.indexOf("## Docs")).toBeLessThan(txt.indexOf("## Optional"));
 	});
 
-	test("a translation lists its own pages under its prefix, no drafts", () => {
+	test("a translation lists its own pages under its prefix", () => {
 		const txt = buildLlmsTxt(
 			"kk",
 			pages({ "index.md": page("Home") }, { "index.md": page("Басты") }),
@@ -323,17 +313,15 @@ describe("llms.txt (llmstxt.org)", () => {
 		expect(txt).toContain("(/llms.txt)");
 	});
 
-	test("llms-full.txt: every English page except drafts, in order", () => {
+	test("llms-full.txt: every English page, in order", () => {
 		const full = buildLlmsFull(
 			pages({
 				"index.md": page("Home", "\nhello\n"),
 				"api/server.md": page("Server"),
-				"drafts/plan.md": page("Plan"),
 			}),
 			site,
 		);
 		expect(full).toContain("hello");
-		expect(full).not.toContain("# Plan");
 		expect(full.indexOf("# Home")).toBeLessThan(full.indexOf("# Server"));
 	});
 
@@ -348,5 +336,25 @@ describe("llms.txt (llmstxt.org)", () => {
 		}
 		expect(files.has("llms-full.txt")).toBe(true);
 		expect(files.has("docs/intro/index.html.md")).toBe(true);
+	});
+});
+
+describe("withEnglishFallback", () => {
+	test("a language without a translation gets the English page; its own page wins", () => {
+		const out = withEnglishFallback(
+			new Map([
+				[
+					"en",
+					new Map([
+						["a.md", "EN a"],
+						["b.md", "EN b"],
+					]),
+				],
+				["ru", new Map([["a.md", "RU a"]])],
+			]),
+		);
+		expect(out.get("ru")?.get("a.md")).toBe("RU a");
+		expect(out.get("ru")?.get("b.md")).toBe("EN b");
+		expect(out.get("en")?.has("a.md")).toBe(true);
 	});
 });

@@ -9,9 +9,9 @@ import { PLEIADES_PANEL_LOGIN_URL, SITE } from "./src/lib/site.ts";
 import {
 	BENCHMARKS_DIR,
 	contentRoutes,
-	DRAFTS_DIR,
 	loadContent,
 	sidebarItems,
+	withEnglishFallback,
 } from "./vite/content-routes.ts";
 import { mobileSearch } from "./vite/mobile-search.ts";
 
@@ -96,28 +96,22 @@ const navbar = (locale: Locale) => [
 ];
 
 // The sources themselves (content/<locale>), not the generated routes.
-const content = loadContent(join(root, "content"));
+const content = withEnglishFallback(loadContent(join(root, "content")));
 // Groups, not a flat list: the theme draws every top-level item as its own group
-// (bold title, rule, wide gaps). Benchmarks and drafts are English-only; drafts are folded.
+// (bold title, rule, wide gaps). Benchmarks are English-only.
 const sidebar = (locale: Locale) => {
 	const items = sidebarItems(content.get(locale) ?? new Map());
 	const under = (dir: string) => (item: { to: string }) =>
 		item.to.startsWith(`/docs/${dir}`);
 	const benchmarks = items.filter(under(BENCHMARKS_DIR));
-	const drafts = items.filter(under(DRAFTS_DIR));
 	return {
 		"/docs/": [
 			{
 				title: CHROME[locale].docs,
-				items: items.filter(
-					(i) => !under(BENCHMARKS_DIR)(i) && !under(DRAFTS_DIR)(i),
-				),
+				items: items.filter((i) => !under(BENCHMARKS_DIR)(i)),
 			},
 			...(benchmarks.length
 				? [{ title: "Benchmarks", items: benchmarks }]
-				: []),
-			...(drafts.length
-				? [{ title: "Drafts", collapsible: true, items: drafts }]
 				: []),
 		],
 	};

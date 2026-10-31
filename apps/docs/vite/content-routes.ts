@@ -15,14 +15,11 @@ import { SITE } from "../src/lib/site.ts";
 /** One locale's pages: path relative to `content/<locale>/` (`/`-separated) -> Markdown. */
 export type PageSet = Map<string, string>;
 
-/** English-only working notes (`content/en/drafts/`): not translated, so translations don't mirror them. */
-export const DRAFTS_DIR = "drafts/";
 /** English-only benchmark results (`content/en/benchmarks/`): numbers and setups, not translated either. */
 export const BENCHMARKS_DIR = "benchmarks/";
 
 /** A page that exists only in English: translations don't mirror it. */
-export const isEnglishOnly = (rel: string) =>
-	rel.startsWith(DRAFTS_DIR) || rel.startsWith(BENCHMARKS_DIR);
+export const isEnglishOnly = (rel: string) => rel.startsWith(BENCHMARKS_DIR);
 
 /**
  * SveltePress renders pages only from `src/routes/**\/+page.md`. The docs pages are
@@ -117,6 +114,22 @@ export function loadContent(contentDir: string): Map<string, PageSet> {
 		);
 	}
 	return all;
+}
+
+/**
+ * Every language shows every English page: a page without a translation is served in English
+ * (route, sidebar, llms.txt). A translated page overrides its English one.
+ */
+export function withEnglishFallback(
+	content: Map<string, PageSet>,
+): Map<string, PageSet> {
+	const en = content.get(DEFAULT_LOCALE) ?? new Map<string, string>();
+	return new Map(
+		[...content].map(([locale, pages]) => [
+			locale,
+			locale === DEFAULT_LOCALE ? pages : new Map([...en, ...pages]),
+		]),
+	);
 }
 
 /** Top-level `key: value` pairs of the YAML frontmatter (all this site uses). */
@@ -257,6 +270,9 @@ export function buildPage(
 		...(pending
 			? ["\timport ReviewNotice from '#lib/components/ReviewNotice.svelte'"]
 			: []),
+		...(body.includes("<WidgetInstall")
+			? ["\timport WidgetInstall from '#lib/components/WidgetInstall.svelte'"]
+			: []),
 		"</script>",
 		"",
 		"<Seo title={seo.title} description={seo.description} locale={seo.locale} />",
@@ -353,18 +369,10 @@ const LANGUAGE_NAMES: Record<string, string> = {
 	kk: "Қазақша",
 };
 
-const isDraft = (rel: string) => rel.startsWith(DRAFTS_DIR);
-
-/** A locale's pages by URL, drafts last (sidebar order otherwise). */
-const sortedPages = (pages: PageSet) =>
-	[...pages.keys()].sort(
-		(a, b) => Number(isDraft(a)) - Number(isDraft(b)) || byPageOrder(a, b),
-	);
-
 /**
  * `/llms.txt` (`/<locale>/llms.txt` for a translation), per llmstxt.org: H1, a summary
- * blockquote, then file lists. The docs come first; English working notes (drafts) and
- * the other languages go under "Optional", which an agent may skip.
+ * blockquote, then file lists. The docs come first; the other languages go under
+ * "Optional", which an agent may skip.
  */
 export function buildLlmsTxt(
 	locale: string,
@@ -374,9 +382,8 @@ export function buildLlmsTxt(
 	const pages = content.get(locale) ?? new Map<string, string>();
 	const item = (rel: string) =>
 		`- [${parseFrontmatter(pages.get(rel) ?? "").title ?? rel}](/${pageMarkdownPath(rel, locale)})`;
-	const rels = sortedPages(pages);
+	const rels = [...pages.keys()].sort(byPageOrder);
 	const optional = [
-		...rels.filter(isDraft).map(item),
 		...(locale === DEFAULT_LOCALE
 			? ["- [All English docs in one file](/llms-full.txt)"]
 			: []),
@@ -396,7 +403,7 @@ export function buildLlmsTxt(
 		"",
 		"## Docs",
 		"",
-		...rels.filter((rel) => !isDraft(rel)).map(item),
+		...rels.map(item),
 		"",
 		"## Optional",
 		"",
@@ -405,7 +412,7 @@ export function buildLlmsTxt(
 	].join("\n");
 }
 
-/** `/llms-full.txt`: every English docs page (no drafts) in one Markdown file. */
+/** `/llms-full.txt`: every English docs page in one Markdown file. */
 export function buildLlmsFull(
 	content: Map<string, PageSet>,
 	site: SiteInfo,
@@ -413,8 +420,8 @@ export function buildLlmsFull(
 	const pages = content.get(DEFAULT_LOCALE) ?? new Map<string, string>();
 	return [
 		`# ${site.title}\n\n> ${site.description}\n`,
-		...sortedPages(pages)
-			.filter((rel) => !isDraft(rel))
+		...[...pages.keys()]
+			.sort(byPageOrder)
 			.map((rel) => cleanMarkdown(pages.get(rel) ?? "")),
 	].join("\n---\n\n");
 }
@@ -445,7 +452,7 @@ export function llmsFiles(
  * All generated and git-ignored.
  */
 export function syncContentRoutes(root: string, site: SiteInfo): void {
-	const content = loadContent(join(root, "content"));
+	const content = withEnglishFallback(loadContent(join(root, "content")));
 	for (const locale of ALL_LOCALES) {
 		const prefix = locale === DEFAULT_LOCALE ? "" : locale;
 		for (const dir of ["src/routes", "static"]) {

@@ -2,6 +2,8 @@
 	import "photoswipe/style.css";
 	import type PhotoSwipeLightbox from "photoswipe/lightbox";
 	import { onDestroy, onMount } from "svelte";
+	import { localeFromPath } from "#lib/i18n.js";
+	import { page } from "$app/state";
 
 	// Screen rectangles on tv.webp (1672×941 px): [left, top, right, bottom].
 	const SIZE = { w: 1672, h: 941 };
@@ -19,19 +21,54 @@
 		[920, 725, 1128, 815],
 		[1302, 613, 1540, 783],
 	];
-	const ITEMS = ["cover", "alpha", "beta", "gamma"].map((name) => ({
+	const ITEMS = ["alpha", "beta", "gamma"].map((name) => ({
 		src: `/media/gallery-${name}.webp`,
 		width: 1200,
 		height: 756,
 	}));
 
+	const MOVIES = [
+		{
+			ru: ["1241745642"],
+			en: ["1241349081"],
+		},
+	];
+
+	// shortcut: kk has no movie yet, falls back to en; add a kk key when it exists.
+	const lang = localeFromPath(page.url.pathname) === "ru" ? "ru" : "en";
+	const movieId = MOVIES[0][lang][0];
+	let cover = $state<string>();
 	let lightbox: PhotoSwipeLightbox | undefined;
 
 	onMount(async () => {
+		// Vimeo oEmbed gives the poster; on failure the first screen keeps its placeholder.
+		try {
+			const res = await fetch(
+				`https://vimeo.com/api/oembed.json?url=https://vimeo.com/${movieId}`,
+			);
+			cover = (await res.json()).thumbnail_url;
+		} catch {
+			cover = undefined;
+		}
 		const { default: Lightbox } = await import("photoswipe/lightbox");
+		const { default: Player } = await import("@vimeo/player");
 		lightbox = new Lightbox({
-			dataSource: ITEMS,
+			dataSource: [{ vimeo: movieId, width: 1280, height: 720 }],
 			pswpModule: () => import("photoswipe"),
+		});
+		// The slide is a plain container; the Vimeo SDK fills it with the player when it opens.
+		lightbox.on("contentActivate", ({ content }) => {
+			if (
+				content.data.vimeo &&
+				content.element &&
+				!content.element.querySelector("iframe")
+			) {
+				new Player(content.element, {
+					id: Number(content.data.vimeo),
+					responsive: true,
+					autoplay: true,
+				});
+			}
 		});
 		lightbox.init();
 	});
@@ -53,7 +90,7 @@
 				<div class="tv-screen absolute" style={box(i)}>
 					<div class="tv-thumb absolute inset-0 z-0 overflow-hidden">
 						<img
-							src={ITEMS[i % ITEMS.length].src}
+							src={i === 0 && cover ? cover : ITEMS[i % ITEMS.length].src}
 							alt=""
 							class="h-full w-full object-cover"
 						/>
@@ -62,7 +99,7 @@
 						type="button"
 						aria-label="Image {i + 1}"
 						class="absolute inset-0 z-20 cursor-pointer border-0 bg-transparent focus-visible:outline-2 focus-visible:outline-offset-2"
-						onclick={() => lightbox?.loadAndOpen(i % ITEMS.length)}
+						onclick={() => lightbox?.loadAndOpen(0)}
 					></button>
 				</div>
 			{/each}

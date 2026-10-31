@@ -219,6 +219,14 @@ async execute(args) {
 
 ## Polyfill
 
-`@repo/webmcp-polyfill` (Apache-2.0, Google-дың `webmcp-tools` polyfill-інен бейімделген) виджетке кіріктірілген; виджет оны жүктелгенде орнатады. Ол `document.modelContext` объектісін тек жоқ жерде анықтайды, сондықтан браузерде нативті WebMCP болса, сол қолданылады. Ол `registerTool`, `getTools`, `executeTool`, `toolchange`, `toolactivated` және `toolcancel` оқиғаларын, декларативті форма құралдарын және терезелер арасындағы көпірді береді. Оны бөлек орнатудың қажеті жоқ.
+`@repo/webmcp-polyfill` (Apache-2.0, Google-дың `webmcp-tools` polyfill-інен бейімделген) виджетке кіріктірілген; виджет оны жүктелгенде орнатады. Ол `document.modelContext` объектісін тек жоқ жерде анықтайды, сондықтан браузерде нативті WebMCP болса, сол қолданылады. Ол `registerTool`, `getTools`, `executeTool`, `toolchange`, `toolactivated` және `toolcancel` оқиғаларын, декларативті форма құралдарын және терезелер арасындағы көпірді береді. Оны бөлек орнатудың қажеті жоқ. Виджет оны жүктелгенде орнатады, сондықтан виджеті бар бетте ештеңе істеудің қажеті жоқ.
 
-<!-- TODO: the polyfill package is private (not published); the docs should not tell sites to install it. Confirm whether a standalone publish is planned. -->
+Полифилді виджетсіз пайдалану үшін оны виджет пакетінен импорттаңыз. Импорт ештеңені тіркемейді, функцияны өзіңіз шақырасыз:
+
+```js
+import { installWebMcpPolyfill } from "@shalotts/pleiades-widget/webmcp-polyfill";
+
+installWebMcpPolyfill({ exposeToolsTo: ["https://embedder.example"] });
+```
+
+Параметрлер виджеттің `expose-tools-to` атрибутындағыдай.

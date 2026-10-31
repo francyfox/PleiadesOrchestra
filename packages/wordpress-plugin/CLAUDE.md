@@ -1,6 +1,6 @@
 # wordpress-plugin internals
 
-See root `CLAUDE.md` for monorepo commands, workflow and style. Plan: `apps/docs/content/en/drafts/wordpress-plugin.md`.
+See root `CLAUDE.md` for monorepo commands, workflow and style. Plan: `docs/trust/drafts/wordpress-plugin.md`.
 
 ## Overview
 

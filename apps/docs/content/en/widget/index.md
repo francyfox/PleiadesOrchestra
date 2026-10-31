@@ -8,26 +8,7 @@ A single framework-agnostic web component. It shows a launcher button in a corne
 
 ## Install
 
-From npm:
-
-```sh
-npm install @shalotts/pleiades-widget
-```
-
-```js
-import "@shalotts/pleiades-widget"; // registers <pleiades-chat>; there are no exports
-```
-
-Or with a script tag (jsDelivr or unpkg serve the same file):
-
-```html
-<script src="https://cdn.jsdelivr.net/npm/@shalotts/pleiades-widget/dist/pleiades-widget.js" defer></script>
-
-<pleiades-chat
-  agent-url="https://agent.example.com"
-  publishable-key="pk_your_channel_key"
-></pleiades-chat>
-```
+<WidgetInstall />
 
 `agent-url` and `publishable-key` come from your channel in the admin panel. The widget also installs a WebMCP polyfill on pages without native support, so your [tools](/docs/tools/) work in any browser.
 
