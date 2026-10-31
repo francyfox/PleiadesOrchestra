@@ -24,7 +24,6 @@
 	<LandingHistory />
 	<LandingAbout />
 	<LandingFlow />
-	<LandingPleiades />
 	<LandingFlowResults />
 	<LandingTvGallery />
 	<LandingMcpCompare />
@@ -32,5 +31,6 @@
 	<LandingBenefits />
 	<LandingSecurity />
 	<LandingPricing />
+	<LandingPleiades />
 </main>
 </div>
