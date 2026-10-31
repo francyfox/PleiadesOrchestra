@@ -133,6 +133,20 @@ import type {} from "@shalotts/pleiades-widget/react";
 
 `bun run check-types` compiles `types-test/`, which checks that the declarations accept the real API, reject misuse, and stay in sync with the class.
 
+## WebMCP polyfill
+
+The widget installs a WebMCP polyfill (`document.modelContext`) on load, on pages without native WebMCP. Native support is kept where a browser has it. Nothing to do on a page that already has the widget.
+
+To use the polyfill without the widget, import it from its own entry. Importing registers nothing; call the function yourself:
+
+```js
+import { installWebMcpPolyfill } from "@shalotts/pleiades-widget/webmcp-polyfill";
+
+installWebMcpPolyfill({ exposeToolsTo: ["https://embedder.example"] });
+```
+
+The options match the widget's `expose-tools-to` attribute: origins whose windows may list and run this page's tools through `postMessage`. Empty or omitted, no other window can reach them. The entry is an ES module (`dist/webmcp-polyfill.js`) with its own types.
+
 ## Which key goes where
 
 | Key | Looks like | Where it goes | Visible to visitors? |
