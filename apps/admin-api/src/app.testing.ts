@@ -67,7 +67,10 @@ export function fakeOrchestrator(
 }
 
 /** An app over an in-memory database with a stub orchestrator; `overrides` replace any dependency. */
-export function testApp(overrides: Partial<AdminApiDeps> = {}) {
+export function testApp(
+	overrides: Partial<AdminApiDeps> = {},
+	requireEmailVerification = true,
+) {
 	const db = openAdminDb(":memory:", join(import.meta.dir, "../drizzle"));
 	const mailer = createFakeMailer();
 	const orchestrator = overrides.orchestrator ?? fakeOrchestrator().client;
@@ -77,6 +80,7 @@ export function testApp(overrides: Partial<AdminApiDeps> = {}) {
 		baseURL: ORIGIN,
 		mailer,
 		panelUrl: ORIGIN,
+		requireEmailVerification,
 		now: overrides.now,
 	});
 	const app = createApp({

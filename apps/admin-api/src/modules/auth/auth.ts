@@ -24,6 +24,8 @@ export interface AuthOptions {
 	mailer: Mailer;
 	/** Origin the panel is opened at; the links in mails point there. */
 	panelUrl: string;
+	/** Users must open the mailed link before signing in. Off when no SMTP is set up (nothing could be sent). */
+	requireEmailVerification?: boolean;
 	extraPlugins?: BetterAuthPlugin[];
 	now?: () => number;
 }
@@ -40,6 +42,7 @@ export function createAuth({
 	trustedOrigins,
 	mailer,
 	panelUrl,
+	requireEmailVerification = true,
 	extraPlugins = [],
 	now = Date.now,
 }: AuthOptions) {
@@ -78,7 +81,7 @@ export function createAuth({
 		emailAndPassword: {
 			enabled: true,
 			minPasswordLength: MIN_PASSWORD,
-			requireEmailVerification: true,
+			requireEmailVerification,
 			revokeSessionsOnPasswordReset: true,
 			// Signing up again with a still unverified email sends a fresh link (the answer stays the generic one).
 			onExistingUserSignUp: async ({ user }) => {

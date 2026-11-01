@@ -32,6 +32,16 @@ describe("POST /api/user/register", () => {
 		});
 	});
 
+	test("without SMTP (verification off) a new customer signs in right away", async () => {
+		const t = testApp({}, false);
+		await post(t, "/api/user/register", { email: EMAIL, password: PASSWORD });
+		const login = await post(t, "/api/user/login", {
+			email: EMAIL,
+			password: PASSWORD,
+		});
+		expect(login.status).toBe(200);
+	});
+
 	test("a short password is weak_credentials with the minimum", async () => {
 		const t = testApp();
 		const response = await post(t, "/api/user/register", {

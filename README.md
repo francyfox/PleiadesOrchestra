@@ -32,6 +32,14 @@ from client side**
 
 ## Quick start
 
+One command on Linux or macOS (installs Docker if missing, generates keys, runs the stack as one container `ghcr.io/francyfox/pleiades`):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/francyfox/PleiadesOrchestra/master/scripts/install.sh | bash
+```
+
+From a checkout, for development:
+
 ```bash
 bun install
 cp .env.example .env            # and apps/*/.env.example → apps/*/.env

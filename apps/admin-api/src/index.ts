@@ -65,6 +65,7 @@ const app = createApp({
 		trustedOrigins: config.ADMIN_TRUSTED_ORIGINS,
 		panelUrl,
 		mailer,
+		requireEmailVerification: Boolean(config.SMTP_PASS),
 	}),
 	orchestrator,
 	mailer,
