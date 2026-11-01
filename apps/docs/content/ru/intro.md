@@ -31,6 +31,16 @@ PleiadesOrchestra — набор небольших сервисов, котор
 
 Каждый сервис с моделью может работать на той же машине или на другой; `alpha-orchestrator` обращается к нему по базовому URL.
 
+## Установка
+
+На сервере с Linux или macOS одна команда ставит Docker (если его нет), генерирует API-ключи и запускает стек (оркестратор и admin API) одним контейнером `ghcr.io/francyfox/pleiades`. Модели в него не входят: они работают на другой машине, а их адреса и ключи передаются переменными окружения (`LLM_BASE_URL`, `LLM_API_KEY`, `FUNCTION_CALL_BASE_URL`, `FUNCTION_CALL_API_KEY`, `LAYA_API_BASE_URL`, `LAYA_API_KEY`) или правятся потом в `.env`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/francyfox/PleiadesOrchestra/master/scripts/install.sh | bash
+```
+
+`.env` и `data/` лежат в `~/pleiades-orchestra` (`PLEIADES_DIR` меняет путь), `PLEIADES_VERSION` выбирает тег релиза. Повторный запуск скачивает новый образ и пересоздаёт контейнер, `.env` и данные сохраняются. Оркестратор слушает `127.0.0.1:3000`; публичный доступ — через обратный прокси или туннель.
+
 ## Страницы
 
 - [Виджет](/docs/widget/): установка и настройка `<pleiades-chat>`.

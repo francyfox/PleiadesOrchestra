@@ -8,6 +8,7 @@ import { ALL_LOCALES, DEFAULT_LOCALE, type Locale } from "./src/lib/i18n.ts";
 import { PLEIADES_PANEL_LOGIN_URL, SITE } from "./src/lib/site.ts";
 import {
 	BENCHMARKS_DIR,
+	CHANGELOG_DIR,
 	contentRoutes,
 	loadContent,
 	sidebarItems,
@@ -104,15 +105,19 @@ const sidebar = (locale: Locale) => {
 	const under = (dir: string) => (item: { to: string }) =>
 		item.to.startsWith(`/docs/${dir}`);
 	const benchmarks = items.filter(under(BENCHMARKS_DIR));
+	const changelog = items.filter(under(CHANGELOG_DIR));
 	return {
 		"/docs/": [
 			{
 				title: CHROME[locale].docs,
-				items: items.filter((i) => !under(BENCHMARKS_DIR)(i)),
+				items: items.filter(
+					(i) => !under(BENCHMARKS_DIR)(i) && !under(CHANGELOG_DIR)(i),
+				),
 			},
 			...(benchmarks.length
 				? [{ title: "Benchmarks", items: benchmarks }]
 				: []),
+			...(changelog.length ? [{ title: "Changelog", items: changelog }] : []),
 		],
 	};
 };

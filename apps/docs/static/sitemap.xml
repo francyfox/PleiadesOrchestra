@@ -109,6 +109,42 @@
     <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/benchmarks/overview/"/>
   </url>
   <url>
+    <loc>/docs/changelog/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="/docs/changelog/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/changelog/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/changelog/"/>
+  </url>
+  <url>
+    <loc>/ru/docs/changelog/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="/docs/changelog/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/changelog/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/changelog/"/>
+  </url>
+  <url>
+    <loc>/kk/docs/changelog/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="/docs/changelog/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/changelog/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/changelog/"/>
+  </url>
+  <url>
+    <loc>/docs/changelog/overview/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="/docs/changelog/overview/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/changelog/overview/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/changelog/overview/"/>
+  </url>
+  <url>
+    <loc>/ru/docs/changelog/overview/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="/docs/changelog/overview/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/changelog/overview/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/changelog/overview/"/>
+  </url>
+  <url>
+    <loc>/kk/docs/changelog/overview/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="/docs/changelog/overview/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/changelog/overview/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/changelog/overview/"/>
+  </url>
+  <url>
     <loc>/docs/intents/</loc>
     <xhtml:link rel="alternate" hreflang="en" href="/docs/intents/"/>
     <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/intents/"/>

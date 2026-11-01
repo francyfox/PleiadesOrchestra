@@ -17,3 +17,5 @@ vite.config.ts.timestamp-*
 /static/*/llms.txt
 /static/docs
 /static/*/docs
+# Generated from GitHub releases by `bun run changelog` (vite/changelog.ts)
+/content/en/changelog

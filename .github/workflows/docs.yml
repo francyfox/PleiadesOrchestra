@@ -39,6 +39,8 @@ jobs:
       - run: bunx turbo run build --filter=docs
         env:
           # Publishable widget key: public by design (sent from the browser), server checks origin.
+          # Lifts the API rate limit of the changelog fetch (apps/docs/vite/changelog.ts).
+          GITHUB_TOKEN: ${{ github.token }}
           PUBLIC_PLEIADES_AGENT_URL: https://albedo.shalotts.site
           PUBLIC_PLEIADES_KEY: pk_4W7-m9YLaUvDFj0Y0gjVuFbgYtmHGKHy
 

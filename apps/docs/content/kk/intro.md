@@ -32,6 +32,16 @@ PleiadesOrchestra — чат-ассистентке бір үлкен хости
 
 Әр модель сервисі сол машинада немесе басқа жерде жұмыс істей алады; `alpha-orchestrator` оған базалық URL арқылы қосылады.
 
+## Орнату
+
+Linux немесе macOS серверінде бір команда Docker-ді (жоқ болса) орнатады, API-кілттерді жасайды және стекті (оркестратор мен admin API) бір контейнермен, `ghcr.io/francyfox/pleiades`, іске қосады. Модельдер оған кірмейді: олар басқа машинада жұмыс істейді, ал олардың мекенжайлары мен кілттері орта айнымалыларымен беріледі (`LLM_BASE_URL`, `LLM_API_KEY`, `FUNCTION_CALL_BASE_URL`, `FUNCTION_CALL_API_KEY`, `LAYA_API_BASE_URL`, `LAYA_API_KEY`) немесе кейін `.env` ішінде түзетіледі:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/francyfox/PleiadesOrchestra/master/scripts/install.sh | bash
+```
+
+`.env` және `data/` `~/pleiades-orchestra` ішінде тұрады (`PLEIADES_DIR` жолды өзгертеді), `PLEIADES_VERSION` релиз тегін таңдайды. Қайта іске қосу жаңа образды жүктеп, контейнерді қайта жасайды, `.env` пен деректер сақталады. Оркестратор `127.0.0.1:3000` тыңдайды; жария қолжетімділік — кері прокси немесе туннель арқылы.
+
 ## Беттер
 
 - [Виджет](/docs/widget/): `<pleiades-chat>` орнату және баптау.

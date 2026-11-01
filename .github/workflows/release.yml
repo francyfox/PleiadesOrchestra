@@ -10,6 +10,7 @@ on:
 permissions:
   contents: write
   packages: write
+  actions: write
 
 jobs:
   images:
@@ -53,3 +54,5 @@ jobs:
         run: |
           prev=$(git tag --list 'v[0-9]*' --sort=-v:refname | sed -n 2p)
           gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes ${prev:+--notes-start-tag "$prev"}
+          # A release made with GITHUB_TOKEN triggers no workflows: rebuild the docs (changelog page) by hand.
+          gh workflow run docs.yml
