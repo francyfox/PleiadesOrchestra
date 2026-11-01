@@ -79,13 +79,18 @@ say "starting $image"
 # A local image (PLEIADES_IMAGE) has nothing to pull.
 $d pull -q "$image" >/dev/null || [ -n "${PLEIADES_IMAGE:-}" ] || die "cannot pull $image"
 $d rm -f pleiades >/dev/null 2>&1 || true
-# Loopback only: put a reverse proxy or tunnel in front for public access.
+# Loopback only (3002 = admin panel): put a reverse proxy or tunnel in front for public access.
 $d run -d --name pleiades --restart unless-stopped --env-file .env \
-	-p 127.0.0.1:3000:3000 -p 127.0.0.1:3003:3003 -v "$dir/data:/data" "$image" >/dev/null
+	-p 127.0.0.1:3000:3000 -p 127.0.0.1:3003:3003 -p 127.0.0.1:3002:80 -v "$dir/data:/data" "$image" >/dev/null
 
 # `docker run -d` succeeds even if the app crashes at start: wait for the health endpoint.
 for _ in $(seq 1 30); do curl -fs http://127.0.0.1:3000/health >/dev/null 2>&1 && break; sleep 1; done
 curl -fs http://127.0.0.1:3000/health >/dev/null 2>&1 || { $d logs --tail 20 pleiades >&2; die "the container did not become healthy (is port 3000 free?)"; }
 
-say "done: orchestrator on http://127.0.0.1:3000, admin API on :3003, files in $dir"
-echo "Next: create the first admin with the albedo CLI (see the docs); logs: docker logs -f pleiades"
+say "done, files in $dir"
+echo "  admin panel:  http://127.0.0.1:3002"
+echo "  orchestrator: http://127.0.0.1:3000"
+echo "  admin API:    http://127.0.0.1:3003"
+echo "Create the first admin (prints the sign-in token once):"
+echo "  docker exec pleiades admin-api admin:create --email you@example.com"
+echo "Docs: https://pleiades.shalotts.site/docs/   Logs: docker logs -f pleiades"

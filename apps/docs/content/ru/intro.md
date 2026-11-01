@@ -39,7 +39,7 @@ PleiadesOrchestra — набор небольших сервисов, котор
 curl -fsSL https://raw.githubusercontent.com/francyfox/PleiadesOrchestra/master/scripts/install.sh | bash
 ```
 
-`.env` и `data/` лежат в `~/pleiades-orchestra` (`PLEIADES_DIR` меняет путь), `PLEIADES_VERSION` выбирает тег релиза. Повторный запуск скачивает новый образ и пересоздаёт контейнер, `.env` и данные сохраняются. Оркестратор слушает `127.0.0.1:3000`; публичный доступ — через обратный прокси или туннель.
+`.env` и `data/` лежат в `~/pleiades-orchestra` (`PLEIADES_DIR` меняет путь), `PLEIADES_VERSION` выбирает тег релиза. Повторный запуск скачивает новый образ и пересоздаёт контейнер, `.env` и данные сохраняются. Оркестратор слушает `127.0.0.1:3000`; публичный доступ — через обратный прокси или туннель. Админка открывается на `http://127.0.0.1:3002`; первого администратора создаёт `docker exec pleiades admin-api admin:create --email you@example.com` (токен входа печатается один раз). За доменом задайте в `.env` `BETTER_AUTH_URL` и `ADMIN_TRUSTED_ORIGINS` — публичный адрес панели.
 
 ## Страницы
 

@@ -32,7 +32,7 @@ from client side**
 
 ## Quick start
 
-One command on Linux or macOS (installs Docker if missing, generates keys, runs the stack as one container `ghcr.io/francyfox/pleiades`):
+One command on Linux or macOS (installs Docker if missing, generates keys, runs the stack and the admin panel as one container `ghcr.io/francyfox/pleiades`):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/francyfox/PleiadesOrchestra/master/scripts/install.sh | bash

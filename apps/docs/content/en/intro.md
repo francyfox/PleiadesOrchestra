@@ -38,7 +38,7 @@ On a Linux or macOS server with `curl`, one command installs Docker if it is mis
 curl -fsSL https://raw.githubusercontent.com/francyfox/PleiadesOrchestra/master/scripts/install.sh | bash
 ```
 
-`.env` and `data/` land in `~/pleiades-orchestra` (`PLEIADES_DIR` changes it); `PLEIADES_VERSION` picks a release tag. Rerunning the command pulls the new image and recreates the container; your `.env` and data are kept. The orchestrator listens on `127.0.0.1:3000`; public access goes through a reverse proxy or a tunnel.
+`.env` and `data/` land in `~/pleiades-orchestra` (`PLEIADES_DIR` changes it); `PLEIADES_VERSION` picks a release tag. Rerunning the command pulls the new image and recreates the container; your `.env` and data are kept. The orchestrator listens on `127.0.0.1:3000`; public access goes through a reverse proxy or a tunnel. The admin panel opens at `http://127.0.0.1:3002`; create the first admin with `docker exec pleiades admin-api admin:create --email you@example.com` (the sign-in token is printed once). Behind a domain, set `BETTER_AUTH_URL` and `ADMIN_TRUSTED_ORIGINS` in `.env` to the panel's public URL.
 
 ## Pages
 
