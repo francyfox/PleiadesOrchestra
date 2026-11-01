@@ -59,3 +59,8 @@ collections:
         file: apps/docs/content/{{locale}}/widget/index.md
         i18n: true
         fields: *page
+      - name: polyfill
+        label: Polyfill
+        file: apps/docs/content/{{locale}}/polyfill/index.md
+        i18n: true
+        fields: *page

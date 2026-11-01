@@ -161,7 +161,6 @@
         "@vimeo/player": "2.30.4",
         "@xyflow/svelte": "^1.6.6",
         "photoswipe": "5.4.4",
-        "shiki": "3.23.0",
         "svelte": "catalog:",
         "svelte-check": "catalog:",
         "svelte-meta-tags": "5.0.3",
@@ -303,7 +302,7 @@
     },
     "packages/pleiades-widget": {
       "name": "@shalotts/pleiades-widget",
-      "version": "0.4.0",
+      "version": "0.5.1",
       "devDependencies": {
         "@alpinejs/csp": "^3.17.4",
         "@repo/webmcp-polyfill": "workspace:*",

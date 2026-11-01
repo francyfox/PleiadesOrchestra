@@ -45,6 +45,7 @@ curl -fsSL https://raw.githubusercontent.com/francyfox/PleiadesOrchestra/master/
 
 - [Виджет](/docs/widget/): установка и настройка `<pleiades-chat>`.
 - [Инструменты](/docs/tools/): как сайт предоставляет инструменты через WebMCP.
+- [Полифил](/docs/polyfill/): WebMCP в браузерах, где его нет, в том числе без виджета.
 - [Widget API](/docs/api/widget/): REST- и NDJSON-API, которое использует виджет.
 - [Server API](/docs/api/server/): эндпоинты для взаимодействия между серверами.
 - [Намерения](/docs/intents/): как классифицируется сообщение и что планируется.

@@ -181,6 +181,24 @@
     <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/intro/"/>
   </url>
   <url>
+    <loc>/docs/polyfill/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="/docs/polyfill/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/polyfill/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/polyfill/"/>
+  </url>
+  <url>
+    <loc>/ru/docs/polyfill/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="/docs/polyfill/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/polyfill/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/polyfill/"/>
+  </url>
+  <url>
+    <loc>/kk/docs/polyfill/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="/docs/polyfill/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/polyfill/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/polyfill/"/>
+  </url>
+  <url>
     <loc>/docs/tools/</loc>
     <xhtml:link rel="alternate" hreflang="en" href="/docs/tools/"/>
     <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/tools/"/>

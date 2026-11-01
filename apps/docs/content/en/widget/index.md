@@ -8,9 +8,138 @@ A single framework-agnostic web component. It shows a launcher button in a corne
 
 ## Install
 
-<WidgetInstall />
+<Tabs activeName="unpkg">
+<TabPanel name="unpkg">
 
-`agent-url` and `publishable-key` come from your channel in the admin panel. The widget also installs a WebMCP polyfill on pages without native support, so your [tools](/docs/tools/) work in any browser.
+```html
+<script src="https://unpkg.com/@shalotts/pleiades-widget/dist/pleiades-widget.js" defer></script>
+
+<pleiades-chat
+  agent-url="https://agent.example.com"
+  publishable-key="pk_your_channel_key"
+></pleiades-chat>
+```
+
+</TabPanel>
+<TabPanel name="jsDelivr">
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/@shalotts/pleiades-widget/dist/pleiades-widget.js" defer></script>
+
+<pleiades-chat
+  agent-url="https://agent.example.com"
+  publishable-key="pk_your_channel_key"
+></pleiades-chat>
+```
+
+</TabPanel>
+<TabPanel name="npm">
+
+```sh
+npm install @shalotts/pleiades-widget
+```
+
+```js
+import "@shalotts/pleiades-widget"; // registers <pleiades-chat>
+
+<pleiades-chat
+  agent-url="https://agent.example.com"
+  publishable-key="pk_your_channel_key"
+></pleiades-chat>
+```
+
+</TabPanel>
+<TabPanel name="pnpm">
+
+```sh
+pnpm add @shalotts/pleiades-widget
+```
+
+```js
+import "@shalotts/pleiades-widget"; // registers <pleiades-chat>
+
+<pleiades-chat
+  agent-url="https://agent.example.com"
+  publishable-key="pk_your_channel_key"
+></pleiades-chat>
+```
+
+</TabPanel>
+<TabPanel name="bun">
+
+```sh
+bun add @shalotts/pleiades-widget
+```
+
+```js
+import "@shalotts/pleiades-widget"; // registers <pleiades-chat>
+
+<pleiades-chat
+  agent-url="https://agent.example.com"
+  publishable-key="pk_your_channel_key"
+></pleiades-chat>
+```
+
+</TabPanel>
+<TabPanel name="npm:jsr">
+
+```sh
+npx jsr add @shalotts/pleiades-widget
+```
+
+```js
+import "@shalotts/pleiades-widget"; // registers <pleiades-chat>
+
+<pleiades-chat
+  agent-url="https://agent.example.com"
+  publishable-key="pk_your_channel_key"
+></pleiades-chat>
+```
+
+</TabPanel>
+<TabPanel name="pnpm:jsr">
+
+```sh
+pnpm dlx jsr add @shalotts/pleiades-widget
+```
+
+```js
+import "@shalotts/pleiades-widget"; // registers <pleiades-chat>
+
+<pleiades-chat
+  agent-url="https://agent.example.com"
+  publishable-key="pk_your_channel_key"
+></pleiades-chat>
+```
+
+</TabPanel>
+<TabPanel name="bun:jsr">
+
+```sh
+bunx jsr add @shalotts/pleiades-widget
+```
+
+```js
+import "@shalotts/pleiades-widget"; // registers <pleiades-chat>
+
+<pleiades-chat
+  agent-url="https://agent.example.com"
+  publishable-key="pk_your_channel_key"
+></pleiades-chat>
+```
+
+</TabPanel>
+</Tabs>
+
+Need only the [WebMCP polyfill](/docs/polyfill/), without the chat? It is a separate entry of the same package (the widget installs it itself):
+
+```js
+import { installWebMcpPolyfill } from "@shalotts/pleiades-widget/webmcp-polyfill";
+
+installWebMcpPolyfill();
+```
+
+`agent-url` and `publishable-key` come from your channel in the admin panel. The widget also installs a [WebMCP polyfill](/docs/polyfill/) on pages without native support, so your [tools](/docs/tools/) work in any browser.
 
 If the configuration is wrong the element renders nothing and logs one `[pleiades-widget] <code>` line to the console. See [Errors](#Errors).
 
