@@ -29,4 +29,25 @@ can use AI first time. But from v2.X i planned use my classic coding style.
 
 # Pull Request Guidelines
 
+Recommended to use `develop` branch as a base to work on.
 
+### General Recommendation
+
+- Please kindly verify that you have run test suite before request a review from maintainers with 
+`bun run test`
+- AI generated pull request without human interaction, review and supervision may result in close without further notice or ban from future contribution
+
+### Adding New Features
+
+- tag `francyfox (hellizart)`, provide reason
+
+
+### Fixing Bug
+
+- When opening a pull request fixing existing issue, please kindly include the issue link or id in the description
+- Provide a detailed description of the bug in the PR (screens, logs +++)
+
+
+### Thanks
+
+All, I really appreciate this.
