@@ -16,6 +16,8 @@ permissions:
 
 jobs:
   release:
+    # Deploys are master-only (develop goes through a PR); also guards manual dispatch from other branches.
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
