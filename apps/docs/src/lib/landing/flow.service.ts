@@ -65,14 +65,20 @@ export function statusOf(order: string[], step: number, id: string): Status {
 	return i < step ? "done" : i === step ? "active" : "idle";
 }
 
-/** A step with a price is a model call; code steps have only their time. */
+/** A step with a price is a model call; code steps have only their time. Neighbouring `parallel` steps take the time of the longest. */
 export function totals(steps: FlowStep[]) {
+	let longest = 0;
 	return steps.reduce(
-		(sum, s) => ({
-			ms: sum.ms + (s.ms ?? 0),
-			usd: sum.usd + (s.usd ?? 0),
-			calls: sum.calls + (s.usd === undefined ? 0 : 1),
-		}),
+		(sum, s) => {
+			const ms = s.ms ?? 0;
+			const spent = s.parallel ? Math.max(0, ms - longest) : ms;
+			longest = s.parallel ? Math.max(longest, ms) : 0;
+			return {
+				ms: sum.ms + spent,
+				usd: sum.usd + (s.usd ?? 0),
+				calls: sum.calls + (s.usd === undefined ? 0 : 1),
+			};
+		},
 		{ ms: 0, usd: 0, calls: 0 },
 	);
 }

@@ -26,7 +26,7 @@ import { renderReport } from "./efficiency.view.ts";
 // (efficiency.shop.ts) and the same cases: success, time, steps, tokens, cost.
 //
 //   bun efficiency [--runs N] [--seed N] [--price-in X --price-out Y] [--max-steps N]
-//                  [--concurrency N] [--models a/b,c/d] [--output results/x]
+//                  [--concurrency N] [--models a/b,c/d] [--orchestra-only] [--output results/x]
 //
 // Both go through the orchestrator (ORCHESTRA_* in .env): beta alone through
 // its POST /v1/chat/completions (the reply model in effect), so the text model
@@ -67,6 +67,10 @@ export default defineCommand({
 			description:
 				"Comma-separated OpenRouter models, each alone with the tools (OPENROUTER_API_KEY); no orchestrator",
 		}),
+		"orchestra-only": option(z.boolean().default(false), {
+			description: "Skip beta alone, run only the orchestrator",
+			argumentKind: "flag",
+		}),
 		output: option(z.string().optional(), {
 			description:
 				"The run folder (default results/efficiency/<timestamp>/): report.txt and beta-alone/, orchestra/ with one JSON file per case run",
@@ -100,14 +104,16 @@ export default defineCommand({
 						priceOf: prices,
 					}),
 				)
-			: [
-					createBetaContender({
-						baseUrl: base as string,
-						apiKey: config.ORCHESTRA_API_KEY as string,
-						maxSteps: flags["max-steps"],
-						priceOf: prices,
-					}),
-				];
+			: flags["orchestra-only"]
+				? []
+				: [
+						createBetaContender({
+							baseUrl: base as string,
+							apiKey: config.ORCHESTRA_API_KEY as string,
+							maxSteps: flags["max-steps"],
+							priceOf: prices,
+						}),
+					];
 		if (models) {
 			// Hosted models alone: no orchestrator to check or to run.
 		} else if (config.ORCHESTRA_PUBLISHABLE_KEY && config.ORCHESTRA_ORIGIN)
@@ -120,7 +126,11 @@ export default defineCommand({
 					priceOf: prices,
 				}),
 			);
-		else
+		else if (flags["orchestra-only"]) {
+			console.error("Set ORCHESTRA_PUBLISHABLE_KEY and ORCHESTRA_ORIGIN.");
+			process.exitCode = 1;
+			return;
+		} else
 			console.error(
 				"ORCHESTRA_PUBLISHABLE_KEY / ORCHESTRA_ORIGIN unset: beta alone only.",
 			);
@@ -160,7 +170,10 @@ export default defineCommand({
 
 		// The report of what is done so far, rewritten after every iteration and at the end.
 		const writeReport = () => {
-			const beta = !models && runsOf[0]?.find((run) => run.model)?.model;
+			const beta =
+				!models &&
+				!flags["orchestra-only"] &&
+				runsOf[0]?.find((run) => run.model)?.model;
 			const report = renderReport({
 				at: new Date().toISOString(),
 				seed: flags.seed,
@@ -180,8 +193,9 @@ export default defineCommand({
 		// Pin the orchestrator's text models to temperature 0 for the run.
 		let restore = async () => {};
 		const admin = config.ORCHESTRA_ADMIN_API_KEY;
-		// The orchestrator's contender is the second one, never there with --models.
-		const orchestra = !models && contenders.length > 1;
+		// The orchestrator's contender is the last one, never there with --models.
+		const orchestra =
+			!models && (flags["orchestra-only"] || contenders.length > 1);
 		if (admin && orchestra) {
 			const settings = createOrchestraSettings({
 				baseUrl: base as string,

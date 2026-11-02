@@ -802,17 +802,51 @@ export async function createWebMcpActions(
 							: undefined;
 					const zero =
 						intent === "removeFromCart" ? findZeroField(schema) : undefined;
+					// A fan-out of searches: the model's work for every thing is done at
+					// once on the first call (it reads one thing each, no answer of an
+					// earlier call), later calls take their arguments from the checkpoint.
+					const argsFact = `${cursorFact(tool.name)}:args`;
+					const stored = fan && intent === "search" ? callState[argsFact] : "";
+					let prefetched: Partial<WorldState> | undefined;
+					let fanArgs: Record<string, unknown> | undefined;
+					if (fan && intent === "search") {
+						const all: Record<string, unknown>[] = stored
+							? JSON.parse(String(stored))
+							: await Promise.all(
+									readItems(callState, REQUESTED_ITEMS).map((item, i) =>
+										argumentsFor(
+											tool,
+											i === 0
+												? callState
+												: fan.callState(ctx.state, {
+														[cursorFact(tool.name)]: i,
+														query: item.name,
+														quantity: item.quantity,
+														[resultKey]: undefined,
+														[textKey]: undefined,
+													}),
+											config.functionCallAgent,
+											config.onError,
+											searchTools,
+										),
+									),
+								);
+						if (!stored) prefetched = { [argsFact]: JSON.stringify(all) };
+						// shortcut: past the last item (a replan) the model is asked again.
+						fanArgs = all[cursor];
+					}
 					const args = removal
 						? removal
 						: fromList
 							? buildArguments(callState, schema)
-							: await argumentsFor(
+							: (fanArgs ??
+								(await argumentsFor(
 									tool,
 									callState,
 									config.functionCallAgent,
 									config.onError,
 									searchTools,
-								);
+								)));
 					// A removal by setting a number to 0 (any single product too).
 					if (zero && !removal) args[zero] = 0;
 					// A call the schema would reject is not worth a browser round trip.
@@ -880,7 +914,9 @@ export async function createWebMcpActions(
 					};
 					return {
 						waiting: { kind: "webmcp_tool_call", payload },
-						...(carried ? { facts: carried } : {}),
+						...(carried || prefetched
+							? { facts: { ...carried, ...prefetched } }
+							: {}),
 					};
 				},
 			};

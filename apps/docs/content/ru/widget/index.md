@@ -9,9 +9,138 @@ lang: ru
 
 ## Установка
 
-<WidgetInstall />
+<Tabs activeName="unpkg">
+<TabPanel name="unpkg">
 
-`agent-url` и `publishable-key` берутся из вашего канала в админ-панели. На страницах без нативной поддержки виджет также устанавливает полифил WebMCP, поэтому ваши [инструменты](/docs/tools/) работают в любом браузере.
+```html
+<script src="https://unpkg.com/@shalotts/pleiades-widget/dist/pleiades-widget.js" defer></script>
+
+<pleiades-chat
+  agent-url="https://agent.example.com"
+  publishable-key="pk_your_channel_key"
+></pleiades-chat>
+```
+
+</TabPanel>
+<TabPanel name="jsDelivr">
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/@shalotts/pleiades-widget/dist/pleiades-widget.js" defer></script>
+
+<pleiades-chat
+  agent-url="https://agent.example.com"
+  publishable-key="pk_your_channel_key"
+></pleiades-chat>
+```
+
+</TabPanel>
+<TabPanel name="npm">
+
+```sh
+npm install @shalotts/pleiades-widget
+```
+
+```js
+import "@shalotts/pleiades-widget"; // registers <pleiades-chat>
+
+<pleiades-chat
+  agent-url="https://agent.example.com"
+  publishable-key="pk_your_channel_key"
+></pleiades-chat>
+```
+
+</TabPanel>
+<TabPanel name="pnpm">
+
+```sh
+pnpm add @shalotts/pleiades-widget
+```
+
+```js
+import "@shalotts/pleiades-widget"; // registers <pleiades-chat>
+
+<pleiades-chat
+  agent-url="https://agent.example.com"
+  publishable-key="pk_your_channel_key"
+></pleiades-chat>
+```
+
+</TabPanel>
+<TabPanel name="bun">
+
+```sh
+bun add @shalotts/pleiades-widget
+```
+
+```js
+import "@shalotts/pleiades-widget"; // registers <pleiades-chat>
+
+<pleiades-chat
+  agent-url="https://agent.example.com"
+  publishable-key="pk_your_channel_key"
+></pleiades-chat>
+```
+
+</TabPanel>
+<TabPanel name="npm:jsr">
+
+```sh
+npx jsr add @shalotts/pleiades-widget
+```
+
+```js
+import "@shalotts/pleiades-widget"; // registers <pleiades-chat>
+
+<pleiades-chat
+  agent-url="https://agent.example.com"
+  publishable-key="pk_your_channel_key"
+></pleiades-chat>
+```
+
+</TabPanel>
+<TabPanel name="pnpm:jsr">
+
+```sh
+pnpm dlx jsr add @shalotts/pleiades-widget
+```
+
+```js
+import "@shalotts/pleiades-widget"; // registers <pleiades-chat>
+
+<pleiades-chat
+  agent-url="https://agent.example.com"
+  publishable-key="pk_your_channel_key"
+></pleiades-chat>
+```
+
+</TabPanel>
+<TabPanel name="bun:jsr">
+
+```sh
+bunx jsr add @shalotts/pleiades-widget
+```
+
+```js
+import "@shalotts/pleiades-widget"; // registers <pleiades-chat>
+
+<pleiades-chat
+  agent-url="https://agent.example.com"
+  publishable-key="pk_your_channel_key"
+></pleiades-chat>
+```
+
+</TabPanel>
+</Tabs>
+
+Нужен только [полифил WebMCP](/docs/polyfill/), без чата? Это отдельная точка входа того же пакета (виджет ставит его сам):
+
+```js
+import { installWebMcpPolyfill } from "@shalotts/pleiades-widget/webmcp-polyfill";
+
+installWebMcpPolyfill();
+```
+
+`agent-url` и `publishable-key` берутся из вашего канала в админ-панели. На страницах без нативной поддержки виджет также устанавливает [полифил WebMCP](/docs/polyfill/), поэтому ваши [инструменты](/docs/tools/) работают в любом браузере.
 
 Если конфигурация неверна, элемент ничего не рисует и пишет в консоль одну строку `[pleiades-widget] <code>`. См. [Ошибки](#Errors).
 

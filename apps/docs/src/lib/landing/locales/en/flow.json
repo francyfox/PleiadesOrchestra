@@ -10,7 +10,7 @@
 				},
 				"llm1": {
 					"tag": "LLM · decides the next step",
-					"text": "Search each: three search_products calls"
+					"text": "Searches all three at once: 3 search_products calls in one step"
 				},
 				"llm2": {
 					"tag": "LLM · decides the next step",
@@ -31,16 +31,16 @@
 					"text": "The reply appears in the chat, three products in the cart"
 				},
 				"delta1": {
-					"tag": "delta · parameters and call",
-					"text": "search_products({ query: \"Handmade Marble Car\" }) → found"
+					"tag": "delta · parameters, all three at once",
+					"text": "search_products({ query: \"Handmade Marble Car\" })"
 				},
 				"delta2": {
-					"tag": "delta · parameters and call",
-					"text": "search_products({ query: \"Small Steel Bike\" }) → found"
+					"tag": "delta · parameters, all three at once",
+					"text": "search_products({ query: \"Small Steel Bike\" })"
 				},
 				"delta3": {
-					"tag": "delta · parameters and call",
-					"text": "search_products({ query: \"Tasty Granite Salad\" }) → found"
+					"tag": "delta · parameters, all three at once",
+					"text": "search_products({ query: \"Tasty Granite Salad\" })"
 				},
 				"memory": {
 					"tag": "alpha · site memory",
@@ -48,11 +48,15 @@
 				},
 				"plan": {
 					"tag": "alpha · GOAP plan",
-					"text": "goal: three products in the cart; plan: search each → add_to_cart → reply"
+					"text": "goal: three products in the cart; plan: fill all three searches at once → search each → add_to_cart → reply"
 				},
 				"rules": {
 					"tag": "alpha · rules",
 					"text": "adding words: no decision model needed"
+				},
+				"searches": {
+					"tag": "alpha · site calls",
+					"text": "search_products × 3 in the browser, one at a time → all found"
 				},
 				"template": {
 					"tag": "alpha · reply template",

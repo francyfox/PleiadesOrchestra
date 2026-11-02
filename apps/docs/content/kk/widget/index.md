@@ -10,9 +10,138 @@ review: pending
 
 ## Орнату
 
-<WidgetInstall />
+<Tabs activeName="unpkg">
+<TabPanel name="unpkg">
 
-`agent-url` және `publishable-key` мәндері әкімші панеліндегі арнаңыздан алынады. Виджет сондай-ақ нативті қолдауы жоқ беттерде WebMCP polyfill орнатады, сондықтан [құралдарыңыз](/docs/tools/) кез келген браузерде жұмыс істейді.
+```html
+<script src="https://unpkg.com/@shalotts/pleiades-widget/dist/pleiades-widget.js" defer></script>
+
+<pleiades-chat
+  agent-url="https://agent.example.com"
+  publishable-key="pk_your_channel_key"
+></pleiades-chat>
+```
+
+</TabPanel>
+<TabPanel name="jsDelivr">
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/@shalotts/pleiades-widget/dist/pleiades-widget.js" defer></script>
+
+<pleiades-chat
+  agent-url="https://agent.example.com"
+  publishable-key="pk_your_channel_key"
+></pleiades-chat>
+```
+
+</TabPanel>
+<TabPanel name="npm">
+
+```sh
+npm install @shalotts/pleiades-widget
+```
+
+```js
+import "@shalotts/pleiades-widget"; // registers <pleiades-chat>
+
+<pleiades-chat
+  agent-url="https://agent.example.com"
+  publishable-key="pk_your_channel_key"
+></pleiades-chat>
+```
+
+</TabPanel>
+<TabPanel name="pnpm">
+
+```sh
+pnpm add @shalotts/pleiades-widget
+```
+
+```js
+import "@shalotts/pleiades-widget"; // registers <pleiades-chat>
+
+<pleiades-chat
+  agent-url="https://agent.example.com"
+  publishable-key="pk_your_channel_key"
+></pleiades-chat>
+```
+
+</TabPanel>
+<TabPanel name="bun">
+
+```sh
+bun add @shalotts/pleiades-widget
+```
+
+```js
+import "@shalotts/pleiades-widget"; // registers <pleiades-chat>
+
+<pleiades-chat
+  agent-url="https://agent.example.com"
+  publishable-key="pk_your_channel_key"
+></pleiades-chat>
+```
+
+</TabPanel>
+<TabPanel name="npm:jsr">
+
+```sh
+npx jsr add @shalotts/pleiades-widget
+```
+
+```js
+import "@shalotts/pleiades-widget"; // registers <pleiades-chat>
+
+<pleiades-chat
+  agent-url="https://agent.example.com"
+  publishable-key="pk_your_channel_key"
+></pleiades-chat>
+```
+
+</TabPanel>
+<TabPanel name="pnpm:jsr">
+
+```sh
+pnpm dlx jsr add @shalotts/pleiades-widget
+```
+
+```js
+import "@shalotts/pleiades-widget"; // registers <pleiades-chat>
+
+<pleiades-chat
+  agent-url="https://agent.example.com"
+  publishable-key="pk_your_channel_key"
+></pleiades-chat>
+```
+
+</TabPanel>
+<TabPanel name="bun:jsr">
+
+```sh
+bunx jsr add @shalotts/pleiades-widget
+```
+
+```js
+import "@shalotts/pleiades-widget"; // registers <pleiades-chat>
+
+<pleiades-chat
+  agent-url="https://agent.example.com"
+  publishable-key="pk_your_channel_key"
+></pleiades-chat>
+```
+
+</TabPanel>
+</Tabs>
+
+Тек [WebMCP polyfill](/docs/polyfill/) керек, чатсыз ба? Бұл сол пакеттің жеке кіру нүктесі (виджет оны өзі орнатады):
+
+```js
+import { installWebMcpPolyfill } from "@shalotts/pleiades-widget/webmcp-polyfill";
+
+installWebMcpPolyfill();
+```
+
+`agent-url` және `publishable-key` мәндері әкімші панеліндегі арнаңыздан алынады. Виджет сондай-ақ нативті қолдауы жоқ беттерде [WebMCP polyfill](/docs/polyfill/) орнатады, сондықтан [құралдарыңыз](/docs/tools/) кез келген браузерде жұмыс істейді.
 
 Конфигурация қате болса, элемент ештеңе көрсетпейді және консольге бір `[pleiades-widget] <code>` жолын жазады. [Қателер](#Errors) бөлімін қараңыз.
 

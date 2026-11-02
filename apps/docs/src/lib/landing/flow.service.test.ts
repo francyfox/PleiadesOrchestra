@@ -55,6 +55,19 @@ test("totals add time, cost and model calls", () => {
 	).toEqual({ ms: 405, usd: 0.0001, calls: 1 });
 });
 
+test("steps that ran side by side cost the time of the longest, but all their calls", () => {
+	expect(
+		totals([
+			{ id: "u", ms: 1000, usd: 1 },
+			{ id: "a", ms: 400, usd: 1, parallel: true },
+			{ id: "b", ms: 600, usd: 1, parallel: true },
+			{ id: "c", ms: 500, usd: 1, parallel: true },
+			{ id: "t", ms: 5 },
+			{ id: "d", ms: 300, usd: 1, parallel: true },
+		]),
+	).toEqual({ ms: 1905, usd: 5, calls: 5 });
+});
+
 test("legend: the run's time, price and model calls", () => {
 	expect(
 		legendOf({

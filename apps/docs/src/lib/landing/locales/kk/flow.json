@@ -10,7 +10,7 @@
 				},
 				"llm1": {
 					"tag": "LLM · келесі қадамды шешеді",
-					"text": "Әрқайсысын іздеу: үш search_products шақыруы"
+					"text": "Үшеуін бірден іздейді: бір қадамда 3 search_products шақыруы"
 				},
 				"llm2": {
 					"tag": "LLM · келесі қадамды шешеді",
@@ -31,16 +31,16 @@
 					"text": "Жауап чатта шығады, себетте үш тауар"
 				},
 				"delta1": {
-					"tag": "delta · параметрлер және шақыру",
-					"text": "search_products({ query: \"Handmade Marble Car\" }) → табылды"
+					"tag": "delta · параметрлер, үшеуі бірден",
+					"text": "search_products({ query: \"Handmade Marble Car\" })"
 				},
 				"delta2": {
-					"tag": "delta · параметрлер және шақыру",
-					"text": "search_products({ query: \"Small Steel Bike\" }) → табылды"
+					"tag": "delta · параметрлер, үшеуі бірден",
+					"text": "search_products({ query: \"Small Steel Bike\" })"
 				},
 				"delta3": {
-					"tag": "delta · параметрлер және шақыру",
-					"text": "search_products({ query: \"Tasty Granite Salad\" }) → табылды"
+					"tag": "delta · параметрлер, үшеуі бірден",
+					"text": "search_products({ query: \"Tasty Granite Salad\" })"
 				},
 				"memory": {
 					"tag": "alpha · сайт жады",
@@ -48,11 +48,15 @@
 				},
 				"plan": {
 					"tag": "alpha · GOAP жоспары",
-					"text": "мақсат: себетте үш тауар; жоспар: әрқайсысын іздеу → add_to_cart → жауап"
+					"text": "мақсат: себетте үш тауар; жоспар: үш іздеуді бірден толтыру → әрқайсысын іздеу → add_to_cart → жауап"
 				},
 				"rules": {
 					"tag": "alpha · ережелер",
 					"text": "қосу сөздері: шешім моделі қажет емес"
+				},
+				"searches": {
+					"tag": "alpha · сайт шақырулары",
+					"text": "search_products × 3 браузерде, бір-бірден → бәрі табылды"
 				},
 				"template": {
 					"tag": "alpha · жауап үлгісі",

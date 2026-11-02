@@ -273,9 +273,6 @@ export function buildPage(
 		...(pending
 			? ["\timport ReviewNotice from '#lib/components/ReviewNotice.svelte'"]
 			: []),
-		...(body.includes("<WidgetInstall")
-			? ["\timport WidgetInstall from '#lib/components/WidgetInstall.svelte'"]
-			: []),
 		"</script>",
 		"",
 		"<Seo title={seo.title} description={seo.description} locale={seo.locale} />",

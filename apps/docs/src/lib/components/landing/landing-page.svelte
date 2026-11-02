@@ -26,9 +26,9 @@
 	<LandingFlow />
 	<LandingFlowResults />
 	<LandingTvGallery />
+	<LandingBenefits />
 	<LandingMcpCompare />
 	<LandingPlatforms />
-	<LandingBenefits />
 	<LandingSecurity />
 	<LandingPricing />
 	<LandingPleiades />
