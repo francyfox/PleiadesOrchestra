@@ -1,5 +1,5 @@
-// Measured with `bun efficiency` (apps/benchmark, results/efficiency/*-2026-10-29), every model hosted
-// through OpenRouter, each call at its model's OpenRouter price.
+// Measured with `bun efficiency` (apps/benchmark, results/efficiency/*-2026-10-29, the orchestrator on one
+// hosted setup *-2026-11-02), every model hosted through OpenRouter, each call at its model's OpenRouter price.
 
 /** One step of a run: a model call has its time and price, a code step only its time, a site step neither. */
 export type FlowStep = {
@@ -7,6 +7,8 @@ export type FlowStep = {
 	model?: string;
 	ms?: number;
 	usd?: number;
+	/** Ran at the same time as the neighbouring `parallel` steps. */
+	parallel?: boolean;
 };
 export type FlowScenario = {
 	/** Whether the run left the shop in the right state. */
@@ -30,8 +32,9 @@ export const FLOW_KEYS: FlowKey[] = ["llm", "orchestra"];
 export type FlowCase = "remove-all" | "add-list" | "price";
 
 // One run per task, the median time of its passes. Only LLM: gpt-6-luna alone (results/efficiency/
-// providers-2026-10-29); the orchestrator: channel shop-test with the shop intent set (clean-shop-intents-2026-10-29: code
-// steps timed to the microsecond; a tool step is the browser round trip, here the benchmark over HTTP).
+// providers-2026-10-29); the orchestrator: channel shop-test with the shop intent set (clean-shop-intents-2026-11-02,
+// FUNCTION_CALL_MAX_CONCURRENCY=8: code steps timed to the microsecond; a tool step is the browser round trip,
+// here the benchmark over HTTP).
 // Prices per 1M tokens, input / output: gpt-6-luna $0.10 / $0.50, voxtral $0.10 / $0.30, llama-3.1-8b
 // $0.05 / $0.08, the decision model (unlisted) $0.05 / $0.08. In `price` gamma picks from the shop set's
 // twelve intents; the fan shows four.
@@ -54,15 +57,15 @@ export const FLOW_CASES: Record<FlowCase, Record<FlowKey, FlowScenario>> = {
 				{
 					id: "understand",
 					model: "voxtral-small-24b",
-					ms: 611,
+					ms: 583,
 					usd: 0.000147,
 				},
-				{ id: "rules", ms: 0.03 },
-				{ id: "plan", ms: 0.138 },
-				{ id: "tool1", ms: 3.46 },
-				{ id: "tool2", ms: 2.461 },
-				{ id: "tool3", ms: 2.215 },
-				{ id: "template", ms: 0.654 },
+				{ id: "rules", ms: 0.048 },
+				{ id: "plan", ms: 0.157 },
+				{ id: "tool1", ms: 3.594 },
+				{ id: "tool2", ms: 2.948 },
+				{ id: "tool3", ms: 3.03 },
+				{ id: "template", ms: 0.76 },
 				{ id: "answer" },
 			],
 		},
@@ -85,17 +88,36 @@ export const FLOW_CASES: Record<FlowCase, Record<FlowKey, FlowScenario>> = {
 				{
 					id: "understand",
 					model: "voxtral-small-24b",
-					ms: 1192,
+					ms: 1001,
 					usd: 0.000169,
 				},
 				{ id: "rules" },
-				{ id: "memory", ms: 0.194 },
-				{ id: "plan", ms: 0.157 },
-				{ id: "delta1", model: "llama-3.1-8b", ms: 435, usd: 3.04e-5 },
-				{ id: "delta2", model: "llama-3.1-8b", ms: 611, usd: 3.25e-5 },
-				{ id: "delta3", model: "llama-3.1-8b", ms: 467, usd: 3.04e-5 },
-				{ id: "tool1", ms: 3.477 },
-				{ id: "template", ms: 9.051 },
+				{ id: "memory", ms: 0.173 },
+				{ id: "plan", ms: 0.109 },
+				{
+					id: "delta1",
+					model: "llama-3.1-8b",
+					ms: 424,
+					usd: 3.04e-5,
+					parallel: true,
+				},
+				{
+					id: "delta2",
+					model: "llama-3.1-8b",
+					ms: 614,
+					usd: 3.25e-5,
+					parallel: true,
+				},
+				{
+					id: "delta3",
+					model: "llama-3.1-8b",
+					ms: 430,
+					usd: 3.04e-5,
+					parallel: true,
+				},
+				{ id: "searches", ms: 7.732 },
+				{ id: "tool1", ms: 2.447 },
+				{ id: "template", ms: 0.689 },
 				{ id: "answer" },
 			],
 		},
@@ -117,14 +139,14 @@ export const FLOW_CASES: Record<FlowCase, Record<FlowKey, FlowScenario>> = {
 				{
 					id: "understand",
 					model: "voxtral-small-24b",
-					ms: 889,
+					ms: 799,
 					usd: 0.000155,
 				},
 				{ id: "rules" },
-				{ id: "gamma", model: "pplx-decider-v1.2", ms: 682, usd: 1.18e-5 },
-				{ id: "plan", ms: 0.116 },
-				{ id: "delta1", model: "llama-3.1-8b", ms: 401, usd: 3e-5 },
-				{ id: "beta", model: "voxtral-small-24b", ms: 430, usd: 6.59e-5 },
+				{ id: "gamma", model: "pplx-decider-v1.2", ms: 760, usd: 1.18e-5 },
+				{ id: "plan", ms: 0.178 },
+				{ id: "delta1", model: "llama-3.1-8b", ms: 389, usd: 3e-5 },
+				{ id: "beta", model: "voxtral-small-24b", ms: 381, usd: 6.59e-5 },
 				{ id: "answer" },
 			],
 			fan: {
@@ -137,23 +159,24 @@ export const FLOW_CASES: Record<FlowCase, Record<FlowKey, FlowScenario>> = {
 export const FLOW_CASE_KEYS = Object.keys(FLOW_CASES) as FlowCase[];
 
 // Every case 3 times (14 cases). The orchestrator rows were remeasured after the delta prompt's examples
-// moved off the benchmark's domains. Folders: clean-shop-intents-, clean-no-intents-, landing- (voxtral
-// alone), mistral-medium-, providers-2026-10-29.
+// moved off the benchmark's domains, then the two hosted ones again after delta's searches went parallel
+// (clean-shop-intents-, clean-no-intents-2026-11-02). Others: landing- (voxtral alone), mistral-medium-,
+// providers-2026-10-29.
 export const FLOW_RESULTS = {
-	date: "2026-10-29",
+	date: "2026-10-29, 2026-11-02",
 	contenders: [
 		{
 			name: "Orchestrator, shop set: voxtral-small-24b (alpha, beta) + llama-3.1-8b (delta) + pplx-decider-v1.2 (gamma)",
 			orchestra: true,
 			success: 1,
-			p50Ms: 1840,
-			usdPerSuccess: 0.000228,
+			p50Ms: 1630,
+			usdPerSuccess: 0.000227,
 		},
 		{
 			name: "Orchestrator, no set: voxtral-small-24b (alpha, beta) + llama-3.1-8b (delta) + pplx-decider-v1.2 (gamma)",
 			orchestra: true,
 			success: 1,
-			p50Ms: 2170,
+			p50Ms: 2110,
 			usdPerSuccess: 0.000251,
 		},
 		// Every model local on one RTX 2060 (6 GB), which holds two models besides d3: the run end to end with

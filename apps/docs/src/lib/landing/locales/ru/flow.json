@@ -10,7 +10,7 @@
 				},
 				"llm1": {
 					"tag": "LLM · решает следующий шаг",
-					"text": "Найти каждый: три вызова search_products"
+					"text": "Ищет все три сразу: 3 вызова search_products за один шаг"
 				},
 				"llm2": {
 					"tag": "LLM · решает следующий шаг",
@@ -31,16 +31,16 @@
 					"text": "Ответ появляется в чате, в корзине три товара"
 				},
 				"delta1": {
-					"tag": "delta · параметры и вызов",
-					"text": "search_products({ query: \"Handmade Marble Car\" }) → найден"
+					"tag": "delta · параметры, все три сразу",
+					"text": "search_products({ query: \"Handmade Marble Car\" })"
 				},
 				"delta2": {
-					"tag": "delta · параметры и вызов",
-					"text": "search_products({ query: \"Small Steel Bike\" }) → найден"
+					"tag": "delta · параметры, все три сразу",
+					"text": "search_products({ query: \"Small Steel Bike\" })"
 				},
 				"delta3": {
-					"tag": "delta · параметры и вызов",
-					"text": "search_products({ query: \"Tasty Granite Salad\" }) → найден"
+					"tag": "delta · параметры, все три сразу",
+					"text": "search_products({ query: \"Tasty Granite Salad\" })"
 				},
 				"memory": {
 					"tag": "alpha · память сайта",
@@ -48,11 +48,15 @@
 				},
 				"plan": {
 					"tag": "alpha · план GOAP",
-					"text": "цель: три товара в корзине; план: найти каждый → add_to_cart → ответ"
+					"text": "цель: три товара в корзине; план: заполнить три поиска сразу → найти каждый → add_to_cart → ответ"
 				},
 				"rules": {
 					"tag": "alpha · правила",
 					"text": "слова добавления: модель решений не нужна"
+				},
+				"searches": {
+					"tag": "alpha · вызовы сайта",
+					"text": "search_products × 3 в браузере, по одному → все найдены"
 				},
 				"template": {
 					"tag": "alpha · шаблон ответа",

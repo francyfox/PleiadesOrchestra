@@ -23,9 +23,9 @@ The orchestrator never sees the site's code or database, only tool names, schema
 | Service | Role |
 | --- | --- |
 | `alpha-orchestrator` | HTTP service. Holds channels, visitors, threads and history (SQLite), runs the GOAP planner and streams replies. The widget API and the server API are documented here. |
-| `beta-text` | A `llama-server` with a small reply model. Writes the conversational answer. |
+| `beta-text` | A small model service for replies. Writes the conversational answer. |
 | `gamma-decision` (Laya) | Typed-decision sidecar. Answers choice and score questions with calibrated probabilities; never writes text. Used for intent classification and for choosing among a tool's options. |
-| `delta-function-call` | A small `llama-server` that fills the JSON arguments of a tool call from the visitor's message and the tool's schema. |
+| `delta-function-call` | A small model service that fills the JSON arguments of a tool call from the visitor's message and the tool's schema. |
 | alpha-understand | Not a separate service: one call of a language model from `alpha-orchestrator` per message. It writes the message in English, splits it into tasks and marks how many of each product; the decision and function-call models read English only. |
 
 Each model service can run on the same machine or elsewhere; `alpha-orchestrator` reaches it by base URL.

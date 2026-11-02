@@ -8,6 +8,7 @@ import type {
 	FunctionCallAgent,
 	FunctionCallRequest,
 } from "#core/function-call-agent";
+import type { WorldState } from "#core/goap/types";
 import {
 	createWebMcpActions,
 	firstListedProductName,
@@ -370,6 +371,55 @@ describe("tool arguments written by the function-call model", () => {
 			userId: "u",
 			planRunId: "p",
 			actionName: "search_products",
+		});
+	});
+
+	test("several things to search: the function-call model is asked for all of them at once, then the browser is called one thing at a time", async () => {
+		let running = 0;
+		let peak = 0;
+		const asked: string[] = [];
+		const agent: FunctionCallAgent = {
+			async fillArguments(request) {
+				asked.push(request.request);
+				peak = Math.max(peak, ++running);
+				await Bun.sleep(10);
+				running--;
+				return { query: request.request };
+			},
+		};
+		const action = await searchAction(agent);
+		const state: WorldState = {
+			userMessage: "find a car, a bike and a salad",
+			userMessageEn: "find a car, a bike and a salad",
+			requestedItems: JSON.stringify([
+				{ name: "car", quantity: 1 },
+				{ name: "bike", quantity: 1 },
+				{ name: "salad", quantity: 1 },
+			]),
+			query: "car",
+			quantity: 1,
+		};
+
+		const first = await action.execute({ state });
+		expect(peak).toBe(3);
+		expect(asked.sort()).toEqual(["bike", "car", "salad"]);
+		expect(first).toMatchObject({
+			waiting: { payload: { arguments: { query: "car" } } },
+		});
+
+		// The browser answers the first call: the next call uses the stored arguments, no model call.
+		const facts = (first as { facts: WorldState }).facts;
+		const second = await action.execute({
+			state: {
+				...state,
+				...facts,
+				"webmcp:search_products:result": "ok",
+				"webmcp:search_products:text": "1. Handmade Marble Car - $5",
+			},
+		});
+		expect(asked).toHaveLength(3);
+		expect(second).toMatchObject({
+			waiting: { payload: { arguments: { query: "bike" } } },
 		});
 	});
 
