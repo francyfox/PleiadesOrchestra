@@ -57,6 +57,19 @@
 	:global(pleiades-chat) {
 		position: absolute;
 		inset: 0;
+		/* The widget follows the OS scheme on its own; the site tokens follow the site's theme toggle (`.dark`). */
+		--pleiades-bg: var(--card);
+		--pleiades-fg: var(--foreground);
+		--pleiades-accent: var(--primary);
+		--pleiades-accent-fg: var(--primary-foreground);
+		--pleiades-muted: var(--muted);
+		--pleiades-muted-fg: var(--muted-foreground);
+		--pleiades-border: var(--border);
+		--pleiades-destructive: var(--destructive);
+		--pleiades-destructive-fg: var(--destructive-foreground);
+	}
+	:global(.dark pleiades-chat) {
+		--pleiades-bg: var(--background);
 	}
 
 	/* Keep the panel always open and fill the container */

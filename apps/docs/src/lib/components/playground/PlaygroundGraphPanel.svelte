@@ -157,10 +157,18 @@
 
 		const ro = new ResizeObserver(resizeCanvas);
 		ro.observe(wrapper);
+		// The canvas reads its colours when drawing: redraw when the site's theme toggle flips `.dark` on <html>.
+		const themeObserver = new MutationObserver(() =>
+			drawGraphImpl(el, nodes, edges),
+		);
+		themeObserver.observe(document.documentElement, {
+			attributeFilter: ["class"],
+		});
 		resizeCanvas();
 
 		return () => {
 			ro.disconnect();
+			themeObserver.disconnect();
 			canvas = null;
 		};
 	}
