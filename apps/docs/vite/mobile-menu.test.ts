@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { patchMobileMenu } from "./mobile-menu.ts";
 
-test("the installed theme's burger menu still has the anchors and gets the search and landing links", async () => {
+test("the installed theme's burger menu still has the anchors and gets the search, landing links and Escape", async () => {
 	const path = import.meta
 		.resolve("@sveltepress/theme-default/package.json")
 		.replace("file://", "")
@@ -15,6 +15,9 @@ test("the installed theme's burger menu still has the anchors and gets the searc
 	);
 	expect(patched).toContain(
 		'<Logo />\n    <div class="po-mobile-search"><LocalSearch /></div>',
+	);
+	expect(patched).toContain(
+		'<svelte:window onkeydown={closeOnEscape} />\n\n<button\n  type="button"\n  class="nav-trigger"\n  bind:this={trigger}\n',
 	);
 	expect(patched).toContain(
 		"    {/each}\n    <LandingNav mobile onnavigate={() => ($navCollapsed = true)} />\n  </nav>\n{/if}",

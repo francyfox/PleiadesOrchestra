@@ -3,6 +3,7 @@
 	import type PhotoSwipeLightbox from "photoswipe/lightbox";
 	import { onDestroy, onMount } from "svelte";
 	import { localeFromPath } from "#lib/i18n.js";
+	import { landingContent } from "#lib/landing/content.js";
 	import { page } from "$app/state";
 
 	// Screen rectangles on tv.webp (1672×941 px): [left, top, right, bottom].
@@ -35,7 +36,9 @@
 	];
 
 	// shortcut: kk has no movie yet, falls back to en; add a kk key when it exists.
-	const lang = localeFromPath(page.url.pathname) === "ru" ? "ru" : "en";
+	const locale = localeFromPath(page.url.pathname);
+	const lang = locale === "ru" ? "ru" : "en";
+	const watch = landingContent(locale).video.watch;
 	const movieId = MOVIES[0][lang][0];
 	let cover = $state<string>();
 	let lightbox: PhotoSwipeLightbox | undefined;
@@ -95,9 +98,12 @@
 							class="h-full w-full object-cover"
 						/>
 					</div>
+					<!-- Every screen opens the same video: one named tab stop, the rest only for the mouse. -->
 					<button
 						type="button"
-						aria-label="Image {i + 1}"
+						aria-label={i === 0 ? watch : undefined}
+						aria-hidden={i === 0 ? undefined : "true"}
+						tabindex={i === 0 ? undefined : -1}
 						class="absolute inset-0 z-20 cursor-pointer border-0 bg-transparent focus-visible:outline-2 focus-visible:outline-offset-2"
 						onclick={() => lightbox?.loadAndOpen(0)}
 					></button>

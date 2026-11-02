@@ -12,6 +12,7 @@
 <div class="panel panel-iframe">
 	<select
 		class="demo-select"
+		aria-label="Demo"
 		onchange={(e) => {
 			onUrlChange((e.target as HTMLSelectElement).value);
 		}}

@@ -27,5 +27,7 @@
 			"text": "Spend by day and by model, at current prices, so you can see what the assistant costs.",
 			"title": "Track model spend in the dashboard"
 		}
-	}
+	},
+	"widgetAlt": "The chat widget: a visitor asks to find a USB-C charger under $30 and add it to the cart; the assistant shows its steps (searched the catalog, picked a 65 W charger for $27.90, added it to the cart) and replies.",
+	"widgetNote": "Example conversation"
 }

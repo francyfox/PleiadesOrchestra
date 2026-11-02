@@ -1,3 +1,7 @@
 {
-	"source": "source"
+	"source": "source",
+	"newTab": "(opens in a new tab)",
+	"skipToContent": "Skip to content",
+	"openSidebar": "Open docs navigation",
+	"closeSidebar": "Close docs navigation"
 }

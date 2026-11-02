@@ -54,7 +54,7 @@
 	});
 </script>
 
-<section title="guest@pleiades — world market" id="history" class="min-h-screen flex items-center !border-0">
+<section id="history" class="min-h-screen flex items-center !border-0">
 	<div class="container">
 		<div
 			class="flex h-full flex-col justify-center gap-10 lg:flex-row lg:items-center lg:justify-between"
@@ -103,9 +103,9 @@
 				<!-- Splide: vertical, one event in view, wheel/drag/arrow keys move one at a time. -->
 				<section class="splide" bind:this={slider} aria-label={`${t.heading.line1} ${t.heading.line2}`}>
 				<div class="splide__track">
-				<ul class="splide__list">
+				<div class="splide__list">
 				{#each Object.values(t.events) as event, i (event.title)}
-					<li class="splide__slide flex flex-col items-end justify-center text-right">
+					<div class="splide__slide flex flex-col items-end justify-center text-right">
 						{#if /^\d/.test(event.date)}
 							<time class="text-xs text-accent-2" datetime={event.date}
 							>{event.date}</time
@@ -125,9 +125,9 @@
 								class="link-underline mt-1 inline-block text-xs text-dim!"
 								rel="external noopener">{c.common.source}</a
 						>
-					</li>
+					</div>
 				{/each}
-				</ul>
+				</div>
 				</div>
 				</section>
 			</div>

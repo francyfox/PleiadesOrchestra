@@ -58,7 +58,8 @@
                 poster="/media/draft-poster.webp"
                 onplay={() => (playing = true)}
                 onpause={() => (playing = false)}
-                aria-label={t.videoAria}
+                aria-hidden="true"
+                tabindex="-1"
         >
             <!-- The first matching source wins: phones get the 480p cut. -->
             <source
@@ -75,15 +76,15 @@
             <div class="flex max-w-full flex-col gap-4">
                 <!-- The logo stays outside the h1: its mix-blend would invert the logo's colours. -->
                 <div class="flex items-center gap-3 sm:gap-4">
-                    <h1 class="hidden">PleiadesOrchestra</h1>
-                    <div class="text-[clamp(2rem,8vw,4rem)] font-bold leading-none text-white mix-blend-difference">PleiadesOrchestra</div>
+                    <h1 class="sr-only">PleiadesOrchestra</h1>
+                    <div aria-hidden="true" class="text-[clamp(2rem,8vw,4rem)] font-bold leading-none text-white mix-blend-difference">PleiadesOrchestra</div>
                 </div>
                 <p class="max-w-2xl text-sm  sm:text-base">{t.lead}</p>
                 <p class="text-xs">{t.early}</p>
                 <div class="flex flex-wrap items-center gap-2 text-sm">
                     <a
                             href="#pricing"
-                            class="chip inline-flex items-center gap-1.5 border px-3 py-2 font-bold bg-accent text-bg! border-accent!"><RocketIcon size={16} aria-hidden="true" />{t.get}
+                            class="chip inline-flex items-center gap-1.5 border px-3 py-2 font-bold bg-(--primary-shade) text-bg! border-accent!"><RocketIcon size={16} aria-hidden="true" />{t.get}
                     </a>
                     <a
                             href={PLEIADES_REPO_URL} class="chip inline-flex items-center gap-1.5 border px-3 py-2 text-white bg-muted"
@@ -114,7 +115,7 @@
                         <LogInIcon size={16} aria-hidden="true" />
                         {t.panel}
                     </a>
-                    <button type="button" class="chip inline-flex items-center gap-1.5 border px-3 py-2 text-white" onclick={togglePlay}>
+                    <button type="button" class="chip inline-flex items-center gap-1.5 border px-3 py-2 text-white bg-muted" onclick={togglePlay}>
                         {#if playing}<PauseIcon size={16} aria-hidden="true" />{:else}<PlayIcon size={16} aria-hidden="true" />{/if}
                         {playing ? t.pause : t.play}
                     </button>

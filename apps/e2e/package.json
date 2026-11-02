@@ -9,9 +9,11 @@
 		"test:e2e": "playwright test",
 		"test:e2e:ui": "playwright test --ui",
 		"test:e2e:playground": "playwright test playground",
+		"test:e2e:a11y": "playwright test a11y",
 		"check-types": "bun check"
 	},
 	"devDependencies": {
+		"@axe-core/playwright": "catalog:",
 		"@playwright/test": "^1.63.0",
 		"@types/bun": "catalog:",
 		"typescript": "catalog:"

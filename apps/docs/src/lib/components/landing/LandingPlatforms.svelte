@@ -8,7 +8,8 @@
 	import { landingContent } from "#lib/landing/content.js";
 	import { page } from "$app/state";
 
-	let t = $derived(landingContent(localeFromPath(page.url.pathname)).platforms);
+	let c = $derived(landingContent(localeFromPath(page.url.pathname)));
+	let t = $derived(c.platforms);
 
 	// Add `href` when a platform has a page to open; `available` when the widget can be installed there.
 	const platforms: {
@@ -24,7 +25,7 @@
 </script>
 
 <Pane title="guest@pleiades — platforms" header={false} id="platforms" class="py-10 !border-0">
-	<div class="text-3xl md:text-4xl font-bold mb-5">{t.heading}</div>
+	<h2 class="text-3xl! md:text-4xl! font-bold! mb-5!">{t.heading}</h2>
 	<p class="mt-2 max-w-3xl text-sm text-dim">{t.lead}</p>
 
 	<ul class="list grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -43,6 +44,7 @@
 					<span class="chip border px-2 py-0.5 text-xs">
 						{platform.available ? t.available : t.soon}
 					</span>
+					{#if platform.href}<span class="sr-only">{c.common.newTab}</span>{/if}
 				</svelte:element>
 			</li>
 		{/each}

@@ -34,7 +34,7 @@
         aria-label={t.aria}
 >
     <figcaption
-            class="flex items-center gap-2 bg-accent px-3 py-2 text-sm font-bold text-bg"
+            class="flex items-center gap-2 bg-(--primary-shade) px-3 py-2 text-sm font-bold text-bg"
     >
         <MessageCircleIcon size={16} aria-hidden="true" />
         {t.title}
@@ -44,7 +44,7 @@
             <li
                     in:fly={{ y: 8, duration: reduced ? 0 : 200 }}
                     class={line.from === "user"
-                        ? "max-w-[85%] self-end bg-accent px-3 py-2 text-bg"
+                        ? "max-w-[85%] self-end bg-(--primary-shade) px-3 py-2 text-bg"
                         : line.from === "bot"
                           ? "max-w-[85%] self-start bg-muted px-3 py-2 text-fg"
                           : "flex items-center gap-1.5 self-start text-xs text-dim"}

@@ -11,6 +11,17 @@ const ANCHORS = [
 		"  import NavItem from './NavItem.svelte'\n",
 		`  import LocalSearch from './search/LocalSearch.svelte'\n  import LandingNav from '${LANDING_NAV}'\n`,
 	],
+	// Escape closes the open menu and hands focus back to the burger.
+	[
+		"  function toggleNav() {\n",
+		"  let trigger = $state()\n  function closeOnEscape(e) {\n    if (e.key !== 'Escape' || $navCollapsed) return\n    $navCollapsed = true\n    trigger?.focus()\n  }\n\n",
+		"before",
+	],
+	[
+		'<button\n  type="button"\n  class="nav-trigger"\n',
+		"  bind:this={trigger}\n",
+	],
+	["\n<button\n", "\n<svelte:window onkeydown={closeOnEscape} />\n", "before"],
 	[
 		"    <Logo />\n",
 		'    <div class="po-mobile-search"><LocalSearch /></div>\n',
@@ -25,7 +36,7 @@ const ANCHORS = [
 /**
  * The theme's burger menu (`NavbarMobile.svelte`) with the search on top and, on the landing,
  * its section links at the bottom (LandingNav); below 950px the header's own search and the
- * landing row are hidden. The theme has no slot for them, so the source is patched the way the
+ * landing row are hidden; Escape closes the menu. The theme has no slot for them, so the source is patched the way the
  * theme patches itself (`strip-versioning.js`).
  */
 export function patchMobileMenu(source: string): string {

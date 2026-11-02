@@ -1,27 +1,27 @@
 import type { Edge, Node, NodeTypes, SvelteFlow } from "@xyflow/svelte";
 import { onMount } from "svelte";
 import type { FlowScenario } from "./flow.data.ts";
-import { buildEdges, buildNodes, type layoutFlow } from "./flow.service.ts";
+import {
+	buildEdges,
+	buildNodes,
+	type layoutFlow,
+	tabAfterKey,
+} from "./flow.service.ts";
 
-/** Roving-focus tabs (a row or a side menu): the arrows move both the selection and the focus. */
-export function useTabs<K extends string>(keys: K[], onSelect: () => void) {
+/** Roving-focus tabs (a row or a side menu): the arrows, Home and End move both the selection and the focus. */
+export function useTabs<K extends string>(keys: K[], onSelect?: () => void) {
 	let tab = $state(keys[0]);
 	const buttons = $state<HTMLButtonElement[]>([]);
 
 	function select(key: K) {
 		tab = key;
-		onSelect();
+		onSelect?.();
 	}
 
 	function onKey(e: KeyboardEvent, i: number) {
-		const d = ["ArrowRight", "ArrowDown"].includes(e.key)
-			? 1
-			: ["ArrowLeft", "ArrowUp"].includes(e.key)
-				? -1
-				: 0;
-		if (!d) return;
+		const next = tabAfterKey(e.key, i, keys.length);
+		if (next === undefined) return;
 		e.preventDefault();
-		const next = (i + d + keys.length) % keys.length;
 		select(keys[next]);
 		buttons[next]?.focus();
 	}

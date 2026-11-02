@@ -169,7 +169,6 @@
 
 	:global(.panel-subtitle) {
 		color: var(--dim);
-		opacity: 0.6;
 		margin-left: 0.25rem;
 	}
 </style>

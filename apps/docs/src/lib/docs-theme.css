@@ -168,3 +168,15 @@ html body {
 .theme-default--page-layout {
 	padding-bottom: 1rem;
 }
+
+/* AA contrast (4.5:1): the theme's inline-code orange (#c2410c / #fb923c) is 4.4:1 on a striped table row. */
+:root:root :not(pre) > code {
+	color: #9a3412;
+}
+:root:root.dark :not(pre) > code {
+	color: #fdba74;
+}
+/* The code block's language badge: the theme's zinc-500 is 4.4:1 on its grey chip. */
+:root:root .svp-code-block--lang {
+	color: var(--muted-foreground);
+}

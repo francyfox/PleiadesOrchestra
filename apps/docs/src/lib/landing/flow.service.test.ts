@@ -10,6 +10,7 @@ import {
 	statusOf,
 	stepMeta,
 	summarize,
+	tabAfterKey,
 	totals,
 } from "./flow.service.ts";
 
@@ -143,4 +144,13 @@ test("bars: a contender without a cost is left out of the cost group only", () =
 	const [success, , cost] = bars([...contenders, local]);
 	expect(success.rows.map((r) => r.name)).toContain("local");
 	expect(cost.rows.map((r) => r.name)).not.toContain("local");
+});
+
+test("tabs keys: arrows wrap round, Home/End jump, other keys are not handled", () => {
+	expect(tabAfterKey("ArrowRight", 2, 3)).toBe(0);
+	expect(tabAfterKey("ArrowLeft", 0, 3)).toBe(2);
+	expect(tabAfterKey("ArrowDown", 0, 3)).toBe(1);
+	expect(tabAfterKey("Home", 2, 3)).toBe(0);
+	expect(tabAfterKey("End", 0, 3)).toBe(2);
+	expect(tabAfterKey("Enter", 1, 3)).toBeUndefined();
 });

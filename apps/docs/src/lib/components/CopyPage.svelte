@@ -5,6 +5,7 @@
 	import ChatGptIcon from "#lib/components/brand-icons/ChatGptIcon.svelte";
 	import ClaudeIcon from "#lib/components/brand-icons/ClaudeIcon.svelte";
 	import type { Locale } from "#lib/i18n.js";
+	import { landingContent } from "#lib/landing/content.js";
 
 	// Put at the top of every docs page by vite/content-routes.ts. `markdown` is the
 	// page's clean Markdown (static, generated next to the page; llmstxt.org), `llms` its llms.txt.
@@ -54,6 +55,7 @@
 		},
 	};
 	const t = $derived(labels[locale]);
+	const newTab = $derived(landingContent(locale).common.newTab);
 
 	let root: HTMLElement;
 
@@ -105,9 +107,9 @@
 <div class="copy-page" data-pagefind-ignore bind:this={root}>
 	<button type="button" onclick={() => copy(readMarkdown)}><FileCodeIcon aria-hidden="true" />{t.markdown}</button>
 	<button type="button" onclick={() => copy(pageText)}><TypeIcon aria-hidden="true" />{t.text}</button>
-	<a href={markdown} target="_blank" rel="noopener"><FileTextIcon aria-hidden="true" />{t.open}</a>
-	<a href={`https://chatgpt.com/?prompt=${prompt}`} target="_blank" rel="noopener noreferrer"><ChatGptIcon />ChatGPT</a>
-	<a href={`https://claude.ai/new?q=${prompt}`} target="_blank" rel="noopener noreferrer"><ClaudeIcon />Claude</a>
+	<a href={markdown} target="_blank" rel="noopener"><FileTextIcon aria-hidden="true" />{t.open}<span class="sr-only"> {newTab}</span></a>
+	<a href={`https://chatgpt.com/?prompt=${prompt}`} target="_blank" rel="noopener noreferrer"><ChatGptIcon />ChatGPT<span class="sr-only"> {newTab}</span></a>
+	<a href={`https://claude.ai/new?q=${prompt}`} target="_blank" rel="noopener noreferrer"><ClaudeIcon />Claude<span class="sr-only"> {newTab}</span></a>
 	<span class="status" role="status">{status}</span>
 </div>
 

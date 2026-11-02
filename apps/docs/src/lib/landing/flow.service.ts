@@ -50,6 +50,18 @@ export function layoutFlow(ids: string[], narrow: boolean, fanAt?: string) {
 	return { slots, fan, height };
 }
 
+/** ARIA tabs keys: the arrows step round the list, Home/End jump to its ends; undefined = not a tabs key. */
+export function tabAfterKey(key: string, i: number, count: number) {
+	if (key === "Home") return 0;
+	if (key === "End") return count - 1;
+	const d = ["ArrowRight", "ArrowDown"].includes(key)
+		? 1
+		: ["ArrowLeft", "ArrowUp"].includes(key)
+			? -1
+			: 0;
+	return d ? (i + d + count) % count : undefined;
+}
+
 export const optionId = (id: string) => `opt-${id}`;
 
 /** The run, one node a tick; the chosen (first) option comes right after its fan owner. */

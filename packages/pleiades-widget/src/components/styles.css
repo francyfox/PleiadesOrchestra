@@ -29,7 +29,8 @@
 	--bg: var(--pleiades-bg, oklch(1 0 0));
 	--fg: var(--pleiades-fg, oklch(0.4712 0 0));
 	--muted: var(--pleiades-muted, oklch(0.9808 0.0121 169.2551));
-	--muted-fg: var(--pleiades-muted-fg, oklch(0.5795 0 0));
+	/* Darker than tokens.css (0.5795): 4.6:1 on --muted, WCAG AA for the small text. */
+	--muted-fg: var(--pleiades-muted-fg, oklch(0.55 0 0));
 	--border: var(--pleiades-border, oklch(0.7062 0.1467 290));
 	--destructive: var(--pleiades-destructive, oklch(0.577 0.183 27.325));
 	--destructive-fg: var(--pleiades-destructive-fg, oklch(1 0 0));
@@ -546,7 +547,12 @@
 		padding: 6px 12px;
 		/* The one text that is not scaled: the credit line keeps its small fixed size. */
 		font-size: 11px;
-		opacity: 0.65;
+		/* Muted colour, not opacity: opacity dropped the credit below 4.5:1. */
+		color: var(--muted-fg);
+
+		a {
+			color: inherit;
+		}
 	}
 }
 

@@ -40,9 +40,9 @@
 			{/each}
 		</ul>
 
-		<aside class="border border-accent-2! p-4">
+		<div role="note" class="border border-accent-2! p-4">
 			<h3 class="font-bold! text-accent-2!">{t.early.heading}</h3>
 			<p class="mt-1 max-w-3xl text-sm">{t.early.text}</p>
-		</aside>
+		</div>
 	</div>
 </Pane>

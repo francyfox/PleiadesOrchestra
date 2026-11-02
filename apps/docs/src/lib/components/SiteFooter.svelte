@@ -18,8 +18,9 @@
 	let home = $derived(localizeHref("/", locale));
 </script>
 
-<footer class="site-footer" class:docs aria-label={t.label}>
-	<div class="columns">
+<footer class="site-footer" class:docs>
+	<!-- Inside the theme's <main>, so <footer> is no landmark and can't take a label: the links get a named nav. -->
+	<nav class="columns" aria-label={t.label}>
 		<div>
 			<h2>{t.product}</h2>
 			<ul>
@@ -50,7 +51,7 @@
 				<li><a href="mailto:{PLEIADES_CONTACT}">{t.contact}</a></li>
 			</ul>
 		</div>
-	</div>
+	</nav>
 	<p class="brand">
 		<img src="/logo.svg" alt="" width="20" height="20" />
 		{SITE.title}
