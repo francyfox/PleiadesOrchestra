@@ -55,6 +55,14 @@ test("the dark-mode toggle answers Enter/Space and switches without a view trans
 	expect(patched).not.toMatch(/[^$]darkMode === '/);
 });
 
+test("live code blocks use the light highlighter theme on the light theme", async () => {
+	const patched = patchThemeMarkup(
+		await Bun.file(`${dist}components/CodeBlock.svelte`).text(),
+		"/components/CodeBlock.svelte",
+	);
+	expect(patched).toContain("light: themeOptions.highlighter.themeLight");
+});
+
 test("camelCase SVG attributes become kebab-case", () => {
 	expect(
 		patchThemeMarkup(
