@@ -90,6 +90,13 @@ const PATCHES: Record<string, [string, string][]> = {
 		["} else if (darkMode === 'dark') {", "} else if ($darkMode === 'dark') {"],
 		["} else if (darkMode === 'auto') {", "} else if ($darkMode === 'auto') {"],
 	],
+	// Live code blocks (CodeBlock, used on the landing) took `themeDark` for the light theme too.
+	"/components/CodeBlock.svelte": [
+		[
+			"light: themeOptions.highlighter.themeDark ?? 'vitesse-light'",
+			"light: themeOptions.highlighter.themeLight ?? 'vitesse-light'",
+		],
+	],
 	"/components/LocaleSelector.svelte": [
 		[
 			'      class="locale-trigger"\n      aria-label={selectorLabel}\n',

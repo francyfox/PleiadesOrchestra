@@ -22,11 +22,8 @@
 		[920, 725, 1128, 815],
 		[1302, 613, 1540, 783],
 	];
-	const ITEMS = ["alpha", "beta", "gamma"].map((name) => ({
-		src: `/media/gallery-${name}.webp`,
-		width: 1200,
-		height: 756,
-	}));
+	// Placeholder on every screen until the video poster loads (only the first screen gets it).
+	const NO_SIGNAL = "/media/no-signal.webp";
 
 	const MOVIES = [
 		{
@@ -93,7 +90,7 @@
 				<div class="tv-screen absolute" style={box(i)}>
 					<div class="tv-thumb absolute inset-0 z-0 overflow-hidden">
 						<img
-							src={i === 0 && cover ? cover : ITEMS[i % ITEMS.length].src}
+							src={i === 0 && cover ? cover : NO_SIGNAL}
 							alt=""
 							class="h-full w-full object-cover"
 						/>
@@ -109,12 +106,16 @@
 					></button>
 				</div>
 			{/each}
-			<img src="/media/tv.webp" alt="" class="pointer-events-none absolute inset-0 z-10 h-full w-full" />
+			<img src="/media/tv.webp" alt="" class="tv-frame pointer-events-none absolute inset-0 z-10 h-full w-full" />
 		</div>
 	</div>
 </div>
 
 <style>
+	/* The TV frames are dark artwork: inverted on the light theme (the screens stay as they are). */
+	:global(html:not(.dark)) .tv-frame {
+		filter: invert(1);
+	}
 	/* Hover on a screen zooms the thumbnail and glitches it; zoom sits on the wrapper so it doesn't fight the glitch transform. */
 	.tv-thumb {
 		transition: transform 0.3s ease;
