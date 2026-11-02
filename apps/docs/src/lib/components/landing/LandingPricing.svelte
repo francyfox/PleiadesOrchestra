@@ -12,7 +12,8 @@
 	} from "#lib/site.js";
 	import { page } from "$app/state";
 
-	let t = $derived(landingContent(localeFromPath(page.url.pathname)).pricing);
+	let c = $derived(landingContent(localeFromPath(page.url.pathname)));
+	let t = $derived(c.pricing);
 
 	const buyHref =
 		PLEIADES_BUY_URL ||
@@ -69,7 +70,7 @@
 </script>
 
 <Pane title="guest@pleiades — pricing" header={false} id="pricing" class="!border-0 py-10">
-	<div class="text-3xl md:text-4xl font-bold">{t.heading}</div>
+	<h2 class="text-3xl! md:text-4xl! font-bold!">{t.heading}</h2>
 
 	<div class="plans">
 		{#each plans as plan (plan.title)}
@@ -86,13 +87,15 @@
 					class:filled={plan.filled}
 					{...plan.external
 						? { target: "_blank", rel: "noreferrer noopener" }
-						: { rel: "external" }}>{plan.cta}</a
+						: { rel: "external" }}
+					>{plan.cta}{#if plan.external}<span class="sr-only"> {c.common.newTab}</span
+						>{/if}</a
 				>
 				<p class="dim text-xs">
 					{#if plan.terms}<a
 							href={PLEIADES_TERMS_URL}
 							rel="external"
-							class="link-underline">{t.business.terms}</a
+							class="underline! underline-offset-[3px]">{t.business.terms}</a
 						>{/if}
 				</p>
 				<div class="features text-sm">
@@ -157,7 +160,8 @@
 		border-color: var(--tone);
 	}
 	.cta.filled {
-		background: var(--tone);
+		/* Darkened like --primary-shade: light text on the bare tone is below 4.5:1. */
+		background: color-mix(in oklch, var(--tone), black var(--shade-strong));
 		color: var(--bg, var(--background));
 	}
 	.check {

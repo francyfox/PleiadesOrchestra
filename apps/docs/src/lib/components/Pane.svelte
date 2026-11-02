@@ -23,7 +23,7 @@
 </script>
 
 <!-- The section spans the page; its box (border, header, content) sits in the .container. -->
-<section {id} class="w-full" aria-label={title}>
+<section {id} class="w-full" aria-label={header ? title : undefined}>
 <div
 	class="container flex min-h-0 flex-col border {focused ? 'border-accent!' : ''} {className}"
 >

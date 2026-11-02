@@ -7,7 +7,7 @@
 	let t = $derived(landingContent(localeFromPath(page.url.pathname)).about);
 </script>
 
-<section title="guest@pleiades — about" id="about" class="!border-0 px-4 py-10 flex items-center	 min-h-[70vh]">
+<section id="about" class="!border-0 px-4 py-10 flex items-center	 min-h-[70vh]">
 	<div class="container">
 		<div class="flex flex-col gap-5">
 			<h2 class="text-3xl! md:text-6xl! font-bold!">{t.heading}</h2>

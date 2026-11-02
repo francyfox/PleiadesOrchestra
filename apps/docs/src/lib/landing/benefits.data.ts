@@ -48,16 +48,8 @@ export const STEP_SAMPLES: Sample[][] = [
 			code: `import "@shalotts/pleiades-widget"; // registers <pleiades-chat>`,
 		},
 	],
-	[
-		{
-			name: "send.js",
-			lang: "js",
-			code: `const chat = document.querySelector("pleiades-chat");
-
-const r = await chat.send("Add the cheapest cheese to the cart");
-// { reply, steps: [...], status: "done" }`,
-		},
-	],
+	// The widget step shows a screenshot instead of code.
+	[],
 	[
 		{
 			name: "run.json",
@@ -77,5 +69,14 @@ const r = await chat.send("Add the cheapest cheese to the cart");
 	[],
 ];
 
-// Rendered size of static/media/dashboard-<locale>.webp: the real admin page with made-up numbers.
-export const DASHBOARD_SHOT = { width: 1400, height: 667 };
+// Screenshots of the steps without code, by step index: static/media/<file>-<locale>.webp at its rendered size,
+// alt and caption from `<file>Alt`/`<file>Note` in benefits.json.
+export const STEP_SHOTS: Record<
+	number,
+	{ file: "widget" | "dashboard"; width: number; height: number }
+> = {
+	// The real <pleiades-chat> panel (light theme, 2x) driven by Playwright with a mocked NDJSON agent reply.
+	3: { file: "widget", width: 340, height: 657 },
+	// The real admin page with made-up numbers.
+	5: { file: "dashboard", width: 1400, height: 667 },
+};

@@ -18,6 +18,43 @@ test("the installed theme's markup has no camelCase SVG attributes or bare pb-4 
 	}
 });
 
+test("GlobalLayout gets the skip link before the header and a focusable #main", async () => {
+	const patched = patchThemeMarkup(
+		await Bun.file(`${dist}components/GlobalLayout.svelte`).text(),
+		"/components/GlobalLayout.svelte",
+	);
+	expect(patched.indexOf("<SkipLink />")).toBeLessThan(
+		patched.indexOf("<Navbar />"),
+	);
+	expect(patched).toContain('<main\n    id="main"\n    tabindex="-1"');
+});
+
+test("the sidebar buttons get localized names, the header buttons keep their visible text in the name", async () => {
+	const patch = async (file: string) =>
+		patchThemeMarkup(await Bun.file(dist + file).text(), `/${file}`);
+	expect(await patch("components/MobileSubNav.svelte")).toContain(
+		"aria-label={landingContent(localeFromPath(page.url.pathname)).common.openSidebar}",
+	);
+	expect(await patch("components/Sidebar.svelte")).toContain(
+		".common.closeSidebar}",
+	);
+	expect(await patch("components/search/LocalSearch.svelte")).not.toMatch(
+		/local-search-trigger[^>]*aria-label/,
+	);
+	expect(await patch("components/LocaleSelector.svelte")).toContain(
+		'aria-label="{selectorLabel}: {label}"',
+	);
+});
+
+test("the dark-mode toggle answers Enter/Space and switches without a view transition too", async () => {
+	const patched = patchThemeMarkup(
+		await Bun.file(`${dist}components/ToggleDark.svelte`).text(),
+		"/components/ToggleDark.svelte",
+	);
+	expect(patched).toContain("e.currentTarget.click()");
+	expect(patched).not.toMatch(/[^$]darkMode === '/);
+});
+
 test("camelCase SVG attributes become kebab-case", () => {
 	expect(
 		patchThemeMarkup(

@@ -19,7 +19,7 @@
 	{#if option}
 		<span class="text-sm"><code>{data.text}</code></span>
 	{:else}
-		<span class="text-md font-bold text-accent">{data.tag}</span>
+		<span class="text-md font-bold text-(--primary-shade)">{data.tag}</span>
 		<span class="text-sm text-fg">{data.text}</span>
 		{#if data.meta}
 			<span class="text-sm tabular-nums text-dim">{data.meta}</span>

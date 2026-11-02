@@ -5,7 +5,7 @@ import { sveltepress } from "@sveltepress/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig, loadEnv } from "vite";
 import { ALL_LOCALES, DEFAULT_LOCALE, type Locale } from "./src/lib/i18n.ts";
-import { PLEIADES_PANEL_LOGIN_URL, SITE } from "./src/lib/site.ts";
+import { PLEIADES_PANEL_LOGIN_URL, SITE, SITE_URL } from "./src/lib/site.ts";
 import {
 	BENCHMARKS_DIR,
 	CHANGELOG_DIR,
@@ -28,6 +28,7 @@ const CHROME: Record<
 		playground: string;
 		panel: string;
 		language: string;
+		menu: string;
 	}
 > = {
 	en: {
@@ -36,6 +37,7 @@ const CHROME: Record<
 		playground: "Playground",
 		panel: "Panel",
 		language: "Language",
+		menu: "Menu",
 	},
 	ru: {
 		label: "Русский",
@@ -43,6 +45,7 @@ const CHROME: Record<
 		playground: "Песочница",
 		panel: "Панель",
 		language: "Язык",
+		menu: "Меню",
 	},
 	kk: {
 		label: "Қазақша",
@@ -50,6 +53,7 @@ const CHROME: Record<
 		playground: "Ойын алаңы",
 		panel: "Панель",
 		language: "Тіл",
+		menu: "Мәзір",
 	},
 };
 
@@ -143,6 +147,8 @@ export default defineConfig(({ mode }) => ({
 		tailwindcss(),
 		sveltepress({
 			siteConfig: SITE,
+			// Only for the build's sitemap.xml origin: Google rejects relative <loc>. Our own llms.txt comes from contentRoutes.
+			llms: { enabled: false, baseUrl: SITE_URL },
 			theme: defaultTheme({
 				github: "https://github.com/francyfox/PleiadesOrchestra",
 				// The theme shows it with the site title next to it (navbar, sidebar).
@@ -153,13 +159,17 @@ export default defineConfig(({ mode }) => ({
 					light: "#ffffff",
 					dark: "#30281d",
 					primary: "var(--primary)",
-					primaryDeep: "var(--primary)",
+					// Light-mode text (active TOC link, hovers): --primary is 4.15:1 on white, the shade passes AA.
+					primaryDeep: "var(--primary-shade)",
 					hover: "var(--primary-shade)",
 					gradient: { start: "var(--primary)", end: "var(--primary-shade)" },
 				},
 				navbar: navbar(DEFAULT_LOCALE),
 				sidebar: sidebar(DEFAULT_LOCALE),
 				highlighter: {
+					// GitHub's default themes keep every token at 4.5:1 or more (the theme's vitesse-light/night-owl do not).
+					themeLight: "github-light-default",
+					themeDark: "github-dark-default",
 					languages: [
 						"html",
 						"css",
@@ -188,7 +198,10 @@ export default defineConfig(({ mode }) => ({
 						theme: {
 							navbar: navbar(locale),
 							sidebar: sidebar(locale),
-							i18n: { localeSwitcher: CHROME[locale].language },
+							i18n: {
+								localeSwitcher: CHROME[locale].language,
+								navbarMenu: CHROME[locale].menu,
+							},
 						},
 					},
 				]),

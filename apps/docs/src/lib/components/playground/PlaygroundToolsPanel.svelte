@@ -14,7 +14,9 @@
 		MCP Tools
 		<span class="tools-badge">{tools.length}</span>
 	</div>
-	<div class="panel-scroll">
+	<!-- Scrollable list: focusable so keyboard users can scroll it (axe scrollable-region-focusable). -->
+	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+	<div class="panel-scroll" role="region" aria-label="MCP Tools" tabindex="0">
 		{#if tools.length === 0}
 			<div class="empty-state">No tools registered yet. Open a demo above.</div>
 		{:else}
@@ -51,6 +53,11 @@
 	.panel-scroll {
 		flex: 1;
 		overflow-y: auto;
+	}
+
+	/* The panel clips overflow, so draw the focus ring inside. */
+	.panel-scroll:focus-visible {
+		outline-offset: -2px;
 	}
 
 	.empty-state {

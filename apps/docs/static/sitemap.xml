@@ -1,255 +1,255 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/"/>
+    <loc>https://pleiades.shalotts.site/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/"/>
   </url>
   <url>
-    <loc>/ru/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/"/>
+    <loc>https://pleiades.shalotts.site/ru/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/"/>
   </url>
   <url>
-    <loc>/kk/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/"/>
+    <loc>https://pleiades.shalotts.site/kk/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/"/>
   </url>
   <url>
-    <loc>/docs/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/"/>
+    <loc>https://pleiades.shalotts.site/docs/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/"/>
   </url>
   <url>
-    <loc>/ru/docs/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/"/>
+    <loc>https://pleiades.shalotts.site/ru/docs/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/"/>
   </url>
   <url>
-    <loc>/kk/docs/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/"/>
+    <loc>https://pleiades.shalotts.site/kk/docs/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/"/>
   </url>
   <url>
-    <loc>/docs/api/server/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/api/server/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/api/server/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/api/server/"/>
+    <loc>https://pleiades.shalotts.site/docs/api/server/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/api/server/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/api/server/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/api/server/"/>
   </url>
   <url>
-    <loc>/ru/docs/api/server/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/api/server/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/api/server/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/api/server/"/>
+    <loc>https://pleiades.shalotts.site/ru/docs/api/server/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/api/server/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/api/server/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/api/server/"/>
   </url>
   <url>
-    <loc>/kk/docs/api/server/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/api/server/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/api/server/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/api/server/"/>
+    <loc>https://pleiades.shalotts.site/kk/docs/api/server/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/api/server/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/api/server/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/api/server/"/>
   </url>
   <url>
-    <loc>/docs/api/widget/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/api/widget/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/api/widget/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/api/widget/"/>
+    <loc>https://pleiades.shalotts.site/docs/api/widget/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/api/widget/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/api/widget/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/api/widget/"/>
   </url>
   <url>
-    <loc>/ru/docs/api/widget/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/api/widget/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/api/widget/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/api/widget/"/>
+    <loc>https://pleiades.shalotts.site/ru/docs/api/widget/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/api/widget/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/api/widget/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/api/widget/"/>
   </url>
   <url>
-    <loc>/kk/docs/api/widget/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/api/widget/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/api/widget/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/api/widget/"/>
+    <loc>https://pleiades.shalotts.site/kk/docs/api/widget/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/api/widget/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/api/widget/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/api/widget/"/>
   </url>
   <url>
-    <loc>/docs/benchmarks/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/benchmarks/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/benchmarks/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/benchmarks/"/>
+    <loc>https://pleiades.shalotts.site/docs/benchmarks/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/benchmarks/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/benchmarks/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/benchmarks/"/>
   </url>
   <url>
-    <loc>/ru/docs/benchmarks/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/benchmarks/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/benchmarks/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/benchmarks/"/>
+    <loc>https://pleiades.shalotts.site/ru/docs/benchmarks/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/benchmarks/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/benchmarks/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/benchmarks/"/>
   </url>
   <url>
-    <loc>/kk/docs/benchmarks/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/benchmarks/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/benchmarks/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/benchmarks/"/>
+    <loc>https://pleiades.shalotts.site/kk/docs/benchmarks/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/benchmarks/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/benchmarks/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/benchmarks/"/>
   </url>
   <url>
-    <loc>/docs/benchmarks/overview/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/benchmarks/overview/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/benchmarks/overview/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/benchmarks/overview/"/>
+    <loc>https://pleiades.shalotts.site/docs/benchmarks/overview/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/benchmarks/overview/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/benchmarks/overview/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/benchmarks/overview/"/>
   </url>
   <url>
-    <loc>/ru/docs/benchmarks/overview/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/benchmarks/overview/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/benchmarks/overview/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/benchmarks/overview/"/>
+    <loc>https://pleiades.shalotts.site/ru/docs/benchmarks/overview/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/benchmarks/overview/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/benchmarks/overview/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/benchmarks/overview/"/>
   </url>
   <url>
-    <loc>/kk/docs/benchmarks/overview/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/benchmarks/overview/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/benchmarks/overview/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/benchmarks/overview/"/>
+    <loc>https://pleiades.shalotts.site/kk/docs/benchmarks/overview/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/benchmarks/overview/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/benchmarks/overview/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/benchmarks/overview/"/>
   </url>
   <url>
-    <loc>/docs/changelog/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/changelog/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/changelog/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/changelog/"/>
+    <loc>https://pleiades.shalotts.site/docs/changelog/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/changelog/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/changelog/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/changelog/"/>
   </url>
   <url>
-    <loc>/ru/docs/changelog/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/changelog/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/changelog/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/changelog/"/>
+    <loc>https://pleiades.shalotts.site/ru/docs/changelog/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/changelog/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/changelog/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/changelog/"/>
   </url>
   <url>
-    <loc>/kk/docs/changelog/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/changelog/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/changelog/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/changelog/"/>
+    <loc>https://pleiades.shalotts.site/kk/docs/changelog/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/changelog/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/changelog/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/changelog/"/>
   </url>
   <url>
-    <loc>/docs/changelog/overview/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/changelog/overview/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/changelog/overview/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/changelog/overview/"/>
+    <loc>https://pleiades.shalotts.site/docs/changelog/overview/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/changelog/overview/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/changelog/overview/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/changelog/overview/"/>
   </url>
   <url>
-    <loc>/ru/docs/changelog/overview/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/changelog/overview/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/changelog/overview/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/changelog/overview/"/>
+    <loc>https://pleiades.shalotts.site/ru/docs/changelog/overview/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/changelog/overview/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/changelog/overview/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/changelog/overview/"/>
   </url>
   <url>
-    <loc>/kk/docs/changelog/overview/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/changelog/overview/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/changelog/overview/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/changelog/overview/"/>
+    <loc>https://pleiades.shalotts.site/kk/docs/changelog/overview/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/changelog/overview/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/changelog/overview/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/changelog/overview/"/>
   </url>
   <url>
-    <loc>/docs/intents/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/intents/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/intents/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/intents/"/>
+    <loc>https://pleiades.shalotts.site/docs/intents/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/intents/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/intents/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/intents/"/>
   </url>
   <url>
-    <loc>/ru/docs/intents/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/intents/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/intents/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/intents/"/>
+    <loc>https://pleiades.shalotts.site/ru/docs/intents/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/intents/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/intents/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/intents/"/>
   </url>
   <url>
-    <loc>/kk/docs/intents/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/intents/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/intents/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/intents/"/>
+    <loc>https://pleiades.shalotts.site/kk/docs/intents/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/intents/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/intents/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/intents/"/>
   </url>
   <url>
-    <loc>/docs/intro/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/intro/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/intro/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/intro/"/>
+    <loc>https://pleiades.shalotts.site/docs/intro/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/intro/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/intro/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/intro/"/>
   </url>
   <url>
-    <loc>/ru/docs/intro/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/intro/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/intro/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/intro/"/>
+    <loc>https://pleiades.shalotts.site/ru/docs/intro/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/intro/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/intro/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/intro/"/>
   </url>
   <url>
-    <loc>/kk/docs/intro/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/intro/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/intro/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/intro/"/>
+    <loc>https://pleiades.shalotts.site/kk/docs/intro/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/intro/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/intro/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/intro/"/>
   </url>
   <url>
-    <loc>/docs/polyfill/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/polyfill/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/polyfill/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/polyfill/"/>
+    <loc>https://pleiades.shalotts.site/docs/polyfill/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/polyfill/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/polyfill/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/polyfill/"/>
   </url>
   <url>
-    <loc>/ru/docs/polyfill/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/polyfill/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/polyfill/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/polyfill/"/>
+    <loc>https://pleiades.shalotts.site/ru/docs/polyfill/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/polyfill/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/polyfill/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/polyfill/"/>
   </url>
   <url>
-    <loc>/kk/docs/polyfill/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/polyfill/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/polyfill/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/polyfill/"/>
+    <loc>https://pleiades.shalotts.site/kk/docs/polyfill/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/polyfill/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/polyfill/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/polyfill/"/>
   </url>
   <url>
-    <loc>/docs/tools/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/tools/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/tools/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/tools/"/>
+    <loc>https://pleiades.shalotts.site/docs/tools/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/tools/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/tools/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/tools/"/>
   </url>
   <url>
-    <loc>/ru/docs/tools/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/tools/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/tools/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/tools/"/>
+    <loc>https://pleiades.shalotts.site/ru/docs/tools/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/tools/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/tools/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/tools/"/>
   </url>
   <url>
-    <loc>/kk/docs/tools/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/tools/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/tools/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/tools/"/>
+    <loc>https://pleiades.shalotts.site/kk/docs/tools/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/tools/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/tools/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/tools/"/>
   </url>
   <url>
-    <loc>/docs/widget/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/widget/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/widget/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/widget/"/>
+    <loc>https://pleiades.shalotts.site/docs/widget/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/widget/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/widget/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/widget/"/>
   </url>
   <url>
-    <loc>/ru/docs/widget/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/widget/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/widget/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/widget/"/>
+    <loc>https://pleiades.shalotts.site/ru/docs/widget/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/widget/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/widget/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/widget/"/>
   </url>
   <url>
-    <loc>/kk/docs/widget/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/docs/widget/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/docs/widget/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/docs/widget/"/>
+    <loc>https://pleiades.shalotts.site/kk/docs/widget/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/widget/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/widget/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/widget/"/>
   </url>
   <url>
-    <loc>/playground/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/playground/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/playground/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/playground/"/>
+    <loc>https://pleiades.shalotts.site/playground/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/playground/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/playground/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/playground/"/>
   </url>
   <url>
-    <loc>/ru/playground/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/playground/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/playground/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/playground/"/>
+    <loc>https://pleiades.shalotts.site/ru/playground/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/playground/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/playground/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/playground/"/>
   </url>
   <url>
-    <loc>/kk/playground/</loc>
-    <xhtml:link rel="alternate" hreflang="en" href="/playground/"/>
-    <xhtml:link rel="alternate" hreflang="ru" href="/ru/playground/"/>
-    <xhtml:link rel="alternate" hreflang="kk" href="/kk/playground/"/>
+    <loc>https://pleiades.shalotts.site/kk/playground/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/playground/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/playground/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/playground/"/>
   </url>
 </urlset>

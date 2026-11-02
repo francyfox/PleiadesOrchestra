@@ -2,8 +2,9 @@
 	import { CodeBlock } from "@sveltepress/theme-default/components";
 	import Pane from "#lib/components/Pane.svelte";
 	import { localeFromPath, localizeHref } from "#lib/i18n.js";
-	import { DASHBOARD_SHOT, STEP_SAMPLES } from "#lib/landing/benefits.data.js";
+	import { STEP_SAMPLES, STEP_SHOTS } from "#lib/landing/benefits.data.js";
 	import { landingContent } from "#lib/landing/content.js";
+	import { useTabs } from "#lib/landing/flow.svelte.js";
 	import { page } from "$app/state";
 
 	let locale = $derived(localeFromPath(page.url.pathname));
@@ -53,7 +54,9 @@
 	});
 
 	// Selected file tab per step.
-	let tab = $state<number[]>([]);
+	const codeTabs = STEP_SAMPLES.map((samples) =>
+		useTabs(samples.map((s) => s.name)),
+	);
 </script>
 
 <Pane title="guest@pleiades — benefits" header={false} id="benefits" class="py-10 !border-0 min-h-[70vh]">
@@ -62,7 +65,8 @@
 		{#each steps as step, i (step.title)}
 			{@const parts = splitLink(step.text)}
 			{@const samples = STEP_SAMPLES[i]}
-			{@const sample = samples[tab[i] ?? 0]}
+			{@const shot = STEP_SHOTS[i]}
+			{@const sample = samples.find((s) => s.name === codeTabs[i].tab) ?? samples[0]}
 			<li
 					class="step"
 					class:dim={current !== null && i > current}
@@ -79,16 +83,16 @@
 						{/if}
 					</p>
 				</div>
-				{#if samples.length === 0}
+				{#if shot}
 					<figure class="card shot">
 						<img
-							src="/media/dashboard-{locale}.webp"
-							alt={t.dashboardAlt}
-							width={DASHBOARD_SHOT.width}
-							height={DASHBOARD_SHOT.height}
+							src="/media/{shot.file}-{locale}.webp"
+							alt={t[`${shot.file}Alt`]}
+							width={shot.width}
+							height={shot.height}
 							loading="lazy"
 						/>
-						<figcaption>{t.dashboardNote}</figcaption>
+						<figcaption>{t[`${shot.file}Note`]}</figcaption>
 					</figure>
 				{:else}
 				<div class="card">
@@ -100,9 +104,12 @@
 									role="tab"
 									id="benefit-tab-{i}-{j}"
 									aria-controls="benefit-code-{i}"
-									aria-selected={(tab[i] ?? 0) === j}
-									class:active={(tab[i] ?? 0) === j}
-									onclick={() => (tab[i] = j)}>{s.name}</button
+									aria-selected={codeTabs[i].tab === s.name}
+									tabindex={codeTabs[i].tab === s.name ? 0 : -1}
+									class:active={codeTabs[i].tab === s.name}
+									bind:this={codeTabs[i].buttons[j]}
+									onclick={() => codeTabs[i].select(s.name)}
+									onkeydown={(e) => codeTabs[i].onKey(e, j)}>{s.name}</button
 								>
 							{/each}
 						</div>
@@ -112,7 +119,7 @@
 						class="code"
 						id="benefit-code-{i}"
 						role={samples.length > 1 ? "tabpanel" : undefined}
-						aria-labelledby={samples.length > 1 ? `benefit-tab-${i}-${tab[i] ?? 0}` : undefined}
+						aria-labelledby={samples.length > 1 ? `benefit-tab-${i}-${samples.indexOf(sample)}` : undefined}
 						style:min-height="{sample.code.split('\n').length * 1.28 + 1.5}rem">
 						{#key sample.code}
 							<CodeBlock code={sample.code} lang={sample.lang} />
@@ -149,6 +156,10 @@
 		/* Every step is as tall as the others, so scrolling from one to the next takes the same distance. */
 		min-height: max(55vh, 26rem);
 		align-content: start;
+
+		&:nth-child(4) .shot {
+			max-height: 380px;
+		}
 	}
 	.step {
 		transition: opacity 0.6s ease;
@@ -195,10 +206,12 @@
 	.shot {
 		margin: 0;
 		align-self: start;
+		/* Shrinks to a narrow shot (the widget panel); a wide one still fills the column. */
+		justify-self: start;
 	}
 	.shot img {
 		display: block;
-		width: 100%;
+		max-width: 100%;
 		height: auto;
 	}
 	.shot figcaption {

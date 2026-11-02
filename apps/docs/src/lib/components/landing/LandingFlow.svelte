@@ -43,7 +43,7 @@
 
 <Pane title="guest@pleiades — flow" header={false} id="flow" class="!border-0 min-h-screen py-10 ">
 	<div class="flex flex-col gap-5">
-		<div class="text-3xl md:text-6xl">{t.heading}</div>
+		<h2 class="text-3xl! md:text-6xl!">{t.heading}</h2>
 		<p class="mt-2 max-w-3xl text-sm italic">{t.lead}</p>
 
 		<div
@@ -65,7 +65,7 @@
 							aria-selected={cases.tab === key}
 							aria-controls="flow-panel"
 							tabindex={cases.tab === key ? 0 : -1}
-							class="chip cursor-pointer border px-3 py-2 text-left text-sm {cases.tab === key
+							class="chip cursor-pointer border bg-transparent px-3 py-2 text-left text-sm {cases.tab === key
 								? 'text-fg! border-accent! shadow-(--shadow-xs)'
 								: ''}"
 							class:w-full={!phone.current}
@@ -88,7 +88,7 @@
 								aria-selected={tabs.tab === key}
 								aria-controls="flow-panel"
 								tabindex={tabs.tab === key ? 0 : -1}
-								class="chip cursor-pointer border px-3 py-1 text-xs {tabs.tab === key ? 'text-fg! border-accent!' : ''}"
+								class="chip cursor-pointer border bg-transparent px-3 py-1 text-xs {tabs.tab === key ? 'text-fg! border-accent!' : ''}"
 								bind:this={tabs.buttons[i]}
 								onclick={() => tabs.select(key)}
 								onkeydown={(e) => tabs.onKey(e, i)}
@@ -114,6 +114,9 @@
 									nodesDraggable={false}
 									nodesConnectable={false}
 									elementsSelectable={false}
+									nodesFocusable={false}
+									edgesFocusable={false}
+									disableKeyboardA11y
 									panOnDrag={false}
 									zoomOnScroll={false}
 									zoomOnPinch={false}
