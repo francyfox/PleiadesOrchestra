@@ -83,7 +83,7 @@
 				</p>
 				<a
 					href={plan.href}
-					class="cta chip border px-3 py-2 text-center text-sm font-bold"
+					class="cta chip border px-3 py-2 text-center text-sm font-bold !hover:bg-white !hover:text-black"
 					class:filled={plan.filled}
 					{...plan.external
 						? { target: "_blank", rel: "noreferrer noopener" }
