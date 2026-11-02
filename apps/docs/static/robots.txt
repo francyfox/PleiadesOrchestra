@@ -1,0 +1,5 @@
+User-agent: *
+# Sveltia CMS sign-in page, nothing to index.
+Disallow: /admin/
+
+Sitemap: https://pleiades.shalotts.site/sitemap.xml

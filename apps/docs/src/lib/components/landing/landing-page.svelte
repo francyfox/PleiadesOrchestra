@@ -15,10 +15,6 @@
 	import LandingVideo from "#lib/components/landing/LandingVideo.svelte";
 </script>
 
-<svelte:head>
-	<meta name="robots" content="noindex" />
-</svelte:head>
-
 <div class="po-site">
 <LandingNav />
 <div id="main-content" class="flex flex-col gap-2">
