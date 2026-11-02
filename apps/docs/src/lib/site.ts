@@ -23,4 +23,4 @@ export const PLEIADES_BUY_URL =
 // PLACEHOLDER: replace with the real Polar checkout link of the monthly "Cloud" plan ($20/month).
 // Keep the price text in LandingPricing in sync.
 export const PLEIADES_CLOUD_CHECKOUT_URL =
-	"https://buy.polar.sh/REPLACE_WITH_CLOUD_CHECKOUT_LINK";
+	"https://buy.polar.sh/polar_cl_eagNpQarGEnBYiVLFOcEYiVYXzOLI8rzlbcuh1aX0pa";

@@ -73,4 +73,9 @@ const r = await chat.send("Add the cheapest cheese to the cart");
 }`,
 		},
 	],
+	// The dashboard step shows a screenshot instead of code.
+	[],
 ];
+
+// Rendered size of static/media/dashboard-<locale>.webp: the real admin page with made-up numbers.
+export const DASHBOARD_SHOT = { width: 1400, height: 667 };

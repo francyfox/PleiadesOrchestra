@@ -23,7 +23,7 @@ import type {
 	UpdateChannelInput,
 } from "../channels/channels.schema.ts";
 import type { PageQuery } from "../common/common.schema.ts";
-import type { Finance } from "../finance/finance.schema.ts";
+import type { Finance, FinanceRates } from "../finance/finance.schema.ts";
 import type {
 	IntentExample,
 	IntentsPage,
@@ -167,6 +167,7 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 			request<{ rows: UsageRow[] }>("GET", `/v1/admin/usage${toSearch(query)}`),
 		finance: (query: { from?: number; to?: number } = {}) =>
 			request<Finance>("GET", `/v1/admin/finance${toSearch(query)}`),
+		financeRates: () => request<FinanceRates>("GET", "/v1/admin/finance/rates"),
 		stats: (ownerId?: string) =>
 			request<Stats>("GET", `/v1/admin/stats${toSearch({ ownerId })}`),
 		performance: (query: { from?: number; to?: number } = {}) =>
@@ -286,6 +287,8 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 					`/v1/admin/agents/${segment(id)}/model`,
 					pick,
 				),
+			saveFinanceRates: (rates: FinanceRates) =>
+				write<FinanceRates>("PUT", "/v1/admin/finance/rates", rates),
 			testAgent: (id: string) =>
 				write<AgentTestResult>(
 					"POST",

@@ -14,7 +14,8 @@ import {
 	sidebarItems,
 	withEnglishFallback,
 } from "./vite/content-routes.ts";
-import { mobileSearch } from "./vite/mobile-search.ts";
+import { mobileMenu } from "./vite/mobile-menu.ts";
+import { themeMarkup } from "./vite/theme-markup.ts";
 
 const root = import.meta.dirname;
 
@@ -137,7 +138,8 @@ export default defineConfig(({ mode }) => ({
 		// Docs pages live in content/<locale>/*.md; mirrored into src/routes/{,<locale>/}docs for SveltePress,
 		// plus llms.txt, llms-full.txt and each page's Markdown in static/ (llmstxt.org).
 		contentRoutes(root, SITE),
-		mobileSearch(),
+		mobileMenu(),
+		themeMarkup(),
 		tailwindcss(),
 		sveltepress({
 			siteConfig: SITE,

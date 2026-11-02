@@ -23,6 +23,7 @@
 		required = false,
 		minlength,
 		min,
+		step,
 		error,
 	}: {
 		id: string;
@@ -35,6 +36,7 @@
 		required?: boolean;
 		minlength?: number;
 		min?: number;
+		step?: number | "any";
 		/** Localized message under the input (see `useFieldErrorText`); also marks the input invalid. */
 		error?: string;
 	} = $props();
@@ -49,7 +51,7 @@
 	<Label for={id} {required}>{label}</Label>
 	{#if secret}
 		<div class="relative">
-			<Input {id} {name} type={shown ? "text" : "password"} {value} {placeholder} {autocomplete} {required} {minlength} {min} aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} class="pr-9" />
+			<Input {id} {name} type={shown ? "text" : "password"} {value} {placeholder} {autocomplete} {required} {minlength} {min} {step} aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} class="pr-9" />
 			<button
 				type="button"
 				class="absolute inset-y-0 right-0 flex w-9 items-center justify-center rounded-r-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -62,7 +64,7 @@
 			</button>
 		</div>
 	{:else}
-		<Input {id} {name} {type} {value} {placeholder} {autocomplete} {required} {minlength} {min} aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} />
+		<Input {id} {name} {type} {value} {placeholder} {autocomplete} {required} {minlength} {min} {step} aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} />
 	{/if}
 	{#if error}<FieldError id="{id}-error">{error}</FieldError>{/if}
 </div>

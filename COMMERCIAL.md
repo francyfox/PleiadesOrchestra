@@ -25,4 +25,4 @@ It does not cover the third-party models the software downloads (see [NOTICE](NO
 
 ## Buy
 
-A commercial license costs **$500** (plus taxes added at checkout), a one-time payment, not a subscription. Buy it at the [checkout page](https://buy.polar.sh/polar_cl_cL84qAaekbAJYEAnR1CTymWEyFvSCwUPyO0hL2mYxnw). Questions before you buy: francyfox@protonmail.com, or open an issue in this repository.
+A commercial license costs **$800** (plus taxes added at checkout), a one-time payment, not a subscription. Buy it at the [checkout page](https://buy.polar.sh/polar_cl_cL84qAaekbAJYEAnR1CTymWEyFvSCwUPyO0hL2mYxnw). Questions before you buy: francyfox@protonmail.com, or open an issue in this repository.

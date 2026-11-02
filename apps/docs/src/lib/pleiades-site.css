@@ -7,6 +7,20 @@
 
 /* Fonts, spacing, radius and shadows come from the @repo/ui tokens (unlayered, so they win over this theme layer). */
 
+/* Colour utilities (`text-dim`, `border-accent!`, …) for the .po-site names below. The reset further down is
+ * unlayered: border colours, and text colour on a/button/h*, need the `!` modifier to beat it. */
+@theme inline {
+	--color-bg: var(--bg);
+	--color-panel: var(--panel);
+	--color-fg: var(--fg);
+	--color-dim: var(--dim);
+	--color-accent: var(--accent);
+	--color-accent-2: var(--accent-2);
+	--color-rule: var(--rule);
+	--color-danger: var(--danger);
+	--color-muted: var(--muted);
+}
+
 /* Landing/playground names for the @repo/ui tokens (packages/ui); dark follows `.dark` on <html>. */
 .po-site {
 	--bg: var(--background);
@@ -19,6 +33,8 @@
 	--danger: var(--destructive);
 	/* Height of the SveltePress navbar above the page. */
 	--po-nav: 73px;
+	/* Height of the landing's section row under it (LandingNav); 0 below 950px, where the burger holds the links. */
+	--po-landing-nav: 1.75rem;
 	--gradient-panel: linear-gradient(var(--accent), var(--fg));
 
 	/* Transparent: the page background (glows + photo) from docs-theme.css shows through. */
@@ -32,6 +48,7 @@
 @media (max-width: 949px) {
 	.po-site {
 		--po-nav: 56px;
+		--po-landing-nav: 0px;
 	}
 }
 

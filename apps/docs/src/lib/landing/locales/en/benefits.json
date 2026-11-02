@@ -1,25 +1,31 @@
 {
+	"dashboardAlt": "The admin dashboard: model spend by day as a chart, and a table of spend by model with price per million tokens.",
+	"dashboardNote": "Example data",
 	"heading": "How it works",
 	"steps": {
 		"s1": {
-			"title": "Add an MCP tool to your site",
-			"text": "Register a tool with WebMCP: a name, a description and a JSON schema. The technology is experimental: browsers are expected to ship it in early 2027. Until then it needs [the polyfill from our widget](/docs/polyfill/)."
+			"text": "Register a tool with WebMCP: a name, a description and a JSON schema. The technology is experimental: browsers are expected to ship it in early 2027. Until then it needs [the polyfill from our widget](/docs/polyfill/).",
+			"title": "Add an MCP tool to your site"
 		},
 		"s2": {
-			"title": "Connect a channel",
-			"text": "Create a channel in the admin panel and get its publishable key."
+			"text": "Create a channel in the admin panel and get its publishable key.",
+			"title": "Connect a channel"
 		},
 		"s3": {
-			"title": "Add the widget",
-			"text": "Paste the widget with the key from your channel."
+			"text": "Paste the widget with the key from your channel.",
+			"title": "Add the widget"
 		},
 		"s4": {
-			"title": "Send a request through the widget",
-			"text": "The orchestrator plans the steps and calls your tool in the visitor's browser."
+			"text": "The orchestrator plans the steps and calls your tool in the visitor's browser.",
+			"title": "Send a request through the widget"
 		},
 		"s5": {
-			"title": "See the decision graph in the admin",
-			"text": "Less of a black box: see where it goes wrong, what each run costs and what it brings in."
+			"text": "Less of a black box: every incoming prompt gets a trace. See where it goes wrong, what each run costs and what it brings in.",
+			"title": "See the decision graph in the admin"
+		},
+		"s6": {
+			"text": "Spend by day and by model, at current prices, so you can see what the assistant costs.",
+			"title": "Track model spend in the dashboard"
 		}
 	}
 }

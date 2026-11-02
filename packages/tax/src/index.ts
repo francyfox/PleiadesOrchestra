@@ -10,6 +10,8 @@ export const DEFAULT_RATES = {
 	taxRate: 0.03,
 	/** Bank currency-conversion margin, share of the money received. */
 	conversionRate: 0.02,
+	/** What the tax is taken from: the payout, the price, or the period's profit. */
+	taxBase: "payout" as "payout" | "revenue" | "profit",
 };
 
 export type Rates = typeof DEFAULT_RATES;
@@ -31,7 +33,9 @@ export function orderBreakdown(price: number, rates: Rates = DEFAULT_RATES) {
 	const netPolar = price - polarFee;
 	const payout = netPolar * (1 - rates.payoutRate);
 	const payoutFee = netPolar - payout;
-	const tax = payout * rates.taxRate;
+	// "profit" is taxed once per period in netProfit, not per order.
+	const taxable = { payout, revenue: price, profit: 0 }[rates.taxBase];
+	const tax = taxable * rates.taxRate;
 	const conversion = payout * rates.conversionRate;
 	const losses = polarFee + payoutFee + tax + conversion;
 	return {
@@ -64,6 +68,8 @@ export function netProfit(
 		revenue += b.price;
 		losses += b.losses;
 	}
+	if (rates.taxBase === "profit")
+		losses += Math.max(0, revenue - losses - input.modelSpend) * rates.taxRate;
 	return {
 		revenue,
 		losses,

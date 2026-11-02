@@ -25,7 +25,7 @@ a.nav-item:has(> .po-nav-icon):not(.active):hover {
 	color: var(--primary-shade);
 	opacity: 1;
 }
-/* Phones and tablets: the search lives in the burger menu (vite/mobile-search.ts), not in the header. */
+/* Phones and tablets: the search lives in the burger menu (vite/mobile-menu.ts), not in the header. */
 @media (max-width: 949px) {
 	header.header .doc-search {
 		display: none;

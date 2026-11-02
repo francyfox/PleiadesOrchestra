@@ -10,6 +10,7 @@ import { blockedIpsRoutes } from "./modules/blocked-ips/blocked-ips.ts";
 import { channelsRoutes } from "./modules/channels/channels.ts";
 import { customersRoutes } from "./modules/customers/customers.ts";
 import { dashboardRoutes } from "./modules/dashboard/dashboard.ts";
+import { financeRoutes } from "./modules/finance/finance.ts";
 import { intentsRoutes } from "./modules/intents/intents.ts";
 import { liveRoutes } from "./modules/live/live.ts";
 import { createLiveHub } from "./modules/live-hub/live-hub.ts";
@@ -88,6 +89,7 @@ export function createApp(input: AdminApiDeps) {
 				.use(mcpRoutes(deps))
 				.use(visitorsRoutes(deps))
 				.use(agentsRoutes(deps))
+				.use(financeRoutes(deps))
 				.use(channelsRoutes(deps))
 				.use(blockedIpsRoutes(deps))
 				.use(intentsRoutes(deps))

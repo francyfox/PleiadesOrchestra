@@ -1,4 +1,4 @@
-import { t } from "elysia";
+import { type Static, t } from "elysia";
 
 export const FinanceQuery = t.Object({
 	/** Period start, epoch ms (default: 30 days ago). */
@@ -20,3 +20,17 @@ export const Finance = t.Object({
 	/** Orders in other currencies, left out of every number above. */
 	skippedOrders: t.Number(),
 });
+
+const Percent = t.Number({ minimum: 0, maximum: 100 });
+
+/** Staff-editable rates, in percent (fixed fee in USD). */
+export const FinanceRates = t.Object({
+	feeFixedUsd: t.Number({ minimum: 0 }),
+	feePercent: Percent,
+	payoutPercent: Percent,
+	taxPercent: Percent,
+	conversionPercent: Percent,
+	taxBase: t.UnionEnum(["payout", "revenue", "profit"]),
+});
+
+export type FinanceRatesValue = Static<typeof FinanceRates>;

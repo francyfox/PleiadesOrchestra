@@ -173,12 +173,13 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			// instead of here, where the wait is at least bounded and visible.
 			// Conservative defaults for the local CPU-bound sidecars.
 			LLM_MAX_CONCURRENCY: z.coerce.number().int().positive().default(4),
-			// The local delta-function-call runs with PARALLEL=1 (see its Dockerfile).
+			// For a hosted model; a search fan-out fills its calls at once. The local
+			// delta-function-call has one slot: set this equal to DELTA_PARALLEL there.
 			FUNCTION_CALL_MAX_CONCURRENCY: z.coerce
 				.number()
 				.int()
 				.positive()
-				.default(1),
+				.default(8),
 			LAYA_MAX_CONCURRENCY: z.coerce.number().int().positive().default(4),
 			// Laya's intent answers with calibrated confidence from here up are
 			// approved on their own (the site's memory learns them); below, a

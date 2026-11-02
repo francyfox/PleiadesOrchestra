@@ -82,7 +82,7 @@
 	};
 </script>
 
-<section id="gallery" class="px-4 py-10">
+<div id="gallery" class="px-4 py-10">
 	<div class="container mx-auto max-w-5xl">
 		<div class="relative w-full" style:aspect-ratio="{SIZE.w} / {SIZE.h}">
 			<!-- Layers by z-index: thumbnails (0) behind the TV frame (10), clickable areas (20) on top. -->
@@ -106,7 +106,7 @@
 			<img src="/media/tv.webp" alt="" class="pointer-events-none absolute inset-0 z-10 h-full w-full" />
 		</div>
 	</div>
-</section>
+</div>
 
 <style>
 	/* Hover on a screen zooms the thumbnail and glitches it; zoom sits on the wrapper so it doesn't fight the glitch transform. */

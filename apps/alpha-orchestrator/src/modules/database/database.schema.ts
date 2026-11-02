@@ -10,6 +10,7 @@ import {
 	text,
 	uniqueIndex,
 } from "drizzle-orm/sqlite-core";
+import type { FinanceRatesValue } from "../finance/finance.schema.ts";
 
 // All timestamps are epoch ms stored as plain integers — the HTTP contract
 // (apps/docs/content/en/drafts/admin-api.md) speaks epoch ms, so no Date round-trips.
@@ -404,6 +405,14 @@ export const agentSettings = sqliteTable("agent_settings", {
 	updatedAt: integer("updated_at").notNull(),
 });
 
+/** The one row (id 1) of staff-edited finance rates, in percent; no row = the defaults. */
+export const financeSettings = sqliteTable("finance_settings", {
+	id: integer("id").primaryKey(),
+	rates: text("rates", { mode: "json" }).$type<FinanceRatesValue>().notNull(),
+	updatedBy: text("updated_by").notNull(),
+	updatedAt: integer("updated_at").notNull(),
+});
+
 /** Polar subscriptions: each `subscription.*` webhook overwrites the row with the payload's fields. */
 export const subscriptions = sqliteTable("subscriptions", {
 	// Polar's subscription id.
@@ -487,6 +496,7 @@ export const schema = {
 	intentExamples,
 	threadWorldState,
 	agentSettings,
+	financeSettings,
 	subscriptions,
 	orders,
 	creditLedger,

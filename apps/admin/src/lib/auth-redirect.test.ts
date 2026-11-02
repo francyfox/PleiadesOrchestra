@@ -84,6 +84,11 @@ describe("resolveAuthRedirect", () => {
 		}
 	});
 
+	test("the finance rates page is staff only", () => {
+		expect(canOpen(0, "/preferences")).toBe(true);
+		expect(canOpen(200, "/preferences")).toBe(false);
+	});
+
 	test("the boundary: level 100 is staff, 101 is not", () => {
 		expect(canOpen(100, "/admins")).toBe(true);
 		expect(canOpen(101, "/admins")).toBe(false);

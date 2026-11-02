@@ -13,7 +13,7 @@ In the orchestrator it is `packages/core`'s `FunctionCallAgent` (`createFunction
 from the WebMCP tool actions. It is optional: without `FUNCTION_CALL_BASE_URL` (or when a call fails)
 the arguments are built from the run's facts. Env of the orchestrator: `FUNCTION_CALL_BASE_URL`
 (`http://delta-function-call:8080/v1` in compose), `FUNCTION_CALL_API_KEY` (same as the compose
-`FUNCTION_CALL_API_KEY` here), `FUNCTION_CALL_MODEL`, `FUNCTION_CALL_MAX_CONCURRENCY` (1).
+`FUNCTION_CALL_API_KEY` here), `FUNCTION_CALL_MODEL`, `FUNCTION_CALL_MAX_CONCURRENCY` (default 8 for a hosted model; set it to `DELTA_PARALLEL`, 1 by default, for this server).
 
 [`apps/benchmark`](../benchmark) (`bun tools`) measures this model; change `MODEL_URL` in the
 Dockerfile to switch, and the benchmark's `DELTA_MODEL` with it (a test checks they match).

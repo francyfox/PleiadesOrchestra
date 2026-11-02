@@ -163,3 +163,8 @@ html body {
 :root .content a:not([class]):hover {
 	text-decoration-color: currentColor;
 }
+
+/* The theme's bare `pb-4` (Uno attributify) is invalid HTML; vite/theme-markup.ts drops it, this keeps its padding. */
+.theme-default--page-layout {
+	padding-bottom: 1rem;
+}

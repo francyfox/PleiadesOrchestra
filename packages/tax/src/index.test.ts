@@ -60,3 +60,30 @@ test("invalid inputs throw RangeError", () => {
 	).toThrow(RangeError);
 	expect(() => netProfit({ orders: [1], modelSpend: -1 })).toThrow(RangeError);
 });
+
+test("tax base: revenue taxes the price, payout (the default) what was paid out", () => {
+	const onPayout = orderBreakdown(100);
+	const onRevenue = orderBreakdown(100, {
+		...DEFAULT_RATES,
+		taxBase: "revenue",
+	});
+	expect(onPayout.tax).toBeCloseTo(onPayout.payout * 0.03, 10);
+	expect(onRevenue.tax).toBeCloseTo(3, 10);
+});
+
+test("tax base: profit taxes the period after fees and model spend, never a loss", () => {
+	const rates = {
+		...DEFAULT_RATES,
+		polarFixed: 0,
+		polarRate: 0.1,
+		payoutRate: 0,
+		conversionRate: 0,
+		taxRate: 0.2,
+		taxBase: "profit" as const,
+	};
+	const r = netProfit({ orders: [100], modelSpend: 10 }, rates);
+	expect(r.losses).toBeCloseTo(10 + 80 * 0.2, 10);
+	expect(r.profit).toBeCloseTo(64, 10);
+	const loss = netProfit({ orders: [10], modelSpend: 50 }, rates);
+	expect(loss.losses).toBeCloseTo(1, 10);
+});

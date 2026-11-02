@@ -3,6 +3,7 @@ import enAbout from "./locales/en/about.json";
 import enBenefits from "./locales/en/benefits.json";
 import enCommon from "./locales/en/common.json";
 import enFlow from "./locales/en/flow.json";
+import enFooter from "./locales/en/footer.json";
 import enHistory from "./locales/en/history.json";
 import enMcp from "./locales/en/mcp.json";
 import enNav from "./locales/en/nav.json";
@@ -16,6 +17,7 @@ import kkAbout from "./locales/kk/about.json";
 import kkBenefits from "./locales/kk/benefits.json";
 import kkCommon from "./locales/kk/common.json";
 import kkFlow from "./locales/kk/flow.json";
+import kkFooter from "./locales/kk/footer.json";
 import kkHistory from "./locales/kk/history.json";
 import kkMcp from "./locales/kk/mcp.json";
 import kkNav from "./locales/kk/nav.json";
@@ -29,6 +31,7 @@ import ruAbout from "./locales/ru/about.json";
 import ruBenefits from "./locales/ru/benefits.json";
 import ruCommon from "./locales/ru/common.json";
 import ruFlow from "./locales/ru/flow.json";
+import ruFooter from "./locales/ru/footer.json";
 import ruHistory from "./locales/ru/history.json";
 import ruMcp from "./locales/ru/mcp.json";
 import ruNav from "./locales/ru/nav.json";
@@ -44,6 +47,7 @@ import ruVideo from "./locales/ru/video.json";
 // missing or renamed key is a type error.
 const en = {
 	nav: enNav,
+	footer: enFooter,
 	common: enCommon,
 	seo: enSeo,
 	video: enVideo,
@@ -62,6 +66,7 @@ export type LandingContent = typeof en;
 
 const ru: LandingContent = {
 	nav: ruNav,
+	footer: ruFooter,
 	common: ruCommon,
 	seo: ruSeo,
 	video: ruVideo,
@@ -78,6 +83,7 @@ const ru: LandingContent = {
 
 const kk: LandingContent = {
 	nav: kkNav,
+	footer: kkFooter,
 	common: kkCommon,
 	seo: kkSeo,
 	video: kkVideo,
@@ -91,6 +97,17 @@ const kk: LandingContent = {
 	security: kkSecurity,
 	pricing: kkPricing,
 };
+
+/** Landing sections in page order: the nav row and the footer link to `#<id>`, labels from `nav.json`. */
+export const LANDING_SECTIONS = [
+	"history",
+	"about",
+	"flow",
+	"benefits",
+	"platforms",
+	"security",
+	"pricing",
+] as const satisfies (keyof LandingContent["nav"])[];
 
 const content: Record<Locale, LandingContent> = { en, ru, kk };
 

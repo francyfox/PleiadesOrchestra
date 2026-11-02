@@ -67,16 +67,14 @@
 			<!-- Timeline on the right: a progress fill down to the event in view, one bullet per event. -->
 			<div class="relative w-full pr-10 lg:w-1/2">
 				<span
-					class="absolute inset-y-0 right-[9px] w-0.5 rounded-full"
-					style:background="var(--rule)"
+					class="absolute inset-y-0 right-[9px] w-0.5 rounded-full bg-rule"
 					aria-hidden="true"
 				></span>
 				<!-- Bullets sit at the middle of equal parts (justify-around): (i + 0.5) / n of the height. -->
 				<!-- Transforms only, in step with the slide (speed/easing above): animating height or size re-laid out the page every frame and stuttered. -->
 				<span
-					class="absolute inset-y-0 right-[9px] w-0.5 origin-top rounded-full transition-transform duration-[800ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
+					class="absolute inset-y-0 right-[9px] w-0.5 origin-top rounded-full transition-transform duration-[800ms] ease-[cubic-bezier(0.22,1,0.36,1)] bg-accent"
 					style:transform="scaleY({(active + 0.5) / Object.keys(t.events).length})"
-					style:background="var(--accent)"
 					aria-hidden="true"
 				></span>
 				<div class="absolute inset-y-0 right-0 flex w-5 flex-col items-center justify-around">
@@ -92,9 +90,9 @@
 							<span
 								class={[
 									"h-3 w-3 rounded-full transition-[transform,background-color] duration-[800ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+									i <= active ? "bg-accent" : "bg-dim",
 								]}
 								style:transform="scale({i === active ? 1 : i < active ? 0.67 : 0.33})"
-								style:background={i <= active ? "var(--accent)" : "var(--dim)"}
 								style:box-shadow={i === active
 									? "0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent)"
 									: undefined}
@@ -109,14 +107,14 @@
 				{#each Object.values(t.events) as event, i (event.title)}
 					<li class="splide__slide flex flex-col items-end justify-center text-right">
 						{#if /^\d/.test(event.date)}
-							<time class="text-xs" style:color="var(--accent-2)" datetime={event.date}
+							<time class="text-xs text-accent-2" datetime={event.date}
 							>{event.date}</time
 							>
 						{:else}
-							<span class="text-xs" style:color="var(--accent-2)">{event.date}</span>
+							<span class="text-xs text-accent-2">{event.date}</span>
 						{/if}
-						<h3 class="font-bold">{event.title}</h3>
-						<p class="ml-auto max-w-2xl text-sm" style:color="var(--dim)">{event.text}</p>
+						<h3 class="font-bold!">{event.title}</h3>
+						<p class="ml-auto max-w-2xl text-sm text-dim">{event.text}</p>
 						<ul class="mt-2 flex flex-wrap justify-end gap-1.5 text-xs" aria-label={t.canLabel}>
 							{#each Object.values(event.can) as action (action)}
 								<li class="chip border px-2 py-0.5">{action}</li>
@@ -124,8 +122,7 @@
 						</ul>
 						<a
 								href={sources[i]}
-								class="link-underline mt-1 inline-block text-xs"
-								style:color="var(--dim)"
+								class="link-underline mt-1 inline-block text-xs text-dim!"
 								rel="external noopener">{c.common.source}</a
 						>
 					</li>

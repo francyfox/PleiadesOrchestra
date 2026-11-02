@@ -1,9 +1,10 @@
-import { netProfit } from "@repo/tax";
-import { and, gte, inArray, lte } from "drizzle-orm";
-import { orders } from "../database/database.schema.ts";
+import { DEFAULT_RATES, netProfit, type Rates } from "@repo/tax";
+import { and, eq, gte, inArray, lte } from "drizzle-orm";
+import { financeSettings, orders } from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
 import type { Prices } from "../prices/prices.service.ts";
 import { usageRows } from "../usage/usage.service.ts";
+import type { FinanceRatesValue } from "./finance.schema.ts";
 
 interface OrderMoney {
 	amount: number;
@@ -11,18 +12,65 @@ interface OrderMoney {
 	currency: string;
 }
 
+/** What `@repo/tax` computes with when staff never saved rates (percent). */
+export const DEFAULT_FINANCE_RATES: FinanceRatesValue = {
+	feeFixedUsd: DEFAULT_RATES.polarFixed,
+	feePercent: 7.9,
+	payoutPercent: 1.5,
+	taxPercent: 3,
+	conversionPercent: 2,
+	taxBase: "payout",
+};
+
+/** Percent on the wire and in the DB, shares in `@repo/tax`. */
+export function ratesOf(p: FinanceRatesValue): Rates {
+	return {
+		polarFixed: p.feeFixedUsd,
+		polarRate: p.feePercent / 100,
+		payoutRate: p.payoutPercent / 100,
+		taxRate: p.taxPercent / 100,
+		conversionRate: p.conversionPercent / 100,
+		taxBase: p.taxBase,
+	};
+}
+
+export function readFinanceRates(db: Db): FinanceRatesValue {
+	return (
+		db.select().from(financeSettings).where(eq(financeSettings.id, 1)).get()
+			?.rates ?? DEFAULT_FINANCE_RATES
+	);
+}
+
+export function saveFinanceRates(
+	db: Db,
+	rates: FinanceRatesValue,
+	adminId: string,
+	now: number,
+) {
+	const values = { rates, updatedBy: adminId, updatedAt: now };
+	db.insert(financeSettings)
+		.values({ id: 1, ...values })
+		.onConflictDoUpdate({ target: financeSettings.id, set: values })
+		.run();
+}
+
 /**
  * Money of a period in USD. Each order is taxed alone (the fixed fee is per
  * receipt) on what stayed after refunds; orders in other currencies are
  * counted in `skippedOrders`, not converted. `null` spend (no prices) makes the profit `null`.
  */
-export function financeOf(rows: OrderMoney[], modelSpendUsd: number | null) {
+export function financeOf(
+	rows: OrderMoney[],
+	modelSpendUsd: number | null,
+	rates: Rates = DEFAULT_RATES,
+) {
 	const usd = rows.filter((r) => r.currency.toLowerCase() === "usd");
 	const kept = usd.map((r) => (r.amount - r.refundedAmount) / 100);
-	const { revenue, losses, profit } = netProfit({
-		orders: kept,
-		modelSpend: modelSpendUsd ?? 0,
-	});
+	// Unknown spend counts as 0 for the "profit" tax base; the profit itself stays null.
+	const { revenue, losses, profit } = netProfit(
+		{ orders: kept, modelSpend: modelSpendUsd ?? 0 },
+		rates,
+	);
 	return {
 		modelSpendUsd,
 		revenueUsd: revenue,
@@ -57,5 +105,5 @@ export function financeReport(
 			),
 		)
 		.all();
-	return financeOf(rows, spend);
+	return financeOf(rows, spend, ratesOf(readFinanceRates(db)));
 }

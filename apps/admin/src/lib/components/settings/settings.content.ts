@@ -4,6 +4,54 @@ const settingsContent = {
 	key: "settings",
 	content: {
 		title: t({ ru: "Настройки", en: "Settings", kk: "Параметрлер" }),
+		financeRates: {
+			title: t({
+				ru: "Ставки финансов",
+				en: "Finance rates",
+				kk: "Қаржы мөлшерлемелері",
+			}),
+			note: t({
+				ru: "Это оценка по вашим ставкам, а не расчёт налога.",
+				en: "This is an estimate by your own rates, not a tax calculation.",
+				kk: "Бұл салықты есептеу емес, өз мөлшерлемелеріңіз бойынша бағалау.",
+			}),
+			feeFixedUsd: t({
+				ru: "Фиксированная комиссия за заказ, $",
+				en: "Fixed fee per order, $",
+				kk: "Тапсырыс үшін тіркелген комиссия, $",
+			}),
+			feePercent: t({
+				ru: "Комиссия платёжки, %",
+				en: "Payment fee, %",
+				kk: "Төлем комиссиясы, %",
+			}),
+			payoutPercent: t({
+				ru: "Комиссия за вывод, %",
+				en: "Payout fee, %",
+				kk: "Шығару комиссиясы, %",
+			}),
+			taxPercent: t({ ru: "Налог, %", en: "Tax, %", kk: "Салық, %" }),
+			conversionPercent: t({
+				ru: "Конвертация, %",
+				en: "Conversion, %",
+				kk: "Айырбастау, %",
+			}),
+			taxBase: t({
+				ru: "Налог считается с",
+				en: "Tax is taken from",
+				kk: "Салық есептелетін база",
+			}),
+			base: {
+				payout: t({ ru: "Выплаты", en: "Payout", kk: "Төлем" }),
+				revenue: t({ ru: "Выручки", en: "Revenue", kk: "Түсім" }),
+				profit: t({ ru: "Прибыли", en: "Profit", kk: "Пайда" }),
+			},
+			saved: t({
+				ru: "Ставки сохранены",
+				en: "Rates saved",
+				kk: "Мөлшерлемелер сақталды",
+			}),
+		},
 		profile: {
 			title: t({ ru: "Профиль", en: "Profile", kk: "Профиль" }),
 			name: t({ ru: "Имя", en: "Name", kk: "Аты" }),
