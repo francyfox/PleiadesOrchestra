@@ -17,29 +17,32 @@
 	];
 </script>
 
-<Pane title="guest@pleiades — security and money" header={false} id="security">
-	<h2 class="text-xl font-bold">{t.heading}</h2>
-	<p class="mt-2 max-w-3xl text-sm" style:color="var(--dim)">{t.lead}</p>
+<Pane title="guest@pleiades — security and money" header={false} id="security" class="!border-0">
+	<div class="flex flex-col gap-5">
+		<div class="text-3xl md:text-4xl font-bold">{t.heading}</div>
+		<p class="max-w-3xl text-sm text-dim">{t.lead}</p>
 
-	<ul class="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
-		{#each Object.values(t.points) as point, i (point.title)}
-			<li class="flex flex-col border p-4">
-				<h3 class="font-bold" style:color="var(--accent)">{point.title}</h3>
-				<p class="mt-1 text-sm" style:color="var(--dim)">{point.text}</p>
-				{#if sources[i]}
-					<a
-						href={sources[i]}
-						class="link-underline mt-2 text-xs"
-						style:color="var(--dim)"
-						rel="external noopener">{c.common.source}</a
-					>
-				{/if}
-			</li>
-		{/each}
-	</ul>
+		<ul class="grid grid-cols-1 gap-3 md:grid-cols-2">
+			{#each Object.values(t.points) as point, i (point.title)}
+				<li class="flex flex-col gap-3 border p-4">
+					<span class="font-bold text-accent">{point.title}</span>
+					<p class="mt-1 text-sm text-dim">{point.text}</p>
+					{#if sources[i]}
+						<span class="flex">
+							<a
+									href={sources[i]}
+									class="link-underline mt-2 text-xs text-dim!"
+									rel="external noopener">{c.common.source}</a
+							>
+						</span>
+					{/if}
+				</li>
+			{/each}
+		</ul>
 
-	<aside class="mt-6 border p-4" style:border-color="var(--accent-2)">
-		<h3 class="font-bold" style:color="var(--accent-2)">{t.early.heading}</h3>
-		<p class="mt-1 max-w-3xl text-sm">{t.early.text}</p>
-	</aside>
+		<aside class="border border-accent-2! p-4">
+			<h3 class="font-bold! text-accent-2!">{t.early.heading}</h3>
+			<p class="mt-1 max-w-3xl text-sm">{t.early.text}</p>
+		</aside>
+	</div>
 </Pane>

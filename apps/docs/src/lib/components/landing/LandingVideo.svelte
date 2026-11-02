@@ -41,7 +41,7 @@
 </script>
 
 <section
-        class="flex min-h-[calc(100vh-(var(--po-nav)))] w-full"
+        class="flex min-h-[calc(100vh-(var(--po-nav)+var(--po-landing-nav)))] w-full"
         aria-label={t.aria}
 >
     <!-- Text in flow, video behind it: the section grows on phones instead of cutting the text off. -->
@@ -70,8 +70,7 @@
         </video>
 
         <div
-                class="relative flex w-full flex-wrap content-end items-end justify-between gap-6 p-4 sm:p-8"
-                style:background="linear-gradient(to top, var(--bg) 7%, transparent 100%)"
+                class="relative flex w-full flex-wrap content-end items-end justify-between gap-6 p-4 sm:p-8 bg-linear-to-t/srgb from-bg from-7% to-transparent max-md:to-bg/70"
         >
             <div class="flex max-w-full flex-col gap-4">
                 <!-- The logo stays outside the h1: its mix-blend would invert the logo's colours. -->
@@ -84,15 +83,11 @@
                 <div class="flex flex-wrap items-center gap-2 text-sm">
                     <a
                             href="#pricing"
-                            class="chip inline-flex items-center gap-1.5 border px-3 py-2 font-bold"
-                            style:background="var(--accent)"
-                            style:color="var(--bg)"
-                            style:border-color="var(--accent)"><RocketIcon size={16} aria-hidden="true" />{t.get}
+                            class="chip inline-flex items-center gap-1.5 border px-3 py-2 font-bold bg-accent text-bg! border-accent!"><RocketIcon size={16} aria-hidden="true" />{t.get}
                     </a>
                     <a
-                            href={PLEIADES_REPO_URL} class="chip inline-flex items-center gap-1.5 border px-3 py-2 text-white"
+                            href={PLEIADES_REPO_URL} class="chip inline-flex items-center gap-1.5 border px-3 py-2 text-white bg-muted"
                             rel="external"
-                            style:background="var(--muted)"
                     >
                         <CodeXmlIcon size={16} aria-hidden="true" />
                         {t.github}
@@ -100,24 +95,21 @@
                     >
                     <a
 						href={playgroundHref}
-						class="chip inline-flex items-center gap-1.5 border px-3 py-2 text-white"
-                        style:background="var(--muted)"
+						class="chip inline-flex items-center gap-1.5 border px-3 py-2 text-white bg-muted"
                     >
                         <FlaskConicalIcon size={16} aria-hidden="true" />
                         {t.playground}
                     </a>
                     <a
-						href={docsHref} class="chip inline-flex items-center gap-1.5 border px-3 py-2 text-white"
-						style:background="var(--muted)"
+						href={docsHref} class="chip inline-flex items-center gap-1.5 border px-3 py-2 text-white bg-muted"
                     >
                         <BookOpenIcon size={16} aria-hidden="true" />
                         {t.docs}
                     </a>
                     <a
 						href={PLEIADES_PANEL_LOGIN_URL}
-						class="chip inline-flex items-center gap-1.5 border px-3 py-2 text-white"
+						class="chip inline-flex items-center gap-1.5 border px-3 py-2 text-white bg-muted"
 						rel="external"
-						style:background="var(--muted)"
                     >
                         <LogInIcon size={16} aria-hidden="true" />
                         {t.panel}

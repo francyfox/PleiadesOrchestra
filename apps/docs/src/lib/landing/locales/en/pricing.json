@@ -2,28 +2,48 @@
 	"business": {
 		"ask": "ask for a license",
 		"buy": "buy license",
+		"includes": {
+			"all-of-community": "Everything in Community",
+			"closed-product": "Build it into a closed-source product",
+			"no-publishing": "Run a modified version without publishing it",
+			"no-support": "No support included",
+			"perpetual": "Perpetual, covers all future versions"
+		},
 		"oneTime": "one time",
 		"terms": "license terms",
-		"text": "Private code: build it into a closed-source product or run a modified version without publishing it. Perpetual license, covers all versions. No support included.",
+		"text": "The same code, without the AGPLv3 terms.",
 		"title": "Business"
 	},
 	"cloud": {
 		"buy": "subscribe",
 		"includes": {
-			"paid-models-for-replies": "Paid models for replies and tool arguments",
-			"the-hosted-agent-no": "The hosted agent, no servers of your own",
-			"the-wordpress-woocommerce-plugin": "The WordPress / WooCommerce plugin"
+			"blocked-ips": "IP blocks — bots and spammers don't spend your money on models",
+			"channels": "Channels — several sites, each with its own key and allowed domains",
+			"dashboard": "Dashboard — model spend by day and by model, so you see what the assistant costs",
+			"flow": "Flow — a trace of every request: steps, tool calls, model answers",
+			"hosted": "No servers of your own: we run the agent",
+			"visitors": "Visitors — each one's latest messages, and blocking abusers"
 		},
+		"listTitle": "What the account has",
 		"perMonth": "per month",
-		"privacy": "Privacy: messages go to the model providers through OpenRouter.",
-		"text": "We host it for you. Install the WordPress plugin, paste the key, done.",
+		"text": "We host it for you. Put the widget on your site with the channel key, done.",
 		"title": "Cloud"
 	},
 	"community": {
 		"cta": "get the source",
+		"includes": {
+			"admins": "Admins — access for your team",
+			"intents": "Intents — confirm how the assistant understood messages; guards on risky actions",
+			"mcp": "MCP — which functions each site declared",
+			"models": "Agents and models — local or any through OpenRouter, a model per role, switched without a restart",
+			"own-server": "Your own server — the data stays with you",
+			"performance": "Performance and recommendations — server load and hardware advice",
+			"users": "Users and plans — sell cloud access to your own customers"
+		},
+		"listTitle": "Everything in the Cloud account, plus",
 		"price": "free",
 		"text": "Open code under the GNU AGPLv3. Run it for yourself, change it, contribute. If you let people use a modified version over a network, you publish your changes.",
 		"title": "Community"
 	},
-	"heading": "Community, cloud or business"
+	"heading": "Pricing"
 }

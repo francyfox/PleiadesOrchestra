@@ -30,16 +30,11 @@
 
 <!-- Scripted imitation of the widget (not the live one: it would need an agent and a key). -->
 <figure
-        class="m-0 flex w-full max-w-80 shrink-0 flex-col border opacity-80"
+        class="m-0 flex w-full max-w-80 shrink-0 flex-col border border-accent! bg-bg opacity-80 shadow-[3px_3px_0_0_var(--accent)]"
         aria-label={t.aria}
-        style:background="var(--bg)"
-        style:border-color="var(--accent)"
-        style:box-shadow="3px 3px 0 0 var(--accent)"
 >
     <figcaption
-            class="flex items-center gap-2 px-3 py-2 text-sm font-bold"
-            style:background="var(--accent)"
-            style:color="var(--bg)"
+            class="flex items-center gap-2 bg-accent px-3 py-2 text-sm font-bold text-bg"
     >
         <MessageCircleIcon size={16} aria-hidden="true" />
         {t.title}
@@ -49,12 +44,10 @@
             <li
                     in:fly={{ y: 8, duration: reduced ? 0 : 200 }}
                     class={line.from === "user"
-                        ? "max-w-[85%] self-end px-3 py-2"
+                        ? "max-w-[85%] self-end bg-accent px-3 py-2 text-bg"
                         : line.from === "bot"
-                          ? "max-w-[85%] self-start px-3 py-2"
-                          : "flex items-center gap-1.5 self-start text-xs"}
-                    style:background={line.from === "user" ? "var(--accent)" : line.from === "bot" ? "var(--muted)" : undefined}
-                    style:color={line.from === "user" ? "var(--bg)" : line.from === "step" ? "var(--dim)" : "var(--fg)"}
+                          ? "max-w-[85%] self-start bg-muted px-3 py-2 text-fg"
+                          : "flex items-center gap-1.5 self-start text-xs text-dim"}
             >
                 {#if line.from === "step"}<CheckIcon size={12} aria-hidden="true" />{/if}
                 {line.text}
@@ -62,9 +55,7 @@
         {/each}
     </ol>
     <div
-            class="flex items-center justify-between border-t px-3 py-2 text-sm"
-            style:border-color="var(--rule)"
-            style:color="var(--dim)"
+            class="flex items-center justify-between border-t px-3 py-2 text-sm text-dim"
             aria-hidden="true"
     >
         {t.placeholder}

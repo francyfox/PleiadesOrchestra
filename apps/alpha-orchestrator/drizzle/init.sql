@@ -231,6 +231,12 @@ CREATE TABLE "subscriptions" (
 	`account_id` text NOT NULL,
 	`updated_at` integer NOT NULL
 );
+CREATE TABLE `finance_settings` (
+	`id` integer PRIMARY KEY NOT NULL,
+	`rates` text NOT NULL,
+	`updated_by` text NOT NULL,
+	`updated_at` integer NOT NULL
+);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'bdcb798cc72df040fe7ab496925f0e8c88132b905ac04cc8813006debb64f096', 1790244167287);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '18fd9f1b24512d674e4f6017463dec4418b32e8c7e134ed0e5b62399ac042d07', 1790244167777);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'ad4ae2f758bf5af433c6ae25117ef6dd2e3c7f7e7209d36c91ffb2a3f5bd24cf', 1790251963003);
@@ -258,6 +264,7 @@ INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '5
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '666ad99db66df0b89698ed63efb805345a120c25a8a21dde9f4b289da78900de', 1793096967842);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '65c2b0eaa9c0371015fae62b58c6244026366551b62be9c1e2f475c038ad2dc3', 1793114232741);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '7d3e282d6b5f74416d6aad3a3f82537e0f9666081d3abb4eb1a215e728514add', 1793172844282);
+INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '70e05d24d3aa9574473bb8fdf55d6d5a7b258172982aac0eff5c953fedf81a12', 1793600809558);
 INSERT INTO "channels" ("id", "slug", "kind", "name", "access_mode", "publishable_key", "secret_key_hash", "allowed_origins", "disabled_at", "created_at", "catalog_language", "owner_id", "intent_sets", "several_tasks") VALUES ('ch_telegram', 'telegram', 'telegram', 'Telegram', 'whitelist', NULL, NULL, '[]', NULL, CAST(strftime('%s', 'now') AS INTEGER) * 1000, 'en', NULL, '["shop"]', 0);
 INSERT INTO "channels" ("id", "slug", "kind", "name", "access_mode", "publishable_key", "secret_key_hash", "allowed_origins", "disabled_at", "created_at", "catalog_language", "owner_id", "intent_sets", "several_tasks") VALUES ('ch_cli', 'cli', 'cli', 'CLI', 'open', NULL, NULL, '[]', NULL, CAST(strftime('%s', 'now') AS INTEGER) * 1000, 'en', NULL, '["shop"]', 0);
 COMMIT;

@@ -25,16 +25,13 @@
 <!-- The section spans the page; its box (border, header, content) sits in the .container. -->
 <section {id} class="w-full" aria-label={title}>
 <div
-	class="container flex min-h-0 flex-col border {className}"
-	style:border-color={focused ? 'var(--accent)' : 'var(--rule)'}
+	class="container flex min-h-0 flex-col border {focused ? 'border-accent!' : ''} {className}"
 >
 	{#if header}
 	<div
-		class="flex shrink-0 items-center gap-2 border-b px-3 py-1.5 text-xs"
-		style:border-color={focused ? 'var(--accent)' : 'var(--rule)'}
-		style:color="var(--dim)"
+		class="flex shrink-0 items-center gap-2 border-b px-3 py-1.5 text-xs text-dim {focused ? 'border-accent!' : ''}"
 	>
-		<span aria-hidden="true" style:color={focused ? 'var(--accent)' : 'var(--dim)'}>
+		<span aria-hidden="true" class={focused ? "text-accent" : "text-dim"}>
 			{focused ? '●' : '○'}
 		</span>
 		{title}

@@ -7,6 +7,7 @@ import {
 	CreateChannelForm,
 	DeleteMeInput,
 	EditAdminForm,
+	FinanceRates,
 	ForgotForm,
 	IntentVerdictInput,
 	PersonaForm,
@@ -185,6 +186,15 @@ export const meActions = {
 		const parsed = parseForm(DeleteMeInput, form);
 		if (!parsed.ok) return invalidForm();
 		return submitted(api().user.me.delete(parsed.body));
+	},
+};
+
+/** Staff: the rates behind the finance numbers. */
+export const financeActions = {
+	save: (form: FormData) => {
+		const parsed = parseForm(FinanceRates, form);
+		if (!parsed.ok) return invalidForm();
+		return submitted(api().finance.rates.put(parsed.body));
 	},
 };
 

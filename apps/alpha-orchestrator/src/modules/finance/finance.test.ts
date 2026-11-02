@@ -1,7 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { orders } from "../database/database.schema.ts";
 import { admin, json, NOW, setupAdminApp } from "../http/http.testing.ts";
-import { financeOf } from "./finance.service.ts";
+import {
+	DEFAULT_FINANCE_RATES,
+	financeOf,
+	ratesOf,
+} from "./finance.service.ts";
 
 const order = (amount: number, refundedAmount = 0, currency = "usd") => ({
 	amount,
@@ -44,6 +48,63 @@ describe("financeOf", () => {
 		expect(f.netProfitUsd).toBeNull();
 		expect(f.ordersCount).toBe(1);
 		expect(f.skippedOrders).toBe(1);
+	});
+});
+
+describe("ratesOf", () => {
+	test("the defaults are the commission doc's calculation", () => {
+		const f = financeOf([order(1000)], 1, ratesOf(DEFAULT_FINANCE_RATES));
+		expect(f.lossesUsd).toBeCloseTo(2.04, 2);
+	});
+});
+
+describe("finance rates", () => {
+	const rates = {
+		feeFixedUsd: 0,
+		feePercent: 10,
+		payoutPercent: 0,
+		taxPercent: 20,
+		conversionPercent: 0,
+		taxBase: "revenue",
+	};
+	const put = (body: unknown) =>
+		admin("/finance/rates", { method: "PUT", body });
+
+	test("start from the defaults; saved rates are returned and change the numbers", async () => {
+		const { db, app } = setupAdminApp();
+		expect(await json(await app.handle(admin("/finance/rates")))).toEqual(
+			DEFAULT_FINANCE_RATES,
+		);
+		db.insert(orders)
+			.values({
+				id: "o",
+				accountId: "acc_1",
+				kind: "plan",
+				amount: 10000,
+				currency: "usd",
+				status: "paid",
+				createdAt: NOW - 1000,
+			})
+			.run();
+		expect((await app.handle(put(rates))).status).toBe(200);
+		expect(await json(await app.handle(admin("/finance/rates")))).toEqual(
+			rates,
+		);
+		const body = await json(await app.handle(admin("/finance")));
+		expect(body.lossesUsd).toBeCloseTo(30, 6);
+	});
+
+	test("a rate above 100% or an unknown base is refused and nothing changes", async () => {
+		const { app } = setupAdminApp();
+		expect((await app.handle(put({ ...rates, taxPercent: 101 }))).status).toBe(
+			422,
+		);
+		expect((await app.handle(put({ ...rates, taxBase: "x" }))).status).toBe(
+			422,
+		);
+		expect(await json(await app.handle(admin("/finance/rates")))).toEqual(
+			DEFAULT_FINANCE_RATES,
+		);
 	});
 });
 

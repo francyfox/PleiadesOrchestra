@@ -128,6 +128,12 @@ export const queries = {
 				unwrap(api().subscriptions.get({ query: status ? { status } : {} })),
 		}),
 	/** The customer's own account (settings page). */
+	/** Staff only: a customer's request would be a 403. */
+	financeRates: () =>
+		queryOptions({
+			queryKey: ["finance", "rates"],
+			queryFn: () => unwrap(api().finance.rates.get()),
+		}),
 	me: () =>
 		queryOptions({
 			queryKey: ["me"],

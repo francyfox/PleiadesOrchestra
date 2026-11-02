@@ -43,21 +43,19 @@
 
 <Pane title="guest@pleiades — flow" header={false} id="flow" class="!border-0 min-h-screen py-10 ">
 	<div class="flex flex-col gap-5">
-		<div class="text-6xl">{t.heading}</div>
+		<div class="text-3xl md:text-6xl">{t.heading}</div>
 		<p class="mt-2 max-w-3xl text-sm italic">{t.lead}</p>
 
 		<div
-				class="p-3 grid gap-4 dark:bg-white/5 bg-black/5 border-1"
-				style:margin-top="1rem"
-				style:grid-template-columns={phone.current ? "1fr" : "14rem 1fr"}
+				class="mt-[1rem] p-3 grid gap-4 dark:bg-white/5 bg-black/5 border-1 {phone.current
+					? 'grid-cols-[1fr]'
+					: 'grid-cols-[14rem_1fr]'}"
 		>
 			<div
 					role="tablist"
 					aria-label={t.casesLabel}
 					aria-orientation={phone.current ? "horizontal" : "vertical"}
-					class="p-2 flex flex-wrap content-start gap-2"
-					style:background-color="var(--panel)"
-					style:background-image="var(--gradient-card)"
+					class="p-2 flex flex-wrap content-start gap-2 bg-panel bg-(image:--gradient-card)"
 			>
 				{#each FLOW_CASE_KEYS as key, i (key)}
 					<button
@@ -67,11 +65,10 @@
 							aria-selected={cases.tab === key}
 							aria-controls="flow-panel"
 							tabindex={cases.tab === key ? 0 : -1}
-							class="chip cursor-pointer border px-3 py-2 text-left text-sm"
+							class="chip cursor-pointer border px-3 py-2 text-left text-sm {cases.tab === key
+								? 'text-fg! border-accent! shadow-(--shadow-xs)'
+								: ''}"
 							class:w-full={!phone.current}
-							style:color={cases.tab === key ? "var(--fg)" : undefined}
-							style:border-color={cases.tab === key ? "var(--accent)" : undefined}
-							style:box-shadow={cases.tab === key ? "var(--shadow-xs)" : undefined}
 							bind:this={cases.buttons[i]}
 							onclick={() => cases.select(key)}
 							onkeydown={(e) => cases.onKey(e, i)}
@@ -91,9 +88,7 @@
 								aria-selected={tabs.tab === key}
 								aria-controls="flow-panel"
 								tabindex={tabs.tab === key ? 0 : -1}
-								class="chip cursor-pointer border px-3 py-1 text-xs"
-								style:color={tabs.tab === key ? "var(--fg)" : undefined}
-								style:border-color={tabs.tab === key ? "var(--accent)" : undefined}
+								class="chip cursor-pointer border px-3 py-1 text-xs {tabs.tab === key ? 'text-fg! border-accent!' : ''}"
 								bind:this={tabs.buttons[i]}
 								onclick={() => tabs.select(key)}
 								onkeydown={(e) => tabs.onKey(e, i)}
@@ -105,8 +100,7 @@
 
 				<div id="flow-panel" role="tabpanel" aria-labelledby="flow-case-{cases.tab} flow-tab-{tabs.tab}">
 					<figure
-							class="landing-flow m-0 w-full"
-							style:margin-top="1rem"
+							class="landing-flow m-0 mt-[1rem]! w-full"
 							style:height="{geometry.height}rem"
 							aria-label={t.aria}
 					>
@@ -134,14 +128,13 @@
 					<!-- The legend: the whole run, where a chart keeps its key. -->
 					<p
 							class="flex flex-wrap items-center gap-x-4 gap-y-1 border-t pt-3 text-sm tabular-nums"
-							style:border-color="var(--rule)"
 					>
-						<strong style:color={scenario.done ? "var(--accent)" : "var(--danger)"}>
+						<strong class={scenario.done ? "text-accent" : "text-danger"}>
 							{scenario.done ? `✓ ${t.legend.done}` : `✗ ${t.legend.failed}`}
 						</strong>
 						<span>{t.legend.total} <strong>{legend.time}</strong></span>
 						<strong>{legend.cost}</strong>
-						<span style:color="var(--dim)">{t.legend.calls}: {legend.calls}</span>
+						<span class="text-dim">{t.legend.calls}: {legend.calls}</span>
 					</p>
 				</div>
 			</div>

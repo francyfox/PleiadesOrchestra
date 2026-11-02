@@ -1,4 +1,5 @@
 import { type Static, t } from "elysia";
+import { FinanceRates } from "../../forms/forms.ts";
 import { nullable } from "../common/common.schema.ts";
 
 /** Staff money numbers of the dashboard period, USD (orchestrator `GET /v1/admin/finance`). */
@@ -16,3 +17,5 @@ export const Finance = t.Object({
 	skippedOrders: t.Number(),
 });
 export type Finance = Static<typeof Finance>;
+
+export { FinanceRates };

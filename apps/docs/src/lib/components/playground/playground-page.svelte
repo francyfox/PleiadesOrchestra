@@ -111,7 +111,8 @@
 </script>
 
 <div class="po-site">
-<main id="main-content" class="playground">
+<div id="main-content" class="playground">
+	<h1 class="sr-only">PleiadesOrchestra Playground</h1>
 	<PlaygroundDemoPanel
 		{demos}
 		{selectedUrl}
@@ -130,7 +131,7 @@
 		{edges}
 		onReset={resetGraph}
 	/>
-</main>
+</div>
 </div>
 
 <style>

@@ -39,13 +39,13 @@
 	});
 </script>
 
-<section
+<div
 	bind:this={section}
-	class="vhs my-10 relative w-full h-[40vh] overflow-hidden bg-white/5"
+	class="vhs relative w-full h-[40vh] overflow-hidden bg-white/5"
 >
 	<div
-		class="absolute inset-0 w-full flex justify-center"
-		style="transform: translateY({imageOffset}px); will-change: transform"
+		class="absolute inset-0 w-full flex justify-center will-change-transform"
+		style:transform="translateY({imageOffset}px)"
 	>
 		<img
 			src="/media/cover.webp"
@@ -55,7 +55,7 @@
 	</div>
 
 	<div class="absolute inset-0"></div>
-</section>
+</div>
 
 <style>
 	/* CRT look: scanlines + vignette (::before), rolling bar (::after), colour fringe and jitter on the image */

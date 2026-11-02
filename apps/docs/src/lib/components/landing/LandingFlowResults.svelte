@@ -12,14 +12,14 @@
 </script>
 
 <Pane title="guest@pleiades — results" header={false} id="results">
-	<div class="text-6xl font-bold mb-5 md:mb-15">{t.heading}</div>
+	<div class="text-3xl md:text-4xl font-bold mb-5 md:mb-15">{t.heading}</div>
 
 	<div class="mt-6 grid grid-cols-1 gap-8 md:grid-cols-[minmax(10rem,14rem)_1fr]">
 		<ul class="flex flex-wrap gap-8 md:flex-col">
 			{#each headline as claim (claim.key)}
 				<li>
-					<strong class="block text-6xl leading-none font-bold" style:color="var(--accent)">{claim.value}</strong>
-					<span class="mt-2 block max-w-56 text-sm" style:color="var(--dim)">
+					<strong class="block text-6xl leading-none font-bold text-accent">{claim.value}</strong>
+					<span class="mt-2 block max-w-56 text-sm text-dim">
 						{t.claims[claim.key].replace("{model}", claim.versus)}
 					</span>
 				</li>
@@ -29,12 +29,11 @@
 		<div class="flex flex-col gap-6">
 			{#each groups as group (group.key)}
 				<dl class="grid grid-cols-1 gap-x-3 gap-y-1.5 text-sm sm:grid-cols-[16rem_1fr] sm:items-center">
-					<dt class="text-xs font-bold sm:col-span-2" style:color="var(--accent-2)">{t.metrics[group.key]}</dt>
+					<dt class="text-xs font-bold sm:col-span-2 text-accent-2">{t.metrics[group.key]}</dt>
 					{#each group.rows as row (row.name)}
 						<dd
-							class="m-0 truncate"
+							class="m-0 truncate {row.orchestra ? 'text-accent' : 'text-dim'}"
 							title={row.name}
-							style:color={row.orchestra ? "var(--accent)" : "var(--dim)"}
 						>
 							{row.name}
 						</dd>
@@ -52,10 +51,10 @@
 		</div>
 	</div>
 
-	<p class="border-t pt-4 text-xs" style:margin-top="2rem" style:color="var(--dim)" style:border-color="var(--rule)">
+	<p class="mt-[2rem]! border-t pt-4 text-xs text-dim">
 		{t.note.replace("{date}", FLOW_RESULTS.date)}
 	</p>
-	<a href={FLOW_RESULTS.docs} class="chip inline-block border px-3 py-2 text-sm" style:margin-top="1rem">{t.link}</a>
+	<a href={FLOW_RESULTS.docs} class="chip mt-[1rem] inline-block border px-3 py-2 text-sm">{t.link}</a>
 </Pane>
 
 <style>

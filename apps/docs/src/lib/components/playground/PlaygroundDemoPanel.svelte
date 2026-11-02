@@ -25,7 +25,7 @@
 		title="WebMCP Demo"
 		allow="tools"
 		onload={(e) => onDemoLoad?.(e.currentTarget as HTMLIFrameElement)}
-		style="width:100%;height:100%;border:none;display:block;"
+		class="block h-full w-full border-none"
 	></iframe>
 </div>
 

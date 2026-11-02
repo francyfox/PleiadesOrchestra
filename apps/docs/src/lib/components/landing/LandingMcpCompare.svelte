@@ -10,10 +10,10 @@
 
 <Pane title="guest@pleiades — mcp vs webmcp" header={false} id="mcp">
 	<h2 class="text-xl font-bold">{t.heading}</h2>
-	<p class="mt-2 max-w-3xl text-sm" style:color="var(--dim)">{t.lead}</p>
+	<p class="mt-2 max-w-3xl text-sm text-dim">{t.lead}</p>
 
-	<p class="mt-3 max-w-3xl border p-3 text-sm" style:border-color="var(--accent-2)">
-		<strong style:color="var(--accent-2)">{t.noteStrong}</strong>{t.noteBefore}
+	<p class="mt-3 max-w-3xl border border-accent-2! p-3 text-sm">
+		<strong class="text-accent-2">{t.noteStrong}</strong>{t.noteBefore}
 		<code>navigator.modelContext</code>
 		{t.noteTo} <code>document.modelContext</code>. {t.noteAfter}
 		<a
@@ -30,9 +30,9 @@
 		<table class="w-full min-w-[40rem] border-collapse text-left text-sm">
 			<thead>
 				<tr class="border-b">
-					<th scope="col" class="py-2 pr-4 font-normal" style:color="var(--dim)"></th>
-					<th scope="col" class="py-2 pr-4" style:color="var(--accent)">{t.colMcp}</th>
-					<th scope="col" class="py-2" style:color="var(--accent-2)"
+					<th scope="col" class="py-2 pr-4 font-normal text-dim!"></th>
+					<th scope="col" class="py-2 pr-4 text-accent!">{t.colMcp}</th>
+					<th scope="col" class="py-2 text-accent-2!"
 						>{t.colWeb} <span class="text-xs font-normal">{t.experimental}</span></th
 					>
 				</tr>
@@ -40,7 +40,7 @@
 			<tbody>
 				{#each Object.values(t.rows) as row (row.label)}
 					<tr class="border-b align-top">
-						<th scope="row" class="py-3 pr-4 font-normal" style:color="var(--dim)"
+						<th scope="row" class="py-3 pr-4 font-normal text-dim!"
 							>{row.label}</th
 						>
 						<td class="py-3 pr-4">{row.mcp}</td>

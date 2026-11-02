@@ -6,6 +6,7 @@
 	import LandingFlowResults from "#lib/components/landing/LandingFlowResults.svelte";
 	import LandingHistory from "#lib/components/landing/LandingHistory.svelte";
 	import LandingMcpCompare from "#lib/components/landing/LandingMcpCompare.svelte";
+	import LandingNav from "#lib/components/landing/LandingNav.svelte";
 	import LandingPlatforms from "#lib/components/landing/LandingPlatforms.svelte";
 	import LandingPleiades from "#lib/components/landing/LandingPleiades.svelte";
 	import LandingPricing from "#lib/components/landing/LandingPricing.svelte";
@@ -19,7 +20,8 @@
 </svelte:head>
 
 <div class="po-site">
-<main id="main-content" class="flex flex-col gap-2">
+<LandingNav />
+<div id="main-content" class="flex flex-col gap-2">
 	<LandingVideo />
 	<LandingHistory />
 	<LandingAbout />
@@ -27,10 +29,16 @@
 	<LandingFlowResults />
 	<LandingTvGallery />
 	<LandingBenefits />
-	<LandingMcpCompare />
 	<LandingPlatforms />
 	<LandingSecurity />
 	<LandingPricing />
 	<LandingPleiades />
-</main>
 </div>
+</div>
+
+<style>
+	/* Anchored sections land below the header and the LandingNav row. */
+	.po-site :global([id]) {
+		scroll-margin-top: calc(var(--po-nav) + var(--po-landing-nav));
+	}
+</style>

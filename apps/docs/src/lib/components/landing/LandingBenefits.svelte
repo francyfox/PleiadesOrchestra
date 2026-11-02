@@ -2,7 +2,7 @@
 	import { CodeBlock } from "@sveltepress/theme-default/components";
 	import Pane from "#lib/components/Pane.svelte";
 	import { localeFromPath, localizeHref } from "#lib/i18n.js";
-	import { STEP_SAMPLES } from "#lib/landing/benefits.data.js";
+	import { DASHBOARD_SHOT, STEP_SAMPLES } from "#lib/landing/benefits.data.js";
 	import { landingContent } from "#lib/landing/content.js";
 	import { page } from "$app/state";
 
@@ -71,14 +71,26 @@
 				>
 				<span class="marker" aria-hidden="true">{i + 1}</span>
 				<div class="text">
-					<h3 class="text-xl font-bold">{step.title}</h3>
-					<p class="mt-2" style:color="var(--dim)">
+					<h3 class="text-xl! font-bold!">{step.title}</h3>
+					<p class="mt-2 text-dim">
 						{parts.before}
 						{#if parts.label}
 							<a href={localizeHref(parts.href, locale)} class="step-link">{parts.label}</a>{parts.after}
 						{/if}
 					</p>
 				</div>
+				{#if samples.length === 0}
+					<figure class="card shot">
+						<img
+							src="/media/dashboard-{locale}.webp"
+							alt={t.dashboardAlt}
+							width={DASHBOARD_SHOT.width}
+							height={DASHBOARD_SHOT.height}
+							loading="lazy"
+						/>
+						<figcaption>{t.dashboardNote}</figcaption>
+					</figure>
+				{:else}
 				<div class="card">
 					{#if samples.length > 1}
 						<div class="tabs" role="tablist">
@@ -86,6 +98,8 @@
 								<button
 									type="button"
 									role="tab"
+									id="benefit-tab-{i}-{j}"
+									aria-controls="benefit-code-{i}"
 									aria-selected={(tab[i] ?? 0) === j}
 									class:active={(tab[i] ?? 0) === j}
 									onclick={() => (tab[i] = j)}>{s.name}</button
@@ -94,12 +108,18 @@
 						</div>
 					{/if}
 					<!-- min-height: the code is highlighted in the browser, the card must not jump. -->
-					<div class="code" style:min-height="{sample.code.split('\n').length * 1.28 + 1.5}rem">
+					<div
+						class="code"
+						id="benefit-code-{i}"
+						role={samples.length > 1 ? "tabpanel" : undefined}
+						aria-labelledby={samples.length > 1 ? `benefit-tab-${i}-${tab[i] ?? 0}` : undefined}
+						style:min-height="{sample.code.split('\n').length * 1.28 + 1.5}rem">
 						{#key sample.code}
 							<CodeBlock code={sample.code} lang={sample.lang} />
 						{/key}
 					</div>
 				</div>
+				{/if}
 			</li>
 		{/each}
 	</ol>
@@ -171,6 +191,21 @@
 			color-mix(in oklch, var(--accent) 14%, transparent),
 			transparent 70%
 		);
+	}
+	.shot {
+		margin: 0;
+		align-self: start;
+	}
+	.shot img {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+	.shot figcaption {
+		padding: 0.5rem 1rem;
+		border-top: 1px solid var(--rule);
+		color: var(--dim);
+		font-size: 0.8rem;
 	}
 	.step-link {
 		color: var(--accent);

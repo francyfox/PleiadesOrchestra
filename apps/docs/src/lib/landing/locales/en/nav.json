@@ -1,8 +1,9 @@
 {
 	"about": "about",
 	"benefits": "benefits",
+	"flow": "how it works",
 	"history": "history",
-	"mcp": "mcp",
+	"label": "Page sections",
 	"platforms": "platforms",
 	"pricing": "pricing",
 	"security": "security"

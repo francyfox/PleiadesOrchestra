@@ -42,6 +42,7 @@
 		{ href: "/channels", key: "channels", icon: GlobeIcon },
 		{ href: "/billing", key: "billing", icon: WalletIcon },
 		{ href: "/settings", key: "settings", icon: SettingsIcon },
+		{ href: "/preferences", key: "settings", icon: SettingsIcon },
 		{ href: "/blocked-ips", key: "blockedIps", icon: BanIcon },
 		{ href: "/admins", key: "admins", icon: ShieldIcon },
 		{ href: "/faq", key: "faq", icon: CircleQuestionMarkIcon },
