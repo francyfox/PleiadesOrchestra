@@ -213,6 +213,9 @@ export default defineConfig(({ mode }) => ({
 						filename.split(/[/\\]/).includes("node_modules") ? undefined : true,
 				},
 				adapter: adapter({ pages: "build", assets: "build", strict: true }),
+				// Small stylesheets go into the HTML: each was a render-blocking request on the
+				// landing (PageSpeed mobile). The big theme/site sheets stay files the browser caches.
+				inlineStyleThreshold: 13_000,
 				prerender: {
 					entries: ["*"],
 					// Broken links in content/ must not fail the build of the landing; they are

@@ -8,7 +8,8 @@
 	"exports": {
 		"./tokens.css": "./src/tokens.css",
 		"./tailwind.css": "./src/tailwind.css",
-		"./fonts.css": "./src/fonts.css"
+		"./fonts.css": "./src/fonts.css",
+		"./font-preloads.ts": "./src/font-preloads.ts"
 	},
 	"scripts": {
 		"lint": "biome check ."

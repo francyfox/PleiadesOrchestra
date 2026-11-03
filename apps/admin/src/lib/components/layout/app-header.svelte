@@ -10,7 +10,9 @@
 
 <header class="flex flex-wrap md:flex-nowrap min-h-12 items-center gap-3 border-b px-4 py-2">
 	<Sidebar.Trigger />
-	{#if staff}<SystemMeter />{/if}
-	<LocaleSwitcher />
-	{#if !staff}<StandingAlert />{/if}
+	<div class="flex items-center gap-3">
+    	{#if staff}<SystemMeter />{/if}
+    	<LocaleSwitcher />
+    	{#if !staff}<StandingAlert  />{/if}
+	</div>
 </header>
