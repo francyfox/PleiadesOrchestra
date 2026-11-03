@@ -15,7 +15,6 @@ import {
 	ProviderModel,
 	ResetForm,
 	TokenLoginForm,
-	TopUpForm,
 	UpdateChannelForm,
 	UpdateMeInput,
 	UserLoginForm,
@@ -201,11 +200,6 @@ export const financeActions = {
 /** Polar checkout and customer portal; both answer `{ url }` to go to. */
 export const billingActions = {
 	subscribe: () => submitted(api().billing.checkout.post({ kind: "plan" })),
-	topUp: (form: FormData) => {
-		const parsed = parseForm(TopUpForm, form);
-		if (!parsed.ok) return invalidForm();
-		return submitted(api().billing.checkout.post(parsed.body));
-	},
 	portal: () => submitted(api().billing.portal.post()),
 };
 

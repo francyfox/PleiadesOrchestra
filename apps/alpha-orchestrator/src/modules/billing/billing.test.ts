@@ -20,9 +20,12 @@ import {
 
 const NOW_SECONDS = Math.floor(NOW / 1000);
 
-function setup(webhookSecret: string | undefined = WEBHOOK_SECRET) {
+function setup(
+	webhookSecret: string | undefined = WEBHOOK_SECRET,
+	now: () => number = () => NOW,
+) {
 	const db = testDb();
-	const directory = new ChannelDirectory(db, () => NOW);
+	const directory = new ChannelDirectory(db, now);
 	const app = createApp({
 		agent,
 		decisionAgent,
@@ -33,7 +36,7 @@ function setup(webhookSecret: string | undefined = WEBHOOK_SECRET) {
 		channels: directory,
 		runs: new RunBinding(),
 		ipHashSalt: "salt",
-		now: () => NOW,
+		now,
 		billing: webhookSecret
 			? { webhookSecret, creditsProductId: "prod_credits" }
 			: undefined,
@@ -360,5 +363,89 @@ describe("channel standing after a webhook", () => {
 			}),
 		);
 		expect(directory.suspension(channel)).toBeNull();
+	});
+});
+
+describe("the payment cycle", () => {
+	test("subscribe, renew, cancel, run out the paid period, subscribe again", async () => {
+		let clock = NOW;
+		const { app, db, directory } = setup(WEBHOOK_SECRET, () => clock);
+		const { channel } = createWebChannel(
+			db,
+			{
+				slug: "mine",
+				name: "Mine",
+				accessMode: "open",
+				allowedOrigins: [],
+				ownerId: "acc_1",
+			},
+			1,
+		);
+		let message = 0;
+		const send = async (type: string, data: unknown) => {
+			const response = await app.handle(
+				webhookRequest({
+					type,
+					data,
+					id: `msg_${++message}`,
+					timestampSeconds: Math.floor(clock / 1000),
+				}),
+			);
+			expect(response.status).toBe(200);
+		};
+		const reason = () => directory.suspension(channel)?.reason ?? "ok";
+
+		// Model spend still needs trenni above zero, whatever the plan.
+		await send("order.paid", orderData());
+		expect(reason()).toBe("no_plan");
+
+		await send("subscription.active", subscriptionData());
+		expect(reason()).toBe("ok");
+
+		// Polar renews at the period end: same subscription, the next period.
+		clock = Date.parse("2026-11-01T01:00:00Z");
+		await send(
+			"subscription.updated",
+			subscriptionData({
+				current_period_start: "2026-11-01T00:00:00Z",
+				current_period_end: "2026-12-01T00:00:00Z",
+				modified_at: "2026-11-01T00:00:00Z",
+			}),
+		);
+		expect(reason()).toBe("ok");
+
+		// Canceled mid-period: the paid month still runs.
+		clock = Date.parse("2026-11-10T00:00:00Z");
+		await send(
+			"subscription.canceled",
+			subscriptionData({
+				status: "canceled",
+				cancel_at_period_end: true,
+				current_period_start: "2026-11-01T00:00:00Z",
+				current_period_end: "2026-12-01T00:00:00Z",
+				modified_at: "2026-11-10T00:00:00Z",
+			}),
+		);
+		expect(reason()).toBe("ok");
+
+		// No webhook needed for the end: the stored period end is compared with now.
+		clock = Date.parse("2026-11-30T23:59:59Z");
+		expect(reason()).toBe("ok");
+		clock = Date.parse("2026-12-01T00:00:00Z");
+		expect(reason()).toBe("plan_expired");
+
+		// A new checkout is a new subscription.
+		clock = Date.parse("2026-12-05T00:00:00Z");
+		await send(
+			"subscription.active",
+			subscriptionData({
+				id: "sub_2",
+				started_at: "2026-12-05T00:00:00Z",
+				current_period_start: "2026-12-05T00:00:00Z",
+				current_period_end: "2027-01-05T00:00:00Z",
+				modified_at: "2026-12-05T00:00:00Z",
+			}),
+		);
+		expect(reason()).toBe("ok");
 	});
 });
