@@ -106,7 +106,18 @@
 					></button>
 				</div>
 			{/each}
-			<img src="/media/tv.webp" alt="" class="tv-frame pointer-events-none absolute inset-0 z-10 h-full w-full" />
+			<!-- Sizes cut from tv.webp (the SCREENS rectangles are fractions, so any size fits); below the fold: lazy. -->
+			<img
+				src="/media/tv-1280.webp"
+				srcset="/media/tv-640.webp 640w, /media/tv-1280.webp 1280w, /media/tv.webp 1672w"
+				sizes="(max-width: 1280px) 100vw, 1280px"
+				width={SIZE.w}
+				height={SIZE.h}
+				loading="lazy"
+				decoding="async"
+				alt=""
+				class="tv-frame pointer-events-none absolute inset-0 z-10 h-full w-full"
+			/>
 		</div>
 	</div>
 </div>

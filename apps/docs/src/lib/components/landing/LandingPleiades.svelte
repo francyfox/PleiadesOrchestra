@@ -50,6 +50,9 @@
 		<img
 			src="/media/cover.webp"
 			alt="Pleiades maids illustration"
+			width="1600"
+			height="678"
+			style:width="auto"
 			class="h-[500px] opacity-80"
 		/>
 	</div>

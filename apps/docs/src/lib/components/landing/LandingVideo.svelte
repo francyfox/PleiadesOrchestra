@@ -7,6 +7,7 @@
 	import PauseIcon from "@lucide/svelte/icons/pause";
 	import PlayIcon from "@lucide/svelte/icons/play";
 	import RocketIcon from "@lucide/svelte/icons/rocket";
+	import { poppinsBold, poppinsRegular } from "@repo/ui/font-preloads.ts";
 	import { onMount } from "svelte";
 	import LandingWidgetDemo from "#lib/components/landing/LandingWidgetDemo.svelte";
 	import { localeFromPath, localizeHref } from "#lib/i18n.js";
@@ -39,6 +40,14 @@
 		else video.pause();
 	}
 </script>
+
+<svelte:head>
+    <!-- The poster is the LCP element: ask for it with the HTML, not after the CSS. -->
+    <link rel="preload" as="image" href="/media/draft-poster.webp" fetchpriority="high"/>
+    <!-- The hero's own faces: swapping them in late shifted the hero (CLS on phones). -->
+    <link rel="preload" as="font" type="font/woff2" href={poppinsBold} crossorigin="anonymous"/>
+    <link rel="preload" as="font" type="font/woff2" href={poppinsRegular} crossorigin="anonymous"/>
+</svelte:head>
 
 <section
         class="flex min-h-[calc(100vh-(var(--po-nav)+var(--po-landing-nav)))] w-full"

@@ -33,7 +33,7 @@
 		"build": "bun run polyfill && bun run changelog && bun --bun vite build",
 		"preview": "bun --bun vite preview --port 3004",
 		"prepare": "svelte-kit sync || echo ''",
-		"check-types": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --threshold error",
+		"check-types": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --threshold error && svelte-check --tsconfig ./src/service-worker/tsconfig.json --threshold error",
 		"lint": "biome check .",
 		"changelog": "bun vite/changelog.ts",
 		"polyfill": "bun build vite/webmcp-polyfill.entry.ts --format=iife --minify --banner='/*! WebMCP polyfill, adapted from GoogleChromeLabs/webmcp-tools. Copyright 2026 Google LLC, Copyright 2026 Danil Golota. SPDX-License-Identifier: Apache-2.0 */' --outfile=static/playground-demos/shared/webmcp-polyfill.js"
