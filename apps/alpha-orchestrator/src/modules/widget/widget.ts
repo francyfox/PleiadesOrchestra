@@ -6,7 +6,10 @@ import { REPLY_TO_MAX } from "../goap/goap.types.ts";
 import { recordCatalog } from "../mcp/mcp.service.ts";
 import { NDJSON_LINES } from "../messages/messages.schema.ts";
 import { pendingOf } from "../pending/pending.service.ts";
-import { ndjsonResponse } from "../streaming/streaming.service.ts";
+import {
+	ndjsonResponse,
+	releaseWhenDone,
+} from "../streaming/streaming.service.ts";
 import {
 	createWidgetThread,
 	isOwnThread,
@@ -280,6 +283,8 @@ export function widgetRoutes(deps: WidgetDeps) {
 					const rejected = rejectIfNotAllowedToUse(auth, body.threadId);
 					if (rejected) return rejected;
 
+					const release = directory.reserve(auth.channel);
+					if (!release) return suspendedResponse(auth.origin);
 					const stream = reply.startReply(
 						auth.visitor.row,
 						body.threadId,
@@ -295,7 +300,11 @@ export function widgetRoutes(deps: WidgetDeps) {
 							timeZone: body.timeZone,
 						},
 					);
-					return ndjsonResponse(stream, request, corsHeaders(auth.origin));
+					return ndjsonResponse(
+						releaseWhenDone(stream, release),
+						request,
+						corsHeaders(auth.origin),
+					);
 				},
 				{
 					detail: {
@@ -380,6 +389,8 @@ export function widgetRoutes(deps: WidgetDeps) {
 						rejectIfForeignThread(auth, body.threadId);
 					if (rejected) return rejected;
 
+					const release = directory.reserve(auth.channel);
+					if (!release) return suspendedResponse(auth.origin);
 					const stream = reply.resumeReply(
 						auth.visitor.row,
 						body.threadId,
@@ -395,7 +406,11 @@ export function widgetRoutes(deps: WidgetDeps) {
 						},
 						request.signal,
 					);
-					return ndjsonResponse(stream, request, corsHeaders(auth.origin));
+					return ndjsonResponse(
+						releaseWhenDone(stream, release),
+						request,
+						corsHeaders(auth.origin),
+					);
 				},
 				{
 					detail: {

@@ -7,6 +7,7 @@ import {
 } from "#lib/components/use-action-enhance.js";
 
 const CODES = [
+	"no_subscription",
 	"billing_unavailable",
 	"billing_failed",
 	"upstream_unavailable",
@@ -16,15 +17,18 @@ const CODES = [
 export function useBillingEnhance(
 	run: (form: FormData) => Promise<ActionResult>,
 	onUnavailable: () => void,
-	/** Field validation (see `useActionEnhance`). */
-	validation?: Pick<ActionEnhanceOptions, "schema" | "overrides">,
+	/** Field validation, or `onSuccess` to stay on the page instead of following `url` (see `useActionEnhance`). */
+	options?: Pick<
+		ActionEnhanceOptions,
+		"schema" | "overrides" | "onSuccess" | "successText"
+	>,
 ) {
 	const content = useIntlayer("billing");
 	return useActionEnhance({
-		...validation,
 		run,
-		quietSuccess: () => true,
+		quietSuccess: () => !options?.onSuccess,
 		onSuccess: (data) => window.location.assign(String(data.url)),
+		...options,
 		errorText: (code) => {
 			if (code === "billing_unavailable") onUnavailable();
 			const known = CODES.find((candidate) => candidate === code);

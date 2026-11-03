@@ -24,19 +24,36 @@ async function setup(respond?: Parameters<typeof fakeOrchestrator>[0]) {
 describe("GET /api/accounts", () => {
 	test("lists customers (not staff) with their channel counts", async () => {
 		const owners: string[] = [];
+		const subscriptions: Record<string, unknown>[] = [];
 		const { t, staff, id } = await setup((call) =>
 			call.path.includes("/channels")
 				? Response.json({
 						items: owners.map((ownerId) => ({ ownerId })),
 						total: owners.length,
 					})
-				: Response.json({}),
+				: call.path.includes("/subscriptions")
+					? Response.json({ items: subscriptions })
+					: Response.json({}),
 		);
 		owners.push(
 			id("ann@example.com"),
 			id("ann@example.com"),
 			id("bob@example.com"),
 		);
+		// ann: an old ended plan and the running one (the running one wins); bob: none.
+		const plan = (status: string, currentPeriodEnd: number | null) => ({
+			id: `sub_${status}`,
+			customerId: "cus_1",
+			customerEmail: null,
+			plan: "Cloud",
+			status,
+			startedAt: 1,
+			currentPeriodEnd,
+			endedAt: null,
+			accountId: id("ann@example.com"),
+			polarUrl: null,
+		});
+		subscriptions.push(plan("ended", 500), plan("canceling", 400));
 		const response = await t.call("/api/accounts", { cookie: staff });
 		// the stub rows lack channel fields, so look at the shape the route builds
 		const body = await response.json();
@@ -55,8 +72,9 @@ describe("GET /api/accounts", () => {
 			lastActiveAt: null,
 			banned: false,
 			channelsCount: 2,
+			plan: { status: "canceling", currentPeriodEnd: 400 },
 		});
-		expect(body.items[1].channelsCount).toBe(1);
+		expect(body.items[1]).toMatchObject({ channelsCount: 1, plan: null });
 	});
 
 	test("a user gets 403 on every accounts route", async () => {

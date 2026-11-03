@@ -9,6 +9,9 @@ ingress:
   # Site backends linking a visitor to a known user (channel secret auth).
   - path: ^/v1/channels/[^/]+/identify$
     service: http://alpha-orchestrator:3000
+  # Polar billing webhooks (Standard Webhooks signature checked by the route).
+  - path: ^/v1/billing/polar$
+    service: http://alpha-orchestrator:3000
   - path: ^/health$
     service: http://alpha-orchestrator:3000
   - service: http_status:404

@@ -2,6 +2,8 @@
 export interface PlanFields {
 	status: string;
 	currentPeriodEnd: number | null;
+	/** Set by a revoke (Polar `ended_at`): access ends then, before the paid period does. */
+	endedAt?: number | null;
 }
 
 export type Standing =
@@ -17,22 +19,25 @@ export type Standing =
 			since: number | null;
 	  };
 
+import { REQUEST_HOLD_MICRO } from "../ledger/ledger.service.ts";
+
 /**
- * Whether an account's channels may serve: a plan in effect (Polar `active` /
- * `trialing`, or any status while `now < current_period_end`) and a balance
- * above zero (any unit; the sign is all that matters).
+ * Whether an account's channels may serve: a balance (micro-USD) that covers at
+ * least one request hold (`REQUEST_HOLD_MICRO`). The plan only tops the balance up, so what is
+ * left keeps working after it ends. At zero the reason says what to do: no plan
+ * yet, a plan that ended (Polar `ended_at` on a revoke, else the period end), or
+ * a running plan whose month is used up. `until` stays for callers; always `null`.
  */
 export function accountStanding(
 	plan: PlanFields | null,
 	balance: number,
 	now: number,
 ): Standing {
+	if (balance >= REQUEST_HOLD_MICRO) return { ok: true, until: null };
 	if (!plan) return { ok: false, reason: "no_plan", since: null };
 	const running = plan.status === "active" || plan.status === "trialing";
-	const inPeriod =
-		plan.currentPeriodEnd !== null && now < plan.currentPeriodEnd;
-	if (!running && !inPeriod)
-		return { ok: false, reason: "plan_expired", since: plan.currentPeriodEnd };
-	if (balance <= 0) return { ok: false, reason: "no_balance", since: null };
-	return { ok: true, until: running ? null : plan.currentPeriodEnd };
+	const end = plan.endedAt ?? plan.currentPeriodEnd;
+	if (!running && !(end !== null && now < end))
+		return { ok: false, reason: "plan_expired", since: end };
+	return { ok: false, reason: "no_balance", since: null };
 }

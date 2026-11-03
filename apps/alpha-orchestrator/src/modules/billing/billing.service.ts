@@ -115,7 +115,7 @@ export function applyWebhook(
 	const amount = cents(data.net_amount);
 	if (isOrder && !(id && status && amount !== null))
 		throw new InvalidPayloadError(`${type}: id, status, net_amount required`);
-	const accountId = text(asObject(data.customer).external_id);
+	const accountId = accountOf(data);
 
 	return db.transaction((tx) => {
 		const fresh = tx
@@ -209,7 +209,7 @@ function applyOrder(
 		.values({ id: o.id, ...values })
 		.onConflictDoUpdate({ target: orders.id, set: values })
 		.run();
-	if (kind !== "credits") return;
+	// Every paid order (the monthly plan included) tops up the TR balance; it never expires.
 	tx.insert(creditLedger)
 		.values({
 			accountId: o.accountId,
@@ -231,4 +231,81 @@ function applyOrder(
 				createdAt: o.now,
 			})
 			.run();
+}
+
+/**
+ * The admin-api account an event's subscription or order belongs to. Polar reuses
+ * an existing customer with the same email and leaves its `external_id` empty;
+ * admin-api's checkout also puts the account id into metadata, copied here.
+ */
+export function accountOf(data: unknown): string | null {
+	const object = asObject(data);
+	return (
+		text(asObject(object.customer).external_id) ??
+		text(asObject(object.metadata).account_id)
+	);
+}
+
+export interface SyncResult {
+	applied: number;
+	unchanged: number;
+	/** Unpaid orders and payloads that do not parse. */
+	skipped: number;
+	/** Accounts whose plan or balance changed. */
+	accounts: Set<string>;
+}
+
+/**
+ * Applies Polar's own lists (staff "Sync Polar") through the webhook path. The
+ * replay key is the snapshot (`modified_at`; an order's status and refund), so
+ * an unchanged item is a duplicate and a newer one is applied once. Only paid
+ * orders: a pending one would top the balance up.
+ */
+export function syncFromPolar(
+	db: Db,
+	input: { subscriptions: unknown[]; orders: unknown[] },
+	now: number,
+	products: BillingProducts = {},
+): SyncResult {
+	const result: SyncResult = {
+		applied: 0,
+		unchanged: 0,
+		skipped: 0,
+		accounts: new Set(),
+	};
+	const apply = (key: string, type: string, data: unknown) => {
+		try {
+			const outcome = applyWebhook(db, key, { type, data }, now, products);
+			if (outcome === "duplicate") result.unchanged++;
+			else if (outcome === "applied") {
+				result.applied++;
+				const account = accountOf(data);
+				if (account) result.accounts.add(account);
+			} else result.skipped++;
+		} catch (error) {
+			if (!(error instanceof InvalidPayloadError)) throw error;
+			result.skipped++;
+		}
+	};
+	for (const sub of input.subscriptions) {
+		const data = asObject(sub);
+		apply(
+			`sync:sub:${text(data.id)}:${text(data.modified_at) ?? ""}`,
+			"subscription.updated",
+			sub,
+		);
+	}
+	for (const order of input.orders) {
+		const data = asObject(order);
+		if (data.paid !== true) {
+			result.skipped++;
+			continue;
+		}
+		apply(
+			`sync:ord:${text(data.id)}:${text(data.status)}:${String(data.refunded_amount ?? 0)}`,
+			"order.paid",
+			order,
+		);
+	}
+	return result;
 }

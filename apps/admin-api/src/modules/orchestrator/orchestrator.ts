@@ -237,6 +237,12 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 
 		return {
 			...reads,
+			syncBilling: (body: { subscriptions: unknown[]; orders: unknown[] }) =>
+				write<{ applied: number; unchanged: number; skipped: number }>(
+					"POST",
+					"/v1/admin/billing/sync",
+					body,
+				),
 			whitelistVisitor: (id: string) => visitorAction(id, "whitelist"),
 			unwhitelistVisitor: (id: string) => visitorAction(id, "unwhitelist"),
 			blockVisitor: (id: string, reason?: string) =>

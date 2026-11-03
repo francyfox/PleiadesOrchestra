@@ -1,5 +1,6 @@
 import { type Static, t } from "elysia";
-import { PageQuery } from "../common/common.schema.ts";
+import { nullable, PageQuery } from "../common/common.schema.ts";
+import { PlanStatus } from "../subscriptions/subscriptions.schema.ts";
 
 /** One row of the staff "Users" table. Timestamps are epoch ms. */
 export const Customer = t.Object({
@@ -12,6 +13,10 @@ export const Customer = t.Object({
 	lastActiveAt: t.Nullable(t.Number()),
 	banned: t.Boolean(),
 	channelsCount: t.Number(),
+	/** The account's current Polar plan (a running one, else the latest); `null` = never subscribed. */
+	plan: nullable(
+		t.Object({ status: PlanStatus, currentPeriodEnd: nullable(t.Number()) }),
+	),
 });
 
 export const CustomersQuery = PageQuery;

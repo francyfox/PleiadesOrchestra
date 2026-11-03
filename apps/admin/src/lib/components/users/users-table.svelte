@@ -1,4 +1,5 @@
 <script lang="ts">
+	import CircleCheckIcon from "@lucide/svelte/icons/circle-check";
 	import {
 		createColumnHelper,
 		createTable,
@@ -20,6 +21,7 @@
 	}: { users: Customer[]; pagination: ServerPagination } = $props();
 
 	const content = useIntlayer("users");
+	const plans = useIntlayer("plans");
 	const format = useFormat();
 
 	const features = tableFeatures({});
@@ -46,6 +48,19 @@
 			helper.accessor("channelsCount", {
 				header: () => $content.columns.channels.value,
 			}),
+			helper.accessor("plan", {
+				id: "plan",
+				header: () => $content.columns.plan.value,
+				cell: (ctx) => renderSnippet(planCell, ctx.getValue()),
+			}),
+			helper.accessor((user) => user.plan?.currentPeriodEnd ?? null, {
+				id: "paidUntil",
+				header: () => $content.columns.paidUntil.value,
+				cell: (ctx) => {
+					const at = ctx.getValue();
+					return at === null ? "—" : $format.date(at);
+				},
+			}),
 			helper.accessor("banned", {
 				header: () => $content.columns.status.value,
 				cell: (ctx) => renderSnippet(status, ctx.getValue()),
@@ -64,9 +79,19 @@
 
 {#snippet emailCell(user: Customer)}
 	{user.email}
-	<Badge variant={user.emailVerified ? "secondary" : "outline"} class="ml-1">
-		{user.emailVerified ? $content.verified.value : $content.unverified.value}
-	</Badge>
+	{#if user.emailVerified}
+		<CircleCheckIcon class="ml-1 inline size-4 align-text-bottom text-emerald-600 dark:text-emerald-400" role="img" aria-label={$content.verified.value} title={$content.verified.value} />
+	{:else}
+		<Badge variant="outline" class="ml-1">{$content.unverified.value}</Badge>
+	{/if}
+{/snippet}
+
+{#snippet planCell(plan: Customer["plan"])}
+	{#if plan}
+		<Badge variant={plan.status === "ended" || plan.status === "past_due" ? "destructive" : "outline"}>{$plans.status[plan.status].value}</Badge>
+	{:else}
+		<span class="text-muted-foreground">{$content.noPlan.value}</span>
+	{/if}
 {/snippet}
 
 {#snippet status(banned: boolean)}

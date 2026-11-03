@@ -141,6 +141,7 @@ describe("checkout", () => {
 			body: {
 				products: ["prod_plan"],
 				external_customer_id: id,
+				metadata: { account_id: id },
 				customer_email: "buyer@example.com",
 				success_url: `${"http://localhost:3002"}/billing?checkout=success`,
 			},
@@ -198,6 +199,54 @@ describe("checkout", () => {
 		});
 		expect(await response.json()).toEqual({ url: "https://polar.test/p" });
 		expect(polarCalls[0]?.body).toEqual({ external_customer_id: id });
+	});
+});
+
+describe("cancel", () => {
+	test("asks Polar to end the running plan at its period end", async () => {
+		const { t, polarCalls } = setup({
+			billing: () =>
+				billing({ subscription: { ...SUBSCRIPTION, status: "active" } }),
+		});
+		const cookie = await t.signedUser();
+		const response = await t.call("/api/billing/cancel", {
+			method: "POST",
+			cookie,
+		});
+		expect([response.status, await response.json()]).toEqual([
+			200,
+			{ ok: true },
+		]);
+		expect(polarCalls).toEqual([
+			{
+				url: "https://sandbox-api.polar.sh/v1/subscriptions/sub_1",
+				method: "PATCH",
+				body: { cancel_at_period_end: true },
+				auth: "Bearer tok",
+			},
+		]);
+	});
+
+	test("no plan, or one already canceling or ended, is 404 no_subscription and calls nothing", async () => {
+		for (const subscription of [
+			null,
+			{ ...SUBSCRIPTION, status: "canceling" as const },
+			{ ...SUBSCRIPTION, status: "ended" as const },
+		]) {
+			const { t, polarCalls } = setup({
+				billing: () => billing({ subscription }),
+			});
+			const cookie = await t.signedUser();
+			const response = await t.call("/api/billing/cancel", {
+				method: "POST",
+				cookie,
+			});
+			expect([response.status, await response.json()]).toEqual([
+				404,
+				{ error: "no_subscription" },
+			]);
+			expect(polarCalls).toEqual([]);
+		}
 	});
 });
 
@@ -354,5 +403,70 @@ describe("deleting an account cancels the plan", () => {
 		});
 		expect(polarCalls).toEqual([]);
 		expect(await t.db.query.user.findMany()).toHaveLength(0);
+	});
+});
+
+describe("staff Polar sync", () => {
+	test("pages through Polar's subscriptions and orders and hands them to the orchestrator", async () => {
+		const page = (items: unknown[], max: number) =>
+			Response.json({ items, pagination: { total_count: 0, max_page: max } });
+		const { t, polarCalls, upstream } = setup({
+			polar: (url) =>
+				url.includes("/v1/subscriptions/")
+					? url.includes("page=1")
+						? page([{ id: "s1" }], 2)
+						: page([{ id: "s2" }], 2)
+					: page([{ id: "o1" }], 1),
+			billing: (call) =>
+				call.path === "/v1/admin/billing/sync"
+					? { applied: 3, unchanged: 0, skipped: 0 }
+					: billing(),
+		});
+		const staff = await t.registerFirst();
+		const response = await t.call("/api/subscriptions/sync", {
+			method: "POST",
+			cookie: staff,
+		});
+		expect([response.status, await response.json()]).toEqual([
+			200,
+			{ applied: 3, unchanged: 0, skipped: 0 },
+		]);
+		// Subscriptions and orders are read in parallel: compare as a set.
+		expect(polarCalls.map((c) => `${c.method} ${c.url}`).sort()).toEqual([
+			"GET https://sandbox-api.polar.sh/v1/orders/?limit=100&page=1",
+			"GET https://sandbox-api.polar.sh/v1/subscriptions/?limit=100&page=1",
+			"GET https://sandbox-api.polar.sh/v1/subscriptions/?limit=100&page=2",
+		]);
+		expect(upstream.at(-1)).toMatchObject({
+			method: "POST",
+			path: "/v1/admin/billing/sync",
+			body: {
+				subscriptions: [{ id: "s1" }, { id: "s2" }],
+				orders: [{ id: "o1" }],
+			},
+		});
+	});
+
+	test("users get 403; without a Polar token it is 503 billing_unavailable", async () => {
+		const { t } = setup();
+		const user = await t.signedUser();
+		expect(
+			(
+				await t.call("/api/subscriptions/sync", {
+					method: "POST",
+					cookie: user,
+				})
+			).status,
+		).toBe(403);
+		const bare = setup({ withPolar: false });
+		const staff = await bare.t.registerFirst();
+		const response = await bare.t.call("/api/subscriptions/sync", {
+			method: "POST",
+			cookie: staff,
+		});
+		expect([response.status, await response.json()]).toEqual([
+			503,
+			{ error: "billing_unavailable" },
+		]);
 	});
 });

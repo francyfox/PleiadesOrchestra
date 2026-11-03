@@ -13,10 +13,21 @@ const usersContent = {
 				en: "Last active",
 				kk: "Соңғы белсенділік",
 			}),
+			plan: t({ ru: "Подписка", en: "Subscription", kk: "Жазылым" }),
+			paidUntil: t({
+				ru: "Подписан до",
+				en: "Paid until",
+				kk: "Дейін төленген",
+			}),
 			channels: t({ ru: "Каналы", en: "Channels", kk: "Арналар" }),
 			status: t({ ru: "Статус", en: "Status", kk: "Күйі" }),
 		},
-		verified: t({ ru: "подтверждена", en: "verified", kk: "расталған" }),
+		verified: t({
+			ru: "Почта подтверждена",
+			en: "Email verified",
+			kk: "Пошта расталған",
+		}),
+		noPlan: t({ ru: "нет", en: "none", kk: "жоқ" }),
 		unverified: t({
 			ru: "не подтверждена",
 			en: "unverified",

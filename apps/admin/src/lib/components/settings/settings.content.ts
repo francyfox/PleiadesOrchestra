@@ -4,6 +4,44 @@ const settingsContent = {
 	key: "settings",
 	content: {
 		title: t({ ru: "Настройки", en: "Settings", kk: "Параметрлер" }),
+		polarSync: {
+			title: t({
+				ru: "Синхронизация с Polar",
+				en: "Polar sync",
+				kk: "Polar синхрондау",
+			}),
+			description: t({
+				ru: "Забирает из Polar все подписки и заказы и применяет их так же, как вебхуки. Нужна, если вебхук не дошёл.",
+				en: "Pulls every subscription and order from Polar and applies them like webhooks. Use it when a webhook did not arrive.",
+				kk: "Polar-дан барлық жазылымдар мен тапсырыстарды алып, вебхуктар сияқты қолданады. Вебхук жетпесе қажет.",
+			}),
+			action: t({
+				ru: "Синхронизировать Polar",
+				en: "Sync Polar",
+				kk: "Polar синхрондау",
+			}),
+			done: t({
+				ru: insert(
+					"Готово: применено {{applied}}, без изменений {{unchanged}}, пропущено {{skipped}}",
+				),
+				en: insert(
+					"Done: {{applied}} applied, {{unchanged}} unchanged, {{skipped}} skipped",
+				),
+				kk: insert(
+					"Дайын: қолданылды {{applied}}, өзгеріссіз {{unchanged}}, өткізілді {{skipped}}",
+				),
+			}),
+			billing_unavailable: t({
+				ru: "Polar не настроен: нет POLAR_ACCESS_TOKEN",
+				en: "Polar is not configured: no POLAR_ACCESS_TOKEN",
+				kk: "Polar бапталмаған: POLAR_ACCESS_TOKEN жоқ",
+			}),
+			billing_failed: t({
+				ru: "Polar отказал: проверьте scope токена (subscriptions:read, orders:read)",
+				en: "Polar refused: check the token scopes (subscriptions:read, orders:read)",
+				kk: "Polar бас тартты: токен scope-ын тексеріңіз (subscriptions:read, orders:read)",
+			}),
+		},
 		financeRates: {
 			title: t({
 				ru: "Ставки финансов",

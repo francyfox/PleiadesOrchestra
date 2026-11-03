@@ -195,12 +195,15 @@ export const financeActions = {
 		if (!parsed.ok) return invalidForm();
 		return submitted(api().finance.rates.put(parsed.body));
 	},
+	/** Staff: pull every subscription and order from Polar into the orchestrator. */
+	syncPolar: () => submitted(api().subscriptions.sync.post()),
 };
 
 /** Polar checkout and customer portal; both answer `{ url }` to go to. */
 export const billingActions = {
 	subscribe: () => submitted(api().billing.checkout.post({ kind: "plan" })),
 	portal: () => submitted(api().billing.portal.post()),
+	cancel: () => submitted(api().billing.cancel.post()),
 };
 
 /** Staff managing customer accounts (`/api/accounts`). */

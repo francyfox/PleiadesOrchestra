@@ -3,7 +3,10 @@ import { isAllowed } from "../access/access.service.ts";
 import type { ChannelDirectory } from "../channel-directory/channel-directory.ts";
 import type { Db } from "../database/database.ts";
 import type { ReplyService } from "../reply/reply.ts";
-import { ndjsonResponse } from "../streaming/streaming.service.ts";
+import {
+	ndjsonResponse,
+	releaseWhenDone,
+} from "../streaming/streaming.service.ts";
 import { resolveThreadId } from "../threads/threads.service.ts";
 import { upsertIdentifiedVisitor } from "../visitors/visitors.service.ts";
 import { MessageBody, NDJSON_LINES } from "./messages.schema.ts";
@@ -24,6 +27,9 @@ export function messagesRoutes({ db, directory, reply, now }: MessagesDeps) {
 		({ body, status, request }) => {
 			const channel = directory.bySlug(body.channel ?? DEFAULT_CHANNEL);
 			if (!channel) return status(404, "Unknown channel");
+			// Same guard as the widget: an owner at zero TR gets no model calls.
+			if (directory.suspension(channel))
+				return status(402, { code: "channel_suspended" as const });
 
 			const timestamp = now();
 			const visitor = upsertIdentifiedVisitor(
@@ -44,17 +50,19 @@ export function messagesRoutes({ db, directory, reply, now }: MessagesDeps) {
 				body.threadId,
 				timestamp,
 			);
+			const release = directory.reserve(channel);
+			if (!release) return status(402, { code: "channel_suspended" as const });
 			const stream = reply.startReply(visitor, threadId, body.text, {
 				signal: request.signal,
 				replyTo: body.replyTo,
 			});
-			return ndjsonResponse(stream, request);
+			return ndjsonResponse(releaseWhenDone(stream, release), request);
 		},
 		{
 			body: MessageBody,
 			detail: {
 				summary: "Send a message and stream the reply",
-				description: `A transport (Telegram, CLI, ...) sends a user message; \`channel\` defaults to \`cli\`. 404 unknown channel (text), 403 empty body when the sender is not allowed (the model is never called).\n\n${NDJSON_LINES}`,
+				description: `A transport (Telegram, CLI, ...) sends a user message; \`channel\` defaults to \`cli\`. 404 unknown channel (text), 402 \`{ code: "channel_suspended" }\` when the channel's owner has no TR left, 403 empty body when the sender is not allowed (the model is never called in either case).\n\n${NDJSON_LINES}`,
 			},
 		},
 	);

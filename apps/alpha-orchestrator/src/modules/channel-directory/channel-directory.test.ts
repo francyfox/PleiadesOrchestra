@@ -5,6 +5,7 @@ import {
 } from "../channels/channels.service.ts";
 import { creditLedger, subscriptions } from "../database/database.schema.ts";
 import { testDb } from "../database/database.testing.ts";
+import { REQUEST_HOLD_MICRO as HOLD } from "../ledger/ledger.service.ts";
 import { ChannelDirectory } from "./channel-directory.ts";
 
 function setup() {
@@ -116,33 +117,55 @@ describe("ChannelDirectory.suspension", () => {
 	test("an active plan with balance serves", () => {
 		const { directory, channel, plan, ledger } = owned();
 		plan("active", NOW + 10);
-		ledger(5);
+		ledger(5 * HOLD);
 		expect(directory.suspension(channel)).toBeNull();
 	});
 
-	test("a canceled plan stops at its period end without any refresh", () => {
+	test("a canceled plan past its period end keeps serving while the balance lasts", () => {
 		const { directory, channel, plan, ledger, clock } = owned();
 		plan("canceled", NOW + 10);
-		ledger(5);
-		expect(directory.suspension(channel)).toBeNull();
+		ledger(5 * HOLD);
 		clock.now = NOW + 10;
-		expect(directory.suspension(channel)).toEqual({
-			reason: "plan_expired",
-			since: NOW + 10,
-		});
+		expect(directory.suspension(channel)).toBeNull();
 	});
 
 	test("refreshStanding unblocks after a top-up and blocks after a debit crossing zero", () => {
 		const { directory, channel, plan, ledger } = owned();
 		plan("active", null);
 		expect(directory.suspension(channel)?.reason).toBe("no_balance");
-		ledger(5);
+		ledger(5 * HOLD);
 		expect(directory.suspension(channel)?.reason).toBe("no_balance");
 		directory.refreshStanding("acc_1");
 		expect(directory.suspension(channel)).toBeNull();
-		ledger(-6);
+		ledger(-6 * HOLD);
 		expect(directory.suspension(channel)).toBeNull();
 		directory.refreshStanding("acc_1");
 		expect(directory.suspension(channel)?.reason).toBe("no_balance");
+	});
+
+	test("reserve: concurrent requests see each other's holds; release and expiry free them", () => {
+		const { directory, channel, ledger, clock } = owned();
+		ledger(2 * HOLD);
+		const first = directory.reserve(channel);
+		const second = directory.reserve(channel);
+		expect(first).toBeFunction();
+		expect(second).toBeFunction();
+		// Balance 2 holds, 2 in flight: a third request would overspend.
+		expect(directory.reserve(channel)).toBeNull();
+		first?.();
+		first?.(); // releasing twice frees one hold only
+		expect(directory.reserve(channel)).toBeFunction();
+		expect(directory.reserve(channel)).toBeNull();
+		// A hold whose stream never ended (crash, lost cancel) lapses.
+		clock.now += 11 * 60_000;
+		expect(directory.reserve(channel)).toBeFunction();
+	});
+
+	test("reserve: below one hold is refused; staff channels always pass", () => {
+		const { directory, channel, ledger } = owned();
+		ledger(HOLD - 1);
+		expect(directory.reserve(channel)).toBeNull();
+		expect(directory.suspension(channel)?.reason).toBe("no_plan");
+		expect(directory.reserve({ ownerId: null })).toBeFunction();
 	});
 });
