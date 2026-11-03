@@ -2,10 +2,17 @@ import { sentrySvelteKit } from "@sentry/sveltekit/vite";
 import adapter from "@sveltejs/adapter-static";
 import { sveltekit } from "@sveltejs/kit/vite";
 import tailwindcss from "@tailwindcss/vite";
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import { intlayer } from "vite-intlayer";
 import { coalesceIntlayerReloads } from "./vite/coalesce-intlayer-reloads";
 import { devApiProxy } from "./vite/dev-api-proxy";
+
+// The dev server runs under node, which skips .env; the inspector's open-in-editor reads LAUNCH_EDITOR from process.env.
+process.env.LAUNCH_EDITOR ??= loadEnv(
+	"development",
+	import.meta.dirname,
+	"LAUNCH_EDITOR",
+).LAUNCH_EDITOR;
 
 /** Where the dev server sends `/api` — apps/admin-api (`bun --cwd apps/admin-api run dev`). */
 const ADMIN_API = process.env.ADMIN_API_URL ?? "http://localhost:3003";
@@ -13,6 +20,8 @@ const ADMIN_API = process.env.ADMIN_API_URL ?? "http://localhost:3003";
 export default defineConfig({
 	// SvelteKit narrows fs.allow to src/node_modules/.svelte-kit; the compiled dictionaries live in .intlayer,
 	// and the design system's assets (the background photo of tokens.css) in the symlinked workspace package.
+	// DevTools point rules at their .css source instead of "inline" (Tailwind 4.3+ emits the maps).
+	css: { devSourcemap: true },
 	server: { fs: { allow: [".intlayer", "../../packages/ui"] } },
 	// intlayer() must come before sveltekit() (vite-intlayer docs).
 	plugins: [
@@ -35,6 +44,8 @@ export default defineConfig({
 			// client router. Served by nginx in Docker (see nginx.conf), which also
 			// proxies /api to admin-api.
 			adapter: adapter({ fallback: "index.html" }),
+			// Dev only: hold the toggle key and click an element to open its component in the editor.
+			inspector: true,
 		}),
 	],
 });
