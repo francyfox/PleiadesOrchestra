@@ -38,7 +38,7 @@ export interface PolarConfig {
 	fetch?: typeof fetch;
 }
 
-/** Plain REST client for the three Polar calls admin-api needs; no SDK. */
+/** Plain REST client for the Polar calls admin-api needs; no SDK. */
 export function createPolarClient(config: PolarConfig) {
 	const base =
 		config.server === "production"
@@ -72,11 +72,27 @@ export function createPolarClient(config: PolarConfig) {
 			: ((await response.json()) as T);
 	}
 
+	/** Every page of a Polar list (`limit` 100, `pagination.max_page`). */
+	async function listAll(path: string): Promise<unknown[]> {
+		const items: unknown[] = [];
+		for (let page = 1; ; page++) {
+			const answer = await call<{
+				items: unknown[];
+				pagination: { max_page: number };
+			}>("GET", `${path}?limit=100&page=${page}`);
+			items.push(...answer.items);
+			if (page >= answer.pagination.max_page) return items;
+		}
+	}
+
 	const productFor = (kind: BillingKind) =>
 		kind === "plan" ? config.planProductId : config.creditsProductId;
 
 	return {
 		productFor,
+		/** Staff sync: every subscription and order of the organization (scopes `subscriptions:read`, `orders:read`). shortcut: all of them each time; filter by product or `modified_at` when the lists grow. */
+		subscriptions: () => listAll("/v1/subscriptions/"),
+		orders: () => listAll("/v1/orders/"),
 		/** A checkout for the signed-in user; Polar links the resulting customer by `external_customer_id`. */
 		async checkout(
 			kind: BillingKind,
@@ -89,6 +105,8 @@ export function createPolarClient(config: PolarConfig) {
 			const checkout = await call<{ url: string }>("POST", "/v1/checkouts/", {
 				products: [product],
 				external_customer_id: user.id,
+				// Copied to the subscription/order: maps the payment when Polar reuses a customer without external_id.
+				metadata: { account_id: user.id },
 				customer_email: user.email,
 				success_url: successUrl,
 				// Custom-price (pay what you want) products only; Polar ignores it for fixed ones.
@@ -103,6 +121,14 @@ export function createPolarClient(config: PolarConfig) {
 				{ external_customer_id: userId },
 			);
 			return session.customer_portal_url;
+		},
+		/** The user's own cancel: the plan runs to its period end (what it topped up stays). */
+		async cancel(subscriptionId: string): Promise<void> {
+			await call(
+				"PATCH",
+				`/v1/subscriptions/${encodeURIComponent(subscriptionId)}`,
+				{ cancel_at_period_end: true },
+			);
 		},
 		/** Ends the subscription at once (Polar "revoke"); one that is already gone counts as done. */
 		async revoke(subscriptionId: string): Promise<void> {

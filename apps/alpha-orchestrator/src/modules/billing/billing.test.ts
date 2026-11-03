@@ -189,6 +189,29 @@ describe("POST /v1/billing/polar", () => {
 		expect(rows(db)).toEqual([]);
 	});
 
+	test("an existing Polar customer without external_id maps by the checkout's metadata.account_id", async () => {
+		const { app, db } = setup();
+		const send = (type: string, data: unknown, id: string) =>
+			app.handle(
+				webhookRequest({ type, id, data, timestampSeconds: NOW_SECONDS }),
+			);
+		// Polar reuses a customer with the same email and leaves its external_id empty.
+		const reused = { id: "cus_1", external_id: null };
+		const metadata = { account_id: "acc_1" };
+		await send(
+			"subscription.active",
+			subscriptionData({ customer: reused, metadata }),
+			"m1",
+		);
+		await send("order.paid", orderData({ customer: reused, metadata }), "m2");
+		expect(rows(db)).toEqual([
+			expect.objectContaining({ id: "sub_1", accountId: "acc_1" }),
+		]);
+		expect(db.select().from(orders).all()).toEqual([
+			expect.objectContaining({ id: "ord_1", accountId: "acc_1" }),
+		]);
+	});
+
 	describe("orders and the ledger", () => {
 		const send = (
 			app: ReturnType<typeof setup>["app"],
@@ -256,16 +279,25 @@ describe("POST /v1/billing/polar", () => {
 			expect(balanceMicro(db, "acc_1")).toBe(0);
 		});
 
-		test("a plan order is recorded but credits nothing", async () => {
+		test("a plan order credits its amount like a top-up, and its refund takes it back", async () => {
 			const { app, db } = setup();
+			const planOrder = (overrides: Record<string, unknown> = {}) =>
+				orderData({
+					id: "ord_2",
+					product_id: "prod_1",
+					net_amount: 2000,
+					...overrides,
+				});
+			await send(app, "order.paid", planOrder(), "m1");
+			expect(db.select().from(orders).get()).toMatchObject({ kind: "plan" });
+			expect(balanceMicro(db, "acc_1")).toBe(20_000_000);
 			await send(
 				app,
-				"order.paid",
-				orderData({ id: "ord_2", product_id: "prod_1" }),
-				"m1",
+				"order.refunded",
+				planOrder({ refunded_amount: 2000, status: "refunded" }),
+				"m2",
 			);
-			expect(db.select().from(orders).get()).toMatchObject({ kind: "plan" });
-			expect(db.select().from(creditLedger).all()).toEqual([]);
+			expect(balanceMicro(db, "acc_1")).toBe(0);
 		});
 
 		test("an order without an amount is a 400", async () => {
@@ -367,7 +399,7 @@ describe("channel standing after a webhook", () => {
 });
 
 describe("the payment cycle", () => {
-	test("subscribe, renew, cancel, run out the paid period, subscribe again", async () => {
+	test("each paid month tops up the balance; a cancel keeps what is left; zero pauses with the reason", async () => {
 		let clock = NOW;
 		const { app, db, directory } = setup(WEBHOOK_SECRET, () => clock);
 		const { channel } = createWebChannel(
@@ -394,15 +426,21 @@ describe("the payment cycle", () => {
 			expect(response.status).toBe(200);
 		};
 		const reason = () => directory.suspension(channel)?.reason ?? "ok";
+		const month = (n: number, overrides: Record<string, unknown> = {}) =>
+			orderData({
+				id: `ord_${n}`,
+				product_id: "prod_1",
+				net_amount: 2000,
+				...overrides,
+			});
 
-		// Model spend still needs trenni above zero, whatever the plan.
-		await send("order.paid", orderData());
 		expect(reason()).toBe("no_plan");
-
 		await send("subscription.active", subscriptionData());
+		await send("order.paid", month(1));
 		expect(reason()).toBe("ok");
+		expect(balanceMicro(db, "acc_1")).toBe(20_000_000);
 
-		// Polar renews at the period end: same subscription, the next period.
+		// Polar renews: the next period and the next order; the unspent month stays.
 		clock = Date.parse("2026-11-01T01:00:00Z");
 		await send(
 			"subscription.updated",
@@ -412,40 +450,33 @@ describe("the payment cycle", () => {
 				modified_at: "2026-11-01T00:00:00Z",
 			}),
 		);
-		expect(reason()).toBe("ok");
+		await send("order.paid", month(2, { created_at: "2026-11-01T00:00:00Z" }));
+		expect(balanceMicro(db, "acc_1")).toBe(40_000_000);
 
-		// Canceled mid-period: the paid month still runs.
-		clock = Date.parse("2026-11-10T00:00:00Z");
+		// Canceled, then the period ends: the balance still runs the channels.
+		clock = Date.parse("2026-12-01T00:00:00Z");
 		await send(
-			"subscription.canceled",
+			"subscription.revoked",
 			subscriptionData({
 				status: "canceled",
-				cancel_at_period_end: true,
-				current_period_start: "2026-11-01T00:00:00Z",
 				current_period_end: "2026-12-01T00:00:00Z",
-				modified_at: "2026-11-10T00:00:00Z",
+				ended_at: "2026-12-01T00:00:00Z",
+				modified_at: "2026-12-01T00:00:00Z",
 			}),
 		);
 		expect(reason()).toBe("ok");
 
-		// No webhook needed for the end: the stored period end is compared with now.
-		clock = Date.parse("2026-11-30T23:59:59Z");
-		expect(reason()).toBe("ok");
-		clock = Date.parse("2026-12-01T00:00:00Z");
+		// Spent down to zero after the plan ended: paused as plan_expired.
+		db.insert(creditLedger)
+			.values({
+				accountId: "acc_1",
+				amount: -40_000_000,
+				reason: "usage",
+				ref: "x",
+				createdAt: clock,
+			})
+			.run();
+		directory.refreshStanding("acc_1");
 		expect(reason()).toBe("plan_expired");
-
-		// A new checkout is a new subscription.
-		clock = Date.parse("2026-12-05T00:00:00Z");
-		await send(
-			"subscription.active",
-			subscriptionData({
-				id: "sub_2",
-				started_at: "2026-12-05T00:00:00Z",
-				current_period_start: "2026-12-05T00:00:00Z",
-				current_period_end: "2027-01-05T00:00:00Z",
-				modified_at: "2026-12-05T00:00:00Z",
-			}),
-		);
-		expect(reason()).toBe("ok");
 	});
 });

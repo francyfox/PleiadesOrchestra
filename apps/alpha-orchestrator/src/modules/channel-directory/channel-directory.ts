@@ -2,6 +2,7 @@ import { standingOf } from "../account-billing/account-billing.service.ts";
 import type { ChannelRow } from "../channels/channels.types.ts";
 import { channels } from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
+import { balanceMicro, REQUEST_HOLD_MICRO } from "../ledger/ledger.service.ts";
 import {
 	allReplyPrompts,
 	DEFAULT_REPLY_PROMPT,
@@ -46,10 +47,16 @@ function buildIndex(
  * hash maps (O(1) lookups). There is one orchestrator process: admin
  * mutations call `invalidate()` and the next lookup re-reads the table.
  */
+/** How long a hold outlives a stream that never reported its end (crash, lost cancel). */
+const HOLD_TTL_MS = 10 * 60_000;
+
 export class ChannelDirectory {
 	private index: ChannelIndex | null = null;
 	/** Owner standing per account, read once and kept until `refreshStanding`. */
 	private standings = new Map<string, Standing>();
+	/** Holds of requests in flight per account: hold id -> expiry. */
+	private holds = new Map<string, Map<number, number>>();
+	private nextHold = 0;
 
 	constructor(
 		private readonly db: Db,
@@ -92,8 +99,8 @@ export class ChannelDirectory {
 
 	/**
 	 * Why this channel's owner may not be served, or `null` when it may. Staff
-	 * channels (no owner) never are. A plan that ran `until` a time now past is
-	 * `plan_expired` — no timer, the stored `until` is compared with `now`.
+	 * channels (no owner) never are. Only the balance stops channels, so the
+	 * cached standing holds until a webhook or a debit refreshes it.
 	 */
 	suspension(channel: Pick<ChannelRow, "ownerId">): {
 		reason: "no_plan" | "plan_expired" | "no_balance";
@@ -106,10 +113,33 @@ export class ChannelDirectory {
 			standing = standingOf(this.db, owner, this.now());
 			this.standings.set(owner, standing);
 		}
-		if (!standing.ok) return { reason: standing.reason, since: standing.since };
-		if (standing.until !== null && standing.until <= this.now())
-			return { reason: "plan_expired", since: standing.until };
-		return null;
+		return standing.ok
+			? null
+			: { reason: standing.reason, since: standing.since };
+	}
+
+	/**
+	 * Reserve one request hold on the channel owner's balance, or `null` when the
+	 * balance minus the holds in flight cannot cover it (answer 402). Read and
+	 * claim happen in one synchronous step, so parallel requests cannot both pass.
+	 * Call the returned function when the request's stream ends (after its usage
+	 * is debited); a hold left behind lapses after `HOLD_TTL_MS`. Staff channels
+	 * hold nothing.
+	 */
+	reserve(channel: Pick<ChannelRow, "ownerId">): (() => void) | null {
+		const owner = channel.ownerId;
+		if (!owner) return () => {};
+		const now = this.now();
+		const held = this.holds.get(owner) ?? new Map<number, number>();
+		for (const [id, until] of held) if (until <= now) held.delete(id);
+		const free = balanceMicro(this.db, owner) - held.size * REQUEST_HOLD_MICRO;
+		if (free < REQUEST_HOLD_MICRO) return null;
+		const id = this.nextHold++;
+		held.set(id, now + HOLD_TTL_MS);
+		this.holds.set(owner, held);
+		return () => {
+			held.delete(id);
+		};
 	}
 
 	/** Forget one account's standing: a webhook or a debit changed what it is built from. */

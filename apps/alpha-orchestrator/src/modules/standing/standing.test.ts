@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { REQUEST_HOLD_MICRO as HOLD } from "../ledger/ledger.service.ts";
 import { accountStanding, type PlanFields } from "./standing.service.ts";
 
 const NOW = 1_000_000;
@@ -9,62 +10,61 @@ const plan = (overrides: Partial<PlanFields> = {}): PlanFields => ({
 });
 
 describe("accountStanding", () => {
-	test("active and trialing plans are in effect and need no expiry", () => {
-		expect(accountStanding(plan(), 1, NOW)).toEqual({ ok: true, until: null });
-		expect(accountStanding(plan({ status: "trialing" }), 1, NOW)).toEqual({
-			ok: true,
-			until: null,
-		});
-	});
-
-	test("a canceled or past_due plan runs to the end of its period", () => {
-		for (const status of ["canceled", "past_due", "unpaid"]) {
-			expect(accountStanding(plan({ status }), 1, NOW)).toEqual({
+	test("a balance of at least one request hold runs the channels with or without a plan", () => {
+		for (const subscription of [
+			plan(),
+			plan({ status: "canceled", currentPeriodEnd: NOW - 1 }),
+			plan({ status: "canceled", endedAt: NOW - 1 }),
+			null,
+		]) {
+			expect(accountStanding(subscription, HOLD, NOW)).toEqual({
 				ok: true,
-				until: NOW + 1000,
+				until: null,
 			});
 		}
 	});
 
-	test("the period ending exactly now is over", () => {
+	test("below one hold, a running plan is no_balance", () => {
+		for (const balance of [HOLD - 1, 0, -1]) {
+			for (const status of ["active", "trialing"]) {
+				expect(accountStanding(plan({ status }), balance, NOW)).toEqual({
+					ok: false,
+					reason: "no_balance",
+					since: null,
+				});
+			}
+		}
+		// Canceled but still inside the paid period: the plan is in effect.
+		expect(accountStanding(plan({ status: "canceled" }), 0, NOW)).toMatchObject(
+			{ reason: "no_balance" },
+		);
+	});
+
+	test("at zero, an ended plan is plan_expired from its end; a revoke ends it before the period", () => {
 		expect(
 			accountStanding(
 				plan({ status: "canceled", currentPeriodEnd: NOW }),
-				1,
+				0,
 				NOW,
 			),
 		).toEqual({ ok: false, reason: "plan_expired", since: NOW });
-	});
-
-	test("an inactive plan without a period end is expired", () => {
+		expect(
+			accountStanding(plan({ status: "canceled", endedAt: NOW - 5 }), 0, NOW),
+		).toEqual({ ok: false, reason: "plan_expired", since: NOW - 5 });
 		expect(
 			accountStanding(
 				plan({ status: "past_due", currentPeriodEnd: null }),
-				1,
+				0,
 				NOW,
 			),
 		).toEqual({ ok: false, reason: "plan_expired", since: null });
 	});
 
-	test("no subscription is no_plan", () => {
-		expect(accountStanding(null, 1, NOW)).toEqual({
+	test("at zero without any plan is no_plan", () => {
+		expect(accountStanding(null, 0, NOW)).toEqual({
 			ok: false,
 			reason: "no_plan",
 			since: null,
 		});
-	});
-
-	test("balance must be above zero: 0 and negative are no_balance", () => {
-		for (const balance of [0, -1]) {
-			expect(accountStanding(plan(), balance, NOW)).toEqual({
-				ok: false,
-				reason: "no_balance",
-				since: null,
-			});
-		}
-	});
-
-	test("a missing plan wins over a missing balance", () => {
-		expect(accountStanding(null, 0, NOW)).toMatchObject({ reason: "no_plan" });
 	});
 });

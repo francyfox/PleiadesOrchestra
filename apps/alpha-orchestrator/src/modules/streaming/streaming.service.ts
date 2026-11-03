@@ -44,3 +44,38 @@ export function ndjsonResponse(
 		},
 	});
 }
+
+/**
+ * The same stream, calling `release` once when it ends: read to the end, failed,
+ * or cancelled by the client. Pull-based, so it ends when the client has read it.
+ */
+export function releaseWhenDone(
+	stream: ReadableStream<Uint8Array>,
+	release: () => void,
+): ReadableStream<Uint8Array> {
+	const reader = stream.getReader();
+	let released = false;
+	const once = () => {
+		if (released) return;
+		released = true;
+		release();
+	};
+	return new ReadableStream({
+		async pull(controller) {
+			try {
+				const chunk = await reader.read();
+				if (chunk.done) {
+					once();
+					controller.close();
+				} else controller.enqueue(chunk.value);
+			} catch (error) {
+				once();
+				controller.error(error);
+			}
+		},
+		cancel(reason) {
+			once();
+			return reader.cancel(reason);
+		},
+	});
+}

@@ -45,9 +45,14 @@ const billingContent = {
 		actions: {
 			title: t({ ru: "Оплата", en: "Payment", kk: "Төлем" }),
 			subscribe: t({
-				ru: "Оформить / продлить тариф",
-				en: "Subscribe / Renew plan",
-				kk: "Тарифті рәсімдеу / ұзарту",
+				ru: "Оформить подписку",
+				en: "Subscribe",
+				kk: "Жазылу",
+			}),
+			topsUp: t({
+				ru: "Каждый месяц пополняет баланс на 20 TR. Остаток не сгорает и после отмены.",
+				en: "Tops your balance up by 20 TR every month. What is left never expires, even after you cancel.",
+				kk: "Әр ай сайын балансты 20 TR-ге толықтырады. Қалдық күймейді, тіпті бас тартқаннан кейін де.",
 			}),
 			// The Cloud plan is a fixed $20/month (docs landing pricing); the price itself sits in billing-actions.svelte.
 			perMonth: t({ ru: "в месяц", en: "per month", kk: "айына" }),
@@ -91,28 +96,43 @@ const billingContent = {
 				kk: "Шығын әлі жоқ",
 			}),
 		},
-		sidebar: {
-			active: t({
-				ru: "тариф активен",
-				en: "plan active",
-				kk: "тариф белсенді",
+		cancel: {
+			action: t({
+				ru: "Отменить подписку",
+				en: "Cancel subscription",
+				kk: "Жазылымнан бас тарту",
+			}),
+			title: t({
+				ru: "Отменить подписку?",
+				en: "Cancel the subscription?",
+				kk: "Жазылымнан бас тарту керек пе?",
+			}),
+			description: t({
+				ru: "Новых списаний не будет. Оплаченный месяц и остаток баланса сохранятся: каналы работают, пока баланс больше нуля.",
+				en: "No further charges. The paid month and your balance stay: channels run while the balance is above zero.",
+				kk: "Жаңа төлемдер болмайды. Төленген ай мен баланс қалдығы сақталады: баланс нөлден жоғары болғанша арналар жұмыс істейді.",
+			}),
+			done: t({
+				ru: "Подписка отменена: новых списаний не будет",
+				en: "Subscription canceled: no further charges",
+				kk: "Жазылымнан бас тартылды: жаңа төлемдер болмайды",
 			}),
 		},
 		alert: {
 			renewPlan: t({
-				ru: "Ваши каналы приостановлены: продлите тариф",
-				en: "Your channels are paused: renew the plan",
-				kk: "Арналарыңыз тоқтатылған: тарифті ұзартыңыз",
+				ru: "Ваши каналы приостановлены: баланс исчерпан, оформите подписку",
+				en: "Your channels are paused: the balance is used up, subscribe",
+				kk: "Арналарыңыз тоқтатылған: баланс таусылды, жазылыңыз",
 			}),
 			topUp: t({
-				ru: "Ваши каналы приостановлены: пополните трени",
-				en: "Your channels are paused: top up trenni",
-				kk: "Арналарыңыз тоқтатылған: трениді толықтырыңыз",
+				ru: "Ваши каналы приостановлены: баланс исчерпан до следующего списания подписки",
+				en: "Your channels are paused: the balance is used up until the next subscription charge",
+				kk: "Арналарыңыз тоқтатылған: баланс келесі жазылым төлеміне дейін таусылды",
 			}),
 			lowBalance: t({
-				ru: "Баланс трени почти исчерпан: пополните, чтобы каналы не остановились",
-				en: "Your trenni balance is almost used up: top up so channels keep running",
-				kk: "Трени балансы таусылуға жақын: арналар тоқтамас үшін толықтырыңыз",
+				ru: "Баланс трени почти исчерпан: каналы остановятся на нуле",
+				en: "Your trenni balance is almost used up: channels stop at zero",
+				kk: "Трени балансы таусылуға жақын: нөлде арналар тоқтайды",
 			}),
 			planEnding: t({
 				ru: "Тариф скоро закончится: продлите, чтобы каналы не остановились",
@@ -130,6 +150,11 @@ const billingContent = {
 			}),
 		},
 		errors: {
+			no_subscription: t({
+				ru: "Нет действующей подписки",
+				en: "No running subscription",
+				kk: "Белсенді жазылым жоқ",
+			}),
 			billing_unavailable: t({
 				ru: "Оплата не настроена",
 				en: "Billing is not configured",

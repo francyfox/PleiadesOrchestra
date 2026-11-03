@@ -1,4 +1,4 @@
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 import type { RouteDeps } from "../../app.types.ts";
 import { isStaff } from "../accounts/accounts.schema.ts";
 import { requireAdmin } from "../auth/auth.service.ts";
@@ -113,6 +113,33 @@ export function billingRoutes({
 							summary: "Start a Polar checkout (users)",
 							description:
 								"Returns the Polar checkout `url` for the plan or for trenni (`amountUsd` preselects the amount of a custom-price product). `billing_unavailable` (503) without a Polar token or the product id; `billing_failed` (502) when Polar refuses.",
+						},
+					},
+				)
+				.post(
+					"/cancel",
+					async ({ account, status }) => {
+						if (!polar) return status(503, { error: "billing_unavailable" });
+						const { subscription } = await orchestrator.getAccountBilling(
+							account.id,
+						);
+						// Only a running plan: `canceling` is already set, `ended` has nothing to stop.
+						if (
+							!subscription ||
+							(subscription.status !== "active" &&
+								subscription.status !== "past_due")
+						)
+							return status(404, { error: "no_subscription" });
+						await polar.cancel(subscription.id);
+						cache.delete(account.id);
+						return { ok: true as const };
+					},
+					{
+						response: { 200: t.Object({ ok: t.Literal(true) }), ...Failures },
+						detail: {
+							summary: "Cancel own plan at its period end (users)",
+							description:
+								"Polar `cancel_at_period_end`; the topped-up balance stays. `no_subscription` (404) without a running plan; `billing_unavailable` (503) without a Polar token; `billing_failed` (502) when Polar refuses. The new state arrives by webhook.",
 						},
 					},
 				)

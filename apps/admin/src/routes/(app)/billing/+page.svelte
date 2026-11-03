@@ -26,6 +26,6 @@
 <h1 class="text-2xl font-semibold">{$content.title.value}</h1>
 
 <div class="grid max-w-4xl gap-6">
-	<BillingActions />
+	<BillingActions subscription={billing.data?.subscription ?? null} />
 	<BillingDetails billing={prefetched(billing)} />
 </div>

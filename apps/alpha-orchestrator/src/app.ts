@@ -26,7 +26,7 @@ import type { AgentSpec, FetchLike } from "./modules/agents/agents.service.ts";
 import { agentsRoutes } from "./modules/agents/agents.ts";
 import { authorizeRequest } from "./modules/auth/auth.service.ts";
 import type { BillingProducts } from "./modules/billing/billing.service.ts";
-import { billingRoutes } from "./modules/billing/billing.ts";
+import { billingRoutes, billingSyncRoutes } from "./modules/billing/billing.ts";
 import { blockedIpsRoutes } from "./modules/blocked-ips/blocked-ips.ts";
 import type { ChannelDirectory } from "./modules/channel-directory/channel-directory.ts";
 import {
@@ -320,6 +320,14 @@ export function createApp(deps: AppDeps) {
 			.use(intentsRoutes({ db, memory: intentMemory, now }))
 			.use(usageRoutes({ db, now, prices: deps.prices }))
 			.use(financeRoutes({ db, now, prices: deps.prices }))
+			.use(
+				billingSyncRoutes({
+					db,
+					now,
+					products: deps.billing,
+					onAccountChanged: (accountId) => directory.refreshStanding(accountId),
+				}),
+			)
 			.use(statsRoutes({ db, now }))
 			.use(performanceRoutes({ db, now }))
 			.use(

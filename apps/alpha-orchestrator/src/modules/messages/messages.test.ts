@@ -10,6 +10,7 @@ import { createApp } from "../../app.ts";
 import { ChannelDirectory } from "../channel-directory/channel-directory.ts";
 import {
 	channels,
+	creditLedger,
 	llmCalls,
 	messages,
 	planRuns,
@@ -18,6 +19,7 @@ import {
 import { testDb } from "../database/database.testing.ts";
 import type { Db } from "../database/database.ts";
 import { SqliteHistoryStore } from "../history/history.ts";
+import { REQUEST_HOLD_MICRO } from "../ledger/ledger.service.ts";
 import { RunBinding } from "../run-binding/run-binding.ts";
 import { SqliteUsageRecorder } from "../usage-recorder/usage-recorder.ts";
 
@@ -182,6 +184,41 @@ describe("POST /v1/messages access control", () => {
 		expect(response.status).toBe(403);
 		expect(await response.text()).toBe("");
 		expect(calls).toHaveLength(0);
+	});
+
+	test("a channel whose owner has no balance gets 402 channel_suspended and the model is never called", async () => {
+		const { app, db, calls } = setup();
+		db.update(channels).set({ ownerId: "acc_1" }).run();
+		const response = await app.handle(
+			post("/v1/messages", { threadId: "t", userId: "u", text: "hi" }),
+		);
+		expect(response.status).toBe(402);
+		expect(await response.json()).toEqual({ code: "channel_suspended" });
+		expect(calls).toHaveLength(0);
+	});
+
+	test("a request holds its reserve until its stream ends: a parallel one is refused, a later one passes", async () => {
+		const { app, db } = setup();
+		db.update(channels).set({ ownerId: "acc_1" }).run();
+		db.insert(creditLedger)
+			.values({
+				accountId: "acc_1",
+				amount: REQUEST_HOLD_MICRO,
+				reason: "top_up",
+				ref: "o1",
+				createdAt: 1,
+			})
+			.run();
+		const send = () =>
+			app.handle(
+				post("/v1/messages", { threadId: "t", userId: "u", text: "hi" }),
+			);
+		const first = await send();
+		expect(first.status).toBe(200);
+		// The first stream is still open: its hold covers the whole balance.
+		expect((await send()).status).toBe(402);
+		await first.text();
+		expect((await send()).status).toBe(200);
 	});
 
 	test("a blocked visitor on an open channel gets 403", async () => {
