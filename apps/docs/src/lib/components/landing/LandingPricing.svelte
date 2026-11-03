@@ -29,7 +29,7 @@
 			text: t.cloud.text,
 			price: cloudPrice,
 			unit: `/ ${t.cloud.perMonth}`,
-			cta: t.cloud.buy,
+			cta: t.cloud.soon,
 			href: PLEIADES_CLOUD_CHECKOUT_URL,
 			external: true,
 			includes: Object.values(t.cloud.includes),
@@ -37,6 +37,8 @@
 			tone: "var(--accent-2)",
 			filled: true,
 			terms: false,
+			// Cloud is not open yet: the CTA renders as a disabled button.
+			disabled: true,
 		},
 		{
 			title: t.community.title,
@@ -81,7 +83,12 @@
 					<span class="text-5xl font-bold">{plan.price}</span>
 					{#if plan.unit}<span class="dim">{plan.unit}</span>{/if}
 				</p>
-				<a
+				{#if plan.disabled}<button
+						type="button"
+						disabled
+						class="cta chip border px-3 py-2 text-center text-sm font-bold"
+						class:filled={plan.filled}>{plan.cta}</button
+					>{:else}<a
 					href={plan.href}
 					class="cta chip border px-3 py-2 text-center text-sm font-bold !hover:bg-white !hover:text-black"
 					class:filled={plan.filled}
@@ -90,7 +97,7 @@
 						: { rel: "external" }}
 					>{plan.cta}{#if plan.external}<span class="sr-only"> {c.common.newTab}</span
 						>{/if}</a
-				>
+				>{/if}
 				<p class="dim text-xs">
 					{#if plan.terms}<a
 							href={PLEIADES_TERMS_URL}
@@ -158,6 +165,10 @@
 	}
 	.cta {
 		border-color: var(--tone);
+	}
+	.cta:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
 	}
 	.cta.filled {
 		/* Darkened like --primary-shade: light text on the bare tone is below 4.5:1. */
