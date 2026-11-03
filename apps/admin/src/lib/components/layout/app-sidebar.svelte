@@ -19,7 +19,8 @@
 	import WalletIcon from "@lucide/svelte/icons/wallet";
 	import { useIntlayer } from "svelte-intlayer";
 	import { authActions } from "#lib/actions.js";
-	import { canOpen } from "#lib/auth-redirect.js";
+	import { canOpen, isStaff } from "#lib/auth-redirect.js";
+	import SidebarStanding from "#lib/components/billing/sidebar-standing.svelte";
 	import * as Sidebar from "#lib/components/ui/sidebar/index.js";
 	import { page } from "$app/state";
 
@@ -51,7 +52,7 @@
 	/** A full page load, not `goto`: drops every in-memory trace of the session. */
 	async function logout() {
 		await authActions.logout();
-		window.location.assign("/login");
+		window.location.assign(isStaff(level) ? "/login" : "/user/login");
 	}
 
 	const isActive = (href: string) =>
@@ -85,6 +86,7 @@
 		</Sidebar.Group>
 	</Sidebar.Content>
 	<Sidebar.Footer>
+		{#if !isStaff(level)}<SidebarStanding />{/if}
 		<div class="px-2 text-xs text-muted-foreground">{email}</div>
 		<Sidebar.MenuButton>
 			{#snippet child({ props })}

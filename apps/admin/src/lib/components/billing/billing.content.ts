@@ -49,12 +49,8 @@ const billingContent = {
 				en: "Subscribe / Renew plan",
 				kk: "Тарифті рәсімдеу / ұзарту",
 			}),
-			amount: t({
-				ru: "Сумма пополнения, USD (1 TR = 1 USD)",
-				en: "Top-up amount, USD (1 TR = 1 USD)",
-				kk: "Толықтыру сомасы, USD (1 TR = 1 USD)",
-			}),
-			topUp: t({ ru: "Пополнить", en: "Top up", kk: "Толықтыру" }),
+			// The Cloud plan is a fixed $20/month (docs landing pricing); the price itself sits in billing-actions.svelte.
+			perMonth: t({ ru: "в месяц", en: "per month", kk: "айына" }),
 			manage: t({
 				ru: "Управление оплатой",
 				en: "Manage payment",
@@ -93,6 +89,13 @@ const billingContent = {
 				ru: "Расходов пока нет",
 				en: "No spend yet",
 				kk: "Шығын әлі жоқ",
+			}),
+		},
+		sidebar: {
+			active: t({
+				ru: "тариф активен",
+				en: "plan active",
+				kk: "тариф белсенді",
 			}),
 		},
 		alert: {
