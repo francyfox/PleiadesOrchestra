@@ -1,6 +1,6 @@
 import type { LlmCallRecord, UsageRecorder } from "@repo/core";
 import type { Db } from "../database/database.ts";
-import { usdToMicro } from "../ledger/ledger.service.ts";
+import { usdToNano } from "../ledger/ledger.service.ts";
 import { costUsd, type Prices } from "../prices/prices.service.ts";
 import type { RunBinding } from "../run-binding/run-binding.ts";
 
@@ -83,7 +83,7 @@ export class SqliteUsageRecorder implements UsageRecorder {
 					call.attempts ?? null,
 					call.failedStatuses ? JSON.stringify(call.failedStatuses) : null,
 				);
-				const micro = usdToMicro(
+				const nano = usdToNano(
 					costUsd(
 						call.inputTokens ?? 0,
 						call.outputTokens ?? 0,
@@ -91,9 +91,9 @@ export class SqliteUsageRecorder implements UsageRecorder {
 					),
 				);
 				// A failed debit must not lose the usage rows or fail the reply.
-				if (micro > 0)
+				if (nano > 0)
 					try {
-						const row = debit.get(micro, lastInsertRowid, call.at);
+						const row = debit.get(nano, lastInsertRowid, call.at);
 						if (row) debited.add(row.account_id);
 					} catch (error) {
 						this.billing.log?.(`ledger debit failed: ${String(error)}`);

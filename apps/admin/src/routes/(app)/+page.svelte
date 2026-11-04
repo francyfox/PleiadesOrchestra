@@ -31,7 +31,8 @@
 {#if dashboard.byDay.some((day) => day.costUsd !== null)}
 	<Card.Root>
 		<Card.Header>
-			<Card.Title>{$content.spendByDay({ total: $format.usd(dashboard.byDay.reduce((sum, day) => sum + (day.costUsd ?? 0), 0)) })}</Card.Title>
+			{@const title = $content.spendByDay({ total: $format.usd(dashboard.byDay.reduce((sum, day) => sum + (day.costUsd ?? 0), 0)) }).value}
+			<Card.Title class="truncate" {title}>{title}</Card.Title>
 		</Card.Header>
 		<Card.Content><UsageChart rows={dashboard.byDay} metric="cost" /></Card.Content>
 	</Card.Root>

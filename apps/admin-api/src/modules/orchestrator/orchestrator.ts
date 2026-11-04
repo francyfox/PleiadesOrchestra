@@ -214,6 +214,11 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 				"GET",
 				`/v1/admin/subscriptions${toSearch(query)}`,
 			),
+		listBalances: () =>
+			request<{ items: { accountId: string; balanceUsd: number }[] }>(
+				"GET",
+				"/v1/admin/accounts/balances",
+			),
 		getAccountBilling: (accountId: string) =>
 			request<AccountBilling>(
 				"GET",
@@ -242,6 +247,19 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 					"POST",
 					"/v1/admin/billing/sync",
 					body,
+				),
+			adjustBalance: (accountId: string, amountUsd: number) =>
+				write<AccountBilling>(
+					"POST",
+					`/v1/admin/accounts/${segment(accountId)}/balance`,
+					{ amountUsd },
+				),
+			/** `until` = epoch ms the plan runs until; `null` ends it now. */
+			setManualPlan: (accountId: string, until: number | null) =>
+				write<AccountBilling>(
+					"PUT",
+					`/v1/admin/accounts/${segment(accountId)}/plan`,
+					{ until },
 				),
 			whitelistVisitor: (id: string) => visitorAction(id, "whitelist"),
 			unwhitelistVisitor: (id: string) => visitorAction(id, "unwhitelist"),

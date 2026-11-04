@@ -1,11 +1,16 @@
 import { APIError } from "better-auth/api";
 import { Elysia, t } from "elysia";
 import type { RouteDeps } from "../../app.types.ts";
+import {
+	BalanceAdjustInput,
+	ManualPlanInput,
+} from "../../forms/billing.schema.ts";
 import { deleteAccount } from "../accounts/accounts.service.ts";
 import { requireAdmin } from "../auth/auth.service.ts";
 import { AccountBilling } from "../billing/billing.schema.ts";
 import { polarErrors } from "../billing/billing.service.ts";
 import { ApiError } from "../common/common.schema.ts";
+import { DAY_MS } from "../common/common.service.ts";
 import { Upstream } from "../orchestrator/orchestrator.schema.ts";
 import { orchestratorErrors } from "../orchestrator/orchestrator.service.ts";
 import { CustomersPage, CustomersQuery } from "./customers.schema.ts";
@@ -23,7 +28,13 @@ const Failures = {
 };
 
 /** Staff "Users" page: the customer accounts (level 200). Staff only; ids that are not customers are 404. */
-export function customersRoutes({ auth, db, orchestrator, polar }: RouteDeps) {
+export function customersRoutes({
+	auth,
+	db,
+	orchestrator,
+	polar,
+	now,
+}: RouteDeps) {
 	return new Elysia({
 		name: "admin-api.customers",
 		prefix: "/accounts",
@@ -62,6 +73,47 @@ export function customersRoutes({ auth, db, orchestrator, polar }: RouteDeps) {
 							summary: "A customer's billing",
 							description:
 								"The same body as the customer's own `GET /api/billing`. Customers only (staff ids: 404).",
+						},
+					},
+				)
+				.post(
+					"/:id/balance",
+					async ({ params, body, admin, status }) => {
+						if (!(await findCustomer(db, params.id))) {
+							return status(404, { error: "not_found" });
+						}
+						return orchestrator
+							.as(admin.id)
+							.adjustBalance(params.id, body.amountUsd);
+					},
+					{
+						params: Params,
+						body: BalanceAdjustInput,
+						response: { 200: AccountBilling, ...Failures },
+						detail: {
+							summary: "Adjust a customer's TR balance",
+							description:
+								"Signed USD (= TR): positive adds, negative takes away. Recorded in the ledger with the admin's id. Answers the customer's billing.",
+						},
+					},
+				)
+				.put(
+					"/:id/plan",
+					async ({ params, body, admin, status }) => {
+						if (!(await findCustomer(db, params.id))) {
+							return status(404, { error: "not_found" });
+						}
+						const until = body.days === 0 ? null : now() + body.days * DAY_MS;
+						return orchestrator.as(admin.id).setManualPlan(params.id, until);
+					},
+					{
+						params: Params,
+						body: ManualPlanInput,
+						response: { 200: AccountBilling, ...Failures },
+						detail: {
+							summary: "Grant or end a manual plan",
+							description:
+								"A plan outside Polar for `days` from now (does not renew, does not top up the balance); `days: 0` ends it now. Polar's own subscriptions are untouched. Answers the customer's billing.",
 						},
 					},
 				)

@@ -37,20 +37,22 @@
 		{#if unavailable}
 			<p class="text-sm text-muted-foreground">{$content.unavailable.value}</p>
 		{/if}
-		<div class="flex flex-wrap items-end gap-6">
+		<div class="flex flex-col gap-6">
 			<div class="grid gap-1">
 				<p class="text-3xl font-semibold">$20 <span class="text-sm font-normal text-muted-foreground">{$content.actions.perMonth.value}</span></p>
 				<p class="text-sm text-muted-foreground">{$content.actions.topsUp.value}</p>
 			</div>
-			<form use:subscribe>
-				<Button type="submit" disabled={unavailable}>{$content.actions.subscribe.value}</Button>
-			</form>
-			<form use:manage>
-				<Button type="submit" variant="outline" disabled={unavailable}>{$content.actions.manage.value}</Button>
-			</form>
-			{#if cancellable}
-				<Button variant="destructive" disabled={unavailable} onclick={() => (cancelOpen = true)}>{$content.cancel.action.value}</Button>
-			{/if}
+			<div class="flex flex-wrap gap-3">
+    			<form use:subscribe>
+    				<Button type="submit" disabled={unavailable}>{$content.actions.subscribe.value}</Button>
+    			</form>
+    			<form use:manage>
+    				<Button type="submit" variant="outline" disabled={unavailable}>{$content.actions.manage.value}</Button>
+    			</form>
+    			{#if cancellable}
+    				<Button variant="destructive" disabled={unavailable} onclick={() => (cancelOpen = true)}>{$content.cancel.action.value}</Button>
+    			{/if}
+			</div>
 		</div>
 	</Card.Content>
 </Card.Root>

@@ -141,8 +141,58 @@ const billingContent = {
 			}),
 			link: t({ ru: "Открыть оплату", en: "Open billing", kk: "Төлемді ашу" }),
 		},
+		noBalance: {
+			title: t({
+				ru: "Сэр, тут не хватает на топливо!",
+				en: "Sir, we're short on fuel!",
+				kk: "Мырза, отынға жетпей тұр!",
+			}),
+			body: t({
+				ru: "Уважаемый господин, на вашем балансе недостаточно средств, но мы уже прогреваем наших агентов в ожидании вас. Всего хорошего.",
+				en: "Dear sir, your balance is too low, but we are already warming up our agents while we wait for you. All the best.",
+				kk: "Құрметті мырза, балансыңызда қаражат жеткіліксіз, бірақ біз сізді күтіп, агенттерімізді жылытып жатырмыз. Сау болыңыз.",
+			}),
+			topUp: t({ ru: "Пополнить", en: "Top up", kk: "Толтыру" }),
+			ok: t({ ru: "ОК", en: "OK", kk: "ОК" }),
+			imageAlt: t({
+				ru: "Шесть горничных на вертеле над углями",
+				en: "Six maids on a spit over the coals",
+				kk: "Шоқ үстіндегі шампурдағы алты қызметші",
+			}),
+		},
 		staff: {
 			open: t({ ru: "Оплата", en: "Billing", kk: "Төлем" }),
+			corrections: t({
+				ru: "Ручная корректировка",
+				en: "Manual correction",
+				kk: "Қолмен түзету",
+			}),
+			amount: t({
+				ru: "Изменить баланс на, TR (минус — списать)",
+				en: "Change balance by, TR (minus takes away)",
+				kk: "Балансты өзгерту, TR (минус — алып тастау)",
+			}),
+			apply: t({ ru: "Применить", en: "Apply", kk: "Қолдану" }),
+			balanceDone: t({
+				ru: "Баланс изменён",
+				en: "Balance changed",
+				kk: "Баланс өзгертілді",
+			}),
+			days: t({
+				ru: "Выдать тариф на, дней (0 — завершить)",
+				en: "Grant the plan for, days (0 ends it)",
+				kk: "Тарифті беру, күн (0 — аяқтау)",
+			}),
+			planNote: t({
+				ru: "Тариф вне Polar, без продления и без пополнения баланса.",
+				en: "A plan outside Polar: no renewal, no balance top-up.",
+				kk: "Polar-дан тыс тариф: ұзартусыз, баланс толтырусыз.",
+			}),
+			planDone: t({
+				ru: "Тариф изменён",
+				en: "Plan changed",
+				kk: "Тариф өзгертілді",
+			}),
 			title: t({
 				ru: insert("Оплата: {{email}}"),
 				en: insert("Billing: {{email}}"),

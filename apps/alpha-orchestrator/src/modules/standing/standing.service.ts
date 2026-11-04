@@ -19,11 +19,11 @@ export type Standing =
 			since: number | null;
 	  };
 
-import { REQUEST_HOLD_MICRO } from "../ledger/ledger.service.ts";
+import { REQUEST_HOLD_NANO } from "../ledger/ledger.service.ts";
 
 /**
- * Whether an account's channels may serve: a balance (micro-USD) that covers at
- * least one request hold (`REQUEST_HOLD_MICRO`). The plan only tops the balance up, so what is
+ * Whether an account's channels may serve: a balance (nano-USD) that covers at
+ * least one request hold (`REQUEST_HOLD_NANO`). The plan only tops the balance up, so what is
  * left keeps working after it ends. At zero the reason says what to do: no plan
  * yet, a plan that ended (Polar `ended_at` on a revoke, else the period end), or
  * a running plan whose month is used up. `until` stays for callers; always `null`.
@@ -33,7 +33,7 @@ export function accountStanding(
 	balance: number,
 	now: number,
 ): Standing {
-	if (balance >= REQUEST_HOLD_MICRO) return { ok: true, until: null };
+	if (balance >= REQUEST_HOLD_NANO) return { ok: true, until: null };
 	if (!plan) return { ok: false, reason: "no_plan", since: null };
 	const running = plan.status === "active" || plan.status === "trialing";
 	const end = plan.endedAt ?? plan.currentPeriodEnd;

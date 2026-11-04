@@ -9,7 +9,7 @@ import {
 } from "../database/database.schema.ts";
 import { testDb } from "../database/database.testing.ts";
 import { agent, decisionAgent, NOW } from "../http/http.testing.ts";
-import { balanceMicro } from "../ledger/ledger.service.ts";
+import { balanceNano } from "../ledger/ledger.service.ts";
 import { RunBinding } from "../run-binding/run-binding.ts";
 import {
 	orderData,
@@ -239,7 +239,7 @@ describe("POST /v1/billing/polar", () => {
 					refundedAmount: 0,
 				}),
 			]);
-			expect(balanceMicro(db, "acc_1")).toBe(10_000_000);
+			expect(balanceNano(db, "acc_1")).toBe(10_000_000_000);
 			expect(db.select().from(creditLedger).all()).toHaveLength(1);
 		});
 
@@ -255,12 +255,12 @@ describe("POST /v1/billing/polar", () => {
 				);
 			await refund(400, "partially_refunded", "m2");
 			await refund(400, "partially_refunded", "m3");
-			expect(balanceMicro(db, "acc_1")).toBe(6_000_000);
+			expect(balanceNano(db, "acc_1")).toBe(6_000_000_000);
 			await refund(1000, "refunded", "m4");
-			expect(balanceMicro(db, "acc_1")).toBe(0);
+			expect(balanceNano(db, "acc_1")).toBe(0);
 			// A late order.paid with the pre-refund figures changes nothing.
 			await send(app, "order.paid", orderData(), "m5");
-			expect(balanceMicro(db, "acc_1")).toBe(0);
+			expect(balanceNano(db, "acc_1")).toBe(0);
 			expect(db.select().from(orders).get()).toMatchObject({
 				status: "refunded",
 				refundedAmount: 1000,
@@ -276,7 +276,7 @@ describe("POST /v1/billing/polar", () => {
 				"m1",
 			);
 			await send(app, "order.paid", orderData(), "m2");
-			expect(balanceMicro(db, "acc_1")).toBe(0);
+			expect(balanceNano(db, "acc_1")).toBe(0);
 		});
 
 		test("a plan order credits its amount like a top-up, and its refund takes it back", async () => {
@@ -290,14 +290,44 @@ describe("POST /v1/billing/polar", () => {
 				});
 			await send(app, "order.paid", planOrder(), "m1");
 			expect(db.select().from(orders).get()).toMatchObject({ kind: "plan" });
-			expect(balanceMicro(db, "acc_1")).toBe(20_000_000);
+			expect(balanceNano(db, "acc_1")).toBe(20_000_000_000);
 			await send(
 				app,
 				"order.refunded",
 				planOrder({ refunded_amount: 2000, status: "refunded" }),
 				"m2",
 			);
-			expect(balanceMicro(db, "acc_1")).toBe(0);
+			expect(balanceNano(db, "acc_1")).toBe(0);
+		});
+
+		test("a discounted order credits the price before the discount; a refund takes back its share", async () => {
+			const { app, db } = setup();
+			const free = orderData({
+				id: "ord_free",
+				subtotal_amount: 2000,
+				discount_amount: 2000,
+				net_amount: 0,
+			});
+			await send(app, "order.paid", free, "m1");
+			expect(balanceNano(db, "acc_1")).toBe(20_000_000_000);
+			expect(db.select().from(orders).get()).toMatchObject({ amount: 0 });
+
+			const half = (overrides: Record<string, unknown> = {}) =>
+				orderData({
+					id: "ord_half",
+					subtotal_amount: 2000,
+					net_amount: 1000,
+					...overrides,
+				});
+			await send(app, "order.paid", half(), "m2");
+			expect(balanceNano(db, "acc_1")).toBe(40_000_000_000);
+			await send(
+				app,
+				"order.refunded",
+				half({ refunded_amount: 1000, status: "refunded" }),
+				"m3",
+			);
+			expect(balanceNano(db, "acc_1")).toBe(20_000_000_000);
 		});
 
 		test("an order without an amount is a 400", async () => {
@@ -438,7 +468,7 @@ describe("the payment cycle", () => {
 		await send("subscription.active", subscriptionData());
 		await send("order.paid", month(1));
 		expect(reason()).toBe("ok");
-		expect(balanceMicro(db, "acc_1")).toBe(20_000_000);
+		expect(balanceNano(db, "acc_1")).toBe(20_000_000_000);
 
 		// Polar renews: the next period and the next order; the unspent month stays.
 		clock = Date.parse("2026-11-01T01:00:00Z");
@@ -451,7 +481,7 @@ describe("the payment cycle", () => {
 			}),
 		);
 		await send("order.paid", month(2, { created_at: "2026-11-01T00:00:00Z" }));
-		expect(balanceMicro(db, "acc_1")).toBe(40_000_000);
+		expect(balanceNano(db, "acc_1")).toBe(40_000_000_000);
 
 		// Canceled, then the period ends: the balance still runs the channels.
 		clock = Date.parse("2026-12-01T00:00:00Z");
@@ -470,7 +500,7 @@ describe("the payment cycle", () => {
 		db.insert(creditLedger)
 			.values({
 				accountId: "acc_1",
-				amount: -40_000_000,
+				amount: -40_000_000_000,
 				reason: "usage",
 				ref: "x",
 				createdAt: clock,

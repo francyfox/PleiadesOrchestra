@@ -46,6 +46,8 @@ export type {
 export type {
 	Customer,
 	CustomersPage,
+	CustomersQuery,
+	CustomersSort,
 } from "./modules/customers/customers.schema.ts";
 export type {
 	IntentExample,

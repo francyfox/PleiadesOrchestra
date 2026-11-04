@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { REQUEST_HOLD_MICRO as HOLD } from "../ledger/ledger.service.ts";
+import { REQUEST_HOLD_NANO as HOLD } from "../ledger/ledger.service.ts";
 import { accountStanding, type PlanFields } from "./standing.service.ts";
 
 const NOW = 1_000_000;

@@ -2,7 +2,7 @@ import { standingOf } from "../account-billing/account-billing.service.ts";
 import type { ChannelRow } from "../channels/channels.types.ts";
 import { channels } from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
-import { balanceMicro, REQUEST_HOLD_MICRO } from "../ledger/ledger.service.ts";
+import { balanceNano, REQUEST_HOLD_NANO } from "../ledger/ledger.service.ts";
 import {
 	allReplyPrompts,
 	DEFAULT_REPLY_PROMPT,
@@ -132,8 +132,8 @@ export class ChannelDirectory {
 		const now = this.now();
 		const held = this.holds.get(owner) ?? new Map<number, number>();
 		for (const [id, until] of held) if (until <= now) held.delete(id);
-		const free = balanceMicro(this.db, owner) - held.size * REQUEST_HOLD_MICRO;
-		if (free < REQUEST_HOLD_MICRO) return null;
+		const free = balanceNano(this.db, owner) - held.size * REQUEST_HOLD_NANO;
+		if (free < REQUEST_HOLD_NANO) return null;
 		const id = this.nextHold++;
 		held.set(id, now + HOLD_TTL_MS);
 		this.holds.set(owner, held);

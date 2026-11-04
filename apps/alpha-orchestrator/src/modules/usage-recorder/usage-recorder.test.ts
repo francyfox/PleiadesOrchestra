@@ -157,7 +157,7 @@ describe("SqliteUsageRecorder debit", () => {
 		return { db, visitor, recorder };
 	}
 
-	test("a paid call debits its owner by tokens x price, in micro-USD, referencing the call", () => {
+	test("a paid call debits its owner by tokens x price, in nano-USD, referencing the call", () => {
 		const { db, visitor, recorder } = setup();
 		recorder.record(
 			call({
@@ -172,7 +172,7 @@ describe("SqliteUsageRecorder debit", () => {
 		expect(db.select().from(creditLedger).all()).toEqual([
 			expect.objectContaining({
 				accountId: "acc_1",
-				amount: -2000,
+				amount: -2_000_000,
 				reason: "usage",
 				ref: String(call1?.id),
 			}),

@@ -356,6 +356,7 @@ export function createApp(deps: AppDeps) {
 					now,
 					prices: deps.prices,
 					polarBaseUrl: deps.polarDashboardUrl,
+					onAccountChanged: (accountId) => directory.refreshStanding(accountId),
 				}),
 			)
 			.use(mcpRoutes(db))

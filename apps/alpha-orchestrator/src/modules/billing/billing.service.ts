@@ -8,7 +8,7 @@ import {
 } from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
 import { MINUTE_MS } from "../http/http.service.ts";
-import { centsToMicro } from "../ledger/ledger.service.ts";
+import { centsToNano } from "../ledger/ledger.service.ts";
 
 /** Standard Webhooks: a timestamp further than this from now (either way) is a replay. */
 export const WEBHOOK_TOLERANCE_MS = 5 * MINUTE_MS;
@@ -209,11 +209,12 @@ function applyOrder(
 		.values({ id: o.id, ...values })
 		.onConflictDoUpdate({ target: orders.id, set: values })
 		.run();
-	// Every paid order (the monthly plan included) tops up the TR balance; it never expires.
+	// Every paid order (the monthly plan included) tops up the TR balance by its price before discounts (a 100% code still gives the plan's TR); it never expires.
+	const credit = cents(o.data.subtotal_amount) ?? o.amount;
 	tx.insert(creditLedger)
 		.values({
 			accountId: o.accountId,
-			amount: centsToMicro(o.amount),
+			amount: centsToNano(credit),
 			reason: "top_up",
 			ref: o.id,
 			createdAt: o.now,
@@ -221,11 +222,12 @@ function applyOrder(
 		.onConflictDoNothing()
 		.run();
 	const delta = refunded - (before?.refundedAmount ?? 0);
-	if (delta > 0)
+	// The refund takes back its share of the credit: refunding all that was paid takes back all of it.
+	if (delta > 0 && o.amount > 0)
 		tx.insert(creditLedger)
 			.values({
 				accountId: o.accountId,
-				amount: -centsToMicro(delta),
+				amount: -Math.round(centsToNano(delta) * (credit / o.amount)),
 				reason: "refund",
 				ref: o.id,
 				createdAt: o.now,

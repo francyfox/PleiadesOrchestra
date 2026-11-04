@@ -73,14 +73,14 @@ function seedAccount(db: ReturnType<typeof setupAdminApp>["db"]) {
 		.values([
 			{
 				accountId: "acc_1",
-				amount: 10_000_000,
+				amount: 10_000_000_000,
 				reason: "top_up",
 				ref: "o1",
 				createdAt: NOW,
 			},
 			{
 				accountId: "acc_1",
-				amount: -40,
+				amount: -40_000,
 				reason: "usage",
 				ref: "1",
 				createdAt: NOW,
@@ -133,5 +133,62 @@ describe("accountBilling", () => {
 			new Request("http://localhost/v1/admin/accounts/acc_1/billing"),
 		);
 		expect(denied.status).toBe(401);
+	});
+
+	test("staff adjust the balance by a signed amount, recorded with who did it", async () => {
+		const { app, db } = setupAdminApp();
+		const post = (amountUsd: number) =>
+			app.handle(
+				admin("/accounts/acc_1/balance", {
+					method: "POST",
+					body: { amountUsd },
+				}),
+			);
+		expect((await json(await post(20))).balanceUsd).toBe(20);
+		expect((await json(await post(-5.5))).balanceUsd).toBe(14.5);
+		expect(db.select().from(creditLedger).all()).toEqual([
+			expect.objectContaining({ reason: "adjustment", ref: "admin-1" }),
+			expect.objectContaining({ amount: -5_500_000_000, ref: "admin-1" }),
+		]);
+	});
+
+	test("staff grant a plan until a date and take it back", async () => {
+		const { app } = setupAdminApp();
+		const put = (until: number | null) =>
+			app.handle(
+				admin("/accounts/acc_1/plan", { method: "PUT", body: { until } }),
+			);
+		const granted = await json(await put(NOW + 30 * DAY));
+		expect(granted.subscription).toMatchObject({
+			id: "manual:acc_1",
+			status: "canceling",
+			currentPeriodEnd: NOW + 30 * DAY,
+			polarUrl: null,
+		});
+		const revoked = await json(await put(null));
+		expect(revoked.subscription).toMatchObject({
+			id: "manual:acc_1",
+			status: "ended",
+			endedAt: NOW,
+		});
+	});
+
+	test("GET /v1/admin/accounts/balances lists every account's balance", async () => {
+		const { app, db } = setupAdminApp();
+		seedAccount(db);
+		db.insert(creditLedger)
+			.values({
+				accountId: "acc_2",
+				amount: -1_000,
+				reason: "usage",
+				ref: "2",
+				createdAt: NOW,
+			})
+			.run();
+		const body = await json(await app.handle(admin("/accounts/balances")));
+		expect(body.items).toEqual([
+			{ accountId: "acc_1", balanceUsd: 9.99996 },
+			{ accountId: "acc_2", balanceUsd: -0.000001 },
+		]);
 	});
 });

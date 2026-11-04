@@ -32,12 +32,11 @@ services:
       # Shared with the admin service — same root-.env pattern as HARNESS_API_KEY.
       ADMIN_API_KEY: ${ADMIN_API_KEY:?set ADMIN_API_KEY in .env (same value as admin)}
       DATABASE_PATH: /data/orchestrator.db
-      # Public traffic arrives via the `tunnel` service (compose profile `tunnel`),
-      # so the socket address is cloudflared's; take the visitor IP from the
-      # CF-Connecting-IP header Cloudflare sets (per-IP widget rate limits and IP
-      # blocks depend on it). Not X-Forwarded-For's head — clients write that.
-      # Without the header (local calls, no tunnel) it falls back to the socket.
-      # Safe only while port 3000 stays on 127.0.0.1 (else the header is forgeable).
+      # Visitor IP (per-IP widget rate limits and IP blocks depend on it) from the
+      # CF-Connecting-IP header Cloudflare sets; without the header (local calls)
+      # it falls back to the socket. Safe only when Cloudflare is in front and port
+      # 3000 stays on 127.0.0.1: behind another proxy a client can forge the
+      # header, use `xff-rightmost` (see resolveClientIp) or `socket` there.
       CLIENT_IP_SOURCE: cf-connecting-ip
       # Tool-call arguments are written by delta-function-call (no depends_on — the
       # model downloads on first start), local or external, see above. Same key as
@@ -53,8 +52,8 @@ services:
       # providers.toml (keys inside: gitignored, dockerignored, 0600); the
       # directory, not the file, so it can be created on first start.
       - ./apps/alpha-orchestrator/configs:/configs
-    # Loopback only: the orchestrator also serves /v1/admin/*. Public traffic goes
-    # through the `tunnel` profile over the compose network, not this port.
+    # Loopback only: the orchestrator also serves /v1/admin/*. Put a reverse proxy
+    # that exposes only the public agent routes in front for outside traffic.
     ports:
       - "127.0.0.1:3000:3000"
     # required: false — with the beta/gamma profile off (model runs on another

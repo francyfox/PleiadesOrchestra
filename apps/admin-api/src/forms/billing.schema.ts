@@ -16,3 +16,13 @@ export const TopUpForm = Type.Object({
 	kind: Type.Literal("credits"),
 	amountUsd: AmountUsd,
 });
+
+/** Staff correction of a customer's TR balance: signed, cents allowed. */
+export const BalanceAdjustInput = Type.Object({
+	amountUsd: Type.Number({ minimum: -10_000, maximum: 10_000 }),
+});
+
+/** Staff grant of a plan outside Polar for `days` from now; 0 ends it now. */
+export const ManualPlanInput = Type.Object({
+	days: Type.Integer({ minimum: 0, maximum: 3660 }),
+});

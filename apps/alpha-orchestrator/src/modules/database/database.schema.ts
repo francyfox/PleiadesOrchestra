@@ -453,9 +453,9 @@ export const orders = sqliteTable("orders", {
 
 /**
  * Append-only TR balance of an account (balance = SUM(amount)). `amount` is a
- * signed integer in micro-USD (1 TR = 1 USD = 1_000_000): a call of $0.00004
- * is 40, with no float drift in the sum. `ref` = order id (top_up, refund) or
- * `llm_calls.id` (usage). A top-up happens once per order (partial unique index).
+ * signed integer in nano-USD (1 TR = 1 USD = 1_000_000_000): a call of
+ * $0.00004 is 40_000, with no float drift in the sum. `ref` = order id (top_up, refund) or
+ * `llm_calls.id` (usage) or the staff id (adjustment). A top-up happens once per order (partial unique index).
  */
 export const creditLedger = sqliteTable(
 	"credit_ledger",
@@ -463,7 +463,9 @@ export const creditLedger = sqliteTable(
 		id: integer("id").primaryKey({ autoIncrement: true }),
 		accountId: text("account_id").notNull(),
 		amount: integer("amount").notNull(),
-		reason: text("reason", { enum: ["top_up", "usage", "refund"] }).notNull(),
+		reason: text("reason", {
+			enum: ["top_up", "usage", "refund", "adjustment"],
+		}).notNull(),
 		ref: text("ref").notNull(),
 		createdAt: integer("created_at").notNull(),
 	},

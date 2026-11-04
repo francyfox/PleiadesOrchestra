@@ -2,7 +2,7 @@ import { queryOptions } from "@tanstack/svelte-query";
 import type { LiveTopics } from "admin-api/types";
 import { api } from "#lib/api/client.js";
 import { unwrap } from "#lib/api/result.js";
-import type { Persona, PlanStatus } from "#lib/api-types.js";
+import type { CustomersQuery, Persona, PlanStatus } from "#lib/api-types.js";
 import { SYSTEM_KEY, topicKey } from "./keys";
 
 /** Data the WebSocket keeps current: never stale by itself; a mutation still invalidates it. */
@@ -160,7 +160,7 @@ export const queries = {
 			staleTime: 0,
 		}),
 	/** Staff: one server-cut page of the Users table. */
-	accounts: (params: { page: number; pageSize: number }) =>
+	accounts: (params: CustomersQuery) =>
 		queryOptions({
 			queryKey: ["accounts", params],
 			queryFn: () => unwrap(api().accounts.get({ query: params })),

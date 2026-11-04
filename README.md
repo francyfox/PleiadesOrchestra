@@ -52,7 +52,7 @@ bun run lint                    # Biome
 bun run check-types
 ```
 
-The Telegram bot runs on a webhook — it needs a public tunnel to `localhost:3001` (`TELEGRAM_WEBHOOK_URL`).
+The Telegram bot runs on a webhook — it needs a public URL forwarded to `localhost:3001` (`TELEGRAM_WEBHOOK_URL`).
 
 ### `albedo` CLI
 

@@ -5,7 +5,7 @@ import {
 } from "../channels/channels.service.ts";
 import { creditLedger, subscriptions } from "../database/database.schema.ts";
 import { testDb } from "../database/database.testing.ts";
-import { REQUEST_HOLD_MICRO as HOLD } from "../ledger/ledger.service.ts";
+import { REQUEST_HOLD_NANO as HOLD } from "../ledger/ledger.service.ts";
 import { ChannelDirectory } from "./channel-directory.ts";
 
 function setup() {

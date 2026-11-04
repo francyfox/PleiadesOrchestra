@@ -160,8 +160,8 @@ export function buildConfig(env: Record<string, string | undefined>) {
 				.default(20),
 			// Where the client IP (per-IP widget limits, IP blocks) comes from —
 			// see resolveClientIp. `socket` is the only source a client can't
-			// forge without a proxy in front; compose (Cloudflare tunnel) sets
-			// cf-connecting-ip.
+			// forge without a proxy in front; compose sets
+			// cf-connecting-ip (Cloudflare in front).
 			CLIENT_IP_SOURCE: z.enum(CLIENT_IP_SOURCES).default("socket"),
 			// xff-rightmost only: trusted proxies appending to X-Forwarded-For;
 			// the client IP is this many entries from the right.

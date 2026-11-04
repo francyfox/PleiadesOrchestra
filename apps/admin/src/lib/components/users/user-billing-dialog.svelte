@@ -5,6 +5,7 @@
 	import BillingDetails from "#lib/components/billing/billing-details.svelte";
 	import * as Dialog from "#lib/components/ui/dialog/index.js";
 	import { queries } from "#lib/query/queries.js";
+	import UserBillingCorrections from "./user-billing-corrections.svelte";
 
 	let { user, open = $bindable(false) }: { user: Customer; open?: boolean } =
 		$props();
@@ -25,5 +26,6 @@
 		{#if billing.data}
 			<BillingDetails billing={billing.data} />
 		{/if}
+		<UserBillingCorrections userId={user.id} />
 	</Dialog.Content>
 </Dialog.Root>
