@@ -1,3 +1,14 @@
+# 0.11.10 - 4 Nov 2026
+
+Feature:
+- Landing: the Cloud plan is open: its button leads to the panel's Billing page (was a disabled "soon").
+- Admin: signing in returns to the page asked for. An anonymous visitor of `/billing` (or any page) lands on the customer sign-in with `?redirect=`, and after signing in goes back there; staff pages send to the staff sign-in. Only paths of this site are followed. The redirect survives switching between sign-in and registration.
+
+Changed:
+- Admin: access is decided by route guards in the Angular `canActivate` style (`lib/guards.ts`) on route groups `(shared)`, `(customer)`, `(staff)`, `(auth)` instead of one list of paths. URLs are unchanged.
+- Admin: an anonymous visitor of `/` now gets the customer sign-in; staff open `/login` directly.
+- Admin: every in-app link goes through SvelteKit `resolve()`, so a wrong path is a type error.
+
 # 0.10.10 - 4 Nov 2026
 
 Feature:
