@@ -1,6 +1,7 @@
 import type { Static, TObject } from "@sinclair/typebox";
 import {
 	AgentPick,
+	BalanceAdjustInput,
 	ChangeEmailInput,
 	CreateAdminInput,
 	CreateBlockedIpInput,
@@ -10,6 +11,7 @@ import {
 	FinanceRates,
 	ForgotForm,
 	IntentVerdictInput,
+	ManualPlanInput,
 	PersonaForm,
 	ProviderForm,
 	ProviderModel,
@@ -226,6 +228,24 @@ export const accountActions = {
 				.accounts({ id: text(form, "id") })
 				.delete(),
 		),
+	adjustBalance: (form: FormData) => {
+		const parsed = parseForm(BalanceAdjustInput, form);
+		if (!parsed.ok) return invalidForm();
+		return submitted(
+			api()
+				.accounts({ id: text(form, "id") })
+				.balance.post(parsed.body),
+		);
+	},
+	setPlan: (form: FormData) => {
+		const parsed = parseForm(ManualPlanInput, form);
+		if (!parsed.ok) return invalidForm();
+		return submitted(
+			api()
+				.accounts({ id: text(form, "id") })
+				.plan.put(parsed.body),
+		);
+	},
 };
 
 export const visitorActions = {

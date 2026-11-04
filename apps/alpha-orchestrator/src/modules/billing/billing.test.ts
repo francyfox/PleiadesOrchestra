@@ -300,6 +300,36 @@ describe("POST /v1/billing/polar", () => {
 			expect(balanceMicro(db, "acc_1")).toBe(0);
 		});
 
+		test("a discounted order credits the price before the discount; a refund takes back its share", async () => {
+			const { app, db } = setup();
+			const free = orderData({
+				id: "ord_free",
+				subtotal_amount: 2000,
+				discount_amount: 2000,
+				net_amount: 0,
+			});
+			await send(app, "order.paid", free, "m1");
+			expect(balanceMicro(db, "acc_1")).toBe(20_000_000);
+			expect(db.select().from(orders).get()).toMatchObject({ amount: 0 });
+
+			const half = (overrides: Record<string, unknown> = {}) =>
+				orderData({
+					id: "ord_half",
+					subtotal_amount: 2000,
+					net_amount: 1000,
+					...overrides,
+				});
+			await send(app, "order.paid", half(), "m2");
+			expect(balanceMicro(db, "acc_1")).toBe(40_000_000);
+			await send(
+				app,
+				"order.refunded",
+				half({ refunded_amount: 1000, status: "refunded" }),
+				"m3",
+			);
+			expect(balanceMicro(db, "acc_1")).toBe(20_000_000);
+		});
+
 		test("an order without an amount is a 400", async () => {
 			const { app } = setup();
 			const response = await send(

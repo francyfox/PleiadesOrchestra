@@ -45,9 +45,10 @@ export function createFormat(locale: string) {
 		maximumFractionDigits: 4,
 	});
 
+	// 5 digits: one request costs fractions of a cent, so 2 digits hid every debit.
 	const tr = new Intl.NumberFormat(locale, {
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 2,
+		minimumFractionDigits: 5,
+		maximumFractionDigits: 5,
 	});
 	/** Order amounts arrive in cents with the currency code of the order. */
 	const money = (cents: number, currency: string) =>

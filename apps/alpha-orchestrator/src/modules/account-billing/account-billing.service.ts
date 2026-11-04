@@ -1,5 +1,9 @@
 import { desc, eq } from "drizzle-orm";
-import { orders, subscriptions } from "../database/database.schema.ts";
+import {
+	creditLedger,
+	orders,
+	subscriptions,
+} from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
 import { balanceMicro, MICRO_USD } from "../ledger/ledger.service.ts";
 import { costUsd, type Prices } from "../prices/prices.service.ts";
@@ -83,4 +87,55 @@ export function accountBilling(
 			.map(({ accountId: _, productId: __, ...order }) => order),
 		spend: monthlySpend(db, accountId, options.prices),
 	};
+}
+
+/** A staff correction of the TR balance (signed USD, kept to the micro-USD); `adminId` is the ledger ref. */
+export function adjustBalance(
+	db: Db,
+	accountId: string,
+	amountUsd: number,
+	adminId: string,
+	now: number,
+) {
+	db.insert(creditLedger)
+		.values({
+			accountId,
+			amount: Math.round(amountUsd * MICRO_USD),
+			reason: "adjustment",
+			ref: adminId,
+			createdAt: now,
+		})
+		.run();
+}
+
+/**
+ * A plan granted by staff, outside Polar: one row `manual:<accountId>` that
+ * runs until `until` and does not renew; `null` ends it now. It only shows
+ * the plan: the balance is topped up separately (`adjustBalance`).
+ * shortcut: after `until` it still reads `canceling` (no webhook ends it), so
+ * a zero balance says `no_balance`, not `plan_expired`; end it with `null`.
+ */
+export function setManualPlan(
+	db: Db,
+	accountId: string,
+	until: number | null,
+	now: number,
+) {
+	const values = {
+		accountId,
+		customerId: "manual",
+		productName: "Manual",
+		status: until === null ? "canceled" : "active",
+		startedAt: now,
+		currentPeriodStart: now,
+		currentPeriodEnd: until ?? now,
+		cancelAtPeriodEnd: true,
+		endedAt: until === null ? now : null,
+		updatedAt: now,
+	};
+	const { startedAt: _, ...update } = values;
+	db.insert(subscriptions)
+		.values({ id: `manual:${accountId}`, ...values })
+		.onConflictDoUpdate({ target: subscriptions.id, set: update })
+		.run();
 }

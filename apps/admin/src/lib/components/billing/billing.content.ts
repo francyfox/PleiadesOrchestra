@@ -143,6 +143,37 @@ const billingContent = {
 		},
 		staff: {
 			open: t({ ru: "Оплата", en: "Billing", kk: "Төлем" }),
+			corrections: t({
+				ru: "Ручная корректировка",
+				en: "Manual correction",
+				kk: "Қолмен түзету",
+			}),
+			amount: t({
+				ru: "Изменить баланс на, TR (минус — списать)",
+				en: "Change balance by, TR (minus takes away)",
+				kk: "Балансты өзгерту, TR (минус — алып тастау)",
+			}),
+			apply: t({ ru: "Применить", en: "Apply", kk: "Қолдану" }),
+			balanceDone: t({
+				ru: "Баланс изменён",
+				en: "Balance changed",
+				kk: "Баланс өзгертілді",
+			}),
+			days: t({
+				ru: "Выдать тариф на, дней (0 — завершить)",
+				en: "Grant the plan for, days (0 ends it)",
+				kk: "Тарифті беру, күн (0 — аяқтау)",
+			}),
+			planNote: t({
+				ru: "Тариф вне Polar, без продления и без пополнения баланса.",
+				en: "A plan outside Polar: no renewal, no balance top-up.",
+				kk: "Polar-дан тыс тариф: ұзартусыз, баланс толтырусыз.",
+			}),
+			planDone: t({
+				ru: "Тариф изменён",
+				en: "Plan changed",
+				kk: "Тариф өзгертілді",
+			}),
 			title: t({
 				ru: insert("Оплата: {{email}}"),
 				en: insert("Billing: {{email}}"),

@@ -37,7 +37,12 @@ export async function deleteAccount(
 ): Promise<void> {
 	if (polar) {
 		const { subscription } = await orchestrator.getAccountBilling(id);
-		if (subscription && subscription.status !== "ended") {
+		// A `manual:` plan was granted by staff and is not in Polar.
+		if (
+			subscription &&
+			subscription.status !== "ended" &&
+			!subscription.id.startsWith("manual:")
+		) {
 			await polar.revoke(subscription.id);
 		}
 	}

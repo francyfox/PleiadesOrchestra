@@ -40,9 +40,10 @@ export function toView(row: SubscriptionRow, polarBaseUrl: string | undefined) {
 		currentPeriodEnd: row.currentPeriodEnd,
 		endedAt: row.endedAt,
 		accountId: row.accountId,
-		polarUrl: polarBaseUrl
-			? `${polarBaseUrl.replace(/\/+$/, "")}/${row.id}`
-			: null,
+		polarUrl:
+			polarBaseUrl && !row.id.startsWith("manual:")
+				? `${polarBaseUrl.replace(/\/+$/, "")}/${row.id}`
+				: null,
 	};
 }
 

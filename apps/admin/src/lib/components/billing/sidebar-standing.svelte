@@ -21,12 +21,12 @@
 
 {#if billing.data}
 	{@const { subscription, balanceUsd } = billing.data}
-	<a href="/billing" class="grid gap-1 px-2 text-xs">
+	<a href="/billing" class="grid gap-3 px-2 text-xs">
 		{#if subscription}
 			<LevelBadge level={LEVEL[subscription.status]} label={$content.summary.plan.value}>{$plans.status[subscription.status].value}</LevelBadge>
 		{:else}
 			<LevelBadge level="unknown" label={$content.summary.plan.value}>{$content.summary.noPlan.value}</LevelBadge>
 		{/if}
-		<span class="text-muted-foreground">{$content.summary.balance.value}: <span class="font-medium text-foreground tabular-nums">{$format.tr(balanceUsd)}</span></span>
+		<span class="text-muted-foreground text-xl">{$content.summary.balance.value}: <span class="font-medium text-foreground tabular-nums">{$format.tr(balanceUsd)}</span></span>
 	</a>
 {/if}

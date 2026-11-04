@@ -87,7 +87,7 @@
 	</Sidebar.Content>
 	<Sidebar.Footer>
 		{#if !isStaff(level)}<SidebarStanding />{/if}
-		<div class="px-2 text-xs text-muted-foreground">{email}</div>
+		<div class="px-2 text-md text-muted-foreground">{email}</div>
 		<Sidebar.MenuButton>
 			{#snippet child({ props })}
 				<button type="button" onclick={logout} {...props}><LogOutIcon /><span>{$content.logout.value}</span></button>
