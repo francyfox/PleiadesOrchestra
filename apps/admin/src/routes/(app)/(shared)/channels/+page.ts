@@ -1,4 +1,4 @@
-import { isStaff } from "#lib/auth-redirect.js";
+import { isStaff } from "#lib/guards.js";
 import { DEFAULT_PAGE_SIZE, parsePage } from "#lib/pagination.js";
 import { prefetch } from "#lib/query/prefetch.js";
 import { liveQueries, queries } from "#lib/query/queries.js";

@@ -1,4 +1,4 @@
-import { isStaff } from "#lib/auth-redirect.js";
+import { isStaff } from "#lib/guards.js";
 import { prefetch } from "#lib/query/prefetch.js";
 import { queries } from "#lib/query/queries.js";
 import type { LayoutLoad } from "./$types";

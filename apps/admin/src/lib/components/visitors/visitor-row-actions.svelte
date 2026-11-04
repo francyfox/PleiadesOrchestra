@@ -7,6 +7,7 @@
 	import type { Visitor } from "#lib/api-types.js";
 	import IconButton from "#lib/components/icon-button.svelte";
 	import { goto } from "$app/navigation";
+	import { resolve } from "$app/paths";
 	import { useBulkEnhance } from "./use-bulk-enhance";
 
 	/** Quick actions for one row, sent through the same bulk endpoint. */
@@ -30,6 +31,6 @@
 		{/if}
 	</form>
 	{#if ip}
-		<IconButton icon={ShieldBanIcon} tone="danger" label={$content.blockIp.value} onclick={() => goto(`/blocked-ips?ip=${encodeURIComponent(ip)}`)} />
+		<IconButton icon={ShieldBanIcon} tone="danger" label={$content.blockIp.value} onclick={() => goto(resolve(`blocked-ips?ip=${encodeURIComponent(ip)}`))} />
 	{/if}
 </div>

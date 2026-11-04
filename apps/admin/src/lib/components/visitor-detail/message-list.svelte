@@ -7,6 +7,7 @@
 	import { Button } from "#lib/components/ui/button/index.js";
 	import { useActionEnhance } from "#lib/components/use-action-enhance.js";
 	import { useFormat } from "#lib/i18n/use-format.js";
+	import { resolve } from "$app/paths";
 
 	/** The visitor's last ≤10 messages with per-answer usage and plan links. */
 	let { visitorId, messages }: { visitorId: string; messages: AdminMessage[] } =
@@ -64,7 +65,7 @@
 									</span>
 								{/if}
 								{#if message.planRunId}
-									<a class="underline" href={`/flow/${encodeURIComponent(message.planRunId)}`}>
+									<a class="underline" href={resolve(`flow/${encodeURIComponent(message.planRunId)}`)}>
 										{$content.messages.plan.value}
 									</a>
 								{/if}

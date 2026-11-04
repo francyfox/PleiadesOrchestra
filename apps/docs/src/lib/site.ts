@@ -20,8 +20,8 @@ export const PLEIADES_CONTACT = "francyfox@protonmail.com";
 // to PLEIADES_CONTACT. Keep the price text in LandingPricing in sync.
 export const PLEIADES_BUY_URL =
 	"https://buy.polar.sh/polar_cl_cL84qAaekbAJYEAnR1CTymWEyFvSCwUPyO0hL2mYxnw";
-// PLACEHOLDER: replace with the real Polar checkout link of the monthly "Cloud" plan ($20/month).
-// Keep the price text in LandingPricing and apps/admin billing-actions.svelte in sync; its product id is
-// POLAR_PLAN_PRODUCT_ID in admin-api/alpha-orchestrator (the cabinet checks out via the API to link the account).
-export const PLEIADES_CLOUD_CHECKOUT_URL =
-	"https://buy.polar.sh/polar_cl_eagNpQarGEnBYiVLFOcEYiVYXzOLI8rzlbcuh1aX0pa";
+// The "Cloud" plan ($20/month) is bought from the cabinet's billing page: it checks out via the API so
+// the subscription is linked to the account (POLAR_PLAN_PRODUCT_ID in admin-api/alpha-orchestrator).
+// Keep the price text in LandingPricing and apps/admin billing-actions.svelte in sync.
+export const PLEIADES_PANEL_BILLING_URL =
+	"https://pleiades-panel.shalotts.site/billing";

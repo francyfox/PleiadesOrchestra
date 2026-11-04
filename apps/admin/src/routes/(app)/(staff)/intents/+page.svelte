@@ -9,6 +9,7 @@
 	import { prefetched } from "#lib/query/prefetch.js";
 	import { queries } from "#lib/query/queries.js";
 	import { goto } from "$app/navigation";
+	import { resolve } from "$app/paths";
 
 	let { data } = $props();
 
@@ -33,7 +34,7 @@
 		if (filters.channelId) params.set("channel", filters.channelId);
 		if (filters.page && filters.page > 1)
 			params.set("page", String(filters.page));
-		return `?${params}`;
+		return resolve(`intents?${params}`);
 	}
 </script>
 

@@ -4,6 +4,7 @@
 	import { Badge } from "#lib/components/ui/badge/index.js";
 	import { useFormat } from "#lib/i18n/use-format.js";
 	import { useLiveQuery } from "#lib/live/use-live-query.svelte.js";
+	import { resolve } from "$app/paths";
 	import McpToolsTable from "./mcp-tools-table.svelte";
 
 	/** One site's own page: its newest WebMCP catalog and when it was announced, kept current over the live socket. */
@@ -25,7 +26,7 @@
 </script>
 
 <PageHeader
-	backHref="/mcp"
+	backHref={resolve("mcp")}
 	backLabel={$content.back.value}
 	title={site?.channelName ?? ""}
 >

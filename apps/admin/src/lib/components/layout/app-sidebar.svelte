@@ -19,45 +19,127 @@
 	import WalletIcon from "@lucide/svelte/icons/wallet";
 	import { useIntlayer } from "svelte-intlayer";
 	import { authActions } from "#lib/actions.js";
-	import { canOpen, isStaff } from "#lib/auth-redirect.js";
 	import SidebarStanding from "#lib/components/billing/sidebar-standing.svelte";
 	import * as Sidebar from "#lib/components/ui/sidebar/index.js";
+	import { allows, isStaff } from "#lib/guards.js";
+	import { resolve } from "$app/paths";
 	import { page } from "$app/state";
 
 	let { email, level }: { email: string | null; level: number } = $props();
 
 	const content = useIntlayer("app-sidebar");
 
+	// `audience` mirrors the route group the page lives in: (shared) = all, (staff), (customer).
 	const nav = [
-		{ href: "/", key: "dashboard", icon: ActivityIcon },
-		{ href: "/visitors", key: "visitors", icon: UsersIcon },
-		{ href: "/users", key: "users", icon: UserRoundIcon },
-		{ href: "/flow", key: "flow", icon: NetworkIcon },
-		{ href: "/intents", key: "intents", icon: BrainIcon },
-		{ href: "/mcp", key: "mcp", icon: PlugIcon },
-		{ href: "/agents", key: "agents", icon: BotIcon },
-		{ href: "/models", key: "models", icon: BoxesIcon },
-		{ href: "/performance", key: "performance", icon: GaugeIcon },
-		{ href: "/recommendations", key: "recommendations", icon: LightbulbIcon },
-		{ href: "/plans", key: "plans", icon: CreditCardIcon },
-		{ href: "/channels", key: "channels", icon: GlobeIcon },
-		{ href: "/billing", key: "billing", icon: WalletIcon },
-		{ href: "/settings", key: "settings", icon: SettingsIcon },
-		{ href: "/preferences", key: "settings", icon: SettingsIcon },
-		{ href: "/blocked-ips", key: "blockedIps", icon: BanIcon },
-		{ href: "/admins", key: "admins", icon: ShieldIcon },
-		{ href: "/faq", key: "faq", icon: CircleQuestionMarkIcon },
+		{
+			href: resolve(""),
+			key: "dashboard",
+			icon: ActivityIcon,
+			audience: "all",
+		},
+		{
+			href: resolve("visitors"),
+			key: "visitors",
+			icon: UsersIcon,
+			audience: "all",
+		},
+		{
+			href: resolve("users"),
+			key: "users",
+			icon: UserRoundIcon,
+			audience: "staff",
+		},
+		{ href: resolve("flow"), key: "flow", icon: NetworkIcon, audience: "all" },
+		{
+			href: resolve("intents"),
+			key: "intents",
+			icon: BrainIcon,
+			audience: "staff",
+		},
+		{ href: resolve("mcp"), key: "mcp", icon: PlugIcon, audience: "staff" },
+		{
+			href: resolve("agents"),
+			key: "agents",
+			icon: BotIcon,
+			audience: "staff",
+		},
+		{
+			href: resolve("models"),
+			key: "models",
+			icon: BoxesIcon,
+			audience: "staff",
+		},
+		{
+			href: resolve("performance"),
+			key: "performance",
+			icon: GaugeIcon,
+			audience: "staff",
+		},
+		{
+			href: resolve("recommendations"),
+			key: "recommendations",
+			icon: LightbulbIcon,
+			audience: "staff",
+		},
+		{
+			href: resolve("plans"),
+			key: "plans",
+			icon: CreditCardIcon,
+			audience: "staff",
+		},
+		{
+			href: resolve("channels"),
+			key: "channels",
+			icon: GlobeIcon,
+			audience: "all",
+		},
+		{
+			href: resolve("billing"),
+			key: "billing",
+			icon: WalletIcon,
+			audience: "customer",
+		},
+		{
+			href: resolve("settings"),
+			key: "settings",
+			icon: SettingsIcon,
+			audience: "customer",
+		},
+		{
+			href: resolve("preferences"),
+			key: "settings",
+			icon: SettingsIcon,
+			audience: "staff",
+		},
+		{
+			href: resolve("blocked-ips"),
+			key: "blockedIps",
+			icon: BanIcon,
+			audience: "all",
+		},
+		{
+			href: resolve("admins"),
+			key: "admins",
+			icon: ShieldIcon,
+			audience: "staff",
+		},
+		{
+			href: resolve("faq"),
+			key: "faq",
+			icon: CircleQuestionMarkIcon,
+			audience: "all",
+		},
 	] as const;
 
 	/** A full page load, not `goto`: drops every in-memory trace of the session. */
 	async function logout() {
 		await authActions.logout();
-		window.location.assign(isStaff(level) ? "/login" : "/user/login");
+		window.location.assign(resolve(isStaff(level) ? "login" : "user/login"));
 	}
 
 	const isActive = (href: string) =>
-		href === "/"
-			? page.url.pathname === "/"
+		href === resolve("")
+			? page.url.pathname === href
 			: page.url.pathname.startsWith(href);
 </script>
 
@@ -69,7 +151,7 @@
 		<Sidebar.Group>
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
-					{#each nav.filter((item) => canOpen(level, item.href)) as item (item.href)}
+					{#each nav.filter((item) => allows(item.audience, level)) as item (item.href)}
 						<Sidebar.MenuItem>
 							<Sidebar.MenuButton isActive={isActive(item.href)}>
 								{#snippet child({ props })}

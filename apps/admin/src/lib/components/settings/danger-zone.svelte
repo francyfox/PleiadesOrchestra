@@ -12,6 +12,7 @@
 	import { confirmEmailMatches } from "#lib/confirm-email.js";
 	import { useFieldErrorText } from "#lib/forms/use-field-error-text.js";
 	import { queryClient } from "#lib/query/client.js";
+	import { resolve } from "$app/paths";
 	import { useSettingsEnhance } from "./use-settings-enhance";
 
 	let { me }: { me: Me } = $props();
@@ -27,7 +28,7 @@
 		// The sessions died with the account: a full load drops every trace of it.
 		onSuccess: () => {
 			queryClient.clear();
-			window.location.assign("/user/login");
+			window.location.assign(resolve("user/login"));
 		},
 		onSettled: () => (typed = ""),
 	});

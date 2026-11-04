@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { parseUsersQuery, usersHref } from "./users-query";
+import { parseUsersQuery, usersSearch } from "./users-query";
 
 test("the URL round-trips search, sort and page; unknown values are dropped", () => {
 	const query = parseUsersQuery(
@@ -12,12 +12,12 @@ test("the URL round-trips search, sort and page; unknown values are dropped", ()
 		sort: "balanceUsd",
 		order: "desc",
 	});
-	expect(usersHref(query, { page: 4 })).toBe(
-		"/users?q=ann&sort=balanceUsd&order=desc&page=4",
+	expect(usersSearch(query, { page: 4 })).toBe(
+		"?q=ann&sort=balanceUsd&order=desc&page=4",
 	);
 	// A new sort starts from page 1.
-	expect(usersHref(query, { sort: "email", order: "asc" })).toBe(
-		"/users?q=ann&sort=email",
+	expect(usersSearch(query, { sort: "email", order: "asc" })).toBe(
+		"?q=ann&sort=email",
 	);
 	expect(
 		parseUsersQuery(new URLSearchParams("sort=password&order=desc")),

@@ -14,6 +14,7 @@
 	import { useFormat } from "#lib/i18n/use-format.js";
 	import { type OwnerAccount, ownerLabel } from "#lib/owner-label.js";
 	import { DEFAULT_PAGE_SIZE } from "#lib/pagination.js";
+	import { resolve } from "$app/paths";
 	import ChannelRowActions from "./channel-row-actions.svelte";
 
 	/** One server-cut page of channels (`page` of `total`, from `?page=`). */
@@ -145,5 +146,5 @@
 <DataTable
 	{table}
 	emptyText={$content.empty.value}
-	server={{ page, pageSize: DEFAULT_PAGE_SIZE, total, href: (target) => `/channels?page=${target}` }}
+	server={{ page, pageSize: DEFAULT_PAGE_SIZE, total, href: (target) => resolve(`channels?page=${target}`) }}
 />

@@ -4,6 +4,7 @@
 	import CompactNumber from "#lib/components/compact-number.svelte";
 	import * as Card from "#lib/components/ui/card/index.js";
 	import { useFormat } from "#lib/i18n/use-format.js";
+	import { resolve } from "$app/paths";
 
 	let { stats }: { stats: Stats } = $props();
 
@@ -39,7 +40,7 @@
 			<Card.Title class="text-2xl"><CompactNumber value={stats.visitors.total} /></Card.Title>
 		</Card.Header>
 		<Card.Content class="text-xs text-muted-foreground">
-			<a class="underline-offset-4 hover:underline" href="/visitors?status=pending">
+			<a class="underline-offset-4 hover:underline" href={resolve("visitors?status=pending")}>
 				{$content.pendingLink({ count: stats.visitors.pending })}
 			</a>
 			· {$content.visitorsSummary({ blocked: stats.visitors.blocked, anonymous: stats.visitors.anonymous })}

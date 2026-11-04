@@ -17,8 +17,9 @@
 	import { Hint } from "#lib/components/ui/hint/index.js";
 	import { useFormat } from "#lib/i18n/use-format.js";
 	import type { ServerPagination } from "#lib/pagination.js";
-	import { type UsersQuery, usersHref } from "#lib/users-query.js";
+	import { type UsersQuery, usersSearch } from "#lib/users-query.js";
 	import { goto } from "$app/navigation";
+	import { resolve } from "$app/paths";
 	import UserRowActions from "./user-row-actions.svelte";
 
 	let {
@@ -120,10 +121,12 @@
 				typeof updater === "function" ? updater(sorting()) : updater;
 			if (!next) return;
 			goto(
-				usersHref(query, {
-					sort: next.id as UsersQuery["sort"],
-					order: next.desc ? "desc" : "asc",
-				}),
+				resolve(
+					`users${usersSearch(query, {
+						sort: next.id as UsersQuery["sort"],
+						order: next.desc ? "desc" : "asc",
+					})}`,
+				),
 				{ reset: false },
 			);
 		},

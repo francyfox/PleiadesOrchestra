@@ -36,6 +36,7 @@
 		withSorting,
 	} from "#lib/visitors-table-state.js";
 	import { goto } from "$app/navigation";
+	import { resolve } from "$app/paths";
 
 	let { data } = $props();
 
@@ -146,7 +147,7 @@
 			const search = visitorsStateToSearch(
 				withSorting(data.state, next),
 			).toString();
-			goto(search ? `/visitors?${search}` : "/visitors", {
+			goto(resolve(search ? `visitors?${search}` : "visitors"), {
 				reset: false,
 			});
 		},

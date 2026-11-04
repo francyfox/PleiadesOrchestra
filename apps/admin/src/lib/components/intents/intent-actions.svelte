@@ -12,6 +12,7 @@
 	import * as Dialog from "#lib/components/ui/dialog/index.js";
 	import { useActionEnhance } from "#lib/components/use-action-enhance.js";
 	import { REQUEST_INTENTS } from "#lib/flow-filters.js";
+	import { resolve } from "$app/paths";
 
 	/** Approve, reject, correct (a dialog with the intent picker) and open the request the label came from. */
 	let { item }: { item: IntentExample } = $props();
@@ -58,7 +59,7 @@
 		<Button
 			variant="ghost"
 			size="icon-sm"
-			href={`/flow/${encodeURIComponent(item.planRunId)}`}
+			href={resolve(`flow/${encodeURIComponent(item.planRunId)}`)}
 			aria-label={$content.actions.openRequest.value}
 			title={$content.actions.openRequest.value}
 		>

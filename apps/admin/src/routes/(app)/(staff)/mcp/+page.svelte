@@ -3,6 +3,7 @@
 	import McpSitesTable from "#lib/components/mcp/mcp-sites-table.svelte";
 	import { useLiveQuery } from "#lib/live/use-live-query.svelte.js";
 	import { goto } from "$app/navigation";
+	import { resolve } from "$app/paths";
 
 	const content = useIntlayer("mcp");
 	const live = useLiveQuery("mcp", () => ({}));
@@ -15,5 +16,5 @@
 
 <McpSitesTable
 	sites={live.current.items}
-	onSelect={(id) => goto(`/mcp/${encodeURIComponent(id)}`)}
+	onSelect={(id) => goto(resolve(`mcp/${encodeURIComponent(id)}`))}
 />

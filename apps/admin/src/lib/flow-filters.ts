@@ -48,7 +48,7 @@ export function parseIntent(value: string | null): string | undefined {
 /** The URL of the requests list: page one is left out, and so is a filter that is off. */
 export function requestsHref(
 	filters: RequestFilters & { page?: number },
-): string {
+): `?${string}` {
 	const params = new URLSearchParams();
 	if (filters.status) params.set("status", filters.status);
 	if (filters.intent) params.set("intent", filters.intent);
