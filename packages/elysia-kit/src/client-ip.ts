@@ -7,7 +7,7 @@
  *   service; behind a proxy every request shares the proxy's address.
  * - `cf-connecting-ip` — the `CF-Connecting-IP` header Cloudflare sets
  *   (overwriting any client value). Only safe when every request comes
- *   through Cloudflare (tunnel); a direct hit to the port can forge it.
+ *   through Cloudflare; a direct hit to the port can forge it.
  * - `xff-rightmost` — `X-Forwarded-For` read from the right. Each proxy
  *   appends the address it received the request from, so only the entries
  *   added by trusted proxies are honest; the head is client-controlled.

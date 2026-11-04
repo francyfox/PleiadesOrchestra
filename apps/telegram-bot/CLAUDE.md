@@ -14,5 +14,5 @@ Flat layout, not the module convention: `index.ts` (`Bun.serve` with `/health` a
 
 ## Gotchas
 
-- Webhook mode (not long polling) avoids "Conflict: terminated by other getUpdates request" on restarts. It needs a public URL: `docker compose --profile tunnel up -d tunnel`.
+- Webhook mode (not long polling) avoids "Conflict: terminated by other getUpdates request" on restarts. It needs a public URL forwarded to the bot's port (`TELEGRAM_WEBHOOK_URL`).
 - `harness-client.ts` is a local copy of the streaming client (the `harness` naming predates the `alpha-orchestrator` rename); `HarnessForbiddenError` = 403 for denied users.

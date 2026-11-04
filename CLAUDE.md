@@ -44,7 +44,7 @@ Run from the repo root (Turborepo fans out per package; `test` depends on `^buil
 - `bun run test:beta-text` — builds and boots the real `llama-server` Docker image (~770MB model, up to 15 min). Not part of `bun run test`; don't run casually.
 - `bun run test:e2e` — builds the widget, then Playwright in `apps/e2e` (real browser; `bunx playwright install chromium` once). Not part of `bun run test`.
 - `bun run knip` — unused files/exports/dependencies (`knip.json`); use it to find dead code to delete.
-- Deployment is local-only via `compose.yml`: every published port is bound to `127.0.0.1`. Public traffic goes through the opt-in `tunnel` service (`docker compose --profile tunnel up -d tunnel`); the Telegram webhook needs it.
+- Deployment is local-only via `compose.yml`: every published port is bound to `127.0.0.1`. Public traffic needs a reverse proxy in front that exposes only the public routes; the Telegram webhook needs a public URL.
 - Dependency versions live in root `package.json` `workspaces.catalog` (Bun catalogs); workspaces reference them as `"catalog:"`. TypeScript is 6 everywhere.
 
 ## Architecture
