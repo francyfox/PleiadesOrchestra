@@ -12,6 +12,7 @@
 		type VisitorsTableState,
 		visitorsStateToSearch,
 	} from "#lib/visitors-table-state.js";
+	import { resolve } from "$app/paths";
 
 	/** Cursor paging: only forward from the server, "back" replays the trail kept in the URL. */
 	let { state, page }: { state: VisitorsTableState; page: VisitorsPage } =
@@ -22,7 +23,7 @@
 
 	const hrefFor = (next: VisitorsTableState) => {
 		const search = visitorsStateToSearch(next).toString();
-		return search ? `/visitors?${search}` : "/visitors";
+		return resolve(search ? `visitors?${search}` : "visitors");
 	};
 
 	const labels = $derived($common.pagination);

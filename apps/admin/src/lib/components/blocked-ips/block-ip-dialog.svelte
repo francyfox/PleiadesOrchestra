@@ -4,13 +4,13 @@
 	import { useIntlayer } from "svelte-intlayer";
 	import { blockedIpActions } from "#lib/actions.js";
 	import type { Channel } from "#lib/api-types.js";
-	import { isStaff } from "#lib/auth-redirect.js";
 	import FormField from "#lib/components/form-field.svelte";
 	import { Button } from "#lib/components/ui/button/index.js";
 	import * as Dialog from "#lib/components/ui/dialog/index.js";
 	import { FieldError } from "#lib/components/ui/field-error/index.js";
 	import { Label } from "#lib/components/ui/label/index.js";
 	import { useFieldErrorText } from "#lib/forms/use-field-error-text.js";
+	import { isStaff } from "#lib/guards.js";
 	import { page } from "$app/state";
 	import { useBlockedIpEnhance } from "./use-blocked-ip-enhance";
 

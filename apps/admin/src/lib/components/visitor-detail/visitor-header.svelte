@@ -11,6 +11,7 @@
 	import { Input } from "#lib/components/ui/input/index.js";
 	import { useActionEnhance } from "#lib/components/use-action-enhance.js";
 	import { whoisUrl } from "#lib/ip.js";
+	import { resolve } from "$app/paths";
 
 	/** Name, status badges and the whitelist/block actions of one visitor. */
 	let { visitor }: { visitor: Visitor } = $props();
@@ -36,7 +37,7 @@
 </script>
 
 <PageHeader
-	backHref="/visitors"
+	backHref={resolve("visitors")}
 	backLabel={$content.back.value}
 	title={visitor.displayName ?? visitor.name}
 >
@@ -80,7 +81,7 @@
 			<Button variant="destructive" onclick={() => (blockOpen = true)}>{$actions.block.value}</Button>
 		{/if}
 		{#if visitor.ip}
-			<Button variant="outline" href={`/blocked-ips?ip=${encodeURIComponent(visitor.ip)}`}>{$actions.blockIp.value}</Button>
+			<Button variant="outline" href={resolve(`blocked-ips?ip=${encodeURIComponent(visitor.ip)}`)}>{$actions.blockIp.value}</Button>
 		{/if}
 	{/snippet}
 </PageHeader>

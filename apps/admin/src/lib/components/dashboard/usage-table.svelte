@@ -10,6 +10,7 @@
 	import CompactNumber from "#lib/components/compact-number.svelte";
 	import DataTable from "#lib/components/data-table.svelte";
 	import { useFormat } from "#lib/i18n/use-format.js";
+	import { resolve } from "$app/paths";
 
 	/** Usage rows grouped by visitor, channel or model; visitor rows link to the visitor card, model rows show the price. */
 	let {
@@ -80,7 +81,7 @@
 
 {#snippet labelCell(row: UsageRow)}
 	{#if groupBy === "visitor" && row.key && row.label !== row.key}
-		<a class="block max-w-48 truncate underline-offset-4 hover:underline" title={row.label} href={`/visitors/${encodeURIComponent(row.key)}`}>{row.label}</a>
+		<a class="block max-w-48 truncate underline-offset-4 hover:underline" title={row.label} href={resolve(`visitors/${encodeURIComponent(row.key)}`)}>{row.label}</a>
 	{:else}
 		<span class="block max-w-48 truncate" title={row.label}>{row.label}</span>
 	{/if}

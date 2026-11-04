@@ -11,13 +11,15 @@
 	import { Button } from "#lib/components/ui/button/index.js";
 	import * as Card from "#lib/components/ui/card/index.js";
 	import { useFieldErrorText } from "#lib/forms/use-field-error-text.js";
+	import { afterSignIn, keepRedirect } from "#lib/guards.js";
 	import { goto } from "$app/navigation";
+	import { resolve } from "$app/paths";
 	import { page } from "$app/state";
 
 	const content = useIntlayer("auth");
 	const form = useAuthForm(
 		authActions.userLogin,
-		() => goto("/", { refreshAll: true }),
+		() => goto(afterSignIn(page.url), { refreshAll: true }),
 		{ schema: UserLoginForm, overrides: passwordAsTyped },
 	);
 	const errorText = useFieldErrorText();
@@ -52,8 +54,8 @@
 			<Button type="submit" class="w-full" disabled={form.pending}>{$content.userLogin.submit.value}</Button>
 		</form>
 		<div class="flex flex-wrap justify-between gap-2 text-sm text-muted-foreground">
-			<a href="/user/register" class="underline-offset-4 hover:underline">{$content.userLogin.register.value}</a>
-			<a href="/user/forgot" class="underline-offset-4 hover:underline">{$content.userLogin.forgot.value}</a>
+			<a href={resolve(`user/register${keepRedirect(page.url)}`)} class="underline-offset-4 hover:underline">{$content.userLogin.register.value}</a>
+			<a href={resolve("user/forgot")} class="underline-offset-4 hover:underline">{$content.userLogin.forgot.value}</a>
 		</div>
 	</Card.Content>
 </Card.Root>

@@ -6,6 +6,7 @@
 	import * as Card from "#lib/components/ui/card/index.js";
 	import { useFormat } from "#lib/i18n/use-format.js";
 	import { useLiveQuery } from "#lib/live/use-live-query.svelte.js";
+	import { resolve } from "$app/paths";
 	import NodeDetails from "./node-details.svelte";
 	import RequestGraph from "./request-graph.svelte";
 	import RequestStatusBadge from "./request-status-badge.svelte";
@@ -39,7 +40,7 @@
 </script>
 
 <PageHeader
-	backHref="/flow"
+	backHref={resolve("flow")}
 	backLabel={$content.graph.back.value}
 	title={request.prompt ?? $content.requests.noPrompt.value}
 >

@@ -5,6 +5,7 @@
 	import { Button } from "#lib/components/ui/button/index.js";
 	import { NoticeDialog } from "#lib/components/ui/notice-dialog/index.js";
 	import { queries } from "#lib/query/queries.js";
+	import { resolve } from "$app/paths";
 	import { page } from "$app/state";
 
 	/** Customers only (staff get 403): opens once per page load while the channels are paused for want of balance; not on /billing itself. */
@@ -14,7 +15,7 @@
 	const open = $derived(
 		!dismissed &&
 			standing.data?.ok === false &&
-			page.url.pathname !== "/billing",
+			page.url.pathname !== resolve("billing"),
 	);
 </script>
 
@@ -32,7 +33,7 @@
 		    {$content.noBalance.ok.value}
 		</Button>
 		<Button
-		    href="/billing"
+		    href={resolve("billing")}
 			variant="secondary"
 			onclick={() => (dismissed = true)}
 		>

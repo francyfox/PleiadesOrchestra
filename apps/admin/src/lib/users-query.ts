@@ -29,11 +29,11 @@ export function parseUsersQuery(params: URLSearchParams): UsersQuery {
 	};
 }
 
-/** The URL of `query` with `patch` applied; changing search or sort goes back to page 1. */
-export function usersHref(
+/** The `?search` of `/users` for `query` with `patch` applied (changing search or sort goes back to page 1); the caller wraps `users${…}` in `resolve`. */
+export function usersSearch(
 	query: UsersQuery,
 	patch: Partial<Pick<UsersQuery, "page" | "q" | "sort" | "order">>,
-): string {
+): "" | `?${string}` {
 	const next = { ...query, ...patch };
 	if (!("page" in patch)) next.page = 1;
 	const params = new URLSearchParams();
@@ -42,5 +42,5 @@ export function usersHref(
 	if (next.sort && next.order === "desc") params.set("order", "desc");
 	if (next.page > 1) params.set("page", String(next.page));
 	const search = params.toString();
-	return search ? `/users?${search}` : "/users";
+	return search ? `?${search}` : "";
 }

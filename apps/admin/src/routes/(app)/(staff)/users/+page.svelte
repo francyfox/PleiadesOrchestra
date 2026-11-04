@@ -5,7 +5,8 @@
 	import UsersTable from "#lib/components/users/users-table.svelte";
 	import { prefetched } from "#lib/query/prefetch.js";
 	import { queries } from "#lib/query/queries.js";
-	import { usersHref } from "#lib/users-query.js";
+	import { usersSearch } from "#lib/users-query.js";
+	import { resolve } from "$app/paths";
 
 	let { data } = $props();
 
@@ -27,6 +28,6 @@
 		page: data.query.page,
 		pageSize: data.query.pageSize,
 		total: page.total,
-		href: (target) => usersHref(data.query, { page: target }),
+		href: (target) => resolve(`users${usersSearch(data.query, { page: target })}`),
 	}}
 />

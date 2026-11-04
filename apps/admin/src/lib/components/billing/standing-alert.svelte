@@ -4,6 +4,7 @@
 	import { standingAlert } from "#lib/billing-alert.js";
 	import * as Alert from "#lib/components/ui/alert/index.js";
 	import { queries } from "#lib/query/queries.js";
+	import { resolve } from "$app/paths";
 
 	/** Header banner for a customer whose channels are paused (red) or about to be (yellow). Mount for customers only: staff get 403. */
 	const standing = createQuery(() => queries.standing());
@@ -18,7 +19,7 @@
 	>
 		<Alert.Description class="flex flex-wrap items-center gap-x-3">
 			<span>{$content.alert[alert.key].value}</span>
-			<a href="/billing" class="font-medium underline">{$content.alert.link.value}</a>
+			<a href={resolve("billing")} class="font-medium underline">{$content.alert.link.value}</a>
 		</Alert.Description>
 	</Alert.Root>
 {/if}

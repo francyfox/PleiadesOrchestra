@@ -1,7 +1,5 @@
-import { redirect } from "@sveltejs/kit";
 import { createApi } from "#lib/api/client.js";
 import { throwAsPage, unwrap } from "#lib/api/result.js";
-import { resolveAuthRedirect } from "#lib/auth-redirect.js";
 import { resolveBrowserLocale } from "#lib/i18n/browser-locale.js";
 import { queryClient } from "#lib/query/client.js";
 import { queries } from "#lib/query/queries.js";
@@ -15,7 +13,7 @@ import type { LayoutLoad } from "./$types";
 export const ssr = false;
 export const prerender = false;
 
-export const load: LayoutLoad = async ({ fetch, url }) => {
+export const load: LayoutLoad = async ({ fetch }) => {
 	// Never from the cache: every navigation re-checks who is signed in.
 	const session = await queryClient
 		.fetchQuery({
@@ -27,12 +25,7 @@ export const load: LayoutLoad = async ({ fetch, url }) => {
 		})
 		.catch(throwAsPage);
 
-	const target = resolveAuthRedirect({
-		pathname: url.pathname,
-		level: session.admin?.level ?? null,
-	});
-	if (target) redirect(303, target);
-
+	// Who may open what is decided by each route group's guard (`#lib/guards.ts`).
 	return {
 		locale: resolveBrowserLocale(),
 		admin: session.admin,

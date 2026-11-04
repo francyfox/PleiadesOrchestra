@@ -7,6 +7,7 @@
 	import TokenDialog from "#lib/components/admins/token-dialog.svelte";
 	import { useLiveQuery } from "#lib/live/use-live-query.svelte.js";
 	import { DEFAULT_PAGE_SIZE } from "#lib/pagination.js";
+	import { resolve } from "$app/paths";
 
 	let { data } = $props();
 
@@ -25,7 +26,7 @@
 	function closeToken() {
 		const own = issued?.own;
 		issued = null;
-		if (own) window.location.assign("/login");
+		if (own) window.location.assign(resolve("login"));
 	}
 </script>
 
@@ -42,7 +43,7 @@
 		page: data.page,
 		pageSize: DEFAULT_PAGE_SIZE,
 		total: live.current.total,
-		href: (page) => `/admins?page=${page}`,
+		href: (page) => resolve(`admins?page=${page}`),
 	}}
 	onEdit={(admin) => (editing = admin)}
 	onIssued={(email, token, own) => (issued = { email, token, own })}

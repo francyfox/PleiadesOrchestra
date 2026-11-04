@@ -10,7 +10,10 @@
 	import { Button } from "#lib/components/ui/button/index.js";
 	import * as Card from "#lib/components/ui/card/index.js";
 	import { useFieldErrorText } from "#lib/forms/use-field-error-text.js";
+	import { afterSignIn } from "#lib/guards.js";
 	import { goto } from "$app/navigation";
+	import { resolve } from "$app/paths";
+	import { page } from "$app/state";
 
 	let { data } = $props();
 
@@ -18,7 +21,7 @@
 	// Reloads the session in the root layout, which lets us past /login.
 	const form = useAuthForm(
 		authActions.tokenLogin,
-		() => goto("/", { refreshAll: true }),
+		() => goto(afterSignIn(page.url), { refreshAll: true }),
 		{ schema: TokenLoginForm },
 	);
 	const errorText = useFieldErrorText();
@@ -43,6 +46,6 @@
 			{/if}
 			<Button type="submit" class="w-full" disabled={form.pending}>{$content.login.submit.value}</Button>
 		</form>
-		<a href="/user/login" class="text-center text-sm text-muted-foreground underline-offset-4 hover:underline">{$content.login.customer.value}</a>
+		<a href={resolve("user/login")} class="text-center text-sm text-muted-foreground underline-offset-4 hover:underline">{$content.login.customer.value}</a>
 	</Card.Content>
 </Card.Root>

@@ -11,6 +11,9 @@
 	import { Button } from "#lib/components/ui/button/index.js";
 	import * as Card from "#lib/components/ui/card/index.js";
 	import { useFieldErrorText } from "#lib/forms/use-field-error-text.js";
+	import { keepRedirect } from "#lib/guards.js";
+	import { resolve } from "$app/paths";
+	import { page } from "$app/state";
 
 	const content = useIntlayer("auth");
 	const { locale } = useLocale();
@@ -45,6 +48,6 @@
 				<Button type="submit" class="w-full" disabled={form.pending}>{$content.register.submit.value}</Button>
 			</form>
 		{/if}
-		<a href="/user/login" class="text-center text-sm text-muted-foreground underline-offset-4 hover:underline">{$content.register.hasAccount.value}</a>
+		<a href={resolve(`user/login${keepRedirect(page.url)}`)} class="text-center text-sm text-muted-foreground underline-offset-4 hover:underline">{$content.register.hasAccount.value}</a>
 	</Card.Content>
 </Card.Root>

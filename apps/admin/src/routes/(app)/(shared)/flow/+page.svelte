@@ -6,6 +6,7 @@
 	import { useLiveQuery } from "#lib/live/use-live-query.svelte.js";
 	import { DEFAULT_PAGE_SIZE } from "#lib/pagination.js";
 	import { goto } from "$app/navigation";
+	import { resolve } from "$app/paths";
 
 	let { data } = $props();
 
@@ -29,7 +30,7 @@
 
 <RequestsFilters
 	{filters}
-	hrefFor={(change) => requestsHref(change)}
+	hrefFor={(change) => resolve(`flow${requestsHref(change)}`)}
 	onNavigate={(href) => goto(href, { reset: false })}
 />
 
@@ -38,6 +39,6 @@
 	total={live.current.total}
 	page={data.page}
 	filtered={Boolean(data.status || data.intent)}
-	hrefFor={(page) => requestsHref({ ...filters, page })}
-	onSelect={(id) => goto(`/flow/${encodeURIComponent(id)}`)}
+	hrefFor={(page) => resolve(`flow${requestsHref({ ...filters, page })}`)}
+	onSelect={(id) => goto(resolve(`flow/${encodeURIComponent(id)}`))}
 />

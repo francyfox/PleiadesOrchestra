@@ -4,6 +4,7 @@
 	import { Button } from "#lib/components/ui/button/index.js";
 	import { Input } from "#lib/components/ui/input/index.js";
 	import type { VisitorsTableState } from "#lib/visitors-table-state.js";
+	import { resolve } from "$app/paths";
 
 	/** GET form: filters live in the URL, the server loads the matching page. */
 	let { state, channels }: { state: VisitorsTableState; channels: Channel[] } =
@@ -39,5 +40,5 @@
 	<input type="hidden" name="order" value={state.order} />
 	<input type="hidden" name="limit" value={state.limit} />
 	<Button type="submit" variant="secondary">{$content.filters.apply.value}</Button>
-	<Button href="/visitors" variant="ghost">{$content.filters.reset.value}</Button>
+	<Button href={resolve("visitors")} variant="ghost">{$content.filters.reset.value}</Button>
 </form>

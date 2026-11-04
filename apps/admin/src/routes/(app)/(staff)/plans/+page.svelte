@@ -6,6 +6,7 @@
 	import { prefetched } from "#lib/query/prefetch.js";
 	import { queries } from "#lib/query/queries.js";
 	import { goto } from "$app/navigation";
+	import { resolve } from "$app/paths";
 
 	let { data } = $props();
 
@@ -20,7 +21,7 @@
 
 <PlansFilters
 	status={data.status}
-	onChange={(status) => goto(status ? `?status=${status}` : "?", { replaceState: true })}
+	onChange={(status) => goto(resolve(status ? `plans?status=${status}` : "plans"), { replaceState: true })}
 />
 
 <PlansTable items={prefetched(plans).items} />

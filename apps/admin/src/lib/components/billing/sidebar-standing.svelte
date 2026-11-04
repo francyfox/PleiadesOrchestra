@@ -6,6 +6,7 @@
 	import { useFormat } from "#lib/i18n/use-format.js";
 	import { queries } from "#lib/query/queries.js";
 	import type { LoadLevel } from "#lib/system/load-level.js";
+	import { resolve } from "$app/paths";
 
 	/** Sidebar footer: the subscription's own status as a chip and the TR balance. Mount for customers only: staff get 403. */
 	const billing = createQuery(() => queries.billing());
@@ -22,7 +23,7 @@
 
 {#if billing.data}
 	{@const { subscription, balanceUsd } = billing.data}
-	<a href="/billing" class="grid gap-3 px-2 text-xs">
+	<a href={resolve("billing")} class="grid gap-3 px-2 text-xs">
 		{#if subscription}
 			<LevelBadge level={LEVEL[subscription.status]} label={$content.summary.plan.value}>{$plans.status[subscription.status].value}</LevelBadge>
 		{:else}

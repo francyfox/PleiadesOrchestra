@@ -10,6 +10,7 @@
 	import { Button } from "#lib/components/ui/button/index.js";
 	import * as Card from "#lib/components/ui/card/index.js";
 	import { useFieldErrorText } from "#lib/forms/use-field-error-text.js";
+	import { resolve } from "$app/paths";
 	import { page } from "$app/state";
 
 	const content = useIntlayer("auth");
@@ -44,6 +45,6 @@
 				<Button type="submit" class="w-full" disabled={form.pending}>{$content.reset.submit.value}</Button>
 			</form>
 		{/if}
-		<a href="/user/login" class="text-center text-sm text-muted-foreground underline-offset-4 hover:underline">{$content.forgot.back.value}</a>
+		<a href={resolve("user/login")} class="text-center text-sm text-muted-foreground underline-offset-4 hover:underline">{$content.forgot.back.value}</a>
 	</Card.Content>
 </Card.Root>

@@ -7,6 +7,7 @@
 	import { DEFAULT_PAGE_SIZE } from "#lib/pagination.js";
 	import { prefetched } from "#lib/query/prefetch.js";
 	import { queries } from "#lib/query/queries.js";
+	import { resolve } from "$app/paths";
 	import { page } from "$app/state";
 
 	let { data } = $props();
@@ -36,6 +37,6 @@
 		page: data.page,
 		pageSize: DEFAULT_PAGE_SIZE,
 		total: live.current.total,
-		href: (target) => `/blocked-ips?page=${target}`,
+		href: (target) => resolve(`blocked-ips?page=${target}`),
 	}}
 />
