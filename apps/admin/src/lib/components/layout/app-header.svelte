@@ -1,4 +1,5 @@
 <script lang="ts">
+	import NoBalanceDialog from "#lib/components/billing/no-balance-dialog.svelte";
 	import StandingAlert from "#lib/components/billing/standing-alert.svelte";
 	import SystemMeter from "#lib/components/layout/system-meter.svelte";
 	import * as Sidebar from "#lib/components/ui/sidebar/index.js";
@@ -13,6 +14,6 @@
 	<div class="flex items-center gap-3">
     	{#if staff}<SystemMeter />{/if}
     	<LocaleSwitcher />
-    	{#if !staff}<StandingAlert  />{/if}
+    	{#if !staff}<StandingAlert /><NoBalanceDialog />{/if}
 	</div>
 </header>

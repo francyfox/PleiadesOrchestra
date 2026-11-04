@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
 	import * as Card from "#lib/components/ui/card/index.js";
+	import { Hint } from "#lib/components/ui/hint/index.js";
 	import { useFormat } from "#lib/i18n/use-format.js";
 
 	/** Staff-only money of the dashboard period, USD (`null` = prices unknown). */
@@ -29,11 +30,15 @@
 
 <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 	{#each tiles as tile (tile.label)}
-		<Card.Root>
-			<Card.Header>
+		<Card.Root class="min-w-0">
+			<Card.Header class="min-w-0">
 				<Card.Description>{tile.label}</Card.Description>
-				<Card.Title class={["text-2xl", tile.value !== null && tile.value < 0 && "text-destructive"]}>
-					{$format.usd(tile.value)}
+				<Card.Title class={["min-w-0 text-2xl", tile.value !== null && tile.value < 0 && "text-destructive"]}>
+					{#if tile.value === null}
+						{$format.usd(tile.value)}
+					{:else}
+						<Hint text={$format.usd(tile.value)} hint={$format.usdExact(tile.value)} />
+					{/if}
 				</Card.Title>
 			</Card.Header>
 		</Card.Root>

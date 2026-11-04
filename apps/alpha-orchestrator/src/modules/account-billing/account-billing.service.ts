@@ -1,11 +1,11 @@
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import {
 	creditLedger,
 	orders,
 	subscriptions,
 } from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
-import { balanceMicro, MICRO_USD } from "../ledger/ledger.service.ts";
+import { balanceNano, NANO_USD } from "../ledger/ledger.service.ts";
 import { costUsd, type Prices } from "../prices/prices.service.ts";
 import { accountStanding } from "../standing/standing.service.ts";
 import { toView } from "../subscriptions/subscriptions.service.ts";
@@ -61,9 +61,26 @@ function currentSubscription(db: Db, accountId: string) {
 export function standingOf(db: Db, accountId: string, now: number) {
 	return accountStanding(
 		currentSubscription(db, accountId) ?? null,
-		balanceMicro(db, accountId),
+		balanceNano(db, accountId),
 		now,
 	);
+}
+
+/** Every account that has ledger rows, with its TR balance (staff Users table). */
+export function listBalances(db: Db) {
+	return db
+		.select({
+			accountId: creditLedger.accountId,
+			total: sql<number>`SUM(${creditLedger.amount})`,
+		})
+		.from(creditLedger)
+		.groupBy(creditLedger.accountId)
+		.orderBy(creditLedger.accountId)
+		.all()
+		.map(({ accountId, total }) => ({
+			accountId,
+			balanceUsd: total / NANO_USD,
+		}));
 }
 
 /** Everything the Billing page needs about one account. */
@@ -73,11 +90,11 @@ export function accountBilling(
 	options: { now: number; prices: Prices | null; polarBaseUrl?: string },
 ) {
 	const current = currentSubscription(db, accountId);
-	const balance = balanceMicro(db, accountId);
+	const balance = balanceNano(db, accountId);
 	return {
 		standing: accountStanding(current ?? null, balance, options.now),
 		subscription: current ? toView(current, options.polarBaseUrl) : null,
-		balanceUsd: balance / MICRO_USD,
+		balanceUsd: balance / NANO_USD,
 		orders: db
 			.select()
 			.from(orders)
@@ -89,7 +106,7 @@ export function accountBilling(
 	};
 }
 
-/** A staff correction of the TR balance (signed USD, kept to the micro-USD); `adminId` is the ledger ref. */
+/** A staff correction of the TR balance (signed USD, kept to the nano-USD); `adminId` is the ledger ref. */
 export function adjustBalance(
 	db: Db,
 	accountId: string,
@@ -100,7 +117,7 @@ export function adjustBalance(
 	db.insert(creditLedger)
 		.values({
 			accountId,
-			amount: Math.round(amountUsd * MICRO_USD),
+			amount: Math.round(amountUsd * NANO_USD),
 			reason: "adjustment",
 			ref: adminId,
 			createdAt: now,

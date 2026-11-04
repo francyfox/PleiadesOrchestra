@@ -42,6 +42,8 @@ test("trenni keep two decimals; an overdraft stays negative", () => {
 	const en = createFormat("en");
 	expect(en.tr(29.999747)).toBe("29.99975 TR");
 	expect(en.tr(-1.5)).toBe("-1.50000 TR");
+	expect(en.trExact(29.999747123)).toBe("29.999747123 TR");
+	expect(en.usdExact(0.000253117)).toBe("$0.000253117");
 });
 
 test("order amounts are cents in the order's currency", () => {

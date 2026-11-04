@@ -21,6 +21,8 @@ export type {
 	CreateChannelInput,
 	Customer,
 	CustomersPage,
+	CustomersQuery,
+	CustomersSort,
 	IntentExample,
 	IntentsPage,
 	IntentVerdictInput,

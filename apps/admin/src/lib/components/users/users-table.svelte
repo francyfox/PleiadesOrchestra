@@ -5,74 +5,127 @@
 		createTable,
 		renderComponent,
 		renderSnippet,
+		rowSortingFeature,
+		type SortingState,
 		tableFeatures,
 	} from "@tanstack/svelte-table";
 	import { useIntlayer } from "svelte-intlayer";
 	import type { Customer } from "#lib/api-types.js";
 	import DataTable from "#lib/components/data-table.svelte";
+	import SortHeader from "#lib/components/sort-header.svelte";
 	import { Badge } from "#lib/components/ui/badge/index.js";
+	import { Hint } from "#lib/components/ui/hint/index.js";
 	import { useFormat } from "#lib/i18n/use-format.js";
 	import type { ServerPagination } from "#lib/pagination.js";
+	import { type UsersQuery, usersHref } from "#lib/users-query.js";
+	import { goto } from "$app/navigation";
 	import UserRowActions from "./user-row-actions.svelte";
 
 	let {
 		users,
+		query,
 		pagination,
-	}: { users: Customer[]; pagination: ServerPagination } = $props();
+	}: {
+		users: Customer[];
+		query: UsersQuery;
+		pagination: ServerPagination;
+	} = $props();
 
 	const content = useIntlayer("users");
 	const plans = useIntlayer("plans");
 	const format = useFormat();
 
-	const features = tableFeatures({});
+	const features = tableFeatures({ rowSortingFeature });
 	const helper = createColumnHelper<typeof features, Customer>();
+	type SortableHeader = {
+		column: {
+			getIsSorted: () => false | "asc" | "desc";
+			getToggleSortingHandler: () => ((event: unknown) => void) | undefined;
+		};
+	};
+	// The server sorts (the table is paged there): a header click only changes the URL.
+	const sortable = (label: () => string) => (ctx: SortableHeader) =>
+		renderComponent(SortHeader, {
+			label: label(),
+			sorted: ctx.column.getIsSorted(),
+			onToggle: ctx.column.getToggleSortingHandler(),
+		});
+	const sorting = (): SortingState => [
+		{ id: query.sort ?? "createdAt", desc: query.order === "desc" },
+	];
 	const table = createTable({
 		features,
 		columns: helper.columns([
-			helper.accessor("name", { header: () => $content.columns.name.value }),
+			helper.accessor("name", {
+				header: sortable(() => $content.columns.name.value),
+			}),
 			helper.accessor("email", {
-				header: () => $content.columns.email.value,
+				header: sortable(() => $content.columns.email.value),
 				cell: (ctx) => renderSnippet(emailCell, ctx.row.original),
 			}),
 			helper.accessor("createdAt", {
-				header: () => $content.columns.created.value,
+				header: sortable(() => $content.columns.created.value),
 				cell: (ctx) => $format.date(ctx.getValue()),
 			}),
 			helper.accessor("lastActiveAt", {
-				header: () => $content.columns.lastActive.value,
+				header: sortable(() => $content.columns.lastActive.value),
 				cell: (ctx) => {
 					const at = ctx.getValue();
 					return at === null ? $content.never.value : $format.date(at);
 				},
 			}),
 			helper.accessor("channelsCount", {
-				header: () => $content.columns.channels.value,
+				header: sortable(() => $content.columns.channels.value),
+			}),
+			helper.accessor("balanceUsd", {
+				header: sortable(() => $content.columns.balance.value),
+				cell: (ctx) => renderSnippet(balanceCell, ctx.getValue()),
 			}),
 			helper.accessor("plan", {
 				id: "plan",
-				header: () => $content.columns.plan.value,
+				header: sortable(() => $content.columns.plan.value),
 				cell: (ctx) => renderSnippet(planCell, ctx.getValue()),
 			}),
 			helper.accessor((user) => user.plan?.currentPeriodEnd ?? null, {
 				id: "paidUntil",
-				header: () => $content.columns.paidUntil.value,
+				header: sortable(() => $content.columns.paidUntil.value),
 				cell: (ctx) => {
 					const at = ctx.getValue();
 					return at === null ? "—" : $format.date(at);
 				},
 			}),
 			helper.accessor("banned", {
-				header: () => $content.columns.status.value,
+				header: sortable(() => $content.columns.status.value),
 				cell: (ctx) => renderSnippet(status, ctx.getValue()),
 			}),
 			helper.display({
 				id: "actions",
+				enableSorting: false,
 				cell: (ctx) =>
 					renderComponent(UserRowActions, { user: ctx.row.original }),
 			}),
 		]),
 		get data() {
 			return users;
+		},
+		manualSorting: true,
+		enableSortingRemoval: false,
+		state: {
+			get sorting() {
+				return sorting();
+			},
+		},
+		onSortingChange: (updater) => {
+			const [next] =
+				typeof updater === "function" ? updater(sorting()) : updater;
+			if (!next) return;
+			goto(
+				usersHref(query, {
+					sort: next.id as UsersQuery["sort"],
+					order: next.desc ? "desc" : "asc",
+				}),
+				{ reset: false },
+			);
 		},
 	});
 </script>
@@ -84,6 +137,10 @@
 	{:else}
 		<Badge variant="outline" class="ml-1">{$content.unverified.value}</Badge>
 	{/if}
+{/snippet}
+
+{#snippet balanceCell(balance: number)}
+	<Hint class={balance < 0 ? "tabular-nums text-destructive" : "tabular-nums"} text={$format.tr(balance)} hint={$format.trExact(balance)} />
 {/snippet}
 
 {#snippet planCell(plan: Customer["plan"])}

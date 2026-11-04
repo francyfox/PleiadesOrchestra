@@ -11,7 +11,7 @@ import {
 	json,
 	NOW,
 } from "../http/http.testing.ts";
-import { balanceMicro } from "../ledger/ledger.service.ts";
+import { balanceNano } from "../ledger/ledger.service.ts";
 import { RunBinding } from "../run-binding/run-binding.ts";
 import { orderData, subscriptionData } from "./billing.testing.ts";
 
@@ -55,14 +55,14 @@ describe("POST /v1/admin/billing/sync", () => {
 		});
 		expect(db.select().from(subscriptions).all()).toHaveLength(1);
 		expect(db.select().from(orders).all()).toHaveLength(1);
-		expect(balanceMicro(db, "acc_1")).toBe(10_000_000);
+		expect(balanceNano(db, "acc_1")).toBe(10_000_000_000);
 
 		expect(await json(await sync(body))).toEqual({
 			applied: 0,
 			unchanged: 2,
 			skipped: 1,
 		});
-		expect(balanceMicro(db, "acc_1")).toBe(10_000_000);
+		expect(balanceNano(db, "acc_1")).toBe(10_000_000_000);
 	});
 
 	test("unpauses the owner's channel at once, also when the account comes from metadata", async () => {

@@ -20,6 +20,7 @@ const usersContent = {
 				kk: "Дейін төленген",
 			}),
 			channels: t({ ru: "Каналы", en: "Channels", kk: "Арналар" }),
+			balance: t({ ru: "Баланс", en: "Balance", kk: "Баланс" }),
 			status: t({ ru: "Статус", en: "Status", kk: "Күйі" }),
 		},
 		verified: t({
@@ -28,6 +29,15 @@ const usersContent = {
 			kk: "Пошта расталған",
 		}),
 		noPlan: t({ ru: "нет", en: "none", kk: "жоқ" }),
+		search: {
+			placeholder: t({
+				ru: "Поиск по почте",
+				en: "Search by email",
+				kk: "Пошта бойынша іздеу",
+			}),
+			submit: t({ ru: "Найти", en: "Search", kk: "Іздеу" }),
+			reset: t({ ru: "Сбросить", en: "Reset", kk: "Тазалау" }),
+		},
 		unverified: t({
 			ru: "не подтверждена",
 			en: "unverified",

@@ -33,7 +33,7 @@ describe("GET /api/accounts", () => {
 					})
 				: call.path.includes("/subscriptions")
 					? Response.json({ items: subscriptions })
-					: Response.json({}),
+					: Response.json({ items: [] }),
 		);
 		owners.push(
 			id("ann@example.com"),
@@ -72,9 +72,48 @@ describe("GET /api/accounts", () => {
 			lastActiveAt: null,
 			banned: false,
 			channelsCount: 2,
+			balanceUsd: 0,
 			plan: { status: "canceling", currentPeriodEnd: 400 },
 		});
 		expect(body.items[1]).toMatchObject({ channelsCount: 1, plan: null });
+	});
+
+	test("adds each balance, searches by email, sorts by any column, then pages", async () => {
+		const balances: { accountId: string; balanceUsd: number }[] = [];
+		const { t, staff, id } = await setup((call) =>
+			call.path.includes("/balances")
+				? Response.json({ items: balances })
+				: Response.json({ items: [], total: 0 }),
+		);
+		await t.signedUser("carl@other.example");
+		balances.push(
+			{ accountId: id("ann@example.com"), balanceUsd: 5 },
+			{ accountId: id("bob@example.com"), balanceUsd: 12.5 },
+		);
+		const get = async (search: string) =>
+			(await (
+				await t.call(`/api/accounts?${search}`, { cookie: staff })
+			).json()) as {
+				items: { email: string; balanceUsd: number }[];
+				total: number;
+			};
+		const byBalance = await get("sort=balanceUsd&order=desc");
+		expect(byBalance.items.map((u) => [u.email, u.balanceUsd])).toEqual([
+			["bob@example.com", 12.5],
+			["ann@example.com", 5],
+			["carl@other.example", 0],
+		]);
+		const found = await get(
+			"q=EXAMPLE.com&sort=email&order=desc&page=2&pageSize=1",
+		);
+		expect(found.total).toBe(2);
+		expect(found.items.map((u) => u.email)).toEqual(["ann@example.com"]);
+		// Default: oldest first, as before.
+		expect((await get("")).items.map((u) => u.email)).toEqual([
+			"ann@example.com",
+			"bob@example.com",
+			"carl@other.example",
+		]);
 	});
 
 	test("a user gets 403 on every accounts route", async () => {

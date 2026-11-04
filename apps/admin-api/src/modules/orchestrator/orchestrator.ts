@@ -214,6 +214,11 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 				"GET",
 				`/v1/admin/subscriptions${toSearch(query)}`,
 			),
+		listBalances: () =>
+			request<{ items: { accountId: string; balanceUsd: number }[] }>(
+				"GET",
+				"/v1/admin/accounts/balances",
+			),
 		getAccountBilling: (accountId: string) =>
 			request<AccountBilling>(
 				"GET",

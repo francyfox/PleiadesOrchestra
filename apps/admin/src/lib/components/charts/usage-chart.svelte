@@ -49,7 +49,7 @@
 				]}
 		>
 			{#snippet tooltip()}
-				<Chart.Tooltip />
+				<Chart.Tooltip valueFormatter={metric === "cost" ? $format.usdExact : undefined} />
 			{/snippet}
 		</BarChart>
 	</Chart.Container>

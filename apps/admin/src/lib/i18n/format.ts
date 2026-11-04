@@ -50,6 +50,18 @@ export function createFormat(locale: string) {
 		minimumFractionDigits: 5,
 		maximumFractionDigits: 5,
 	});
+	// 9 digits = the ledger's unit (1 nano-USD): the exact balance, nothing rounded.
+	const trExact = new Intl.NumberFormat(locale, {
+		minimumFractionDigits: 9,
+		maximumFractionDigits: 9,
+	});
+	// 9 digits = the ledger's unit (1 nano-USD): the exact spend, nothing rounded.
+	const dollarsExact = new Intl.NumberFormat(locale, {
+		style: "currency",
+		currency: "USD",
+		minimumFractionDigits: 9,
+		maximumFractionDigits: 9,
+	});
 	/** Order amounts arrive in cents with the currency code of the order. */
 	const money = (cents: number, currency: string) =>
 		new Intl.NumberFormat(locale, { style: "currency", currency }).format(
@@ -60,6 +72,8 @@ export function createFormat(locale: string) {
 		locale,
 		/** Trenni balance: "12.34 TR" (1 TR = 1 USD); negative = overdraft. */
 		tr: (value: number) => `${tr.format(value)} TR`,
+		/** The balance to the nano-TR, as the ledger holds it (for a tooltip). */
+		trExact: (value: number) => `${trExact.format(value)} TR`,
 		money,
 		number: (value: number | null | undefined, missing = "—") =>
 			value === null || value === undefined ? missing : integer.format(value),
@@ -95,6 +109,7 @@ export function createFormat(locale: string) {
 		},
 		usd: (value: number | null | undefined) =>
 			value === null || value === undefined ? "—" : dollars.format(value),
+		usdExact: (value: number) => dollarsExact.format(value),
 		ms: (value: number | null | undefined) => {
 			if (value === null || value === undefined) return "—";
 			return value < 1000

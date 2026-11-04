@@ -19,7 +19,7 @@ import {
 import { testDb } from "../database/database.testing.ts";
 import type { Db } from "../database/database.ts";
 import { SqliteHistoryStore } from "../history/history.ts";
-import { REQUEST_HOLD_MICRO } from "../ledger/ledger.service.ts";
+import { REQUEST_HOLD_NANO } from "../ledger/ledger.service.ts";
 import { RunBinding } from "../run-binding/run-binding.ts";
 import { SqliteUsageRecorder } from "../usage-recorder/usage-recorder.ts";
 
@@ -203,7 +203,7 @@ describe("POST /v1/messages access control", () => {
 		db.insert(creditLedger)
 			.values({
 				accountId: "acc_1",
-				amount: REQUEST_HOLD_MICRO,
+				amount: REQUEST_HOLD_NANO,
 				reason: "top_up",
 				ref: "o1",
 				createdAt: 1,

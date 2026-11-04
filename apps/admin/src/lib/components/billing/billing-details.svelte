@@ -3,6 +3,7 @@
 	import type { AccountBilling } from "#lib/api-types.js";
 	import { Badge } from "#lib/components/ui/badge/index.js";
 	import * as Card from "#lib/components/ui/card/index.js";
+	import { Hint } from "#lib/components/ui/hint/index.js";
 	import { useFormat } from "#lib/i18n/use-format.js";
 	import OrdersTable from "./orders-table.svelte";
 	import SpendTable from "./spend-table.svelte";
@@ -31,12 +32,12 @@
 			<div class="text-muted-foreground">{$content.summary.expires.value}</div>
 			<div class="font-medium">{$format.date(billing.subscription?.currentPeriodEnd)}</div>
 		</div>
-		<div>
+		<div class="min-w-0">
 			<div class="text-muted-foreground">{$content.summary.balance.value}</div>
-			<div class="font-medium">
-				{$format.tr(billing.balanceUsd)}
+			<div class="flex min-w-0 items-center font-medium">
+				<Hint class="min-w-0" text={$format.tr(billing.balanceUsd)} hint={$format.trExact(billing.balanceUsd)} />
 				{#if billing.balanceUsd < 0}
-					<Badge variant="destructive" class="ml-1">{$content.summary.overdraft.value}</Badge>
+					<Badge variant="destructive" class="ml-1 shrink-0">{$content.summary.overdraft.value}</Badge>
 				{/if}
 			</div>
 		</div>

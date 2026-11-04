@@ -5,6 +5,7 @@ import { AccountBilling, AccountParams } from "./account-billing.schema.ts";
 import {
 	accountBilling,
 	adjustBalance,
+	listBalances,
 	setManualPlan,
 } from "./account-billing.service.ts";
 
@@ -35,6 +36,20 @@ export function accountBillingRoutes({
 		prefix: "/v1/admin/accounts",
 		tags: ["Admin: subscriptions"],
 	})
+		.get("/balances", () => ({ items: listBalances(db) }), {
+			response: {
+				200: t.Object({
+					items: t.Array(
+						t.Object({ accountId: t.String(), balanceUsd: t.Number() }),
+					),
+				}),
+			},
+			detail: {
+				summary: "Balances of every account",
+				description:
+					"TR balance per account that has ledger rows; an account without rows has 0.",
+			},
+		})
 		.get("/:accountId/billing", ({ params }) => view(params.accountId), {
 			params: AccountParams,
 			response: { 200: AccountBilling },

@@ -453,8 +453,8 @@ export const orders = sqliteTable("orders", {
 
 /**
  * Append-only TR balance of an account (balance = SUM(amount)). `amount` is a
- * signed integer in micro-USD (1 TR = 1 USD = 1_000_000): a call of $0.00004
- * is 40, with no float drift in the sum. `ref` = order id (top_up, refund) or
+ * signed integer in nano-USD (1 TR = 1 USD = 1_000_000_000): a call of
+ * $0.00004 is 40_000, with no float drift in the sum. `ref` = order id (top_up, refund) or
  * `llm_calls.id` (usage) or the staff id (adjustment). A top-up happens once per order (partial unique index).
  */
 export const creditLedger = sqliteTable(

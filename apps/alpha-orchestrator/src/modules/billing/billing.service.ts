@@ -8,7 +8,7 @@ import {
 } from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
 import { MINUTE_MS } from "../http/http.service.ts";
-import { centsToMicro } from "../ledger/ledger.service.ts";
+import { centsToNano } from "../ledger/ledger.service.ts";
 
 /** Standard Webhooks: a timestamp further than this from now (either way) is a replay. */
 export const WEBHOOK_TOLERANCE_MS = 5 * MINUTE_MS;
@@ -214,7 +214,7 @@ function applyOrder(
 	tx.insert(creditLedger)
 		.values({
 			accountId: o.accountId,
-			amount: centsToMicro(credit),
+			amount: centsToNano(credit),
 			reason: "top_up",
 			ref: o.id,
 			createdAt: o.now,
@@ -227,7 +227,7 @@ function applyOrder(
 		tx.insert(creditLedger)
 			.values({
 				accountId: o.accountId,
-				amount: -Math.round(centsToMicro(delta) * (credit / o.amount)),
+				amount: -Math.round(centsToNano(delta) * (credit / o.amount)),
 				reason: "refund",
 				ref: o.id,
 				createdAt: o.now,

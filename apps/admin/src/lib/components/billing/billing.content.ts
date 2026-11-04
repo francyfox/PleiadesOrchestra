@@ -141,6 +141,25 @@ const billingContent = {
 			}),
 			link: t({ ru: "Открыть оплату", en: "Open billing", kk: "Төлемді ашу" }),
 		},
+		noBalance: {
+			title: t({
+				ru: "Сэр, тут не хватает на топливо!",
+				en: "Sir, we're short on fuel!",
+				kk: "Мырза, отынға жетпей тұр!",
+			}),
+			body: t({
+				ru: "Уважаемый господин, на вашем балансе недостаточно средств, но мы уже прогреваем наших агентов в ожидании вас. Всего хорошего.",
+				en: "Dear sir, your balance is too low, but we are already warming up our agents while we wait for you. All the best.",
+				kk: "Құрметті мырза, балансыңызда қаражат жеткіліксіз, бірақ біз сізді күтіп, агенттерімізді жылытып жатырмыз. Сау болыңыз.",
+			}),
+			topUp: t({ ru: "Пополнить", en: "Top up", kk: "Толтыру" }),
+			ok: t({ ru: "ОК", en: "OK", kk: "ОК" }),
+			imageAlt: t({
+				ru: "Шесть горничных на вертеле над углями",
+				en: "Six maids on a spit over the coals",
+				kk: "Шоқ үстіндегі шампурдағы алты қызметші",
+			}),
+		},
 		staff: {
 			open: t({ ru: "Оплата", en: "Billing", kk: "Төлем" }),
 			corrections: t({
