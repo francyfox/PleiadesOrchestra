@@ -13,7 +13,6 @@ import {
 	createKitApp,
 	createObservability,
 	type Observability,
-	onRequestGuard,
 } from "@repo/elysia-kit";
 import { resolveTaxonomy } from "@repo/intent-presets";
 import { Elysia } from "elysia";
@@ -24,7 +23,11 @@ import type { AgentSettings } from "./modules/agent-settings/agent-settings.serv
 import { agentSettingsRoutes } from "./modules/agent-settings/agent-settings.ts";
 import type { AgentSpec, FetchLike } from "./modules/agents/agents.service.ts";
 import { agentsRoutes } from "./modules/agents/agents.ts";
-import { authorizeRequest } from "./modules/auth/auth.service.ts";
+import {
+	authorizeAdmin,
+	authorizeTransport,
+} from "./modules/auth/auth.service.ts";
+import { guarded } from "./modules/auth/auth.ts";
 import type { BillingProducts } from "./modules/billing/billing.service.ts";
 import { billingRoutes, billingSyncRoutes } from "./modules/billing/billing.ts";
 import { blockedIpsRoutes } from "./modules/blocked-ips/blocked-ips.ts";
@@ -194,6 +197,7 @@ export function createApp(deps: AppDeps) {
 		createObservability("alpha-orchestrator", { LOG_LEVEL: "silent" });
 	const { db } = deps;
 	const directory = deps.channels;
+	const authKeys = { apiKey: deps.apiKey, adminApiKey: deps.adminApiKey };
 
 	return (
 		createKitApp({
@@ -260,28 +264,7 @@ export function createApp(deps: AppDeps) {
 				],
 			},
 		})
-			.onRequest(
-				onRequestGuard(observability.logger, (request) =>
-					authorizeRequest(request, {
-						apiKey: deps.apiKey,
-						adminApiKey: deps.adminApiKey,
-					}),
-				),
-			)
-			// Transport routes
-			.use(accessRoutes({ db, directory, now }))
-			.use(messagesRoutes({ db, directory, reply, now }))
-			.use(threadsRoutes({ db, directory, agent: deps.agent }))
-			.use(decisionsRoutes(deps.decisionAgent))
-			.use(
-				deps.agentSettings
-					? completionsRoutes({
-							settings: deps.agentSettings,
-							agent: "beta-text",
-						})
-					: new Elysia(),
-			)
-			// Public widget routes
+			// Public routes: the widget checks its own credentials, the Polar webhook its signature, the price list is open
 			.use(
 				widgetRoutes({
 					db,
@@ -314,61 +297,82 @@ export function createApp(deps: AppDeps) {
 					: new Elysia(),
 			)
 			.use(publicPricingRoutes({ db, now, prices: deps.prices }))
-			// Admin routes
-			.use(visitorsRoutes({ db, now }))
-			.use(channelsRoutes({ db, directory, now }))
-			.use(ownerChannelsRoutes({ db, directory }))
-			.use(personaRoutes({ db, directory, now }))
-			.use(blockedIpsRoutes({ db, ipHashSalt: deps.ipHashSalt, now }))
-			.use(intentsRoutes({ db, memory: intentMemory, now }))
-			.use(usageRoutes({ db, now, prices: deps.prices }))
-			.use(financeRoutes({ db, now, prices: deps.prices }))
-			.use(pricesRoutes({ db }))
+			// Transport routes (`HARNESS_API_KEY`)
 			.use(
-				billingSyncRoutes({
-					db,
-					now,
-					products: deps.billing,
-					onAccountChanged: (accountId) => directory.refreshStanding(accountId),
-				}),
-			)
-			.use(statsRoutes({ db, now }))
-			.use(performanceRoutes({ db, now }))
-			.use(
-				requestsRoutes({
-					db,
-					activeRuns,
-					now,
-					corsOrigins: new Set(
-						(deps.adminCorsOrigins ?? "https://shalotts.site")
-							.split(",")
-							.map((s) => s.trim())
-							.filter(Boolean),
+				guarded((request) => authorizeTransport(request, authKeys))
+					.use(accessRoutes({ db, directory, now }))
+					.use(messagesRoutes({ db, directory, reply, now }))
+					.use(threadsRoutes({ db, directory, agent: deps.agent }))
+					.use(decisionsRoutes(deps.decisionAgent))
+					.use(
+						deps.agentSettings
+							? completionsRoutes({
+									settings: deps.agentSettings,
+									agent: "beta-text",
+								})
+							: new Elysia(),
 					),
-				}),
 			)
+			// Admin routes (`ADMIN_API_KEY` + `X-Admin-Id`)
 			.use(
-				subscriptionsRoutes({
-					db,
-					now,
-					polarBaseUrl: deps.polarDashboardUrl,
-				}),
-			)
-			.use(
-				accountBillingRoutes({
-					db,
-					now,
-					prices: deps.prices,
-					polarBaseUrl: deps.polarDashboardUrl,
-					onAccountChanged: (accountId) => directory.refreshStanding(accountId),
-				}),
-			)
-			.use(mcpRoutes(db))
-			.use(agentsRoutes({ agents: deps.agents, now, db }))
-			.use(
-				deps.agentSettings
-					? agentSettingsRoutes({ settings: deps.agentSettings })
-					: new Elysia(),
+				guarded((request) => authorizeAdmin(request, authKeys))
+					.use(visitorsRoutes({ db, now }))
+					.use(channelsRoutes({ db, directory, now }))
+					.use(ownerChannelsRoutes({ db, directory }))
+					.use(personaRoutes({ db, directory, now }))
+					.use(blockedIpsRoutes({ db, ipHashSalt: deps.ipHashSalt, now }))
+					.use(intentsRoutes({ db, memory: intentMemory, now }))
+					.use(usageRoutes({ db, now, prices: deps.prices }))
+					.use(financeRoutes({ db, now, prices: deps.prices }))
+					.use(pricesRoutes({ db }))
+					.use(
+						billingSyncRoutes({
+							db,
+							now,
+							products: deps.billing,
+							onAccountChanged: (accountId) =>
+								directory.refreshStanding(accountId),
+						}),
+					)
+					.use(statsRoutes({ db, now }))
+					.use(performanceRoutes({ db, now }))
+					.use(
+						requestsRoutes({
+							db,
+							activeRuns,
+							now,
+							corsOrigins: new Set(
+								(deps.adminCorsOrigins ?? "https://shalotts.site")
+									.split(",")
+									.map((s) => s.trim())
+									.filter(Boolean),
+							),
+						}),
+					)
+					.use(
+						subscriptionsRoutes({
+							db,
+							now,
+							polarBaseUrl: deps.polarDashboardUrl,
+						}),
+					)
+					.use(
+						accountBillingRoutes({
+							db,
+							now,
+							prices: deps.prices,
+							polarBaseUrl: deps.polarDashboardUrl,
+							onAccountChanged: (accountId) =>
+								directory.refreshStanding(accountId),
+						}),
+					)
+					.use(mcpRoutes(db))
+					.use(agentsRoutes({ agents: deps.agents, now, db }))
+					.use(
+						deps.agentSettings
+							? agentSettingsRoutes({ settings: deps.agentSettings })
+							: new Elysia(),
+					),
 			)
 	);
 }

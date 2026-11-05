@@ -1,5 +1,4 @@
-import { hasBearer } from "@repo/elysia-kit";
-import { isPublicWidgetPath } from "../widget/widget.service.ts";
+import { hasBearer, type Rejection } from "@repo/elysia-kit";
 
 const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
@@ -10,56 +9,36 @@ export interface AuthKeys {
 	adminApiKey: string;
 }
 
-export interface Rejection {
-	status: number;
-	body: string;
-}
-
-function isAdminPath(pathname: string): boolean {
-	return pathname === "/v1/admin" || pathname.startsWith("/v1/admin/");
-}
-
-/** Liveness and API docs stay open so they can be reached without the shared secret; the Polar webhook proves itself by its signature. */
-function isOpenPath(pathname: string): boolean {
-	return (
-		pathname === "/health" ||
-		pathname.startsWith("/swagger") ||
-		pathname === "/v1/billing/polar" ||
-		pathname === "/v1/public/pricing"
-	);
-}
+export type { Rejection };
 
 /**
- * Decides whether a request may proceed: `undefined` to let it through, or the
- * rejection to answer with. Two disjoint secrets — the transport key never
- * reaches `/v1/admin/*` and the admin key never reaches the transport routes.
- * The widget's public routes check their own credentials (publishable key,
- * visitor token, channel secret) instead.
+ * The two disjoint secrets: the transport key never reaches `/v1/admin/*` and
+ * the admin key never reaches the transport routes. Which routes sit behind
+ * which is decided by the group they are registered in (`app.ts`), not by path.
  */
-export function authorizeRequest(
+export function authorizeTransport(
 	request: Request,
 	keys: AuthKeys,
 ): Rejection | undefined {
-	const pathname = new URL(request.url).pathname;
-	if (isOpenPath(pathname) || isPublicWidgetPath(pathname)) return;
-
-	if (isAdminPath(pathname)) {
-		// CORS preflights carry no credentials — let the route handler reply with
-		// the appropriate CORS headers (or 403 for unknown origins) without auth.
-		if (request.method === "OPTIONS") return;
-		if (!hasBearer(request, keys.adminApiKey)) {
-			return { status: 401, body: "Unauthorized" };
-		}
-		if (
-			MUTATING_METHODS.has(request.method) &&
-			!request.headers.get("x-admin-id")
-		) {
-			return { status: 400, body: "X-Admin-Id header required" };
-		}
-		return;
-	}
-
 	if (!hasBearer(request, keys.apiKey)) {
 		return { status: 401, body: "Unauthorized" };
+	}
+}
+
+export function authorizeAdmin(
+	request: Request,
+	keys: AuthKeys,
+): Rejection | undefined {
+	// CORS preflights carry no credentials — let the route handler reply with
+	// the appropriate CORS headers (or 403 for unknown origins) without auth.
+	if (request.method === "OPTIONS") return;
+	if (!hasBearer(request, keys.adminApiKey)) {
+		return { status: 401, body: "Unauthorized" };
+	}
+	if (
+		MUTATING_METHODS.has(request.method) &&
+		!request.headers.get("x-admin-id")
+	) {
+		return { status: 400, body: "X-Admin-Id header required" };
 	}
 }
