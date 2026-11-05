@@ -30,6 +30,8 @@ export const FinanceRates = t.Object({
 	payoutPercent: Percent,
 	taxPercent: Percent,
 	conversionPercent: Percent,
+	/** Share of the net (after fees and tax) kept by the shop when a payment is turned into TR; below 100 so a top-up never gives 0. */
+	marginPercent: t.Number({ minimum: 0, maximum: 99 }),
 	taxBase: t.UnionEnum(["payout", "revenue", "profit"]),
 });
 

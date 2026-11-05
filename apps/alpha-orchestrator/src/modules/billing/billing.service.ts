@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { creditFor } from "@repo/tax";
 import { eq, sql } from "drizzle-orm";
 import {
 	billingWebhooks,
@@ -7,8 +8,9 @@ import {
 	subscriptions,
 } from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
+import { ratesOf, readFinanceRates } from "../finance/finance.service.ts";
 import { MINUTE_MS } from "../http/http.service.ts";
-import { centsToNano } from "../ledger/ledger.service.ts";
+import { centsToNano, NANO_USD } from "../ledger/ledger.service.ts";
 
 /** Standard Webhooks: a timestamp further than this from now (either way) is a replay. */
 export const WEBHOOK_TOLERANCE_MS = 5 * MINUTE_MS;
@@ -195,26 +197,38 @@ function applyOrder(
 	// A late `order.paid` carries the pre-refund state: the refund never shrinks.
 	const stale = before !== undefined && sent < before.refundedAmount;
 	const refunded = Math.max(sent, before?.refundedAmount ?? 0);
+	const currency = text(o.data.currency) ?? "usd";
+	// Every paid order (the monthly plan included) tops up the TR balance by its price before discounts (a 100% code still gives the plan's TR); it never expires.
+	const credit = cents(o.data.subtotal_amount) ?? o.amount;
+	// Fixed at the first event: later rate changes must not move what a refund takes back. shortcut: non-USD is credited at face value, @repo/tax is USD only.
+	const rates = readFinanceRates(tx);
+	const granted = before
+		? before.credited
+		: currency.toLowerCase() === "usd"
+			? Math.floor(
+					creditFor(credit / 100, ratesOf(rates), rates.marginPercent / 100) *
+						NANO_USD,
+				)
+			: centsToNano(credit);
 	const values = {
 		accountId: o.accountId,
 		productId,
 		kind,
 		amount: o.amount,
-		currency: text(o.data.currency) ?? "usd",
+		currency,
 		status: stale ? before.status : o.status,
 		createdAt: ms(o.data.created_at) ?? before?.createdAt ?? o.now,
 		refundedAmount: refunded,
+		credited: granted,
 	};
 	tx.insert(orders)
 		.values({ id: o.id, ...values })
 		.onConflictDoUpdate({ target: orders.id, set: values })
 		.run();
-	// Every paid order (the monthly plan included) tops up the TR balance by its price before discounts (a 100% code still gives the plan's TR); it never expires.
-	const credit = cents(o.data.subtotal_amount) ?? o.amount;
 	tx.insert(creditLedger)
 		.values({
 			accountId: o.accountId,
-			amount: centsToNano(credit),
+			amount: granted ?? centsToNano(credit),
 			reason: "top_up",
 			ref: o.id,
 			createdAt: o.now,
@@ -222,12 +236,14 @@ function applyOrder(
 		.onConflictDoNothing()
 		.run();
 	const delta = refunded - (before?.refundedAmount ?? 0);
-	// The refund takes back its share of the credit: refunding all that was paid takes back all of it.
+	// The refund takes back its share of what was granted: refunding all that was paid takes back all of it. Cumulative shares, so rounding never leaves a nano behind.
+	const total = granted ?? centsToNano(credit);
+	const share = (part: number) => Math.round((total * part) / o.amount);
 	if (delta > 0 && o.amount > 0)
 		tx.insert(creditLedger)
 			.values({
 				accountId: o.accountId,
-				amount: -Math.round(centsToNano(delta) * (credit / o.amount)),
+				amount: -(share(refunded) - share(refunded - delta)),
 				reason: "refund",
 				ref: o.id,
 				createdAt: o.now,

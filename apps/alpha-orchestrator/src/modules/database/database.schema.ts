@@ -449,6 +449,8 @@ export const orders = sqliteTable("orders", {
 	status: text("status").notNull(),
 	createdAt: integer("created_at").notNull(),
 	refundedAmount: integer("refunded_amount").notNull().default(0),
+	// TR (nano-USD) granted for this order; null on orders from before it was stored.
+	credited: integer("credited"),
 });
 
 /**

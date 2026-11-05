@@ -19,6 +19,7 @@ export const DEFAULT_FINANCE_RATES: FinanceRatesValue = {
 	payoutPercent: 1.5,
 	taxPercent: 3,
 	conversionPercent: 2,
+	marginPercent: 0,
 	taxBase: "payout",
 };
 
@@ -34,11 +35,14 @@ export function ratesOf(p: FinanceRatesValue): Rates {
 	};
 }
 
-export function readFinanceRates(db: Db): FinanceRatesValue {
-	return (
-		db.select().from(financeSettings).where(eq(financeSettings.id, 1)).get()
-			?.rates ?? DEFAULT_FINANCE_RATES
-	);
+/** Defaults fill fields that older saved rates lack (`marginPercent`). */
+export function readFinanceRates(db: Pick<Db, "select">): FinanceRatesValue {
+	const saved = db
+		.select()
+		.from(financeSettings)
+		.where(eq(financeSettings.id, 1))
+		.get()?.rates;
+	return { ...DEFAULT_FINANCE_RATES, ...saved };
 }
 
 export function saveFinanceRates(

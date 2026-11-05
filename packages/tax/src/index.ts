@@ -53,6 +53,20 @@ export function orderBreakdown(price: number, rates: Rates = DEFAULT_RATES) {
 }
 
 /**
+ * USD of credit for a payment: what stays after fees and tax, minus the shop's margin share.
+ * @throws RangeError when `paid` is invalid or `marginShare` is outside [0, 1).
+ */
+export function creditFor(
+	paid: number,
+	rates: Rates = DEFAULT_RATES,
+	marginShare = 0,
+) {
+	if (!(marginShare >= 0 && marginShare < 1))
+		throw new RangeError(`marginShare must be in [0, 1), got ${marginShare}`);
+	return Math.max(0, orderBreakdown(paid, rates).net * (1 - marginShare));
+}
+
+/**
  * Profit over a set of orders: the fixed fee applies per order, so each order is broken down alone.
  * @throws RangeError when any order or `modelSpend` is negative or not finite.
  */

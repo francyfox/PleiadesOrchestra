@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { orders } from "../database/database.schema.ts";
+import { financeSettings, orders } from "../database/database.schema.ts";
 import { admin, json, NOW, setupAdminApp } from "../http/http.testing.ts";
 import {
 	DEFAULT_FINANCE_RATES,
@@ -65,6 +65,7 @@ describe("finance rates", () => {
 		payoutPercent: 0,
 		taxPercent: 20,
 		conversionPercent: 0,
+		marginPercent: 15,
 		taxBase: "revenue",
 	};
 	const put = (body: unknown) =>
@@ -92,6 +93,17 @@ describe("finance rates", () => {
 		);
 		const body = await json(await app.handle(admin("/finance")));
 		expect(body.lossesUsd).toBeCloseTo(30, 6);
+	});
+
+	test("rates saved before marginPercent existed read with margin 0", async () => {
+		const { db, app } = setupAdminApp();
+		const { marginPercent, ...old } = rates;
+		db.insert(financeSettings)
+			.values({ id: 1, rates: old as never, updatedBy: "a", updatedAt: 1 })
+			.run();
+		expect(await json(await app.handle(admin("/finance/rates")))).toMatchObject(
+			{ marginPercent: 0, feePercent: 10 },
+		);
 	});
 
 	test("a rate above 100% or an unknown base is refused and nothing changes", async () => {

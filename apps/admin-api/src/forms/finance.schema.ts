@@ -11,6 +11,7 @@ export const FinanceRates = Type.Object({
 	payoutPercent: Percent,
 	taxPercent: Percent,
 	conversionPercent: Percent,
+	marginPercent: Type.Number({ minimum: 0, maximum: 99 }),
 	taxBase: Type.Union([
 		Type.Literal("payout"),
 		Type.Literal("revenue"),

@@ -17,6 +17,7 @@ describe("finance rates (proxied)", () => {
 		payoutPercent: 1.5,
 		taxPercent: 3,
 		conversionPercent: 2,
+		marginPercent: 10,
 		taxBase: "revenue",
 	};
 

@@ -1,4 +1,7 @@
 import { createHmac } from "node:crypto";
+import type { Db } from "../database/database.ts";
+import { saveFinanceRates } from "../finance/finance.service.ts";
+import { NOW } from "../http/http.testing.ts";
 
 export const WEBHOOK_SECRET = `whsec_${Buffer.from("test-secret-bytes").toString("base64")}`;
 
@@ -83,4 +86,22 @@ export function webhookRequest(options: {
 		},
 		body: options.tamper ? body.replace("owner@", "evil@") : body,
 	});
+}
+
+/** Rates with no fees, tax or margin: a payment is credited at face value. */
+export function useFaceValueRates(db: Db) {
+	saveFinanceRates(
+		db,
+		{
+			feeFixedUsd: 0,
+			feePercent: 0,
+			payoutPercent: 0,
+			taxPercent: 0,
+			conversionPercent: 0,
+			marginPercent: 0,
+			taxBase: "payout",
+		},
+		"test",
+		NOW,
+	);
 }

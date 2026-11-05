@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { creditFor } from "@repo/tax";
 import { createApp } from "../../app.ts";
 import { ChannelDirectory } from "../channel-directory/channel-directory.ts";
 import { createWebChannel } from "../channels/channels.service.ts";
@@ -8,12 +9,18 @@ import {
 	subscriptions,
 } from "../database/database.schema.ts";
 import { testDb } from "../database/database.testing.ts";
+import {
+	DEFAULT_FINANCE_RATES,
+	ratesOf,
+	saveFinanceRates,
+} from "../finance/finance.service.ts";
 import { agent, decisionAgent, NOW } from "../http/http.testing.ts";
-import { balanceNano } from "../ledger/ledger.service.ts";
+import { balanceNano, NANO_USD } from "../ledger/ledger.service.ts";
 import { RunBinding } from "../run-binding/run-binding.ts";
 import {
 	orderData,
 	subscriptionData,
+	useFaceValueRates,
 	WEBHOOK_SECRET,
 	webhookRequest,
 } from "./billing.testing.ts";
@@ -25,6 +32,7 @@ function setup(
 	now: () => number = () => NOW,
 ) {
 	const db = testDb();
+	useFaceValueRates(db);
 	const directory = new ChannelDirectory(db, now);
 	const app = createApp({
 		agent,
@@ -328,6 +336,80 @@ describe("POST /v1/billing/polar", () => {
 				"m3",
 			);
 			expect(balanceNano(db, "acc_1")).toBe(20_000_000_000);
+		});
+
+		test("the credit is creditFor with the saved rates and margin, stored on the order; a refund takes back its share of that, not of the current rates", async () => {
+			const { app, db } = setup();
+			const saved = {
+				...DEFAULT_FINANCE_RATES,
+				marginPercent: 20,
+			};
+			saveFinanceRates(db, saved, "test", NOW);
+			await send(app, "order.paid", orderData(), "m1");
+			const granted = Math.floor(creditFor(10, ratesOf(saved), 0.2) * NANO_USD);
+			expect(granted).toBeGreaterThan(0);
+			expect(granted).toBeLessThan(10 * NANO_USD);
+			expect(db.select().from(orders).get()).toMatchObject({
+				credited: granted,
+			});
+			expect(balanceNano(db, "acc_1")).toBe(granted);
+			// Staff change the rates after the top-up: the refund still uses what was granted.
+			saveFinanceRates(db, { ...saved, marginPercent: 90 }, "test", NOW);
+			await send(
+				app,
+				"order.refunded",
+				orderData({ refunded_amount: 500, status: "partially_refunded" }),
+				"m2",
+			);
+			expect(balanceNano(db, "acc_1")).toBe(granted - Math.round(granted / 2));
+			await send(
+				app,
+				"order.refunded",
+				orderData({ refunded_amount: 1000, status: "refunded" }),
+				"m3",
+			);
+			expect(balanceNano(db, "acc_1")).toBe(0);
+		});
+
+		test("an order stored before `credited` existed is refunded by the old formula; a non-USD order is credited at face value", async () => {
+			const { app, db } = setup();
+			db.insert(orders)
+				.values({
+					id: "ord_1",
+					accountId: "acc_1",
+					kind: "credits",
+					amount: 1000,
+					currency: "usd",
+					status: "paid",
+					createdAt: NOW,
+				})
+				.run();
+			db.insert(creditLedger)
+				.values({
+					accountId: "acc_1",
+					amount: 10 * NANO_USD,
+					reason: "top_up",
+					ref: "ord_1",
+					createdAt: NOW,
+				})
+				.run();
+			saveFinanceRates(db, DEFAULT_FINANCE_RATES, "test", NOW);
+			await send(
+				app,
+				"order.refunded",
+				orderData({ refunded_amount: 1000, status: "refunded" }),
+				"m1",
+			);
+			expect(balanceNano(db, "acc_1")).toBe(0);
+			expect(db.select().from(orders).get()?.credited).toBeNull();
+
+			await send(
+				app,
+				"order.paid",
+				orderData({ id: "ord_eur", currency: "eur" }),
+				"m2",
+			);
+			expect(balanceNano(db, "acc_1")).toBe(10 * NANO_USD);
 		});
 
 		test("an order without an amount is a 400", async () => {

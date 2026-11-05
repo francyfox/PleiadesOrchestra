@@ -1,5 +1,10 @@
 import { expect, test } from "bun:test";
-import { DEFAULT_RATES, netProfit, orderBreakdown } from "./index.ts";
+import {
+	creditFor,
+	DEFAULT_RATES,
+	netProfit,
+	orderBreakdown,
+} from "./index.ts";
 
 test("doc example P = 10", () => {
 	const b = orderBreakdown(10);
@@ -86,4 +91,16 @@ test("tax base: profit taxes the period after fees and model spend, never a loss
 	expect(r.profit).toBeCloseTo(64, 10);
 	const loss = netProfit({ orders: [10], modelSpend: 50 }, rates);
 	expect(loss.losses).toBeCloseTo(1, 10);
+});
+
+test("creditFor gives the net minus the margin share, never below 0", () => {
+	const net = orderBreakdown(10).net;
+	expect(creditFor(10, DEFAULT_RATES, 0)).toBeCloseTo(net, 10);
+	expect(creditFor(10, DEFAULT_RATES, 0.25)).toBeCloseTo(net * 0.75, 10);
+	expect(creditFor(0.5, DEFAULT_RATES, 0.25)).toBe(0);
+});
+
+test("creditFor rejects a margin outside [0, 1)", () => {
+	expect(() => creditFor(10, DEFAULT_RATES, 1)).toThrow(RangeError);
+	expect(() => creditFor(10, DEFAULT_RATES, -0.1)).toThrow(RangeError);
 });

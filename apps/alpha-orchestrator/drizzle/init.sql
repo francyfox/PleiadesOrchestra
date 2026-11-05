@@ -214,7 +214,7 @@ CREATE TABLE `orders` (
 	`status` text NOT NULL,
 	`created_at` integer NOT NULL,
 	`refunded_amount` integer DEFAULT 0 NOT NULL
-);
+, `credited` integer);
 CREATE TABLE "subscriptions" (
 	`id` text PRIMARY KEY NOT NULL,
 	`customer_id` text NOT NULL,
@@ -266,6 +266,7 @@ INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '6
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '7d3e282d6b5f74416d6aad3a3f82537e0f9666081d3abb4eb1a215e728514add', 1793172844282);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '70e05d24d3aa9574473bb8fdf55d6d5a7b258172982aac0eff5c953fedf81a12', 1793600809558);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '2bd12acadf733892dffde197aceea13e437525296ad0fd930e2d1f062528db70', 1793793666624);
+INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'df62d237ed0bd7c207492b0ae55cce2eea8838705709cd6f9cc8dfdb1dcdc452', 1793867201214);
 INSERT INTO "channels" ("id", "slug", "kind", "name", "access_mode", "publishable_key", "secret_key_hash", "allowed_origins", "disabled_at", "created_at", "catalog_language", "owner_id", "intent_sets", "several_tasks") VALUES ('ch_telegram', 'telegram', 'telegram', 'Telegram', 'whitelist', NULL, NULL, '[]', NULL, CAST(strftime('%s', 'now') AS INTEGER) * 1000, 'en', NULL, '["shop"]', 0);
 INSERT INTO "channels" ("id", "slug", "kind", "name", "access_mode", "publishable_key", "secret_key_hash", "allowed_origins", "disabled_at", "created_at", "catalog_language", "owner_id", "intent_sets", "several_tasks") VALUES ('ch_cli', 'cli', 'cli', 'CLI', 'open', NULL, NULL, '[]', NULL, CAST(strftime('%s', 'now') AS INTEGER) * 1000, 'en', NULL, '["shop"]', 0);
 COMMIT;

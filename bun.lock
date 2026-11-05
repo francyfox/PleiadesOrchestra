@@ -28,6 +28,7 @@
         "@lezer/highlight": "catalog:",
         "@lucide/svelte": "^1.48.0",
         "@repo/intent-presets": "workspace:*",
+        "@repo/tax": "workspace:*",
         "@repo/ui": "workspace:*",
         "@sentry/sveltekit": "catalog:",
         "@sinclair/typebox": "catalog:",
