@@ -8,6 +8,7 @@
 	import type { AccountBilling } from "#lib/api-types.js";
 	import DataTable from "#lib/components/data-table.svelte";
 	import { useFormat } from "#lib/i18n/use-format.js";
+	import { orderCredit } from "#lib/order-credit.js";
 
 	type Order = AccountBilling["orders"][number];
 
@@ -32,6 +33,22 @@
 			helper.accessor("amount", {
 				header: () => $content.orders.amount.value,
 				cell: (ctx) => $format.money(ctx.getValue(), ctx.row.original.currency),
+			}),
+			helper.display({
+				id: "credited",
+				header: () => $content.orders.credited.value,
+				cell: (ctx) => {
+					const credit = orderCredit(ctx.row.original);
+					return credit ? $format.tr(credit.creditedTr) : "—";
+				},
+			}),
+			helper.display({
+				id: "heldBack",
+				header: () => $content.orders.heldBack.value,
+				cell: (ctx) => {
+					const held = orderCredit(ctx.row.original)?.heldBackUsd;
+					return held == null ? "—" : $format.money(held * 100, "usd");
+				},
 			}),
 			helper.accessor("status", { header: () => $content.orders.status.value }),
 			helper.accessor("refundedAmount", {

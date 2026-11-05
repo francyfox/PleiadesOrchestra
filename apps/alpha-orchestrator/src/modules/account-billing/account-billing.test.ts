@@ -48,6 +48,7 @@ function seedAccount(db: ReturnType<typeof setupAdminApp>["db"]) {
 				currency: "usd",
 				status: "paid",
 				createdAt: NOW - DAY,
+				credited: 7_960_000_000,
 			},
 			{
 				id: "o2",
@@ -104,6 +105,7 @@ describe("accountBilling", () => {
 		expect(result.subscription?.id).toBe("sub_new");
 		expect(result.balanceUsd).toBe(9.99996);
 		expect(result.orders.map((o) => o.id)).toEqual(["o1", "o2"]);
+		expect(result.orders.map((o) => o.credited)).toEqual([7_960_000_000, null]);
 		expect(result.spend).toEqual([
 			{ month: "2026-08", tokens: 150, costUsd: 0.2 },
 			{ month: "2026-09", tokens: 30, costUsd: 0.04 },

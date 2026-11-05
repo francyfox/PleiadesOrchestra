@@ -73,6 +73,12 @@ const billingContent = {
 			amount: t({ ru: "Сумма", en: "Amount", kk: "Сома" }),
 			status: t({ ru: "Статус", en: "Status", kk: "Күйі" }),
 			refunded: t({ ru: "Возвращено", en: "Refunded", kk: "Қайтарылған" }),
+			credited: t({ ru: "Начислено", en: "Credited", kk: "Есептелген" }),
+			heldBack: t({
+				ru: "Комиссии, налоги и сервис",
+				en: "Fees, taxes and service",
+				kk: "Комиссия, салық және сервис",
+			}),
 			plan: t({ ru: "тариф", en: "plan", kk: "тариф" }),
 			credits: t({ ru: "трени", en: "trenni", kk: "трени" }),
 			empty: t({

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import CheckIcon from "@lucide/svelte/icons/check";
+	import { onMount } from "svelte";
 	import Pane from "#lib/components/Pane.svelte";
 	import { localeFromPath } from "#lib/i18n.js";
 	import { landingContent } from "#lib/landing/content.js";
@@ -22,6 +23,33 @@
 	const price = "$800";
 	// Keep in sync with the Polar plan product (POLAR_PLAN_PRODUCT_ID) sold on PLEIADES_PANEL_BILLING_URL.
 	const cloudPrice = "$20";
+
+	interface LivePricing {
+		topUps: {
+			paidUsd: number;
+			creditedTr: number;
+			feesAndTaxUsd: number;
+			serviceUsd: number;
+		}[];
+		models: {
+			id: string;
+			inputPerMillionTr: number;
+			outputPerMillionTr: number;
+			cacheReadPerMillionTr?: number;
+		}[];
+	}
+	// Client-side only: the page is prerendered, a failed or unconfigured fetch leaves it as is.
+	let live = $state<LivePricing | null>(null);
+	onMount(async () => {
+		const base = __PUBLIC_ENV__.PUBLIC_PLEIADES_AGENT_URL;
+		if (!base) return;
+		try {
+			const response = await fetch(`${base}/v1/public/pricing`);
+			if (response.ok) live = await response.json();
+		} catch {
+			// no live prices: nothing extra is shown
+		}
+	});
 
 	let plans = $derived([
 		{
@@ -113,9 +141,75 @@
 			</article>
 		{/each}
 	</div>
+	{#if live?.topUps.length}
+		<section class="live" aria-labelledby="live-title">
+			<h3 id="live-title" class="text-xl! font-bold!">{t.live.title}</h3>
+			<table class="text-sm">
+				<thead>
+					<tr>
+						<th scope="col">{t.live.paid}</th>
+						<th scope="col">{t.live.credited}</th>
+						<th scope="col">{t.live.fees}</th>
+						<th scope="col">{t.live.service}</th>
+					</tr>
+				</thead>
+				<tbody>
+					{#each live.topUps as row (row.paidUsd)}
+						<tr>
+							<td>${row.paidUsd}</td>
+							<td>{row.creditedTr} TR</td>
+							<td>${row.feesAndTaxUsd}</td>
+							<td>${row.serviceUsd}</td>
+						</tr>
+					{/each}
+				</tbody>
+			</table>
+			<p class="dim text-xs">{t.live.note}</p>
+			{#if live.models.length}
+				<details>
+					<summary class="text-sm">{t.live.modelsTitle}</summary>
+					<table class="text-sm">
+						<thead>
+							<tr>
+								<th scope="col">{t.live.model}</th>
+								<th scope="col">{t.live.input}</th>
+								<th scope="col">{t.live.output}</th>
+								<th scope="col">{t.live.cached}</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each live.models as model (model.id)}
+								<tr>
+									<td>{model.id}</td>
+									<td>{model.inputPerMillionTr}</td>
+									<td>{model.outputPerMillionTr}</td>
+									<td>{model.cacheReadPerMillionTr ?? "—"}</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</details>
+			{/if}
+		</section>
+	{/if}
 </Pane>
 
 <style>
+	.live {
+		margin-top: 2rem;
+		overflow-x: auto;
+	}
+	.live table {
+		width: 100%;
+		margin: 0.75rem 0;
+		border-collapse: collapse;
+	}
+	.live :is(th, td) {
+		padding: 0.25rem 0.75rem 0.25rem 0;
+		border-bottom: 1px solid var(--rule);
+		text-align: left;
+	}
+
 	.plans {
 		display: grid;
 		gap: 1rem;

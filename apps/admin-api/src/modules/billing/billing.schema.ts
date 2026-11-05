@@ -32,6 +32,8 @@ export const AccountBilling = t.Object({
 			status: t.String(),
 			createdAt: t.Number(),
 			refundedAmount: t.Number(),
+			/** TR in nano-USD granted for the order; `null` on old orders. */
+			credited: nullable(t.Number()),
 		}),
 	),
 	spend: t.Array(

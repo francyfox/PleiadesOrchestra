@@ -50,6 +50,7 @@ import { getPersona } from "./modules/persona/persona.service.ts";
 import { personaRoutes } from "./modules/persona/persona.ts";
 import type { PriceBook } from "./modules/prices/prices.service.ts";
 import { pricesRoutes } from "./modules/prices/prices.ts";
+import { publicPricingRoutes } from "./modules/public-pricing/public-pricing.ts";
 import { ReplyService } from "./modules/reply/reply.ts";
 import { requestsRoutes } from "./modules/requests/requests.ts";
 import type { RunBinding } from "./modules/run-binding/run-binding.ts";
@@ -312,6 +313,7 @@ export function createApp(deps: AppDeps) {
 						})
 					: new Elysia(),
 			)
+			.use(publicPricingRoutes({ db, now, prices: deps.prices }))
 			// Admin routes
 			.use(visitorsRoutes({ db, now }))
 			.use(channelsRoutes({ db, directory, now }))

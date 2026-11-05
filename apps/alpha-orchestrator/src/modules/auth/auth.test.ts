@@ -13,6 +13,7 @@ describe("authorizeRequest", () => {
 		for (const path of [
 			"/health",
 			"/swagger",
+			"/v1/public/pricing",
 			"/v1/widget/messages",
 			"/v1/channels/shop/identify",
 		]) {

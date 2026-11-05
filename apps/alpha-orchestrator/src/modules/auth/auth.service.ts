@@ -24,7 +24,8 @@ function isOpenPath(pathname: string): boolean {
 	return (
 		pathname === "/health" ||
 		pathname.startsWith("/swagger") ||
-		pathname === "/v1/billing/polar"
+		pathname === "/v1/billing/polar" ||
+		pathname === "/v1/public/pricing"
 	);
 }
 

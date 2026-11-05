@@ -9,7 +9,9 @@ Follows the root "Code style" convention (`src/index.ts` composition root with c
 - `*.instance.ts` singletons (e.g. `alpha-understand.instance.ts`) — only `index.ts` and other `*.instance.ts` import them.
 - Test helpers: `database.testing.ts` -> `testDb()`, `http.testing.ts` -> `setupAdminApp()`/`admin()`/`json()`.
 
-Modules: `access`, `active-runs`, `agent-settings`, `agents`, `alpha-understand`, `auth`, `billing`, `blocked-ips`, `channel-directory`, `channels`, `completions`, `config`, `database`, `decisions`, `english-only`, `goap`, `history`, `http`, `identify`, `messages`, `performance`, `persona`, `plan-runs`, `prices`, `providers`, `rate-limit`, `reply`, `retention`, `run-binding`, `run-stream`, `security`, `stats`, `streaming`, `subscriptions`, `telegram-whitelist`, `text`, `threads`, `usage`, `usage-recorder`, `visitors`, `widget`, `world-state`.
+Modules: `access`, `active-runs`, `agent-settings`, `agents`, `alpha-understand`, `auth`, `billing`, `blocked-ips`, `channel-directory`, `channels`, `completions`, `config`, `database`, `decisions`, `english-only`, `goap`, `history`, `http`, `identify`, `messages`, `performance`, `persona`, `plan-runs`, `prices`, `providers`, `public-pricing`, `rate-limit`, `reply`, `retention`, `run-binding`, `run-stream`, `security`, `stats`, `streaming`, `subscriptions`, `telegram-whitelist`, `text`, `threads`, `usage`, `usage-recorder`, `visitors`, `widget`, `world-state`.
+
+`public-pricing`: unauthenticated `GET /v1/public/pricing` (open path in `auth.service.ts`): top-ups via `@repo/tax` `creditFor` with the saved rates, prices of models that had ok calls; the landing fetches it.
 
 ## Commands
 
