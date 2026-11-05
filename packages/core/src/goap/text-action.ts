@@ -4,6 +4,7 @@ import type { Agent } from "#core/types";
 export interface TextActionMeta {
 	elapsedMs: number;
 	inputTokens?: number;
+	cacheReadTokens?: number;
 	outputTokens?: number;
 	/** Across every model call behind this reply (ingest passes + final generation) — see `AgentStreamEvent`'s `done`. */
 	totalInputTokens?: number;
@@ -76,6 +77,7 @@ export function createTextAction(config: TextActionConfig): GoapAction {
 					meta = {
 						elapsedMs: event.elapsedMs,
 						inputTokens: event.inputTokens,
+						cacheReadTokens: event.cacheReadTokens,
 						outputTokens: event.outputTokens,
 						totalInputTokens: event.totalInputTokens,
 						totalOutputTokens: event.totalOutputTokens,

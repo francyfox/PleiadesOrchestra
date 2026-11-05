@@ -11,6 +11,7 @@ import {
 	FinanceRates,
 	ForgotForm,
 	IntentVerdictInput,
+	LocalPriceForm,
 	ManualPlanInput,
 	PersonaForm,
 	ProviderForm,
@@ -199,6 +200,22 @@ export const financeActions = {
 	},
 	/** Staff: pull every subscription and order from Polar into the orchestrator. */
 	syncPolar: () => submitted(api().subscriptions.sync.post()),
+};
+
+/** Staff: prices of local models; the row's delete button sends `op=delete`. */
+export const localPriceActions = {
+	save: (form: FormData) => {
+		if (form.get("op") === "delete")
+			return submitted(
+				api()
+					.finance["local-prices"]({ model: text(form, "model") })
+					.delete(),
+			);
+		const parsed = parseForm(LocalPriceForm, form);
+		if (!parsed.ok) return invalidForm();
+		const { model, ...body } = parsed.body;
+		return submitted(api().finance["local-prices"]({ model }).put(body));
+	},
 };
 
 /** Polar checkout and customer portal; both answer `{ url }` to go to. */

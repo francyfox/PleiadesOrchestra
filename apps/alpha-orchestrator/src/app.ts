@@ -49,6 +49,7 @@ import { performanceRoutes } from "./modules/performance/performance.ts";
 import { getPersona } from "./modules/persona/persona.service.ts";
 import { personaRoutes } from "./modules/persona/persona.ts";
 import type { PriceBook } from "./modules/prices/prices.service.ts";
+import { pricesRoutes } from "./modules/prices/prices.ts";
 import { ReplyService } from "./modules/reply/reply.ts";
 import { requestsRoutes } from "./modules/requests/requests.ts";
 import type { RunBinding } from "./modules/run-binding/run-binding.ts";
@@ -320,6 +321,7 @@ export function createApp(deps: AppDeps) {
 			.use(intentsRoutes({ db, memory: intentMemory, now }))
 			.use(usageRoutes({ db, now, prices: deps.prices }))
 			.use(financeRoutes({ db, now, prices: deps.prices }))
+			.use(pricesRoutes({ db }))
 			.use(
 				billingSyncRoutes({
 					db,

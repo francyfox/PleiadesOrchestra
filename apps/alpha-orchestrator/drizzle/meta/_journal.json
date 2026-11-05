@@ -211,6 +211,13 @@
 			"when": 1793867201214,
 			"tag": "0029_order_credited",
 			"breakpoints": true
+		},
+		{
+			"idx": 30,
+			"version": "6",
+			"when": 1793867501923,
+			"tag": "0030_token_cache_local_prices",
+			"breakpoints": true
 		}
 	]
 }

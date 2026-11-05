@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { useIntlayer } from "svelte-intlayer";
 	import FinanceRatesCard from "#lib/components/settings/finance-rates-card.svelte";
+	import LocalPricesCard from "#lib/components/settings/local-prices-card.svelte";
 	import PolarSyncCard from "#lib/components/settings/polar-sync-card.svelte";
 
 	const content = useIntlayer("settings");
@@ -11,4 +12,5 @@
 <div class="grid max-w-3xl gap-6">
 	<PolarSyncCard />
 	<FinanceRatesCard />
+	<LocalPricesCard />
 </div>

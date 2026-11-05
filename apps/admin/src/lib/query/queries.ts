@@ -134,6 +134,11 @@ export const queries = {
 			queryKey: ["finance", "rates"],
 			queryFn: () => unwrap(api().finance.rates.get()),
 		}),
+	localPrices: () =>
+		queryOptions({
+			queryKey: ["finance", "local-prices"],
+			queryFn: () => unwrap(api().finance["local-prices"].get()),
+		}),
 	me: () =>
 		queryOptions({
 			queryKey: ["me"],

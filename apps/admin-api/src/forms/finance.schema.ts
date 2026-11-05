@@ -20,3 +20,20 @@ export const FinanceRates = Type.Object({
 });
 
 export type FinanceRates = Static<typeof FinanceRates>;
+
+const PerMillion = Type.Number({ minimum: 0 });
+
+/** USD per 1M tokens of a local model; no cache price = cached tokens cost the input price. */
+export const LocalPriceInput = Type.Object({
+	inputPerMillionUsd: PerMillion,
+	outputPerMillionUsd: PerMillion,
+	cacheReadPerMillionUsd: Type.Optional(PerMillion),
+});
+
+/** The local-price form: `LocalPriceInput` plus the model id that goes in the URL. */
+export const LocalPriceForm = Type.Object({
+	model: Type.String({ minLength: 1, maxLength: 200 }),
+	...LocalPriceInput.properties,
+});
+
+export type LocalPriceInput = Static<typeof LocalPriceInput>;

@@ -15,13 +15,20 @@ import { monthOf } from "../usage/usage.sql.ts";
 function monthlySpend(db: Db, accountId: string, prices: Prices | null) {
 	const rows = db.$client
 		.query<
-			{ month: string; model: string; input: number; output: number },
+			{
+				month: string;
+				model: string;
+				input: number;
+				cached: number;
+				output: number;
+			},
 			{ accountId: string }
 		>(
 			`SELECT ${monthOf("at")} AS month, model,
-				COALESCE(SUM(input_tokens), 0) AS input, COALESCE(SUM(output_tokens), 0) AS output
+				COALESCE(SUM(input_tokens), 0) AS input, COALESCE(SUM(cache_read_tokens), 0) AS cached,
+				COALESCE(SUM(output_tokens), 0) AS output
 			FROM llm_calls
-			WHERE channel_id IN (SELECT id FROM channels WHERE owner_id = $accountId)
+			WHERE ok = 1 AND channel_id IN (SELECT id FROM channels WHERE owner_id = $accountId)
 			GROUP BY 1, 2 ORDER BY 1`,
 		)
 		.all({ accountId });
@@ -35,7 +42,7 @@ function monthlySpend(db: Db, accountId: string, prices: Prices | null) {
 		if (prices)
 			month.costUsd =
 				(month.costUsd ?? 0) +
-				costUsd(row.input, row.output, prices.get(row.model));
+				costUsd(row.input, row.output, prices.get(row.model), row.cached);
 		months.set(row.month, month);
 	}
 	return [...months].map(([month, v]) => ({ month, ...v }));

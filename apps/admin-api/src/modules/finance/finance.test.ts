@@ -45,4 +45,27 @@ describe("finance rates (proxied)", () => {
 		expect(bad.status).toBe(422);
 		expect(upstream.length).toBe(count);
 	});
+
+	test("local prices are proxied by model id; a negative price never reaches upstream", async () => {
+		const cookie = await signedIn();
+		setRespond(() => json({ items: [] }));
+		const price = { inputPerMillionUsd: 1, outputPerMillionUsd: 2 };
+		const saved = await call("/api/finance/local-prices/org%2Fm", {
+			method: "PUT",
+			cookie,
+			body: price,
+		});
+		expect(saved.status).toBe(200);
+		const put = upstream.at(-1);
+		expect(put?.url).toBe("http://orchestrator/v1/admin/local-prices/org%2Fm");
+		expect(put?.body).toEqual(price);
+		const count = upstream.length;
+		const bad = await call("/api/finance/local-prices/m", {
+			method: "PUT",
+			cookie,
+			body: { ...price, inputPerMillionUsd: -1 },
+		});
+		expect(bad.status).toBe(422);
+		expect(upstream.length).toBe(count);
+	});
 });

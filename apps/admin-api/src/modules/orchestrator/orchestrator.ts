@@ -1,4 +1,5 @@
 import { retryFetch } from "@repo/elysia-kit";
+import type { LocalPriceInput } from "../../forms/forms.ts";
 import type {
 	Agent,
 	AgentPick,
@@ -23,7 +24,11 @@ import type {
 	UpdateChannelInput,
 } from "../channels/channels.schema.ts";
 import type { PageQuery } from "../common/common.schema.ts";
-import type { Finance, FinanceRates } from "../finance/finance.schema.ts";
+import type {
+	Finance,
+	FinanceRates,
+	LocalPrices,
+} from "../finance/finance.schema.ts";
 import type {
 	IntentExample,
 	IntentsPage,
@@ -168,6 +173,7 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 		finance: (query: { from?: number; to?: number } = {}) =>
 			request<Finance>("GET", `/v1/admin/finance${toSearch(query)}`),
 		financeRates: () => request<FinanceRates>("GET", "/v1/admin/finance/rates"),
+		localPrices: () => request<LocalPrices>("GET", "/v1/admin/local-prices"),
 		stats: (ownerId?: string) =>
 			request<Stats>("GET", `/v1/admin/stats${toSearch({ ownerId })}`),
 		performance: (query: { from?: number; to?: number } = {}) =>
@@ -313,6 +319,17 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 				),
 			saveFinanceRates: (rates: FinanceRates) =>
 				write<FinanceRates>("PUT", "/v1/admin/finance/rates", rates),
+			saveLocalPrice: (model: string, price: LocalPriceInput) =>
+				write<LocalPrices>(
+					"PUT",
+					`/v1/admin/local-prices/${segment(model)}`,
+					price,
+				),
+			deleteLocalPrice: (model: string) =>
+				write<LocalPrices>(
+					"DELETE",
+					`/v1/admin/local-prices/${segment(model)}`,
+				),
 			testAgent: (id: string) =>
 				write<AgentTestResult>(
 					"POST",

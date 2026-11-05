@@ -100,6 +100,40 @@ const settingsContent = {
 				kk: "Мөлшерлемелер сақталды",
 			}),
 		},
+		localPrices: {
+			title: t({
+				ru: "Цены локальных моделей",
+				en: "Local model prices",
+				kk: "Жергілікті модельдер бағасы",
+			}),
+			model: t({ ru: "Модель", en: "Model", kk: "Модель" }),
+			input: t({
+				ru: "Вход, $ за 1M",
+				en: "Input, $ per 1M",
+				kk: "Кіріс, 1M үшін $",
+			}),
+			output: t({
+				ru: "Выход, $ за 1M",
+				en: "Output, $ per 1M",
+				kk: "Шығыс, 1M үшін $",
+			}),
+			cacheRead: t({
+				ru: "Кэш, $ за 1M",
+				en: "Cached input, $ per 1M",
+				kk: "Кэш, 1M үшін $",
+			}),
+			note: t({
+				ru: "Локальные модели не в списке OpenRouter бесплатны, пока цена не задана. Запись здесь важнее цены OpenRouter. Пустой кэш = цена входа.",
+				en: "Local models OpenRouter does not list are free until priced. An entry here wins over OpenRouter's price. Empty cache = the input price.",
+				kk: "OpenRouter тізімінде жоқ жергілікті модельдер баға қойылғанша тегін. Мұндағы жазба OpenRouter бағасынан басым. Кэш бос болса кіріс бағасы алынады.",
+			}),
+			delete: t({ ru: "Удалить", en: "Delete", kk: "Жою" }),
+			saved: t({
+				ru: "Цена сохранена",
+				en: "Price saved",
+				kk: "Баға сақталды",
+			}),
+		},
 		profile: {
 			title: t({ ru: "Профиль", en: "Profile", kk: "Профиль" }),
 			name: t({ ru: "Имя", en: "Name", kk: "Аты" }),

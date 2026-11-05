@@ -43,7 +43,7 @@ const bindsOf = (channel?: string, ownerId?: string) => ({
 });
 
 /**
- * Spend per group key: tokens × the model's price. `null` without prices (the
+ * Spend per group key: tokens × the model's price, failed calls excluded (they are not debited). `null` without prices (the
  * list could not be fetched); a model with no price is local and costs 0.
  * shortcut: today's price is applied to past tokens; store a price per call
  * (PO-8 `costUsd`) when prices change often or the figure is billed.
@@ -60,14 +60,21 @@ function spendByKey(
 	const group = GROUPS[groupBy];
 	const perModel = db.$client
 		.query<
-			{ key: string | null; model: string; input: number; output: number },
+			{
+				key: string | null;
+				model: string;
+				input: number;
+				cached: number;
+				output: number;
+			},
 			Record<string, string | number>
 		>(
 			`SELECT ${group.key} AS key, l.model AS model,
 				COALESCE(SUM(l.input_tokens), 0) AS input,
+				COALESCE(SUM(l.cache_read_tokens), 0) AS cached,
 				COALESCE(SUM(l.output_tokens), 0) AS output
 			FROM llm_calls l ${group.join}
-			WHERE l.at >= $from AND l.at <= $to ${filterOf(channel, ownerId)}
+			WHERE l.at >= $from AND l.at <= $to AND l.ok = 1 ${filterOf(channel, ownerId)}
 			GROUP BY 1, 2`,
 		)
 		.all({ from, to, ...bindsOf(channel, ownerId) });
@@ -76,7 +83,7 @@ function spendByKey(
 		spend.set(
 			row.key,
 			(spend.get(row.key) ?? 0) +
-				costUsd(row.input, row.output, prices.get(row.model)),
+				costUsd(row.input, row.output, prices.get(row.model), row.cached),
 		);
 	}
 	return spend;

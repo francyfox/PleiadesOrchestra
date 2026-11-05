@@ -375,7 +375,7 @@ describe("fillOnce (wire level)", () => {
 			maxOutputTokens: 77,
 		});
 		expect(result.text).toBe('{"query":"a"}');
-		expect(result.usage).toEqual({ inputTokens: 40, outputTokens: 8 });
+		expect(result.usage).toMatchObject({ inputTokens: 40, outputTokens: 8 });
 		const body = bodies[0] as Record<string, unknown>;
 		expect(body.model).toBe("qwen");
 		expect(body.temperature).toBe(0);
