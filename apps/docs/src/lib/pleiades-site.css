@@ -33,7 +33,7 @@
 	--danger: var(--destructive);
 	/* Height of the SveltePress navbar above the page. */
 	--po-nav: 73px;
-	/* Height of the landing's section row under it (LandingNav); 0 below 950px, where the burger holds the links. */
+	/* Height of the landing's section row under it (LandingNav); 0 below 1024px (`lg`), where the burger holds the links. */
 	--po-landing-nav: 1.75rem;
 	--gradient-panel: linear-gradient(var(--accent), var(--fg));
 
@@ -48,6 +48,10 @@
 @media (max-width: 949px) {
 	.po-site {
 		--po-nav: 56px;
+	}
+}
+@media (max-width: 1023px) {
+	.po-site {
 		--po-landing-nav: 0px;
 	}
 }

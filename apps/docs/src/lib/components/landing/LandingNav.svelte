@@ -4,7 +4,7 @@
 	import { page } from "$app/state";
 
 	/**
-	 * Landing section links. Default: the sticky row under the header (from 950px).
+	 * Landing section links. Default: the sticky row under the header (from `lg`, 1024px).
 	 * `mobile`: the list inside the theme's burger menu (vite/mobile-menu.ts), only on the landing.
 	 */
 	let {
@@ -18,73 +18,29 @@
 </script>
 
 {#if !mobile || onLanding}
-	<nav class="landing-nav" class:mobile aria-label={nav.label}>
-		<ul>
+	<!-- Below `lg` (1024px) the burger holds the links, from `lg` the row does (the theme's burger lives until 1440px). -->
+	<nav
+		aria-label={nav.label}
+		class={mobile
+			? "mt-[0.5rem] border-t border-(--border) px-[0.5rem] pt-[0.5rem] lg:hidden"
+			: "sticky top-(--po-nav) z-50 h-(--po-landing-nav) overflow-x-auto bg-muted shadow-(--shadow-xs) max-lg:hidden"}
+	>
+		<ul
+			class={mobile
+				? "m-0! list-none! p-0!"
+				: "flex h-full items-center gap-[0.25rem] px-[1rem]! py-[0.05rem]! whitespace-nowrap [justify-content:safe_center]"}
+		>
 			{#each LANDING_SECTIONS as id (id)}
-				<li><a href="#{id}" onclick={onnavigate}>{nav[id]}</a></li>
+				<li>
+					<a
+						href="#{id}"
+						onclick={onnavigate}
+						class="block rounded-(--radius) font-medium text-(--muted-foreground)! no-underline! hover:bg-(--primary) hover:text-(--muted)! {mobile
+							? 'px-[0.5rem]! py-[0.625rem]!'
+							: 'px-[0.75rem]! py-[0.05rem]! text-[0.875rem] uppercase'}">{nav[id]}</a
+					>
+				</li>
 			{/each}
 		</ul>
 	</nav>
 {/if}
-
-<style>
-	/* Sticky under the theme's fixed header (--po-nav); fixed height, so sections can subtract it. */
-	.landing-nav:not(.mobile) {
-		height: var(--po-landing-nav);
-		position: sticky;
-		top: var(--po-nav);
-		z-index: 50;
-		overflow-x: auto;
-		background-color: var(--muted);
-		box-shadow: var(--shadow-xs);
-	}
-	.landing-nav:not(.mobile) ul {
-		display: flex;
-		align-items: center;
-		height: 100%;
-		justify-content: safe center;
-		gap: 0.25rem;
-		padding: 0.05rem 1rem;
-		white-space: nowrap;
-	}
-	.landing-nav:not(.mobile) a {
-		padding: 0.05rem 0.75rem;
-		font-size: 0.875rem;
-		text-transform: uppercase;
-	}
-	.landing-nav a {
-		display: block;
-		border-radius: var(--radius);
-		color: var(--muted-foreground);
-		font-weight: 500;
-		text-decoration: none;
-	}
-	.landing-nav a:hover {
-		background: var(--primary);
-		color: var(--muted);
-	}
-	/* Below 950px the burger holds the links; from 950px the row does (the burger lives until 1440px). */
-	@media (max-width: 949px) {
-		.landing-nav:not(.mobile) {
-			display: none;
-		}
-	}
-	@media (min-width: 950px) {
-		.landing-nav.mobile {
-			display: none;
-		}
-	}
-	.landing-nav.mobile {
-		margin-top: 0.5rem;
-		padding: 0.5rem 0.5rem 0;
-		border-top: 1px solid var(--border);
-	}
-	.landing-nav.mobile ul {
-		margin: 0;
-		padding: 0;
-		list-style: none;
-	}
-	.landing-nav.mobile a {
-		padding: 0.625rem 0.5rem;
-	}
-</style>

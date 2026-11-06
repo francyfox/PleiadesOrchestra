@@ -53,6 +53,10 @@
 		};
 	});
 
+	// Code and screenshot cards share one look.
+	const CARD =
+		"min-w-0 overflow-hidden rounded-[0.75rem] border bg-[radial-gradient(120%_120%_at_100%_0%,color-mix(in_oklch,var(--accent)_14%,transparent),transparent_70%)]";
+
 	// Selected file tab per step.
 	const codeTabs = STEP_SAMPLES.map((samples) =>
 		useTabs(samples.map((s) => s.name)),
@@ -61,43 +65,49 @@
 
 <Pane title="guest@pleiades — benefits" header={false} id="benefits" class="py-10 !border-0 min-h-[70vh]">
 	<div class="text-3xl md:text-6xl font-bold mb-10">{t.heading}</div>
-	<ol class="steps mt-8">
+	<!-- The timeline: one line through the markers (::before). -->
+	<ol class="relative mt-8 grid before:absolute before:top-0 before:bottom-0 before:left-[1.25rem] before:w-px before:bg-(--rule) before:content-['']">
 		{#each steps as step, i (step.title)}
 			{@const parts = splitLink(step.text)}
 			{@const samples = STEP_SAMPLES[i]}
 			{@const shot = STEP_SHOTS[i]}
 			{@const sample = samples.find((s) => s.name === codeTabs[i].tab) ?? samples[0]}
+			<!-- Every step is as tall as the others, so scrolling from one to the next takes the same distance. -->
 			<li
-					class="step"
-					class:dim={current !== null && i > current}
-					class:lit={i === current}
+					class="relative grid min-h-[max(55vh,26rem)] content-start max-lg:grid-cols-1 max-lg:gap-[1rem] pl-[3.5rem]! transition-opacity duration-600 ease-[ease] motion-reduce:transition-none lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-[3rem] {current !== null && i > current ? 'opacity-15' : ''}"
 					bind:this={stepElements[i]}
 				>
-				<span class="marker" aria-hidden="true">{i + 1}</span>
+				<span
+					class="absolute top-0 left-0 grid size-[2.5rem] place-items-center rounded-full border font-bold transition-[background,color] duration-600 ease-[ease] {i === current
+						? 'border-accent! bg-accent text-(--bg)'
+						: 'bg-(--bg) text-accent'}"
+					aria-hidden="true">{i + 1}</span>
 				<div class="text">
 					<h3 class="text-xl! font-bold!">{step.title}</h3>
 					<p class="mt-2 text-dim">
 						{parts.before}
 						{#if parts.label}
-							<a href={localizeHref(parts.href, locale)} class="step-link">{parts.label}</a>{parts.after}
+							<a href={localizeHref(parts.href, locale)} class="text-accent! underline! underline-offset-[3px] hover:no-underline!">{parts.label}</a>{parts.after}
 						{/if}
 					</p>
 				</div>
 				{#if shot}
-					<figure class="card shot">
+					<!-- Shrinks to a narrow shot (the widget panel); a wide one still fills the column. -->
+					<figure class="{CARD} self-start justify-self-start {i === 3 ? 'max-h-[380px]' : ''}">
 						<img
 							src="/media/{shot.file}-{locale}.webp"
 							alt={t[`${shot.file}Alt`]}
 							width={shot.width}
 							height={shot.height}
 							loading="lazy"
+							class="block h-auto max-w-full"
 						/>
-						<figcaption>{t[`${shot.file}Note`]}</figcaption>
+						<figcaption class="border-t px-[1rem] py-[0.5rem] text-[0.8rem] text-dim">{t[`${shot.file}Note`]}</figcaption>
 					</figure>
 				{:else}
-				<div class="card">
+				<div class={CARD}>
 					{#if samples.length > 1}
-						<div class="tabs" role="tablist">
+						<div class="flex gap-[0.25rem] border-b px-[0.75rem]" role="tablist">
 							{#each samples as s, j (s.name)}
 								<button
 									type="button"
@@ -106,7 +116,9 @@
 									aria-controls="benefit-code-{i}"
 									aria-selected={codeTabs[i].tab === s.name}
 									tabindex={codeTabs[i].tab === s.name ? 0 : -1}
-									class:active={codeTabs[i].tab === s.name}
+									class="cursor-pointer rounded-none! border-0! border-b-2! bg-transparent! px-[0.75rem]! py-[0.6rem]! text-[0.85rem]! {codeTabs[i].tab === s.name
+										? 'border-b-accent! text-inherit!'
+										: 'border-b-transparent! text-dim!'}"
 									bind:this={codeTabs[i].buttons[j]}
 									onclick={() => codeTabs[i].select(s.name)}
 									onkeydown={(e) => codeTabs[i].onKey(e, j)}>{s.name}</button
@@ -116,7 +128,7 @@
 					{/if}
 					<!-- min-height: the code is highlighted in the browser, the card must not jump. -->
 					<div
-						class="code"
+						class="overflow-x-auto px-[1rem] py-[0.75rem] text-[0.85rem] [&_pre]:m-0! [&_pre]:bg-transparent!"
 						id="benefit-code-{i}"
 						role={samples.length > 1 ? "tabpanel" : undefined}
 						aria-labelledby={samples.length > 1 ? `benefit-tab-${i}-${samples.indexOf(sample)}` : undefined}
@@ -131,137 +143,3 @@
 		{/each}
 	</ol>
 </Pane>
-
-<style>
-	.steps {
-		position: relative;
-		display: grid;
-	}
-	/* The timeline: one line through the markers. */
-	.steps::before {
-		content: "";
-		position: absolute;
-		left: 1.25rem;
-		top: 0;
-		bottom: 0;
-		width: 1px;
-		background: var(--rule);
-	}
-	.step {
-		position: relative;
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: 1rem;
-		padding-left: 3.5rem;
-		/* Every step is as tall as the others, so scrolling from one to the next takes the same distance. */
-		min-height: max(55vh, 26rem);
-		align-content: start;
-
-		&:nth-child(4) .shot {
-			max-height: 380px;
-		}
-	}
-	.step {
-		transition: opacity 0.6s ease;
-	}
-	.step.dim {
-		opacity: 0.15;
-	}
-	.step.lit .marker {
-		background: var(--accent);
-		border-color: var(--accent);
-		color: var(--bg, var(--background));
-	}
-	@media (prefers-reduced-motion: reduce) {
-		.step {
-			transition: none;
-		}
-	}
-	.marker {
-		position: absolute;
-		left: 0;
-		top: 0;
-		width: 2.5rem;
-		height: 2.5rem;
-		display: grid;
-		place-items: center;
-		border: 1px solid var(--rule);
-		border-radius: 50%;
-		background: var(--bg, var(--background));
-		color: var(--accent);
-		font-weight: 700;
-		transition: background 0.6s ease, color 0.6s ease;
-	}
-	.card {
-		min-width: 0;
-		overflow: hidden;
-		border: 1px solid var(--rule);
-		border-radius: 0.75rem;
-		background: radial-gradient(
-			120% 120% at 100% 0%,
-			color-mix(in oklch, var(--accent) 14%, transparent),
-			transparent 70%
-		);
-	}
-	.shot {
-		margin: 0;
-		align-self: start;
-		/* Shrinks to a narrow shot (the widget panel); a wide one still fills the column. */
-		justify-self: start;
-	}
-	.shot img {
-		display: block;
-		max-width: 100%;
-		height: auto;
-	}
-	.shot figcaption {
-		padding: 0.5rem 1rem;
-		border-top: 1px solid var(--rule);
-		color: var(--dim);
-		font-size: 0.8rem;
-	}
-	.step-link {
-		color: var(--accent);
-		text-decoration: underline;
-		text-underline-offset: 3px;
-	}
-	.step-link:hover {
-		text-decoration: none;
-	}
-	.tabs {
-		display: flex;
-		gap: 0.25rem;
-		padding: 0 0.75rem;
-		border-bottom: 1px solid var(--rule);
-	}
-	.tabs button {
-		background: none;
-		border: 0;
-		border-radius: 0;
-		padding: 0.6rem 0.75rem;
-		border-bottom: 2px solid transparent;
-		color: var(--dim);
-		font-size: 0.85rem;
-		cursor: pointer;
-	}
-	.tabs button.active {
-		color: inherit;
-		border-bottom-color: var(--accent);
-	}
-	.code {
-		padding: 0.75rem 1rem;
-		overflow-x: auto;
-		font-size: 0.85rem;
-	}
-	/* Transparent so the card's gradient shows through; Shiki writes its own background inline. */
-	.code :global(pre) {
-		background: transparent !important;
-		margin: 0;
-	}
-	@media (min-width: 1024px) {
-		.step {
-			grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
-			gap: 3rem;
-		}
-	}
-</style>

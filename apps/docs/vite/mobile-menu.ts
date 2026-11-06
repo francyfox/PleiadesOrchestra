@@ -35,8 +35,8 @@ const ANCHORS = [
 
 /**
  * The theme's burger menu (`NavbarMobile.svelte`) with the search on top and, on the landing,
- * its section links at the bottom (LandingNav); below 950px the header's own search and the
- * landing row are hidden; Escape closes the menu. The theme has no slot for them, so the source is patched the way the
+ * its section links at the bottom (LandingNav); below 950px the header's own search is hidden, below
+ * 1024px (`lg`) the landing row is; Escape closes the menu. The theme has no slot for them, so the source is patched the way the
  * theme patches itself (`strip-versioning.js`).
  */
 export function patchMobileMenu(source: string): string {

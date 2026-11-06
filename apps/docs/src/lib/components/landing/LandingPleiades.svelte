@@ -41,7 +41,7 @@
 
 <div
 	bind:this={section}
-	class="vhs relative w-full h-[40vh] overflow-hidden bg-white/5"
+	class="vhs isolate relative w-full h-[40vh] overflow-hidden bg-white/5"
 >
 	<div
 		class="absolute inset-0 w-full flex justify-center will-change-transform"
@@ -62,10 +62,6 @@
 
 <style>
 	/* CRT look: scanlines + vignette (::before), rolling bar (::after), colour fringe and jitter on the image */
-	.vhs {
-		isolation: isolate;
-	}
-
 	.vhs::before {
 		content: "";
 		position: absolute;
