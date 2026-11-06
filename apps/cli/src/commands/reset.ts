@@ -4,6 +4,7 @@ import { createHarnessClient } from "../harness-client.ts";
 
 export default defineCommand({
 	name: "reset",
+	alias: "r",
 	description: "Reset a thread's conversation history",
 	options: {
 		thread: option(z.string().default("cli"), {

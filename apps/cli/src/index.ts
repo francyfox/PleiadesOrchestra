@@ -1,19 +1,28 @@
 #!/usr/bin/env bun
 import { createCLI } from "@bunli/core";
-import adminCreate from "./commands/admin-create.ts";
-import evalCommand from "./commands/eval.ts";
-import reset from "./commands/reset.ts";
-import send from "./commands/send.ts";
+import { commands } from "./commands.ts";
+import { renderHelp } from "./help.ts";
+import { resolveVersion } from "./version.ts";
+
+const version = resolveVersion();
+const first = Bun.argv[2];
+
+// Plain text in a terminal and in a pipe (the framework prints a JSON envelope when stdout is not a TTY).
+if (first === "-v" || first === "--version") {
+	console.log(`albedo ${version}`);
+	process.exit(0);
+}
+if (first === undefined || first === "-h" || first === "--help") {
+	console.log(renderHelp("albedo", version, commands));
+	process.exit(0);
+}
 
 const cli = await createCLI({
 	name: "albedo",
-	version: "0.1.0",
+	version,
 	description: "CLI for talking to a running harness instance",
 });
 
-cli.command(send);
-cli.command(reset);
-cli.command(adminCreate);
-cli.command(evalCommand);
+for (const command of commands) cli.command(command);
 
 await cli.run();
