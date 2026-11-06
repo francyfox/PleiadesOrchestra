@@ -5,13 +5,21 @@ Feature:
 - Admin: a customer sees spend on the dashboard and in the monthly table of Billing in trenni (TR); staff keep dollars on the dashboard.
 - Billing: a customer's balance, the plan and the paused alert update over the WebSocket (new live topic `billing`) instead of once a minute.
 - Admin: the channel's allowed origins are site URLs (`https://shop.example.com`, one per line); a value with a path, a trailing slash or no scheme is refused by the form and the API. The channels table fits a desktop: URLs and access mode as chips, the name, plan and key are cut, and every cut table cell shows its full text on hover.
+- Landing: Privacy Policy, Terms of Use and Refund Policy (`/privacy/`, `/terms/`, `/refund/`, with `/ru/` and `/kk/`), in a new "Legal" footer column and the sitemap. The Terms say plainly that the service is provided as is, with no warranties, and follow the legislation of the Republic of Kazakhstan.
+- Landing: the navigation links live in the burger menu below 1024px (the inline row only from `lg`, no width shows both or neither).
 
 Changed:
 - Billing: a request holds 0.001 TR (was 0.05), so a small balance still serves requests.
 - Admin: the low-balance banner says channels stop when the balance cannot cover a request, not "at zero"; the delete-account warnings say the subscription ends at once and the balance is lost.
 
 Fixed:
+- Flow: a request the browser never answered no longer leaves its step "in the browser" with a clock that keeps running: the step is failed ("the browser did not answer") with the 60 s wait that ended it, and the view stays the same on later reads.
+- Understanding: a greeting, a laugh or a bare "ok" after a reply that asked nothing (an action done, a hint) is no longer rewritten into the earlier action ("hi" added the last product to the cart again, "haha" searched for it). The assistant's reply is quoted to alpha-understand only when it asks something or offers a numbered choice.
 - Billing: a client that cancels the stream no longer frees the request's hold before the run it left behind is debited, so parallel requests cannot overspend the balance through a cancel.
+
+Chore:
+- Landing: component styles moved from `<style>` to Tailwind utilities (the landing renders pixel for pixel the same at 390, 768, 1024 and 1440px); `<style>` stays only for keyframes, `:global` rules and the theme's own selectors.
+- Eval: `eval:answers` has a `noise` kind: 8 cases of greetings and fillers after an action done or a hint, so this miss is caught.
 
 # 0.12.10 - 6 Nov 2026
 
