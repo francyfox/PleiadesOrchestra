@@ -10,6 +10,7 @@ const USER_TOPICS: ReadonlySet<string> = new Set<LiveTopic>([
 	"requests",
 	"request",
 	"blocked-ips",
+	"billing",
 ]);
 
 export type Scoped =

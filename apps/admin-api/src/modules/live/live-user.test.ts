@@ -14,6 +14,7 @@ async function start() {
 	const fake = fakeOrchestrator((call) => {
 		const path = new URL(call.path, "http://x").pathname;
 		if (path.endsWith("/usage")) return Response.json({ rows: [] });
+		if (path.endsWith("/billing")) return Response.json({ balanceUsd: 1 });
 		if (path.endsWith("/channels"))
 			return Response.json({ items: [], total: 0 });
 		return Response.json({ visitors: {}, usage: {} });
@@ -71,6 +72,25 @@ describe("/api/live for a user", () => {
 			expect(call.path).toContain(`ownerId=${annId}`);
 			expect(call.path).not.toContain("someone-else");
 		}
+		socket.close();
+	});
+
+	test("billing is the user's own, whatever account id the browser names", async () => {
+		const { socket, messages, send, calls, annId } = await start();
+		send({
+			type: "subscribe",
+			id: "b",
+			topic: "billing",
+			params: { ownerId: "someone-else" },
+		});
+		await Bun.sleep(100);
+		expect(messages.find((m) => m.id === "b")).toMatchObject({
+			type: "data",
+			data: { balanceUsd: 1 },
+		});
+		expect(calls.map((c) => c.path)).toEqual([
+			`/v1/admin/accounts/${annId}/billing`,
+		]);
 		socket.close();
 	});
 
