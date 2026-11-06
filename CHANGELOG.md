@@ -1,3 +1,16 @@
+# 0.12.10 - 6 Nov 2026
+
+Feature:
+- Billing: a top-up credits its price net of payment fees, payout, tax and conversion, minus a staff margin (`marginPercent`, default 0, previewed in the admin settings). The credited amount is stored per order, so a refund takes back exactly what was granted. Old and non-USD orders keep the face-value behavior.
+- Usage: provider prompt-cache hits are recorded and billed at the cache price instead of the full input price.
+- Usage: local models get staff-set prices (USD per 1M tokens) on the admin preferences page; an explicit local price wins over OpenRouter's.
+- Pricing: public `GET /v1/public/pricing` (open, cacheable) returns what a $5/10/20/50 top-up gives and the price per 1M tokens of the models in use; only "fees and taxes" and "service" are shown, the staff tax setup stays private.
+- Landing: the pricing section shows the top-up table and a price list of models in a modal; nothing extra renders if the API is unset or unreachable.
+- Admin: the orders table shows credited TR and the fees/taxes/service difference per order.
+
+Changed:
+- Usage: a failed model call (`ok = false`) is still recorded but no longer debited, and spend reports skip it to match the ledger.
+
 # 0.11.10 - 4 Nov 2026
 
 Feature:
