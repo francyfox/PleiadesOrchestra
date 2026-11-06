@@ -12,11 +12,7 @@ export const FinanceRates = Type.Object({
 	taxPercent: Percent,
 	conversionPercent: Percent,
 	marginPercent: Type.Number({ minimum: 0, maximum: 99 }),
-	taxBase: Type.Union([
-		Type.Literal("payout"),
-		Type.Literal("revenue"),
-		Type.Literal("profit"),
-	]),
+	taxBase: Type.Union([Type.Literal("payout"), Type.Literal("revenue")]),
 });
 
 export type FinanceRates = Static<typeof FinanceRates>;

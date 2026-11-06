@@ -11,7 +11,7 @@ import {
 	FinanceRates,
 	ForgotForm,
 	IntentVerdictInput,
-	LocalPriceForm,
+	LocalPriceInput,
 	ManualPlanInput,
 	PersonaForm,
 	ProviderForm,
@@ -29,6 +29,7 @@ import { type ActionResult, submitted } from "./api/result";
 import { parseForm } from "./forms/field-errors";
 import type { FieldOverrides } from "./forms/schema-to-zod";
 import { queryClient } from "./query/client";
+import { queries } from "./query/queries";
 
 /**
  * What the panel's forms do: read the fields, call admin-api, hand back an
@@ -200,22 +201,6 @@ export const financeActions = {
 	},
 	/** Staff: pull every subscription and order from Polar into the orchestrator. */
 	syncPolar: () => submitted(api().subscriptions.sync.post()),
-};
-
-/** Staff: prices of local models; the row's delete button sends `op=delete`. */
-export const localPriceActions = {
-	save: (form: FormData) => {
-		if (form.get("op") === "delete")
-			return submitted(
-				api()
-					.finance["local-prices"]({ model: text(form, "model") })
-					.delete(),
-			);
-		const parsed = parseForm(LocalPriceForm, form);
-		if (!parsed.ok) return invalidForm();
-		const { model, ...body } = parsed.body;
-		return submitted(api().finance["local-prices"]({ model }).put(body));
-	},
 };
 
 /** Polar checkout and customer portal; both answer `{ url }` to go to. */
@@ -428,6 +413,23 @@ export const agentActions = {
 	},
 };
 
+const PRICE_FIELDS = [
+	"inputPerMillionUsd",
+	"outputPerMillionUsd",
+	"cacheReadPerMillionUsd",
+];
+/** "Nothing to delete" (404) is fine: the result is not read. */
+const dropPrice = (model: string) =>
+	api().finance["local-prices"]({ model }).delete();
+/** A price is by model id, shared by every provider's model with that id. */
+const dropPriceIfUnused = async (provider: string, model: string) => {
+	const { items } = await queryClient.fetchQuery(queries.providers());
+	const shared = items.some(
+		(p) => p.id !== provider && p.models.some((m) => m.id === model),
+	);
+	if (!shared) await dropPrice(model);
+};
+
 /** providers.toml through its forms and its editor. */
 export const providerActions = {
 	/** An empty key field keeps the saved key. */
@@ -444,26 +446,49 @@ export const providerActions = {
 				.providers({ id: text(form, "id") })
 				.delete(),
 		),
+	/** Also writes the model's price (by id): filled fields set it, empty ones clear it. Validated before the model is saved. */
 	saveModel: async (form: FormData) => {
 		const parsed = parseForm(ProviderModel, form);
 		if (!parsed.ok) return invalidForm();
+		const filled = PRICE_FIELDS.some((name) => text(form, name));
+		const price = filled ? parseForm(LocalPriceInput, form) : null;
+		if (price && !price.ok)
+			return Promise.resolve<ActionResult>({
+				ok: false,
+				data: { error: "price_invalid" },
+			});
 		// An edit names the model it was: renamed or moved, the server drops the old one and moves its agents.
 		const fromProvider = text(form, "fromProvider");
 		const fromId = text(form, "fromId");
-		return submitted(
+		const saved = await submitted(
 			api()
 				.providers({ id: text(form, "provider") })
 				.models.put(parsed.body, {
 					query: fromProvider && fromId ? { fromProvider, fromId } : {},
 				}),
 		);
+		if (!saved.ok) return saved;
+		if (fromId && fromId !== parsed.body.id)
+			await dropPriceIfUnused(fromProvider, fromId);
+		if (price?.ok)
+			return submitted(
+				api()
+					.finance["local-prices"]({ model: parsed.body.id })
+					.put(price.body),
+			);
+		await dropPrice(parsed.body.id);
+		return saved;
 	},
-	removeModel: (form: FormData) =>
-		submitted(
-			api()
-				.providers({ id: text(form, "provider") })
-				.models.delete({}, { query: { model: text(form, "model") } }),
-		),
+	/** Also drops the model's price unless a model of another provider has the same id. */
+	removeModel: async (form: FormData) => {
+		const provider = text(form, "provider");
+		const model = text(form, "model");
+		const removed = await submitted(
+			api().providers({ id: provider }).models.delete({}, { query: { model } }),
+		);
+		if (removed.ok) await dropPriceIfUnused(provider, model);
+		return removed;
+	},
 	saveToml: (form: FormData) =>
 		submitted(
 			api()["providers-toml"].put({ toml: String(form.get("toml") ?? "") }),

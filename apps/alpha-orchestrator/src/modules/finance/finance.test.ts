@@ -106,6 +106,21 @@ describe("finance rates", () => {
 		);
 	});
 
+	test("a tax base `profit` saved before it was removed reads as payout", async () => {
+		const { db, app } = setupAdminApp();
+		db.insert(financeSettings)
+			.values({
+				id: 1,
+				rates: { ...rates, taxBase: "profit" } as never,
+				updatedBy: "a",
+				updatedAt: 1,
+			})
+			.run();
+		expect(await json(await app.handle(admin("/finance/rates")))).toMatchObject(
+			{ taxBase: "payout" },
+		);
+	});
+
 	test("a rate above 100% or an unknown base is refused and nothing changes", async () => {
 		const { app } = setupAdminApp();
 		expect((await app.handle(put({ ...rates, taxPercent: 101 }))).status).toBe(

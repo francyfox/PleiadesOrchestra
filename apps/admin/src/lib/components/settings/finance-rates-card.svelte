@@ -48,7 +48,7 @@
 						value={rates.data.taxBase}
 						class="h-9 rounded-md border border-input bg-background px-2 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
 					>
-						{#each ["payout", "revenue", "profit"] as const as base}
+						{#each ["payout", "revenue"] as const as base}
 							<option value={base}>{$content.financeRates.base[base].value}</option>
 						{/each}
 					</select>
