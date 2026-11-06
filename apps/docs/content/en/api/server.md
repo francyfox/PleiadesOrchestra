@@ -6,6 +6,13 @@ title: Server API
 
 Endpoints for your backend, bots and scripts. They are separate from the browser-facing [Widget API](/docs/api/widget/): a browser never calls them.
 
+## Interactive reference
+
+Every route is described in Swagger (OpenAPI), and reading it needs no key:
+
+- **Hosted:** [albedo.shalotts.site/swagger](https://albedo.shalotts.site/swagger), the OpenAPI document is at `/swagger/json`. It lists every route of the orchestrator, but not all of them answer on the hosted address from outside (the admin and transport routes are closed there): call those on your own instance.
+- **Local:** the orchestrator listens on port 3000 (`PORT`), bound to `127.0.0.1` in `docker compose`: [localhost:3000/swagger](http://localhost:3000/swagger). Started from source (`bun --cwd apps/alpha-orchestrator run dev`) it is the same address. The admin API has its own reference at [localhost:3003/api/docs](http://localhost:3003/api/docs).
+
 ## Authentication
 
 | Endpoint | Credential |
