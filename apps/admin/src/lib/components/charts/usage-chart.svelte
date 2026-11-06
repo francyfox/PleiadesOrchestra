@@ -2,12 +2,14 @@
 	import { BarChart } from "layerchart";
 	import { useIntlayer } from "svelte-intlayer";
 	import * as Chart from "#lib/components/ui/chart/index.js";
+	import type { SpendUnit } from "#lib/i18n/format.js";
 	import { useFormat } from "#lib/i18n/use-format.js";
 
 	/** Stacked input/output tokens per day, or (`metric="cost"`) the day's spend. Days without calls are simply absent. */
 	let {
 		rows,
 		metric = "tokens",
+		unit = "usd",
 	}: {
 		rows: {
 			day: string;
@@ -16,6 +18,8 @@
 			costUsd?: number | null;
 		}[];
 		metric?: "tokens" | "cost";
+		/** What the cost metric is shown in: staff see dollars, customers trenni. */
+		unit?: SpendUnit;
 	} = $props();
 
 	const content = useIntlayer("charts");
@@ -27,7 +31,10 @@
 			label: $content.outputTokens.value,
 			color: "var(--chart-2)",
 		},
-		costUsd: { label: $content.spend.value, color: "var(--chart-3)" },
+		costUsd: {
+			label: unit === "tr" ? $content.spendTr.value : $content.spend.value,
+			color: "var(--chart-3)",
+		},
 	} satisfies Chart.ChartConfig);
 </script>
 
@@ -37,7 +44,7 @@
 	<Chart.Container {config} class="h-64 w-full">
 		<BarChart
 			padding={{ top: 8, right: 12, bottom: 28, left: 56 }}
-			props={{ yAxis: { format: (value: number) => metric === "cost" ? $format.usd(value) : $format.compact(value) } }}
+			props={{ yAxis: { format: (value: number) => metric === "cost" ? $format.spend(unit).short(value) : $format.compact(value) } }}
 			data={rows}
 			x="day"
 			seriesLayout="stack"
@@ -49,7 +56,7 @@
 				]}
 		>
 			{#snippet tooltip()}
-				<Chart.Tooltip valueFormatter={metric === "cost" ? $format.usdExact : undefined} />
+				<Chart.Tooltip valueFormatter={metric === "cost" ? $format.spend(unit).exact : undefined} />
 			{/snippet}
 		</BarChart>
 	</Chart.Container>

@@ -9,6 +9,7 @@
 	import type { UsageRow } from "#lib/api-types.js";
 	import CompactNumber from "#lib/components/compact-number.svelte";
 	import DataTable from "#lib/components/data-table.svelte";
+	import type { SpendUnit } from "#lib/i18n/format.js";
 	import { useFormat } from "#lib/i18n/use-format.js";
 	import { resolve } from "$app/paths";
 
@@ -16,9 +17,12 @@
 	let {
 		rows,
 		groupBy,
+		unit = "usd",
 	}: {
 		rows: UsageRow[];
 		groupBy: "visitor" | "channel" | "model";
+		/** Spend and prices in dollars (staff) or trenni (customers). */
+		unit?: SpendUnit;
 	} = $props();
 
 	const content = useIntlayer("dashboard");
@@ -42,7 +46,7 @@
 		}),
 		helper.accessor("costUsd", {
 			header: () => $content.columns.spend.value,
-			cell: (ctx) => $format.usd(ctx.getValue()),
+			cell: (ctx) => $format.spend(unit).short(ctx.getValue()),
 		}),
 		// groupBy is fixed for the table's lifetime, so the column set is decided once.
 		// svelte-ignore state_referenced_locally
@@ -54,7 +58,7 @@
 						cell: (ctx) => {
 							const price = ctx.row.original.price;
 							return price
-								? `${$format.usd(price.inputPerMillion)} / ${$format.usd(price.outputPerMillion)}`
+								? `${$format.spend(unit).short(price.inputPerMillion)} / ${$format.spend(unit).short(price.outputPerMillion)}`
 								: "—";
 						},
 					}),

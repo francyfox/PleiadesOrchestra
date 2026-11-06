@@ -55,6 +55,11 @@ const dashboardContent = {
 			en: insert("Spend per day (30 days, {{total}} in total)"),
 			kk: insert("Күн бойынша шығын (30 күн, барлығы {{total}})"),
 		}),
+		spendByDayTr: t({
+			ru: insert("Расход в трени по дням (30 дней, всего {{total}})"),
+			en: insert("Spend in trenni per day (30 days, {{total}} in total)"),
+			kk: insert("Күн бойынша трени шығыны (30 күн, барлығы {{total}})"),
+		}),
 		pricesNote: t({
 			ru: "Цена — по тарифам OpenRouter на сегодня, применена ко всем токенам периода; локальные модели бесплатны. Нет цен — прочерк.",
 			en: "Prices are OpenRouter's today, applied to all tokens of the period; local models are free. No prices — a dash.",

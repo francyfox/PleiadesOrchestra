@@ -28,7 +28,7 @@
 			}),
 			helper.accessor("costUsd", {
 				header: () => $content.spend.cost.value,
-				cell: (ctx) => $format.usd(ctx.getValue()),
+				cell: (ctx) => $format.spend("tr").short(ctx.getValue()),
 			}),
 		]),
 		get data() {
