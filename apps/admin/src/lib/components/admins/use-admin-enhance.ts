@@ -26,6 +26,7 @@ export function useAdminEnhance(
 			const errors = get(content).errors;
 			switch (code) {
 				case "invalid_email":
+				case "invalid_time_zone":
 				case "email_taken":
 				case "self":
 				case "last_admin":

@@ -54,6 +54,29 @@ describe("admins", () => {
 		).toBe(false);
 	});
 
+	test("a staff time zone is saved, shown in the list and the session, and validated", async () => {
+		const cookie = await signedIn();
+		const [first] = (await (await call("/api/admins", { cookie })).json())
+			.admins;
+		const edit = (timeZone: string) =>
+			call(`/api/admins/${first.id}`, {
+				method: "PATCH",
+				cookie,
+				body: { name: "First", email: "first@example.com", timeZone },
+			});
+
+		const bad = await edit("Mars/Base");
+		expect(bad.status).toBe(400);
+		expect(await bad.json()).toEqual({ error: "invalid_time_zone" });
+
+		expect((await edit("Asia/Almaty")).status).toBe(200);
+		const listed = (await (await call("/api/admins", { cookie })).json())
+			.admins[0];
+		expect(listed.timeZone).toBe("Asia/Almaty");
+		const session = await (await call("/api/session", { cookie })).json();
+		expect(session.admin.timeZone).toBe("Asia/Almaty");
+	});
+
 	test("the last active admin can't be banned", async () => {
 		const cookie = await signedIn();
 		await create(cookie, "b@example.com");

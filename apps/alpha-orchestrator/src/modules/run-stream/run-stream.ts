@@ -112,31 +112,41 @@ export function streamPlanRun(
 	deps: RunStreamDeps,
 	input: RunStreamInput,
 ): ReadableStream<Uint8Array> {
-	return new ReadableStream({
-		async start(controller) {
-			const send = (event: StreamEvent) =>
-				controller.enqueue(encodeNdjsonLine(event));
-			let current: Pick<RunStreamInput, "run" | "prepare"> = input;
-			try {
-				for (;;) {
-					const outcome = await streamOneRun(deps, input, current, send);
-					if (!outcome.continues || !input.next || !outcome.prepared) break;
-					try {
-						current = await input.next({
-							run: current.run,
-							prepared: outcome.prepared,
-							finalState: outcome.finalState,
-							succeeded: outcome.succeeded,
-						});
-					} catch (error) {
-						send({ type: "error", message: errorMessage(error) });
-						break;
-					}
+	// A client that leaves cancels the stream, but the run goes on until its usage is saved.
+	let finished: Promise<void> = Promise.resolve();
+	const produce = async (
+		controller: ReadableStreamDefaultController<Uint8Array>,
+	) => {
+		const send = (event: StreamEvent) =>
+			controller.enqueue(encodeNdjsonLine(event));
+		let current: Pick<RunStreamInput, "run" | "prepare"> = input;
+		try {
+			for (;;) {
+				const outcome = await streamOneRun(deps, input, current, send);
+				if (!outcome.continues || !input.next || !outcome.prepared) break;
+				try {
+					current = await input.next({
+						run: current.run,
+						prepared: outcome.prepared,
+						finalState: outcome.finalState,
+						succeeded: outcome.succeeded,
+					});
+				} catch (error) {
+					send({ type: "error", message: errorMessage(error) });
+					break;
 				}
-			} finally {
-				controller.close();
 			}
+		} finally {
+			controller.close();
+		}
+	};
+	return new ReadableStream({
+		start(controller) {
+			finished = produce(controller);
+			return finished;
 		},
+		// Resolves when the run has been persisted (`cancel` of the stream waits for it).
+		cancel: () => finished.catch(() => {}),
 	});
 }
 

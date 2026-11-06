@@ -5,6 +5,7 @@ import { evalEnv, findCore } from "../eval-env.ts";
 
 export default defineCommand({
 	name: "eval",
+	alias: "e",
 	description:
 		"Run a packages/core eval against the models the running alpha-orchestrator uses",
 	options: {

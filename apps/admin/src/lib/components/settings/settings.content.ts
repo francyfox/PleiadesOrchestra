@@ -102,6 +102,17 @@ const settingsContent = {
 		profile: {
 			title: t({ ru: "Профиль", en: "Profile", kk: "Профиль" }),
 			name: t({ ru: "Имя", en: "Name", kk: "Аты" }),
+			timeZone: t({ ru: "Часовой пояс", en: "Time zone", kk: "Уақыт белдеуі" }),
+			timeZoneSearch: t({
+				ru: "Найти пояс",
+				en: "Find a zone",
+				kk: "Белдеуді іздеу",
+			}),
+			timeZoneEmpty: t({
+				ru: "Ничего не найдено",
+				en: "Nothing found",
+				kk: "Ештеңе табылмады",
+			}),
 			email: t({ ru: "Новая почта", en: "New email", kk: "Жаңа пошта" }),
 			currentEmail: t({
 				ru: insert("Сейчас: {{email}}"),
@@ -134,9 +145,9 @@ const settingsContent = {
 		danger: {
 			title: t({ ru: "Опасная зона", en: "Danger zone", kk: "Қауіпті аймақ" }),
 			body: t({
-				ru: "Удаление аккаунта удаляет все ваши каналы и данные их посетителей. Это нельзя отменить.",
-				en: "Deleting the account deletes all your channels and their visitors' data. It can't be undone.",
-				kk: "Тіркелгіні жою барлық арналарыңызды және олардың келушілерінің деректерін жояды. Мұны қайтару мүмкін емес.",
+				ru: "Удаление аккаунта сразу отменяет подписку, удаляет все ваши каналы и данные их посетителей; остаток баланса сгорает. Это нельзя отменить.",
+				en: "Deleting the account cancels your subscription at once and deletes all your channels and their visitors' data; the remaining balance is lost. It can't be undone.",
+				kk: "Тіркелгіні жою жазылымды бірден тоқтатады, барлық арналарыңызды және олардың келушілерінің деректерін жояды; баланс қалдығы жойылады. Мұны қайтару мүмкін емес.",
 			}),
 			action: t({
 				ru: "Удалить аккаунт",
@@ -155,6 +166,11 @@ const settingsContent = {
 			}),
 		},
 		errors: {
+			invalid_time_zone: t({
+				ru: "Неизвестный часовой пояс",
+				en: "Unknown time zone",
+				kk: "Белгісіз уақыт белдеуі",
+			}),
 			invalid_name: t({
 				ru: "Укажите имя",
 				en: "Enter a name",

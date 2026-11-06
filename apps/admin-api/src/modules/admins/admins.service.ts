@@ -89,6 +89,7 @@ export async function fetchAdminsPage(
 			email: user.email,
 			banned: user.banned === true,
 			banReason: user.banReason ?? null,
+			timeZone: user.timeZone,
 			createdAt: user.createdAt.getTime(),
 			level: user.level,
 			isSuper: user.level === LEVEL.super,
@@ -130,11 +131,11 @@ export async function rotateToken(auth: Auth, id: string): Promise<string> {
 	return token;
 }
 
-/** Name and e-mail of a staff account; an e-mail another account holds is `email_taken`. */
+/** Name, e-mail and (when given) time zone of a staff account; an e-mail another account holds is `email_taken`. */
 export async function editStaff(
 	auth: Auth,
 	id: string,
-	input: { name: string; email: string },
+	input: { name: string; email: string; timeZone?: string },
 ) {
 	const { internalAdapter } = await auth.$context;
 	const email = input.email.trim().toLowerCase();
@@ -143,5 +144,6 @@ export async function editStaff(
 	await internalAdapter.updateUser(id, {
 		name: input.name.trim() || email,
 		email,
+		...(input.timeZone && { timeZone: input.timeZone }),
 	});
 }

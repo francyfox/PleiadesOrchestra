@@ -13,6 +13,7 @@ const AGENTS = {
 
 export default defineCommand({
 	name: "send",
+	alias: "s",
 	description: "Send a message to harness and stream the reply",
 	options: {
 		message: option(z.string().min(1), {

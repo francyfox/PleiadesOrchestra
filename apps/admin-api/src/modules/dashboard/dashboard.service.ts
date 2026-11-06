@@ -1,4 +1,4 @@
-import { DAY_MS } from "../common/common.service.ts";
+import { addUtcDays } from "../common/common.service.ts";
 import type { FetchContext } from "../common/common.types.ts";
 import type { DashboardData } from "../live/live.types.ts";
 
@@ -16,7 +16,7 @@ export async function fetchDashboard(
 	{ orchestrator, now }: Pick<FetchContext, "orchestrator" | "now">,
 	ownerId?: string,
 ): Promise<DashboardData> {
-	const from = now() - 30 * DAY_MS;
+	const from = addUtcDays(now(), -30);
 	// Only the unscoped view (staff): a user's id, or a staff narrowing, always sets ownerId.
 	const [stats, byDay, byVisitor, byChannel, byModel, finance] =
 		await Promise.all([

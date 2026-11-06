@@ -5,7 +5,10 @@
 	import FormField from "#lib/components/form-field.svelte";
 	import { Button } from "#lib/components/ui/button/index.js";
 	import * as Dialog from "#lib/components/ui/dialog/index.js";
+	import { Label } from "#lib/components/ui/label/index.js";
+	import { TimeZoneSelect } from "#lib/components/ui/time-zone-select/index.js";
 	import { useFieldErrorText } from "#lib/forms/use-field-error-text.js";
+	import { invalidateAll } from "$app/navigation";
 	import type { AdminRow } from "./admin-types";
 	import { useAdminEnhance } from "./use-admin-enhance";
 
@@ -19,7 +22,11 @@
 	const submitted = useAdminEnhance(
 		adminActions.edit,
 		undefined,
-		() => onClose(),
+		() => {
+			onClose();
+			// Editing one's own zone changes how the whole panel shows dates.
+			invalidateAll();
+		},
 		{ schema: EditAdminForm, overrides: adminOverrides },
 	);
 	const errors = submitted.errors;
@@ -34,6 +41,12 @@
 				<input type="hidden" name="id" value={admin.id} />
 				<FormField id="edit-name" name="name" label={$content.columns.name.value} value={admin.name} />
 				<FormField id="edit-email" name="email" label={$content.columns.email.value} type="email" value={admin.email} required error={$errorText($errors?.email)} />
+				<div class="grid gap-2">
+					<Label>{$content.columns.timeZone.value}</Label>
+					{#key admin.id}
+						<TimeZoneSelect value={admin.timeZone} name="timeZone" ariaLabel={$content.columns.timeZone.value} searchPlaceholder={$content.columns.timeZoneSearch.value} emptyText={$content.columns.timeZoneEmpty.value} class="w-full" />
+					{/key}
+				</div>
 				<Dialog.Footer>
 					<Button variant="ghost" type="button" onclick={onClose}>{$common.cancel.value}</Button>
 					<Button type="submit">{$common.save.value}</Button>

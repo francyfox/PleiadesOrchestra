@@ -39,8 +39,9 @@
 						</dd>
 						<dd class="m-0 flex items-center gap-2">
 							<span
-								class="results-bar h-5 border"
-								class:results-bar-win={row.orchestra}
+								class="h-5 max-w-[calc(100%_-_5rem)] border {row.orchestra
+								? 'border-accent! bg-accent shadow-(--shadow-xs)'
+								: 'bg-muted'}"
 								style:width="max({row.width}%, 0.75rem)"
 							></span>
 							<span class="shrink-0 text-xs tabular-nums">{row.label}</span>
@@ -56,17 +57,3 @@
 	</p>
 	<a href={FLOW_RESULTS.docs} class="chip mt-[1rem] inline-block border px-3 py-2 text-sm">{t.link}</a>
 </Pane>
-
-<style>
-	.results-bar {
-		/* The value label sits after the bar, so the longest bar leaves it room. */
-		max-width: calc(100% - 5rem);
-		border-color: var(--rule);
-		background: var(--muted);
-	}
-	.results-bar-win {
-		border-color: var(--accent);
-		background: var(--accent);
-		box-shadow: var(--shadow-xs);
-	}
-</style>

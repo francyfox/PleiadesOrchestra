@@ -4,7 +4,7 @@
 FROM oven/bun:1.4.3-alpine AS prune
 WORKDIR /app
 COPY . .
-RUN bunx turbo@2.10.9 prune alpha-orchestrator admin-api admin --docker
+RUN bunx turbo@2.10.9 prune alpha-orchestrator admin-api admin cli --docker
 
 FROM oven/bun:1.4.3-alpine AS install
 WORKDIR /app
@@ -18,12 +18,15 @@ RUN cd apps/alpha-orchestrator && bun x tsc --noEmit && \
     bun build ./src/index.ts --compile --target=bun-linux-x64-musl --outfile /tmp/alpha-orchestrator
 RUN cd apps/admin-api && bun x tsc --noEmit && \
     bun build ./src/index.ts --compile --target=bun-linux-x64-musl --outfile /tmp/admin-api
+# The albedo CLI (`docker exec pleiades albedo ...`): send, reset, admin:create run in here; eval needs the repo checkout.
+RUN cd apps/cli && bun x tsc --noEmit && \
+    bun build ./src/index.ts --compile --target=bun-linux-x64-musl --outfile /tmp/albedo
 # Static SPA (admin-api is only imported for types).
 RUN cd apps/admin && bun run build
 
 FROM alpine:3.20
 RUN apk add --no-cache libstdc++ libgcc
-COPY --from=build /tmp/alpha-orchestrator /tmp/admin-api /usr/local/bin/
+COPY --from=build /tmp/alpha-orchestrator /tmp/admin-api /tmp/albedo /usr/local/bin/
 # drizzle's migrator reads the SQL migrations from disk, they are not in the binaries.
 COPY apps/alpha-orchestrator/drizzle /app/drizzle/alpha-orchestrator
 COPY apps/admin-api/drizzle /app/drizzle/admin-api

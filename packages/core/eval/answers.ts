@@ -71,7 +71,7 @@ for (const site of TOOL_CHOICE_SITES) {
 
 const intents = decompositionDescriptions(SHOP_TAXONOMY);
 const MODES = ["no context", "last exchange", "whole chain"] as const;
-const KINDS: AnswerCase["kind"][] = ["answer", "topic", "chain"];
+const KINDS: AnswerCase["kind"][] = ["answer", "topic", "chain", "noise"];
 const score = new Map<string, number>();
 const total = new Map<string, number>();
 const misses: string[] = [];

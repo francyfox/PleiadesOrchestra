@@ -8,6 +8,10 @@
 	import { useFormat } from "#lib/i18n/use-format.js";
 	import { useLiveQuery } from "#lib/live/use-live-query.svelte.js";
 
+	let { data } = $props();
+
+	/** Staff see money in dollars, a customer in trenni (1 TR = 1 USD): the numbers are the same. */
+	const unit = $derived(data.staff ? "usd" : "tr");
 	const live = useLiveQuery("dashboard", () => ({}));
 	const dashboard = $derived(live.current);
 
@@ -31,27 +35,28 @@
 {#if dashboard.byDay.some((day) => day.costUsd !== null)}
 	<Card.Root>
 		<Card.Header>
-			{@const title = $content.spendByDay({ total: $format.usd(dashboard.byDay.reduce((sum, day) => sum + (day.costUsd ?? 0), 0)) }).value}
+			{@const total = $format.spend(unit).short(dashboard.byDay.reduce((sum, day) => sum + (day.costUsd ?? 0), 0))}
+			{@const title = (unit === "tr" ? $content.spendByDayTr : $content.spendByDay)({ total }).value}
 			<Card.Title class="truncate" {title}>{title}</Card.Title>
 		</Card.Header>
-		<Card.Content><UsageChart rows={dashboard.byDay} metric="cost" /></Card.Content>
+		<Card.Content><UsageChart rows={dashboard.byDay} metric="cost" {unit} /></Card.Content>
 	</Card.Root>
 {/if}
 
 <div class="grid gap-4 lg:grid-cols-2">
 	<section class="grid min-w-0 gap-2">
 		<h2 class="font-medium">{$content.topVisitors.value}</h2>
-		<UsageTable rows={dashboard.topVisitors} groupBy="visitor" />
+		<UsageTable rows={dashboard.topVisitors} groupBy="visitor" {unit} />
 	</section>
 	<section class="grid min-w-0 gap-2">
 		<h2 class="font-medium">{$content.byChannel.value}</h2>
-		<UsageTable rows={dashboard.byChannel} groupBy="channel" />
+		<UsageTable rows={dashboard.byChannel} groupBy="channel" {unit} />
 	</section>
 </div>
 
 <section class="grid min-w-0 gap-2">
 	<h2 class="font-medium">{$content.byModel.value}</h2>
-	<UsageTable rows={dashboard.byModel} groupBy="model" />
+	<UsageTable rows={dashboard.byModel} groupBy="model" {unit} />
 	<p class="text-xs text-muted-foreground">{$content.pricesNote.value}</p>
 </section>
 

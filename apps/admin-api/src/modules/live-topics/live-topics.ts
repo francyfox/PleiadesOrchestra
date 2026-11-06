@@ -20,6 +20,8 @@ import { VisitorsQuery } from "../visitors/visitors.schema.ts";
 /** How often the hub re-reads each topic while a page watches it. */
 export const LIVE_INTERVALS_MS: Record<LiveTopic, number> = {
 	dashboard: 5000,
+	// The balance moves while a user's channels answer: 5 s is a quick look, not a poll storm (one timer per account).
+	billing: 5000,
 	visitors: 5000,
 	visitor: 3000,
 	channels: 10000,
@@ -44,6 +46,8 @@ const strictly = (schema: TObject) => (params: unknown) =>
 	Value.Check(schema, params);
 
 const NoParams = t.Object({});
+/** A user's billing is always about one account: no id, no topic (staff have no billing). */
+const BillingParams = t.Object({ ownerId: t.String({ minLength: 1 }) });
 const OwnerParams = t.Object({
 	ownerId: t.Optional(t.String({ minLength: 1 })),
 });
@@ -76,6 +80,12 @@ export function createLiveTopics(
 			validate: strictly(OwnerParams),
 			fetch: (params) =>
 				fetchDashboard(ctx, (params as { ownerId?: string }).ownerId),
+		},
+		billing: {
+			intervalMs: every("billing"),
+			validate: strictly(BillingParams),
+			fetch: (params) =>
+				orchestrator.getAccountBilling((params as { ownerId: string }).ownerId),
 		},
 		visitors: {
 			intervalMs: every("visitors"),

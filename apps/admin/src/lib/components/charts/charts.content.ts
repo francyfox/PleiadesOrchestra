@@ -14,6 +14,7 @@ const chartsContent = {
 			kk: "Шығыс токендер",
 		}),
 		spend: t({ ru: "Расход, $", en: "Spend, $", kk: "Шығын, $" }),
+		spendTr: t({ ru: "Расход, TR", en: "Spend, TR", kk: "Шығын, TR" }),
 		noModelCalls: t({
 			ru: "За период вызовов модели не было.",
 			en: "No model calls in this period.",

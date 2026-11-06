@@ -18,6 +18,7 @@
 		pageSlice,
 		type ServerPagination,
 	} from "#lib/pagination.js";
+	import { titleWhenCut } from "#lib/title-when-cut.js";
 
 	/**
 	 * The one table of the admin: headless TanStack model rendered with
@@ -33,6 +34,7 @@
 		pageSize = DEFAULT_PAGE_SIZE,
 		server,
 		wrap = false,
+		columnClass,
 	}: {
 		table: Table<TFeatures, TData>;
 		/** Defaults to the common "No data". */
@@ -44,6 +46,8 @@
 		server?: ServerPagination;
 		/** Let long cells wrap onto several lines instead of being cut with an ellipsis (reference tables). */
 		wrap?: boolean;
+		/** Extra classes for a column's header and cells by column id (width limits; a later `max-w-*` replaces the default). */
+		columnClass?: (columnId: string) => string | undefined;
 	} = $props();
 
 	const common = useIntlayer("common");
@@ -68,7 +72,7 @@
 			{#each table.getHeaderGroups() as group (group.id)}
 				<UiTable.Row>
 					{#each group.headers as header (header.id)}
-						<UiTable.Head colspan={header.colSpan}>
+						<UiTable.Head colspan={header.colSpan} class={[columnClass?.(header.column.id) && "truncate", columnClass?.(header.column.id)]} onmouseover={titleWhenCut}>
 							{#if !header.isPlaceholder}<FlexRender {header} />{/if}
 						</UiTable.Head>
 					{/each}
@@ -92,7 +96,7 @@
 						: undefined}
 				>
 					{#each row.getAllCells() as cell (cell.id)}
-						<UiTable.Cell class={wrap ? "align-top whitespace-normal" : "max-w-lg truncate"}><FlexRender {cell} /></UiTable.Cell>
+						<UiTable.Cell class={[wrap ? "align-top whitespace-normal" : "max-w-lg truncate", columnClass?.(cell.column.id)]} onmouseover={titleWhenCut}><FlexRender {cell} /></UiTable.Cell>
 					{/each}
 				</UiTable.Row>
 			{:else}

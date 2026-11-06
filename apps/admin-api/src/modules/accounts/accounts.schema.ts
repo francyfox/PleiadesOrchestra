@@ -24,6 +24,13 @@ export const accountFields = {
 	},
 	/** Language of the mails sent to the account. */
 	locale: { type: "string", required: false, input: true },
+	/** IANA zone the panel shows this account's dates in; "UTC" until changed. Set at sign-up through `signUpEmail` (validated in the route) and later through the adapter. */
+	timeZone: {
+		type: "string",
+		required: true,
+		defaultValue: "UTC",
+		input: true,
+	},
 } as const;
 
 export const Locale = t.Union([
@@ -37,7 +44,12 @@ export const UserLogin = t.Object({ email: t.String(), password: t.String() });
 
 export const UserRegistration = t.Composite([
 	UserLogin,
-	t.Object({ name: t.Optional(t.String()), locale: t.Optional(Locale) }),
+	t.Object({
+		name: t.Optional(t.String()),
+		locale: t.Optional(Locale),
+		/** IANA name; missing or invalid = "UTC". */
+		timeZone: t.Optional(t.String()),
+	}),
 ]);
 
 export const ForgotInput = t.Object({ email: t.String() });
@@ -52,6 +64,7 @@ export const Me = t.Object({
 	level: t.Number(),
 	/** Epoch ms of the last authenticated request (written at most once a day); null = never. The panel shows the 180-day inactivity note from it. */
 	lastActiveAt: t.Nullable(t.Number()),
+	timeZone: t.String(),
 });
 
 export {

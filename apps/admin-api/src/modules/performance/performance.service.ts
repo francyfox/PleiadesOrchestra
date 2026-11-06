@@ -1,4 +1,4 @@
-import { DAY_MS } from "../common/common.service.ts";
+import { addUtcDays } from "../common/common.service.ts";
 import type { FetchContext } from "../common/common.types.ts";
 import type { PerformanceReport } from "./performance.schema.ts";
 
@@ -7,5 +7,7 @@ export function fetchPerformance(
 	{ orchestrator, now }: Pick<FetchContext, "orchestrator" | "now">,
 	query: { from?: number },
 ): Promise<PerformanceReport> {
-	return orchestrator.performance({ from: query.from ?? now() - 30 * DAY_MS });
+	return orchestrator.performance({
+		from: query.from ?? addUtcDays(now(), -30),
+	});
 }

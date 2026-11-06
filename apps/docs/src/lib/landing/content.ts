@@ -5,6 +5,7 @@ import enCommon from "./locales/en/common.json";
 import enFlow from "./locales/en/flow.json";
 import enFooter from "./locales/en/footer.json";
 import enHistory from "./locales/en/history.json";
+import enLegal from "./locales/en/legal.json";
 import enMcp from "./locales/en/mcp.json";
 import enNav from "./locales/en/nav.json";
 import enPlatforms from "./locales/en/platforms.json";
@@ -19,6 +20,7 @@ import kkCommon from "./locales/kk/common.json";
 import kkFlow from "./locales/kk/flow.json";
 import kkFooter from "./locales/kk/footer.json";
 import kkHistory from "./locales/kk/history.json";
+import kkLegal from "./locales/kk/legal.json";
 import kkMcp from "./locales/kk/mcp.json";
 import kkNav from "./locales/kk/nav.json";
 import kkPlatforms from "./locales/kk/platforms.json";
@@ -33,6 +35,7 @@ import ruCommon from "./locales/ru/common.json";
 import ruFlow from "./locales/ru/flow.json";
 import ruFooter from "./locales/ru/footer.json";
 import ruHistory from "./locales/ru/history.json";
+import ruLegal from "./locales/ru/legal.json";
 import ruMcp from "./locales/ru/mcp.json";
 import ruNav from "./locales/ru/nav.json";
 import ruPlatforms from "./locales/ru/platforms.json";
@@ -60,6 +63,7 @@ const en = {
 	benefits: enBenefits,
 	security: enSecurity,
 	pricing: enPricing,
+	legal: enLegal,
 };
 
 export type LandingContent = typeof en;
@@ -79,6 +83,7 @@ const ru: LandingContent = {
 	benefits: ruBenefits,
 	security: ruSecurity,
 	pricing: ruPricing,
+	legal: ruLegal,
 };
 
 const kk: LandingContent = {
@@ -96,6 +101,7 @@ const kk: LandingContent = {
 	benefits: kkBenefits,
 	security: kkSecurity,
 	pricing: kkPricing,
+	legal: kkLegal,
 };
 
 /** Landing sections in page order: the nav row and the footer link to `#<id>`, labels from `nav.json`. */
@@ -108,6 +114,9 @@ export const LANDING_SECTIONS = [
 	"security",
 	"pricing",
 ] as const satisfies (keyof LandingContent["nav"])[];
+
+/** Legal pages: routes `/<slug>/` per locale, text in `locales/<locale>/legal.json`. */
+export const LEGAL_PAGES = ["privacy", "terms", "refund"] as const;
 
 const content: Record<Locale, LandingContent> = { en, ru, kk };
 

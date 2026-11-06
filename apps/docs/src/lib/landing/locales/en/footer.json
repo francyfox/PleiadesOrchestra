@@ -6,11 +6,15 @@
 	"docs": "Docs",
 	"github": "GitHub",
 	"label": "Site links",
+	"legal": "Legal",
 	"license": "Commercial license",
 	"llms": "llms.txt",
 	"panel": "Panel",
 	"playground": "Playground",
+	"privacy": "Privacy Policy",
 	"product": "Product",
+	"refund": "Refund Policy",
 	"resources": "Resources",
-	"sections": "Landing"
+	"sections": "Landing",
+	"terms": "Terms of Use"
 }

@@ -44,6 +44,7 @@ export function sessionRoutes({
 								id: session.user.id,
 								name: session.user.name,
 								email: session.user.email,
+								timeZone: session.user.timeZone,
 								level: session.user.level,
 								isSuper: session.user.level === LEVEL.super,
 							}

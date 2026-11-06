@@ -12,6 +12,9 @@ import type {
 
 type Upstream = UpstreamRequestDetails;
 type Facts = Record<string, unknown>;
+
+/** How long the orchestrator waits for a browser tool before it drops the request (its `BROWSER_WAIT_TIMEOUT_MS`; this side cannot import it). */
+const BROWSER_WAIT_LIMIT_MS = 60_000;
 type Fact = string | number | boolean;
 
 const record = (value: unknown): Facts =>
@@ -417,6 +420,17 @@ export function buildRequestView(upstream: Upstream): RequestView {
 					break;
 				default:
 					break;
+			}
+		}
+	}
+
+	// A request the browser never answered is over: its step stopped waiting at the limit, it is not "still in the browser".
+	if (request.status === "abandoned") {
+		for (const step of order) {
+			if (step.node.status === "browser" && step.finishedAt === null) {
+				step.node.status = "failed";
+				step.node.detail.error = "the browser did not answer";
+				step.finishedAt = (step.node.startedAt ?? 0) + BROWSER_WAIT_LIMIT_MS;
 			}
 		}
 	}

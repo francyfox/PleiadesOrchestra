@@ -25,6 +25,25 @@ describe("GET /api/user/me", () => {
 	});
 });
 
+describe("POST /api/user/register time zone", () => {
+	test("keeps a valid zone; missing or invalid falls back to UTC", async () => {
+		const { t, find } = await setup();
+		for (const [email, timeZone] of [
+			["a@example.com", "Asia/Almaty"],
+			["b@example.com", "Nowhere/Land"],
+			["c@example.com", undefined],
+		] as const) {
+			await t.call("/api/user/register", {
+				method: "POST",
+				body: { email, password: "correct horse battery", timeZone },
+			});
+		}
+		expect((await find("a@example.com"))?.timeZone).toBe("Asia/Almaty");
+		expect((await find("b@example.com"))?.timeZone).toBe("UTC");
+		expect((await find("c@example.com"))?.timeZone).toBe("UTC");
+	});
+});
+
 describe("PATCH /api/user/me", () => {
 	test("changes the name; a blank name is invalid_name", async () => {
 		const { t, cookie, find } = await setup();
@@ -44,6 +63,35 @@ describe("PATCH /api/user/me", () => {
 		});
 		expect(blank.status).toBe(400);
 		expect(await blank.json()).toEqual({ error: "invalid_name" });
+	});
+
+	test("saves a time zone and refuses a bad one", async () => {
+		const { t, cookie, find } = await setup();
+		const bad = await t.call("/api/user/me", {
+			method: "PATCH",
+			cookie,
+			body: { name: "Ann", timeZone: "Nowhere/Land" },
+		});
+		expect(bad.status).toBe(400);
+		expect(await bad.json()).toEqual({ error: "invalid_time_zone" });
+
+		const ok = await t.call("/api/user/me", {
+			method: "PATCH",
+			cookie,
+			body: { name: "Ann", timeZone: "Europe/Berlin" },
+		});
+		expect((await ok.json()).timeZone).toBe("Europe/Berlin");
+		expect((await find(EMAIL))?.timeZone).toBe("Europe/Berlin");
+		const me = await (await t.call("/api/user/me", { cookie })).json();
+		expect(me.timeZone).toBe("Europe/Berlin");
+
+		// A rename without a zone leaves the zone alone.
+		await t.call("/api/user/me", {
+			method: "PATCH",
+			cookie,
+			body: { name: "Bob" },
+		});
+		expect((await find(EMAIL))?.timeZone).toBe("Europe/Berlin");
 	});
 
 	test("staff cannot use the user settings routes", async () => {

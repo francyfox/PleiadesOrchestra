@@ -134,6 +134,27 @@ test("the earlier assistant message is quoted in the request only when given", a
 	expect(requests[1]).toBe("2");
 });
 
+test("conversationContext: a reply that asks nothing is not quoted (an action done, a hint): there is nothing to answer", () => {
+	const after = (reply: string) =>
+		conversationContext([
+			{ role: "user", content: "add chips" },
+			{ role: "assistant", content: reply },
+		]);
+	expect(after("Added 1 × Tortilla Chips to the cart.")).toEqual({});
+	expect(after("Попробуйте поискать «тортильи» или удалить фильтр.")).toEqual(
+		{},
+	);
+	// A question (any script), a choice list or a numbered pick are things a short message answers.
+	for (const reply of [
+		"Anything else?",
+		"¿Algo más?",
+		"他に何かありますか？",
+		"Pick one:\n1. Small\n2. Large",
+		"Sizes: 1) S 2) M",
+	])
+		expect(after(reply)).toMatchObject({ replyTo: reply });
+});
+
 test("conversationContext: the last assistant message is answered, what came before is the history", () => {
 	const chain = [
 		{ role: "user", content: "хочу купить томат" },

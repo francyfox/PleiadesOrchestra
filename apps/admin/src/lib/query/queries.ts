@@ -20,6 +20,13 @@ export const liveQueries = {
 			queryFn: () => unwrap(api().dashboard.get()),
 			...pushed,
 		}),
+	/** The user's own billing, pushed over the socket (the balance moves while their channels answer). */
+	billing: (params: LiveTopics["billing"]["params"]) =>
+		queryOptions({
+			queryKey: topicKey("billing", params),
+			queryFn: () => unwrap(api().billing.get()),
+			...pushed,
+		}),
 	visitors: (params: LiveTopics["visitors"]["params"]) =>
 		queryOptions({
 			queryKey: topicKey("visitors", params),
@@ -145,11 +152,7 @@ export const queries = {
 			queryFn: () => unwrap(api().user.me.get()),
 		}),
 	/** The user's plan, TR balance, orders and spend (Billing page). */
-	billing: () =>
-		queryOptions({
-			queryKey: ["billing"],
-			queryFn: () => unwrap(api().billing.get()),
-		}),
+	billing: () => liveQueries.billing({}),
 	/** Header alerts: polled, since a plan can lapse or the balance run out while a tab sits open. */
 	standing: () =>
 		queryOptions({

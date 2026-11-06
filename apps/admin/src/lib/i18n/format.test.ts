@@ -68,3 +68,21 @@ test("a probability is shown as a percentage with one decimal", () => {
 	expect(createFormat("en").percent(0.9349716873278769)).toBe("93.5%");
 	expect(createFormat("en").percent(null)).toBe("—");
 });
+
+test("a date is shown in the account's time zone, across a DST change", () => {
+	const before = Date.UTC(2026, 2, 29, 0, 30); // 30 min before Berlin springs forward
+	const after = Date.UTC(2026, 2, 29, 1, 30);
+	const berlin = createFormat("ru", "Europe/Berlin");
+	expect(berlin.date(before)).toBe("29.03.2026 1:30");
+	expect(berlin.date(after)).toBe("29.03.2026 3:30");
+	expect(createFormat("ru", "Asia/Almaty").date(after)).toBe("29.03.2026 6:30");
+	expect(createFormat("ru", "UTC").date(after)).toBe("29.03.2026 1:30");
+});
+
+test("spend: staff see dollars, customers trenni (1 TR = 1 USD); a missing value is a dash", () => {
+	const en = createFormat("en");
+	expect(en.spend("usd").short(1.5)).toBe("$1.50");
+	expect(en.spend("tr").short(1.5)).toBe("1.50000 TR");
+	expect(en.spend("tr").short(null)).toBe("—");
+	expect(en.spend("tr").exact(0.000123456)).toBe("0.000123456 TR");
+});

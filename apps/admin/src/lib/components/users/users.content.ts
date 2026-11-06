@@ -61,9 +61,9 @@ const usersContent = {
 				kk: insert("{{email}} пайдаланушысын жою керек пе?"),
 			}),
 			description: t({
-				ru: "Будут удалены аккаунт и все его каналы вместе с данными посетителей. Это нельзя отменить.",
-				en: "This deletes the account and all its channels with their visitors' data. It can't be undone.",
-				kk: "Тіркелгі мен оның барлық арналары, келушілер деректерімен бірге жойылады. Мұны қайтару мүмкін емес.",
+				ru: "Подписка будет сразу отменена, аккаунт и все его каналы удалены вместе с данными посетителей; остаток баланса сгорит. Это нельзя отменить.",
+				en: "This cancels the subscription at once and deletes the account and all its channels with their visitors' data; the remaining balance is lost. It can't be undone.",
+				kk: "Жазылым бірден тоқтатылады, тіркелгі мен оның барлық арналары келушілер деректерімен бірге жойылады; баланс қалдығы жойылады. Мұны қайтару мүмкін емес.",
 			}),
 		},
 		errors: {

@@ -22,13 +22,16 @@
 		{ name: "OpenCart", icon: OpenCartIcon, available: false },
 		{ name: "1C-Bitrix", icon: BitrixIcon, available: false },
 	];
+
+	// Only the logo and name fade: the status must stay readable.
+	const fade = (available: boolean) => (available ? "" : "opacity-50");
 </script>
 
 <Pane title="guest@pleiades — platforms" header={false} id="platforms" class="py-10 !border-0">
 	<h2 class="text-3xl! md:text-4xl! font-bold! mb-5!">{t.heading}</h2>
 	<p class="mt-2 max-w-3xl text-sm text-dim">{t.lead}</p>
 
-	<ul class="list grid grid-cols-1 gap-3 md:grid-cols-3">
+	<ul class="mt-[1.5rem]! grid grid-cols-1 gap-3 md:grid-cols-3">
 		{#each platforms as platform (platform.name)}
 			<li class="flex">
 				<svelte:element
@@ -36,11 +39,11 @@
 					href={platform.href}
 					target={platform.href ? "_blank" : undefined}
 					rel={platform.href ? "noopener noreferrer" : undefined}
-					class="platform flex w-full flex-col items-center gap-3 border p-5"
-					class:off={!platform.available}
+					class="flex w-full flex-col items-center gap-3 border p-5 {platform.href ? 'hover:border-accent!' : ''}"
 				>
-					<span class="logo"><platform.icon /></span>
-					<span class="name font-bold">{platform.name}</span>
+					<!-- One width for wide wordmarks, one height for the square mark: they read about the same size. -->
+					<span class="flex h-[4rem] w-full items-center justify-center [&>svg]:h-full [&>svg]:max-h-[3rem] [&>svg]:w-full [&>svg]:max-w-[10rem] {fade(platform.available)}"><platform.icon /></span>
+					<span class="font-bold {fade(platform.available)}">{platform.name}</span>
 					<span class="chip border px-2 py-0.5 text-xs">
 						{platform.available ? t.available : t.soon}
 					</span>
@@ -50,31 +53,3 @@
 		{/each}
 	</ul>
 </Pane>
-
-<style>
-	.list {
-		margin-top: 1.5rem;
-	}
-	.logo {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 100%;
-		height: 4rem;
-	}
-	/* One width for wide wordmarks, one height for the square mark: they read about the same size. */
-	.logo :global(svg) {
-		width: 100%;
-		max-width: 10rem;
-		height: 100%;
-		max-height: 3rem;
-	}
-	/* Only the logo and name fade: the status must stay readable. */
-	.off .logo,
-	.off .name {
-		opacity: 0.5;
-	}
-	a.platform:hover {
-		border-color: var(--accent);
-	}
-</style>

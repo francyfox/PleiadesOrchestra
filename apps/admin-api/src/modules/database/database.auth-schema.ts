@@ -21,6 +21,7 @@ export const user = sqliteTable("user", {
   lastActiveAt: integer("last_active_at", { mode: "timestamp_ms" }),
   tokenHash: text("token_hash"),
   locale: text("locale"),
+  timeZone: text("time_zone").default("UTC").notNull(),
 });
 
 export const session = sqliteTable(

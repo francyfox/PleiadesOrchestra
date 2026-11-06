@@ -25,7 +25,6 @@
 		staff,
 		plans,
 		owners,
-		paused,
 		onEdit,
 	}: {
 		channels: Channel[];
@@ -34,8 +33,6 @@
 		/** All subscriptions; the owner's plan shows on each of their channels. */
 		plans: Subscription[];
 		owners: OwnerAccount[];
-		/** The signed-in customer's channels are paused (no plan or no balance). Staff view: always false, the owner's standing is not in the channel list. */
-		paused: boolean;
 		total: number;
 		page: number;
 		onEdit: (channel: Channel) => void;
@@ -56,6 +53,16 @@
 			: "—";
 	}
 
+	/** Widths so the table fits a desktop: names, plan and key are cut, the URLs get the room. */
+	const WIDTHS: Record<string, string> = {
+		name: "max-w-44",
+		allowedOrigins: "min-w-64 max-w-2xl",
+		publishableKey: "max-w-28",
+		owner: "max-w-40",
+		plan: "max-w-24",
+	};
+	const columnClass = (id: string) => WIDTHS[id];
+
 	const features = tableFeatures({});
 	const helper = createColumnHelper<typeof features, Channel>();
 	const table = createTable({
@@ -68,7 +75,7 @@
 			helper.accessor("kind", { header: () => $content.columns.kind.value }),
 			helper.accessor("accessMode", {
 				header: () => $content.columns.access.value,
-				cell: (ctx) => $content.accessMode[ctx.getValue()].value,
+				cell: (ctx) => renderSnippet(accessCell, ctx.getValue()),
 			}),
 			helper.accessor("allowedOrigins", {
 				header: () => $content.columns.origins.value,
@@ -118,7 +125,6 @@
 	<div class="font-medium">{channel.name}</div>
 	<div class="text-xs text-muted-foreground">{channel.slug}</div>
 	{#if channel.disabledAt}<Badge variant="destructive">{$content.disabled.value}</Badge>{/if}
-	{#if paused}<Badge variant="destructive">{$content.paused.value}</Badge>{/if}
 {/snippet}
 
 {#snippet ownerCell(ownerId: string | null)}
@@ -131,10 +137,16 @@
 	{/if}
 {/snippet}
 
+{#snippet accessCell(mode: Channel["accessMode"])}
+	<Badge variant={mode === "open" ? "outline" : "secondary"}>{$content.accessMode[mode].value}</Badge>
+{/snippet}
+
 {#snippet origins(list: string[])}
 	{#if list.length}
-		<div class="grid gap-0.5">
-			{#each list as origin (origin)}<CopyValue value={origin} href={origin} />{/each}
+		<div class="flex flex-wrap gap-1">
+			{#each list as origin (origin)}
+				<Badge variant="secondary" href={origin} target="_blank" rel="noreferrer">{origin}</Badge>
+			{/each}
 		</div>
 	{:else}—{/if}
 {/snippet}
@@ -145,6 +157,7 @@
 
 <DataTable
 	{table}
+	{columnClass}
 	emptyText={$content.empty.value}
 	server={{ page, pageSize: DEFAULT_PAGE_SIZE, total, href: (target) => resolve(`channels?page=${target}`) }}
 />

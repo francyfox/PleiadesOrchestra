@@ -472,6 +472,32 @@ describe("buildRequestView", () => {
 		});
 	});
 
+	test("a request the browser never answered is over: its step is failed with the wait that ended it, and the clock no longer moves it", () => {
+		const events = [
+			planned(T0 + 100, ["search_products", "generateReply"]),
+			started(T0 + 220, "search_products"),
+			waiting(T0 + 300, "search_products", "search_products", {
+				query: "tortillas",
+			}),
+		];
+		const at = (now: number) =>
+			buildRequestView(
+				details([run("r1", T0, events, { durationMs: 1_000 })], {
+					status: "abandoned",
+					durationMs: 1_100,
+					now,
+				}),
+			);
+		const early = at(T0 + 125_900);
+		expect(byLabel(early, "search_products")).toMatchObject({
+			status: "failed",
+			durationMs: 60_000,
+			detail: { error: "the browser did not answer" },
+		});
+		// Read again later it is the same: a finished request must not be pushed over and over.
+		expect(at(T0 + 900_000)).toEqual(early);
+	});
+
 	test("a step the server is executing is running, and the unreached plan is not_reached once the request ended", () => {
 		const live = buildRequestView(
 			details(

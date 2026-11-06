@@ -12,7 +12,7 @@
 		$props();
 </script>
 
-<span class="inline-flex min-w-0 items-center gap-1">
+<span class="inline-flex min-w-0 max-w-full items-center gap-1">
 	<CopyButton {value} {label} />
 	{#if href}
 		<a {href} target="_blank" rel="external noopener noreferrer" class="min-w-0 truncate text-primary underline-offset-4 hover:underline">

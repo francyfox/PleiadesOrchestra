@@ -87,8 +87,8 @@
 		<div class="relative w-full" style:aspect-ratio="{SIZE.w} / {SIZE.h}">
 			<!-- Layers by z-index: thumbnails (0) behind the TV frame (10), clickable areas (20) on top. -->
 			{#each SCREENS as _, i (i)}
-				<div class="tv-screen absolute" style={box(i)}>
-					<div class="tv-thumb absolute inset-0 z-0 overflow-hidden">
+				<div class="tv-screen group absolute" style={box(i)}>
+					<div class="tv-thumb absolute inset-0 z-0 overflow-hidden transition-transform duration-300 ease-[ease] motion-safe:group-hover:scale-115">
 						<img
 							src={i === 0 && cover ? cover : NO_SIGNAL}
 							alt=""
@@ -106,6 +106,7 @@
 					></button>
 				</div>
 			{/each}
+			<!-- The frame is dark artwork: inverted on the light theme (the screens stay as they are). -->
 			<!-- Sizes cut from tv.webp (the SCREENS rectangles are fractions, so any size fits); below the fold: lazy. -->
 			<img
 				src="/media/tv-1280.webp"
@@ -116,24 +117,14 @@
 				loading="lazy"
 				decoding="async"
 				alt=""
-				class="tv-frame pointer-events-none absolute inset-0 z-10 h-full w-full"
+				class="pointer-events-none absolute inset-0 z-10 h-full w-full [html:not(.dark)_&]:invert"
 			/>
 		</div>
 	</div>
 </div>
 
 <style>
-	/* The TV frames are dark artwork: inverted on the light theme (the screens stay as they are). */
-	:global(html:not(.dark)) .tv-frame {
-		filter: invert(1);
-	}
-	/* Hover on a screen zooms the thumbnail and glitches it; zoom sits on the wrapper so it doesn't fight the glitch transform. */
-	.tv-thumb {
-		transition: transform 0.3s ease;
-	}
-	.tv-screen:hover .tv-thumb {
-		transform: scale(1.15);
-	}
+	/* Hover on a screen zooms the thumbnail (utilities on the wrapper) and glitches it here, so the two transforms don't fight. */
 	.tv-screen:hover .tv-thumb img {
 		animation: tv-glitch 0.4s steps(2) infinite;
 	}
@@ -162,9 +153,6 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.tv-screen:hover .tv-thumb {
-			transform: none;
-		}
 		.tv-screen:hover .tv-thumb img {
 			animation: none;
 		}

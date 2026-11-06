@@ -8,6 +8,17 @@ const adminsContent = {
 			name: t({ ru: "Имя", en: "Name", kk: "Аты" }),
 			email: t({ ru: "Почта", en: "Email", kk: "Пошта" }),
 			status: t({ ru: "Статус", en: "Status", kk: "Күйі" }),
+			timeZone: t({ ru: "Часовой пояс", en: "Time zone", kk: "Уақыт белдеуі" }),
+			timeZoneSearch: t({
+				ru: "Найти пояс",
+				en: "Find a zone",
+				kk: "Белдеуді іздеу",
+			}),
+			timeZoneEmpty: t({
+				ru: "Ничего не найдено",
+				en: "Nothing found",
+				kk: "Ештеңе табылмады",
+			}),
 			created: t({ ru: "Создан", en: "Created", kk: "Құрылған" }),
 		},
 		banned: t({ ru: "заблокирован", en: "banned", kk: "бұғатталған" }),
@@ -96,6 +107,11 @@ const adminsContent = {
 			}),
 		},
 		errors: {
+			invalid_time_zone: t({
+				ru: "Неизвестный часовой пояс",
+				en: "Unknown time zone",
+				kk: "Белгісіз уақыт белдеуі",
+			}),
 			invalid_email: t({
 				ru: "Проверьте адрес почты",
 				en: "Check the email address",

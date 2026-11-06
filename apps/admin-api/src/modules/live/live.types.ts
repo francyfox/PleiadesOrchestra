@@ -1,5 +1,6 @@
 import type { AdminsPage } from "../admins/admins.schema.ts";
 import type { Agent } from "../agents/agents.schema.ts";
+import type { AccountBilling } from "../billing/billing.schema.ts";
 import type { BlockedIp } from "../blocked-ips/blocked-ips.schema.ts";
 import type { Channel } from "../channels/channels.schema.ts";
 import type { Finance } from "../finance/finance.schema.ts";
@@ -53,6 +54,8 @@ export interface LiveTopics {
 		params: PageParams & { ownerId?: string };
 		data: { items: Channel[]; total: number };
 	};
+	/** A user's own billing (balance, plan, orders, spend); `ownerId` is the session's account. */
+	billing: { params: { ownerId?: string }; data: AccountBilling };
 	intents: { params: IntentsQuery; data: IntentsPage };
 	"blocked-ips": {
 		params: PageParams;

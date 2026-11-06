@@ -95,7 +95,7 @@ const billingContent = {
 			}),
 			month: t({ ru: "Месяц", en: "Month", kk: "Ай" }),
 			tokens: t({ ru: "Токены", en: "Tokens", kk: "Токендер" }),
-			cost: t({ ru: "Стоимость, USD", en: "Cost, USD", kk: "Құны, USD" }),
+			cost: t({ ru: "Стоимость, TR", en: "Cost, TR", kk: "Құны, TR" }),
 			empty: t({
 				ru: "Расходов пока нет",
 				en: "No spend yet",
@@ -114,9 +114,9 @@ const billingContent = {
 				kk: "Жазылымнан бас тарту керек пе?",
 			}),
 			description: t({
-				ru: "Новых списаний не будет. Оплаченный месяц и остаток баланса сохранятся: каналы работают, пока баланс больше нуля.",
-				en: "No further charges. The paid month and your balance stay: channels run while the balance is above zero.",
-				kk: "Жаңа төлемдер болмайды. Төленген ай мен баланс қалдығы сақталады: баланс нөлден жоғары болғанша арналар жұмыс істейді.",
+				ru: "Новых списаний не будет. Оплаченный месяц и остаток баланса сохранятся: каналы работают, пока баланса хватает на запрос.",
+				en: "No further charges. The paid month and your balance stay: channels run while the balance covers a request.",
+				kk: "Жаңа төлемдер болмайды. Төленген ай мен баланс қалдығы сақталады: баланс сұрауға жеткенше арналар жұмыс істейді.",
 			}),
 			done: t({
 				ru: "Подписка отменена: новых списаний не будет",
@@ -136,9 +136,9 @@ const billingContent = {
 				kk: "Арналарыңыз тоқтатылған: баланс келесі жазылым төлеміне дейін таусылды",
 			}),
 			lowBalance: t({
-				ru: "Баланс трени почти исчерпан: каналы остановятся на нуле",
-				en: "Your trenni balance is almost used up: channels stop at zero",
-				kk: "Трени балансы таусылуға жақын: нөлде арналар тоқтайды",
+				ru: "Баланс трени почти исчерпан: каналы остановятся, когда его не хватит на запрос",
+				en: "Your trenni balance is almost used up: channels stop when it can no longer cover a request",
+				kk: "Трени балансы таусылуға жақын: сұрауға жетпегенде арналар тоқтайды",
 			}),
 			planEnding: t({
 				ru: "Тариф скоро закончится: продлите, чтобы каналы не остановились",

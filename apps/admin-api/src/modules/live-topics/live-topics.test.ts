@@ -44,6 +44,7 @@ function fakeOrchestrator() {
 		listChannels: record("listChannels", { items: [], total: 0 }),
 		listBlockedIps: record("listBlockedIps", { items: [], total: 0 }),
 		listAgents: record("listAgents", { items: [] }),
+		getAccountBilling: record("getAccountBilling", { balanceUsd: 1 }),
 		performance: record("performance", { rows: [], overall: [] }),
 	} as unknown as OrchestratorClient;
 	return { orchestrator, calls };
@@ -69,6 +70,7 @@ describe("createLiveTopics: validation", () => {
 			[
 				"admins",
 				"agents",
+				"billing",
 				"blocked-ips",
 				"channels",
 				"dashboard",
@@ -82,6 +84,7 @@ describe("createLiveTopics: validation", () => {
 			].sort(),
 		);
 		expect(LIVE_INTERVALS_MS).toEqual({
+			billing: 5000,
 			dashboard: 5000,
 			visitors: 5000,
 			visitor: 3000,
@@ -177,6 +180,18 @@ describe("createLiveTopics: fetching", () => {
 			["performance", { from: NOW - 30 * DAY }],
 			["performance", { from: 42 }],
 		]);
+	});
+
+	test("billing is one account's billing: it needs the account id, and asks for exactly that account", async () => {
+		const { topics: t, calls } = topics();
+		// Staff would pass no ownerId (scopeSubscription leaves their params alone): refused, not "everybody's".
+		expect(t.billing.validate({})).toBe(false);
+		expect(t.billing.validate({ ownerId: "acc_1", x: 1 })).toBe(false);
+		expect(t.billing.validate({ ownerId: "acc_1" })).toBe(true);
+		expect(await t.billing.fetch({ ownerId: "acc_1" })).toEqual({
+			balanceUsd: 1,
+		});
+		expect(calls).toEqual([["getAccountBilling", "acc_1"]]);
 	});
 
 	test("the dashboard is the REST dashboard: stats, days, top 10 visitors and channels by tokens", async () => {

@@ -20,12 +20,14 @@
 		"auth:schema": "bunx --bun @better-auth/cli generate --config src/modules/auth/auth-cli.ts --output src/modules/database/database.auth-schema.ts -y"
 	},
 	"dependencies": {
+		"@date-fns/tz": "catalog:",
 		"@repo/elysia-kit": "workspace:*",
 		"@repo/intent-presets": "workspace:*",
 		"@repo/mail-templates": "workspace:*",
 		"@sinclair/typebox": "catalog:",
 		"@t3-oss/env-core": "catalog:",
 		"better-auth": "^1.7.5",
+		"date-fns": "catalog:",
 		"drizzle-orm": "catalog:",
 		"drizzle-typebox": "catalog:",
 		"elysia": "catalog:",

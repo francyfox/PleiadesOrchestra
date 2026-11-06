@@ -7,6 +7,7 @@
 	import FeedbackWidget from "#lib/components/layout/feedback-widget.svelte";
 	import { Progress } from "#lib/components/ui/progress/index.js";
 	import { Toaster } from "#lib/components/ui/sonner/index.js";
+	import { timeZone } from "#lib/i18n/time-zone.js";
 	import { queryClient } from "#lib/query/client.js";
 	import { navigating } from "$app/state";
 
@@ -32,6 +33,9 @@
 		const creep = setInterval(() => (progress += (90 - progress) / 8), 200);
 		return () => clearInterval(creep);
 	});
+
+	// Every date in the panel is shown in the signed-in account's zone.
+	$effect(() => timeZone.set(data.admin?.timeZone ?? null));
 
 	// app.html ships lang="en"; screen readers and hyphenation need the real one.
 	$effect(() => {

@@ -65,7 +65,8 @@
 					</div>
 					<div class="grid gap-2">
 						<Label for="edit-origins">{$content.allowedOrigins.value}</Label>
-						<Textarea id="edit-origins" name="allowedOrigins" value={channel.allowedOrigins.join("\n")} />
+						<Textarea id="edit-origins" name="allowedOrigins" placeholder={"https://example.com\nhttp://localhost:5173"} value={channel.allowedOrigins.join("\n")} aria-invalid={!!$errors?.allowedOrigins} />
+						{#if $errors?.allowedOrigins}<p class="text-xs text-destructive">{$content.originsFormat.value}</p>{/if}
 					</div>
 				{/if}
 				<Dialog.Footer>
