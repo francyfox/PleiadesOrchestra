@@ -252,4 +252,58 @@
     <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/playground/"/>
     <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/playground/"/>
   </url>
+  <url>
+    <loc>https://pleiades.shalotts.site/privacy/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/privacy/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/privacy/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/privacy/"/>
+  </url>
+  <url>
+    <loc>https://pleiades.shalotts.site/ru/privacy/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/privacy/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/privacy/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/privacy/"/>
+  </url>
+  <url>
+    <loc>https://pleiades.shalotts.site/kk/privacy/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/privacy/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/privacy/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/privacy/"/>
+  </url>
+  <url>
+    <loc>https://pleiades.shalotts.site/refund/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/refund/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/refund/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/refund/"/>
+  </url>
+  <url>
+    <loc>https://pleiades.shalotts.site/ru/refund/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/refund/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/refund/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/refund/"/>
+  </url>
+  <url>
+    <loc>https://pleiades.shalotts.site/kk/refund/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/refund/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/refund/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/refund/"/>
+  </url>
+  <url>
+    <loc>https://pleiades.shalotts.site/terms/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/terms/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/terms/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/terms/"/>
+  </url>
+  <url>
+    <loc>https://pleiades.shalotts.site/ru/terms/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/terms/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/terms/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/terms/"/>
+  </url>
+  <url>
+    <loc>https://pleiades.shalotts.site/kk/terms/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/terms/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/terms/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/terms/"/>
+  </url>
 </urlset>

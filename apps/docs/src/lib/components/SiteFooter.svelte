@@ -1,6 +1,10 @@
 <script lang="ts">
 	import { localeFromPath, localizeHref } from "#lib/i18n.js";
-	import { LANDING_SECTIONS, landingContent } from "#lib/landing/content.js";
+	import {
+		LANDING_SECTIONS,
+		LEGAL_PAGES,
+		landingContent,
+	} from "#lib/landing/content.js";
 	import {
 		PLEIADES_CONTACT,
 		PLEIADES_PANEL_LOGIN_URL,
@@ -49,6 +53,14 @@
 				<li><a href="{home}llms.txt" rel="external">{t.llms}</a></li>
 				<li><a href={PLEIADES_TERMS_URL}>{t.license}</a></li>
 				<li><a href="mailto:{PLEIADES_CONTACT}">{t.contact}</a></li>
+			</ul>
+		</div>
+		<div>
+			<h2>{t.legal}</h2>
+			<ul>
+				{#each LEGAL_PAGES as slug (slug)}
+					<li><a href={localizeHref(`/${slug}/`, locale)}>{t[slug]}</a></li>
+				{/each}
 			</ul>
 		</div>
 	</nav>

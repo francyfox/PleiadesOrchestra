@@ -1,0 +1,224 @@
+{
+	"updated": "Last updated: 6 November 2026",
+	"privacy": {
+		"title": "Privacy Policy",
+		"description": "What data PleiadesOrchestra processes, why, who receives it and how to exercise your rights.",
+		"sections": [
+			{
+				"heading": "Who we are and what this covers",
+				"paragraphs": [
+					"This policy covers the PleiadesOrchestra website, the admin panel, and the assistant widget and channels (web widget, Telegram and others) that run on customers' websites. The operator is Shalotts (\"we\", \"us\").",
+					"Contact for privacy questions: francyfox@protonmail.com."
+				]
+			},
+			{
+				"heading": "Our role: controller and processor",
+				"paragraphs": [
+					"For account and billing data (our customers' own data), we are the controller.",
+					"For data of visitors who chat with a customer's assistant, the customer (the site owner) is the controller and we are its processor. We process that data on the customer's instructions to run the service.",
+					"Customers must publish their own privacy notice to their visitors and obtain any consent the law requires. If you are a visitor and want to use your rights, contact the site you chatted on first."
+				]
+			},
+			{
+				"heading": "Data we process",
+				"paragraphs": [
+					"Account data: name, email address, password (stored as a hash), time zone, language, and the date of your last activity. Staff sign in with tokens.",
+					"Billing data: your plan, balance and orders. Payments are handled by Polar. We do not receive or store your card number.",
+					"Visitor data of a channel: a generated visitor id and name, the messages of the conversation (only the newest 10 per visitor are kept), the page URL and language the widget reports, and the IP address. The IP address is stored as a salted hash for blocking, and the last IP is shown in plain text to the channel's owner.",
+					"Site data: the tool catalogs a customer's site announces (names, descriptions, schemas) and the answers of those tools.",
+					"Usage data: a ledger of model calls (model, tokens, timing, cost), request traces, and operational logs.",
+					"Error reports: the admin panel and API send error events to Sentry through our own tunnel."
+				]
+			},
+			{
+				"heading": "Why we process it",
+				"paragraphs": [
+					"To create and secure accounts, to answer visitors' messages, to bill and enforce balances, to block abuse, to find and fix errors, and to follow the law.",
+					"Message content is sent to AI model providers (OpenRouter and the models configured for the channel) to produce replies."
+				]
+			},
+			{
+				"heading": "Who receives it",
+				"paragraphs": [
+					"Service providers that help us run the service: model hosts such as OpenRouter, the payment processor Polar, mail delivery, hosting, and Sentry for error monitoring. They receive only what their function needs and have their own policies.",
+					"We do not sell personal data. We may disclose data when the law requires it."
+				]
+			},
+			{
+				"heading": "Cookies and analytics",
+				"paragraphs": [
+					"The admin panel sets a session cookie. It is strictly necessary to keep you signed in.",
+					"This website uses Umami analytics to count visits."
+				]
+			},
+			{
+				"heading": "Retention and deletion",
+				"paragraphs": [
+					"Only the newest 10 messages per visitor are kept. Anonymous visitors are purged after a retention period. IP blocks expire.",
+					"If you delete your account, your subscription ends at once, your channels and their visitors' data are deleted, and the remaining balance is lost. The ledger of model calls and billing records may be kept without a link to a channel, as far as needed for accounting and the law.",
+					"Accounts that were not used for 180 days are deleted automatically.",
+					"Backups and logs are removed on their regular schedule."
+				]
+			},
+			{
+				"heading": "Your rights",
+				"paragraphs": [
+					"Depending on where you live, you may have the right to access, correct or delete your personal data, to restrict or object to its processing, and to complain to a data protection authority.",
+					"Write to francyfox@protonmail.com. We may ask you to prove who you are. Requests about visitor data may be passed on to the customer who controls it."
+				]
+			},
+			{
+				"heading": "International transfers",
+				"paragraphs": [
+					"We and our providers may host and process data in other countries than yours. By using the service you understand that your data may be transferred there."
+				]
+			},
+			{
+				"heading": "Security",
+				"paragraphs": [
+					"We process data to run the service and use reasonable technical measures to protect it. No system is fully secure. We do not guarantee absolute security of your data."
+				]
+			},
+			{
+				"heading": "Changes to this policy",
+				"paragraphs": [
+					"We may change this policy. The date at the top shows the latest version. If a change is material, we will tell you in the panel or by email."
+				]
+			}
+		]
+	},
+	"terms": {
+		"title": "Terms of Use",
+		"description": "The terms for using PleiadesOrchestra. The service is provided as is, without guarantees.",
+		"sections": [
+			{
+				"heading": "Agreement",
+				"paragraphs": [
+					"These terms are an agreement between you and Shalotts (\"we\", \"us\"). By creating an account or using the service (the PleiadesOrchestra website, admin panel, widget and channels) you accept them. If you do not accept them, do not use the service.",
+					"If you use the service for a company, you confirm you may bind that company. You must be at least 18 years old."
+				]
+			},
+			{
+				"heading": "No guarantees: the service is provided as is",
+				"paragraphs": [
+					"THE SERVICE IS PROVIDED \"AS IS\" AND \"AS AVAILABLE\". WE GIVE NO WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. THIS INCLUDES MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, ACCURACY, AVAILABILITY, UPTIME, UNINTERRUPTED OR ERROR-FREE OPERATION, SECURITY, LATENCY AND QUALITY OF RESPONSES.",
+					"There is no service level agreement (SLA). We do not promise any result, revenue, conversion or satisfaction.",
+					"To the extent permitted by law, you use the service at your own risk."
+				]
+			},
+			{
+				"heading": "AI assistants can be wrong",
+				"paragraphs": [
+					"The assistants run on small AI language models and tool calls. Their answers can be wrong, incomplete or offensive.",
+					"The site owner remains solely responsible for what happens on its site and for reviewing the results. Do not rely on the assistant for legal, medical, financial or other critical decisions."
+				]
+			},
+			{
+				"heading": "Third-party providers",
+				"paragraphs": [
+					"The service depends on third parties: model hosts such as OpenRouter, the payment processor Polar, mail delivery and hosting. They can fail, change or stop at any time. We are not responsible for them or for the effect of their failures on you."
+				]
+			},
+			{
+				"heading": "Changes to the service",
+				"paragraphs": [
+					"We may change, limit or discontinue any feature, model, price or the rules of the trenni (TR) balance at any time and without notice. Models and providers may be replaced."
+				]
+			},
+			{
+				"heading": "Accounts",
+				"paragraphs": [
+					"Give true information and keep your password and keys safe. You are responsible for everything done through your account.",
+					"Deleting an account ends the subscription at once and deletes its channels, their visitors' data and the remaining trenni balance. Accounts unused for 180 days are deleted automatically."
+				]
+			},
+			{
+				"heading": "Payments and balance",
+				"paragraphs": [
+					"Payments are processed by Polar. The plan renews monthly until you cancel it. Each paid month tops the balance up by the plan's amount of TR. A top-up is credited net of payment fees, taxes and our service margin.",
+					"1 TR equals 1 USD of model usage. Usage is debited per model call at provider prices. When the balance cannot cover a request, the channel is paused. Refunds are described in the Refund Policy."
+				]
+			},
+			{
+				"heading": "Your responsibilities",
+				"paragraphs": [
+					"You are responsible for the content of your channels, for the notices and consents your visitors need under the law, for the tools your store exposes to the assistant, and for keeping your secret keys secret. Publishable keys are meant to be public; secret keys are not.",
+					"Do not use the service to break the law, to harm others, to send spam or malware, to attack or overload the service or its providers, or to get around limits or billing."
+				]
+			},
+			{
+				"heading": "Suspension and termination",
+				"paragraphs": [
+					"We may pause or block a channel or an account, for example for an empty balance or abuse, at any time. You may stop using the service and delete your account at any time. Sections that by their nature should survive termination (disclaimers, liability, governing law) stay in force."
+				]
+			},
+			{
+				"heading": "Limitation of liability",
+				"paragraphs": [
+					"TO THE EXTENT PERMITTED BY LAW, WE ARE NOT LIABLE FOR INDIRECT, INCIDENTAL, SPECIAL OR CONSEQUENTIAL DAMAGES, OR FOR LOSS OF PROFIT, REVENUE, DATA OR GOODWILL, EVEN IF WE WERE TOLD THEY MIGHT HAPPEN.",
+					"TO THE EXTENT PERMITTED BY LAW, OUR TOTAL LIABILITY FOR ALL CLAIMS IS LIMITED TO THE AMOUNT YOU PAID US IN THE 3 MONTHS BEFORE THE EVENT THAT GAVE RISE TO THE CLAIM.",
+					"You agree to cover our losses from claims by third parties that arise from your use of the service in breach of these terms."
+				]
+			},
+			{
+				"heading": "Governing law",
+				"paragraphs": [
+					"These terms are governed by the laws of the Republic of Kazakhstan, and we follow the legislation of the Republic of Kazakhstan. Its courts decide disputes, except where mandatory law of your country says otherwise."
+				]
+			},
+			{
+				"heading": "Changes to these terms",
+				"paragraphs": [
+					"We may change these terms. The date at the top shows the latest version. If you keep using the service after a change, you accept it. Contact: francyfox@protonmail.com."
+				]
+			}
+		]
+	},
+	"refund": {
+		"title": "Refund Policy",
+		"description": "When payments for PleiadesOrchestra can be refunded and when they cannot.",
+		"sections": [
+			{
+				"heading": "General rule",
+				"paragraphs": [
+					"Payments are processed by Polar. The service is provided without guarantees (see the Terms of Use). A lack of results, satisfaction, accuracy or availability is not a reason for a refund.",
+					"Operator: Shalotts. Contact: francyfox@protonmail.com."
+				]
+			},
+			{
+				"heading": "Cancelling a subscription",
+				"paragraphs": [
+					"You can cancel the plan at any time in the customer portal. Cancelling stops the next renewal. The period you already paid for and the balance stay usable. Cancelling does not refund the current period."
+				]
+			},
+			{
+				"heading": "What may be refunded",
+				"paragraphs": [
+					"Refunds are decided case by case. Write to francyfox@protonmail.com with your order details."
+				]
+			},
+			{
+				"heading": "What is not refunded",
+				"paragraphs": [
+					"Trenni (TR) that were already used to pay for model usage.",
+					"Payment fees and taxes.",
+					"Balance lost because you deleted the account or because it was deleted for inactivity.",
+					"Payments after a channel was paused for an empty balance or blocked for a breach of the Terms of Use."
+				]
+			},
+			{
+				"heading": "How a refund works",
+				"paragraphs": [
+					"A refund goes through Polar to the original payment method. It can take several days to arrive.",
+					"A refund takes back its share of the TR credited for that payment. If the balance is already lower than that share, the balance can go below zero and is taken from the next top-up. The channel is paused while the balance cannot cover a request."
+				]
+			},
+			{
+				"heading": "Chargebacks",
+				"paragraphs": [
+					"Please contact us before you open a dispute with your bank. We may suspend an account while a dispute is open."
+				]
+			}
+		]
+	}
+}
