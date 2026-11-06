@@ -1,3 +1,18 @@
+# 0.13.10 - 6 Nov 2026
+
+Feature:
+- Admin: every account has a time zone (customers pick it at sign-up, prefilled from the browser, and in `/settings`; staff change an admin's on `/admins`; default UTC for existing accounts, migration `0003_account_time_zone`). The picker shows the UTC offset and searches by it ("5", "+5:30") and by name. All dates in the panel are formatted by date-fns in the viewer's zone.
+- Admin: a customer sees spend on the dashboard and in the monthly table of Billing in trenni (TR); staff keep dollars on the dashboard.
+- Billing: a customer's balance, the plan and the paused alert update over the WebSocket (new live topic `billing`) instead of once a minute.
+- Admin: the channel's allowed origins are site URLs (`https://shop.example.com`, one per line); a value with a path, a trailing slash or no scheme is refused by the form and the API. The channels table fits a desktop: URLs and access mode as chips, the name, plan and key are cut, and every cut table cell shows its full text on hover.
+
+Changed:
+- Billing: a request holds 0.001 TR (was 0.05), so a small balance still serves requests.
+- Admin: the low-balance banner says channels stop when the balance cannot cover a request, not "at zero"; the delete-account warnings say the subscription ends at once and the balance is lost.
+
+Fixed:
+- Billing: a client that cancels the stream no longer frees the request's hold before the run it left behind is debited, so parallel requests cannot overspend the balance through a cancel.
+
 # 0.12.10 - 6 Nov 2026
 
 Feature:
