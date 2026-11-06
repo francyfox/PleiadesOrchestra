@@ -7,6 +7,11 @@ Feature:
 - Admin: the channel's allowed origins are site URLs (`https://shop.example.com`, one per line); a value with a path, a trailing slash or no scheme is refused by the form and the API. The channels table fits a desktop: URLs and access mode as chips, the name, plan and key are cut, and every cut table cell shows its full text on hover.
 - Landing: Privacy Policy, Terms of Use and Refund Policy (`/privacy/`, `/terms/`, `/refund/`, with `/ru/` and `/kk/`), in a new "Legal" footer column and the sitemap. The Terms say plainly that the service is provided as is, with no warranties, and follow the legislation of the Republic of Kazakhstan.
 - Landing: the navigation links live in the burger menu below 1024px (the inline row only from `lg`, no width shows both or neither).
+- CLI: every release attaches standalone `albedo` binaries for Linux (x64 and arm64, glibc and musl) and macOS (x64 and arm64) with a checksums file.
+- CLI: `albedo` is built into the `ghcr.io/francyfox/pleiades` image (`docker exec pleiades albedo help`; `admin:create` finds the admin API itself: the image's own binary inside it, the `pleiades` container of the one-command install, else the compose service), and the docs have a CLI page with the commands.
+- CLI: `albedo -v|--version` prints the version (`PLEIADES_VERSION` in `.env`, else the built-in one), `albedo help` / `-h` prints the commands with their options, and every command has a shortcut (`s`, `r`, `ac`, `e`, `h`).
+- Docs: a CLI page (`/docs/cli/`, also in ru and kk): where to get `albedo`, its environment variables and the commands with their shortcuts.
+- Docs: the Server API page tells where the Swagger reference is: public at `albedo.shalotts.site/swagger`, locally at `localhost:3000/swagger` (admin API: `localhost:3003/api/docs`).
 
 Changed:
 - Billing: a request holds 0.001 TR (was 0.05), so a small balance still serves requests.
