@@ -57,7 +57,7 @@
 		<div class="grid max-h-[calc(100dvh-2rem)] auto-rows-max overflow-y-auto overscroll-contain">
 			<div class="relative grid grid-cols-1 content-start gap-3 p-6">
 				<form method="dialog" class="absolute top-3 right-3">
-					<button type="submit" class="grid size-8 place-items-center rounded-full hover:bg-(--dlg-rule)" aria-label={t.close}><XIcon size={18} aria-hidden="true" /></button>
+					<button type="submit" class="p-0! grid size-8 place-items-center rounded-full hover:bg-(--dlg-rule)" aria-label={t.close}><XIcon size={18} aria-hidden="true" /></button>
 				</form>
 				<h3 id="prices-title" class="text-xl! font-bold!">{t.title}</h3>
 
