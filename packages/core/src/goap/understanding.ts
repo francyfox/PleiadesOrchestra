@@ -50,15 +50,26 @@ export interface ConversationMessage {
 }
 
 /**
+ * Whether a reply gives the visitor something to answer: a question mark (also
+ * `¿`/`？`) or a numbered choice ("1." and a later "2.", on lines or inline). A reply that reports an action or a hint asks
+ * nothing, and quoting it made the model repeat that action for «hi».
+ * shortcut: punctuation only, so an offer worded as a statement is not quoted; upgrade if one shows up.
+ */
+const asksSomething = (reply: string) =>
+	/[?？¿]/.test(reply) || /\b1[.)]\s+\S[\s\S]*\b2[.)]\s+\S/.test(reply);
+
+/**
  * The thread's newest messages (oldest first) as alpha-understand's context:
- * the last one, when it is the assistant's, is what the visitor answers; the
- * text messages before it are the history. Nothing when the visitor spoke last.
+ * the last one, when it is the assistant's and asks something, is what the
+ * visitor answers; the text messages before it are the history. Nothing when
+ * the visitor spoke last or the reply asked nothing.
  */
 export function conversationContext(
 	messages: { role: string; content: unknown }[],
 ): { replyTo?: string; history?: ConversationMessage[] } {
 	const last = messages.at(-1);
 	if (last?.role !== "assistant" || typeof last.content !== "string") return {};
+	if (!asksSomething(last.content)) return {};
 	return {
 		replyTo: last.content,
 		history: messages

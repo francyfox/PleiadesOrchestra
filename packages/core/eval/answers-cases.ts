@@ -6,11 +6,13 @@ import type { ConversationMessage } from "#core/goap/understanding";
  * is a tool of the site, `chat`, or `options:<tool>` (choose-tool-cases.ts).
  *   answer  a short answer that only makes sense with the reply;
  *   topic   a message that stands on its own: the reply must be ignored;
- *   chain   an answer whose action was said several messages earlier.
+ *   chain   an answer whose action was said several messages earlier;
+ *   noise   a greeting, a laugh or a bare «ok» after a reply that asked nothing
+ *           (an action done, a hint): there is nothing to answer, so no tool.
  * Sites and tools are TOOL_CHOICE_SITES'.
  */
 export interface AnswerCase {
-	kind: "answer" | "topic" | "chain";
+	kind: "answer" | "topic" | "chain" | "noise";
 	site: string;
 	history: ConversationMessage[];
 	message: string;
@@ -62,6 +64,14 @@ const BREAD = [
 const ADDED = [
 	user("add whole milk"),
 	assistant("Added Whole Milk to the cart. Anything else?"),
+];
+const DONE = [
+	user("add tortilla chips"),
+	assistant("Добавил в корзину: 1 × Tortilla Chips (Greenleaf Market)."),
+];
+const HINT = [
+	user("find tortillas"),
+	assistant('Попробуйте поискать "тортильи" или удалить фильтр.'),
 ];
 const GENRES = [
 	user("what's on tonight?"),
@@ -365,5 +375,63 @@ export const ANSWER_CASES: AnswerCase[] = [
 		],
 		message: "where is my order?",
 		expected: "get_order_status",
+	},
+
+	// Not a request: nothing to answer, so no tool (production once searched tortillas for «хааа»).
+	{
+		kind: "noise",
+		site: SHOP,
+		history: DONE,
+		message: "хай",
+		expected: "chat",
+	},
+	{
+		kind: "noise",
+		site: SHOP,
+		history: DONE,
+		message: "аа",
+		expected: "chat",
+	},
+	{
+		kind: "noise",
+		site: SHOP,
+		history: DONE,
+		message: "hi",
+		expected: "chat",
+	},
+	{
+		kind: "noise",
+		site: SHOP,
+		history: DONE,
+		message: "ok",
+		expected: "chat",
+	},
+	{
+		kind: "noise",
+		site: SHOP,
+		history: HINT,
+		message: "хааа",
+		expected: "chat",
+	},
+	{
+		kind: "noise",
+		site: SHOP,
+		history: HINT,
+		message: "аа",
+		expected: "chat",
+	},
+	{
+		kind: "noise",
+		site: SHOP,
+		history: HINT,
+		message: "haha",
+		expected: "chat",
+	},
+	{
+		kind: "noise",
+		site: SHOP,
+		history: HINT,
+		message: "ага",
+		expected: "chat",
 	},
 ];
