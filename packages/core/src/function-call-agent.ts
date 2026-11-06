@@ -165,7 +165,11 @@ export interface FillOnceInput {
 
 export interface FillOnceResult {
 	text: string;
-	usage: { inputTokens?: number; outputTokens?: number };
+	usage: {
+		inputTokens?: number;
+		cacheReadTokens?: number;
+		outputTokens?: number;
+	};
 	latencyMs: number;
 }
 
@@ -204,6 +208,7 @@ export async function fillOnce(input: FillOnceInput): Promise<FillOnceResult> {
 			text: result.text,
 			usage: {
 				inputTokens: result.usage.inputTokens,
+				cacheReadTokens: result.usage.inputTokenDetails.cacheReadTokens,
 				outputTokens: result.usage.outputTokens,
 			},
 			latencyMs: Date.now() - startedAt,
@@ -214,6 +219,7 @@ export async function fillOnce(input: FillOnceInput): Promise<FillOnceResult> {
 				text: error.text ?? "",
 				usage: {
 					inputTokens: error.usage?.inputTokens,
+					cacheReadTokens: error.usage?.inputTokenDetails.cacheReadTokens,
 					outputTokens: error.usage?.outputTokens,
 				},
 				latencyMs: Date.now() - startedAt,
@@ -255,7 +261,12 @@ export function createFunctionCallAgent(
 		request: FunctionCallRequest,
 		startedAt: number,
 		outcome:
-			| { ok: true; inputTokens?: number; outputTokens?: number }
+			| {
+					ok: true;
+					inputTokens?: number;
+					cacheReadTokens?: number;
+					outputTokens?: number;
+			  }
 			| { ok: false; error: string },
 		trace: { prompt: string; tally: AttemptTally; response?: string },
 	) {
@@ -331,6 +342,7 @@ export function createFunctionCallAgent(
 						{
 							ok: true,
 							inputTokens: filled.usage.inputTokens,
+							cacheReadTokens: filled.usage.cacheReadTokens,
 							outputTokens: filled.usage.outputTokens,
 						},
 						{ prompt, tally, response: text },

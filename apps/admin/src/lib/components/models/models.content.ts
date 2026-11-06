@@ -51,6 +51,31 @@ const modelsContent = {
 				types: t({ ru: "Типы", en: "Types", kk: "Түрлері" }),
 				model: t({ ru: "Модель", en: "Model", kk: "Модель" }),
 				provider: t({ ru: "Провайдер", en: "Provider", kk: "Провайдер" }),
+				priceInput: t({
+					ru: "Вход, $ за 1M",
+					en: "Input, $ per 1M",
+					kk: "Кіріс, 1M үшін $",
+				}),
+				priceOutput: t({
+					ru: "Выход, $ за 1M",
+					en: "Output, $ per 1M",
+					kk: "Шығыс, 1M үшін $",
+				}),
+				priceCache: t({
+					ru: "Кэш, $ за 1M",
+					en: "Cached input, $ per 1M",
+					kk: "Кэш, 1M үшін $",
+				}),
+				priceHint: t({
+					ru: "Цена по id модели: та же модель у другого провайдера делит её. Вход и выход — вместе или оба пусто; пусто = бесплатно или цена OpenRouter. Пустой кэш = цена входа.",
+					en: "Priced by model id: the same id under another provider shares it. Input and output go together or both stay empty; empty = free or OpenRouter's price. Empty cache = the input price.",
+					kk: "Баға модель id бойынша: басқа провайдердегі сол id бөліседі. Кіріс пен шығыс бірге немесе екеуі бос; бос = тегін немесе OpenRouter бағасы. Кэш бос болса кіріс бағасы алынады.",
+				}),
+				priceInvalid: t({
+					ru: "Цена: заполните вход и выход вместе (кэш — только с ними).",
+					en: "Price: fill input and output together (cache only with them).",
+					kk: "Баға: кіріс пен шығысты бірге толтырыңыз (кэш — тек олармен).",
+				}),
 				temperature: t({
 					ru: "Температура",
 					en: "Temperature",

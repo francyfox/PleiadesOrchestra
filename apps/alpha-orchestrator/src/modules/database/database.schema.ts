@@ -254,6 +254,8 @@ export const llmCalls = sqliteTable(
 		model: text("model").notNull(),
 		// NULL = provider didn't report usage. Never coerced to 0.
 		inputTokens: integer("input_tokens"),
+		// Part of input_tokens served from the provider's prompt cache; NULL = not reported.
+		cacheReadTokens: integer("cache_read_tokens"),
 		outputTokens: integer("output_tokens"),
 		latencyMs: integer("latency_ms").notNull(),
 		ok: integer("ok", { mode: "boolean" }).notNull(),
@@ -413,6 +415,14 @@ export const financeSettings = sqliteTable("finance_settings", {
 	updatedAt: integer("updated_at").notNull(),
 });
 
+/** Staff-set prices (USD per 1M tokens) of models OpenRouter does not list (local ones); an entry here wins over OpenRouter's. */
+export const localModelPrices = sqliteTable("local_model_prices", {
+	model: text("model").primaryKey(),
+	inputPerMillionUsd: real("input_per_million_usd").notNull(),
+	outputPerMillionUsd: real("output_per_million_usd").notNull(),
+	cacheReadPerMillionUsd: real("cache_read_per_million_usd"),
+});
+
 /** Polar subscriptions: each `subscription.*` webhook overwrites the row with the payload's fields. */
 export const subscriptions = sqliteTable("subscriptions", {
 	// Polar's subscription id.
@@ -449,6 +459,8 @@ export const orders = sqliteTable("orders", {
 	status: text("status").notNull(),
 	createdAt: integer("created_at").notNull(),
 	refundedAmount: integer("refunded_amount").notNull().default(0),
+	// TR (nano-USD) granted for this order; null on orders from before it was stored.
+	credited: integer("credited"),
 });
 
 /**
@@ -499,6 +511,7 @@ export const schema = {
 	threadWorldState,
 	agentSettings,
 	financeSettings,
+	localModelPrices,
 	subscriptions,
 	orders,
 	creditLedger,

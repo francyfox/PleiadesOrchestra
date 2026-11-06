@@ -139,7 +139,12 @@ describe("SqliteUsageRecorder", () => {
 
 describe("SqliteUsageRecorder debit", () => {
 	const prices = () =>
-		new Map([["paid/model", { input: 0.000001, output: 0.000002 }]]);
+		new Map([
+			[
+				"paid/model",
+				{ input: 0.000001, output: 0.000002, cacheRead: 0.0000001 },
+			],
+		]);
 	function setup() {
 		const db = testDb();
 		const owner = db.$client.query(
@@ -177,6 +182,33 @@ describe("SqliteUsageRecorder debit", () => {
 				ref: String(call1?.id),
 			}),
 		]);
+	});
+
+	test("cached input tokens are billed at the cache price, the rest at the input price", () => {
+		const { db, visitor, recorder } = setup();
+		recorder.record(
+			call({
+				userId: visitor.id,
+				model: "paid/model",
+				inputTokens: 1000,
+				cacheReadTokens: 800,
+				outputTokens: 500,
+			}),
+		);
+		recorder.flush();
+		// 200 x 1e-6 + 800 x 1e-7 + 500 x 2e-6 = $0.00128
+		expect(db.select().from(creditLedger).get()?.amount).toBe(-1_280_000);
+		expect(db.select().from(llmCalls).get()?.cacheReadTokens).toBe(800);
+	});
+
+	test("a failed call is recorded but not debited", () => {
+		const { db, visitor, recorder } = setup();
+		recorder.record(
+			call({ userId: visitor.id, model: "paid/model", ok: false, error: "x" }),
+		);
+		recorder.flush();
+		expect(db.select().from(llmCalls).all()).toHaveLength(1);
+		expect(db.select().from(creditLedger).all()).toEqual([]);
 	});
 
 	test("local, unpriced, usage-less and staff-owned calls debit nothing", () => {

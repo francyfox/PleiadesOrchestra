@@ -4,6 +4,7 @@ import type { DecisionChoice } from "#core/types";
 
 export interface CollectedTokens {
 	inputTokens?: number;
+	cacheReadTokens?: number;
 	outputTokens?: number;
 	/** Choice questions answered inside the scope, in order (`withChoiceReport`); undefined when none. */
 	choices?: DecisionChoice[];
@@ -39,6 +40,7 @@ export function reportTokens(usage: CollectedTokens): void {
 	const into = collectors.getStore();
 	if (!into) return;
 	into.inputTokens = sum(into.inputTokens, usage.inputTokens);
+	into.cacheReadTokens = sum(into.cacheReadTokens, usage.cacheReadTokens);
 	into.outputTokens = sum(into.outputTokens, usage.outputTokens);
 }
 

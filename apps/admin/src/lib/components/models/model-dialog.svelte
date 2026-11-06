@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { createQuery } from "@tanstack/svelte-query";
 	import { ProviderModel as ProviderModelSchema } from "admin-api/forms";
 	import { useIntlayer } from "svelte-intlayer";
 	import { providerActions } from "#lib/actions.js";
@@ -11,10 +12,11 @@
 	import { Label } from "#lib/components/ui/label/index.js";
 	import { SearchMultiSelect } from "#lib/components/ui/search-multi-select/index.js";
 	import { Textarea } from "#lib/components/ui/textarea/index.js";
+	import { useActionEnhance } from "#lib/components/use-action-enhance.js";
 	import { useFieldErrorText } from "#lib/forms/use-field-error-text.js";
 	import { MODEL_TYPE_ICONS } from "#lib/model-type-icons.js";
 	import { MODEL_TYPES, typeLabel } from "#lib/model-types.js";
-	import { useModelsEnhance } from "./use-models-enhance";
+	import { queries } from "#lib/query/queries.js";
 
 	/** Adds a model to a provider, or edits one (`editing` set; the id and the provider can change, the agents that picked it follow). */
 	let {
@@ -29,14 +31,19 @@
 
 	const content = useIntlayer("models");
 	const common = useIntlayer("common");
-	const submitted = useModelsEnhance(
-		providerActions.saveModel,
-		() => (open = false),
-		ProviderModelSchema,
-	);
+	const submitted = useActionEnhance({
+		run: providerActions.saveModel,
+		schema: ProviderModelSchema,
+		onSuccess: () => (open = false),
+		errorText: (code) =>
+			code === "price_invalid" ? $content.form.priceInvalid.value : undefined,
+	});
+	// The price is by model id (staff only page, so the finance endpoint is reachable).
+	const prices = createQuery(() => queries.localPrices());
 	const errors = submitted.errors;
 	const errorText = useFieldErrorText();
 	const model = $derived(editing?.model);
+	const price = $derived(prices.data?.items.find((p) => p.model === model?.id));
 	// What the model can do (several for a multimodal one); reset with the dialog's content.
 	let types = $state<string[]>(["language"]);
 	$effect(() => {
@@ -132,6 +139,14 @@
 					/>
 					{#if $errors?.extraBody}<FieldError>{$errorText($errors.extraBody)}</FieldError>{/if}
 					<p class="text-xs text-muted-foreground">{$content.form.extraBodyHint.value}</p>
+				</div>
+				<div class="grid gap-2">
+					<div class="grid grid-cols-3 gap-2">
+						<FormField id="model-price-in" name="inputPerMillionUsd" label={$content.form.priceInput.value} type="number" step="any" min={0} value={price?.inputPerMillionUsd ?? ""} />
+						<FormField id="model-price-out" name="outputPerMillionUsd" label={$content.form.priceOutput.value} type="number" step="any" min={0} value={price?.outputPerMillionUsd ?? ""} />
+						<FormField id="model-price-cache" name="cacheReadPerMillionUsd" label={$content.form.priceCache.value} type="number" step="any" min={0} value={price?.cacheReadPerMillionUsd ?? ""} />
+					</div>
+					<p class="text-xs text-muted-foreground">{$content.form.priceHint.value}</p>
 				</div>
 				<Dialog.Footer>
 					<Button variant="ghost" type="button" onclick={() => (open = false)}>{$common.cancel.value}</Button>

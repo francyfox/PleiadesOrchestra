@@ -31,6 +31,8 @@ const Order = t.Object({
 	createdAt: t.Number(),
 	/** Cents. */
 	refundedAmount: t.Number(),
+	/** TR in nano-USD granted for the order; `null` on orders from before it was stored. */
+	credited: t.Nullable(t.Number()),
 });
 
 export const AccountBilling = t.Object({

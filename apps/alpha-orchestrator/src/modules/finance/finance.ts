@@ -62,7 +62,7 @@ export function financeRoutes({ db, now, prices }: FinanceDeps) {
 				detail: {
 					summary: "Save finance rates",
 					description:
-						"Replaces all rates at once (percent 0-100, `feeFixedUsd` >= 0, `taxBase` payout|revenue|profit). Applies to every period shown.",
+						"Replaces all rates at once (percent 0-100, `feeFixedUsd` >= 0, `taxBase` payout|revenue). Applies to every period shown.",
 				},
 			},
 		);

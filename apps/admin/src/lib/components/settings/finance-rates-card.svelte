@@ -7,6 +7,7 @@
 	import { Button } from "#lib/components/ui/button/index.js";
 	import * as Card from "#lib/components/ui/card/index.js";
 	import { useActionEnhance } from "#lib/components/use-action-enhance.js";
+	import { creditPreview } from "#lib/finance-preview.js";
 	import { useFieldErrorText } from "#lib/forms/use-field-error-text.js";
 	import { queries } from "#lib/query/queries.js";
 
@@ -27,6 +28,7 @@
 		["payoutPercent", 0.1],
 		["taxPercent", 0.1],
 		["conversionPercent", 0.1],
+		["marginPercent", 0.1],
 	] as const;
 </script>
 
@@ -46,11 +48,19 @@
 						value={rates.data.taxBase}
 						class="h-9 rounded-md border border-input bg-background px-2 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
 					>
-						{#each ["payout", "revenue", "profit"] as const as base}
+						{#each ["payout", "revenue"] as const as base}
 							<option value={base}>{$content.financeRates.base[base].value}</option>
 						{/each}
 					</select>
 				</div>
+				<table class="text-sm">
+					<caption class="pb-1 text-left text-xs text-muted-foreground">{$content.financeRates.preview.value}</caption>
+					<tbody>
+						{#each creditPreview(rates.data) as row}
+							<tr><td>${row.paid}</td><td>{row.credited.toFixed(2)} TR</td><td>${row.net.toFixed(2)}</td></tr>
+						{/each}
+					</tbody>
+				</table>
 				<p class="text-xs text-muted-foreground">{$content.financeRates.note.value}</p>
 				<div><Button type="submit">{$common.save.value}</Button></div>
 			</form>

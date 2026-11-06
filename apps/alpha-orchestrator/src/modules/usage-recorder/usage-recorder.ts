@@ -42,11 +42,11 @@ export class SqliteUsageRecorder implements UsageRecorder {
 		// the whole batch on a foreign key.
 		const insert = sqlite.query(
 			`INSERT INTO llm_calls (at, visitor_id, channel_id, thread_id, plan_run_id, action_name,
-				kind, provider, model, input_tokens, output_tokens, latency_ms, ok, error, confidence, choices,
+				kind, provider, model, input_tokens, cache_read_tokens, output_tokens, latency_ms, ok, error, confidence, choices,
 				prompt, response, attempts, failed_statuses)
 			VALUES (?1, (SELECT id FROM visitors WHERE id = ?2), (SELECT channel_id FROM visitors WHERE id = ?2),
 				(SELECT id FROM threads WHERE id = ?3), (SELECT id FROM plan_runs WHERE id = ?4), ?5,
-				?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)`,
+				?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)`,
 		);
 		// The owner is read from the stored call: staff channels (NULL owner) and deleted ones debit nothing.
 		const debit = sqlite.query<
@@ -72,6 +72,7 @@ export class SqliteUsageRecorder implements UsageRecorder {
 					call.provider,
 					call.model,
 					call.inputTokens ?? null,
+					call.cacheReadTokens ?? null,
 					call.outputTokens ?? null,
 					call.latencyMs,
 					call.ok ? 1 : 0,
@@ -83,13 +84,18 @@ export class SqliteUsageRecorder implements UsageRecorder {
 					call.attempts ?? null,
 					call.failedStatuses ? JSON.stringify(call.failedStatuses) : null,
 				);
-				const nano = usdToNano(
-					costUsd(
-						call.inputTokens ?? 0,
-						call.outputTokens ?? 0,
-						prices?.get(call.model),
-					),
-				);
+				// A failed call is recorded but never charged (market norm: refund on failure),
+				// even if the provider consumed tokens before failing.
+				const nano = call.ok
+					? usdToNano(
+							costUsd(
+								call.inputTokens ?? 0,
+								call.outputTokens ?? 0,
+								prices?.get(call.model),
+								call.cacheReadTokens ?? 0,
+							),
+						)
+					: 0;
 				// A failed debit must not lose the usage rows or fail the reply.
 				if (nano > 0)
 					try {

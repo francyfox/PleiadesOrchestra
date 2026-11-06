@@ -1,5 +1,5 @@
 import { type Static, t } from "elysia";
-import { FinanceRates } from "../../forms/forms.ts";
+import { FinanceRates, LocalPriceInput } from "../../forms/forms.ts";
 import { nullable } from "../common/common.schema.ts";
 
 /** Staff money numbers of the dashboard period, USD (orchestrator `GET /v1/admin/finance`). */
@@ -19,3 +19,15 @@ export const Finance = t.Object({
 export type Finance = Static<typeof Finance>;
 
 export { FinanceRates };
+
+/** Staff prices of local models, USD per 1M tokens (orchestrator `/v1/admin/local-prices`). */
+export const LocalPrices = t.Object({
+	items: t.Array(
+		t.Object({
+			model: t.String(),
+			...LocalPriceInput.properties,
+			cacheReadPerMillionUsd: nullable(t.Number()),
+		}),
+	),
+});
+export type LocalPrices = Static<typeof LocalPrices>;

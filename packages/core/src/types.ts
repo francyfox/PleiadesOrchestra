@@ -47,6 +47,7 @@ export type AgentStreamEvent =
 			/** Time spent on the final generation call only — excludes any earlier ingest-chunk passes. */
 			elapsedMs: number;
 			inputTokens?: number;
+			cacheReadTokens?: number;
 			outputTokens?: number;
 			/** Sum over every model call made for this message (ingest passes + final generation). `undefined` if any call didn't report usage. */
 			totalInputTokens?: number;
@@ -112,6 +113,8 @@ export interface LlmCallRecord extends CallContext {
 	provider: string;
 	model: string;
 	inputTokens?: number;
+	/** Part of `inputTokens` the provider served from its prompt cache (billed at the cache price). */
+	cacheReadTokens?: number;
 	outputTokens?: number;
 	latencyMs: number;
 	ok: boolean;

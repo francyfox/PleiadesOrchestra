@@ -20,6 +20,7 @@ export function recordCall(
 		provider: call.provider,
 		model: call.model,
 		inputTokens: call.inputTokens,
+		cacheReadTokens: call.cacheReadTokens,
 		outputTokens: call.outputTokens,
 		latencyMs: call.latencyMs,
 		ok: call.ok,

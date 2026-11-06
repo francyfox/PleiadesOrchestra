@@ -101,7 +101,12 @@ export function createAgent(config: AgentConfig): Agent {
 		kind: LlmCallKind,
 		startedAt: number,
 		outcome:
-			| { ok: true; inputTokens?: number; outputTokens?: number }
+			| {
+					ok: true;
+					inputTokens?: number;
+					cacheReadTokens?: number;
+					outputTokens?: number;
+			  }
 			| { ok: false; error: string },
 		trace: { prompt: string; tally: AttemptTally; response?: string },
 	) {
@@ -212,6 +217,7 @@ export function createAgent(config: AgentConfig): Agent {
 						{
 							ok: true,
 							inputTokens: usage.inputTokens,
+							cacheReadTokens: usage.inputTokenDetails.cacheReadTokens,
 							outputTokens: usage.outputTokens,
 						},
 						{ ...inFlight, response: digest },
@@ -295,6 +301,7 @@ export function createAgent(config: AgentConfig): Agent {
 					{
 						ok: true,
 						inputTokens: usage.inputTokens,
+						cacheReadTokens: usage.inputTokenDetails.cacheReadTokens,
 						outputTokens: usage.outputTokens,
 					},
 					{ ...inFlight, response: fullText },
@@ -318,6 +325,7 @@ export function createAgent(config: AgentConfig): Agent {
 					type: "done",
 					elapsedMs: Date.now() - generationStartedAt,
 					inputTokens: usage.inputTokens,
+					cacheReadTokens: usage.inputTokenDetails.cacheReadTokens,
 					outputTokens: usage.outputTokens,
 					totalInputTokens,
 					totalOutputTokens,

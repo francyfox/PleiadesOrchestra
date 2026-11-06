@@ -11,6 +11,7 @@
 		PLEIADES_TERMS_URL,
 	} from "#lib/site.js";
 	import { page } from "$app/state";
+	import PricesDialog from "./PricesDialog.svelte";
 
 	let c = $derived(landingContent(localeFromPath(page.url.pathname)));
 	let t = $derived(c.pricing);
@@ -37,6 +38,7 @@
 			tone: "var(--accent-2)",
 			filled: true,
 			terms: false,
+			prices: true,
 		},
 		{
 			title: t.community.title,
@@ -51,6 +53,7 @@
 			tone: "var(--accent-2)",
 			filled: false,
 			terms: false,
+			prices: false,
 		},
 		{
 			title: t.business.title,
@@ -65,6 +68,7 @@
 			tone: "var(--accent)",
 			filled: true,
 			terms: true,
+			prices: false,
 		},
 	]);
 </script>
@@ -91,13 +95,14 @@
 					>{plan.cta}{#if plan.external}<span class="sr-only"> {c.common.newTab}</span
 						>{/if}</a
 				>
-				<p class="dim text-xs">
+				<div class="dim text-xs">
 					{#if plan.terms}<a
 							href={PLEIADES_TERMS_URL}
 							rel="external"
 							class="underline! underline-offset-[3px]">{t.business.terms}</a
 						>{/if}
-				</p>
+					{#if plan.prices}<PricesDialog />{/if}
+				</div>
 				<div class="features text-sm">
 					{#if plan.listTitle}<p class="list-title dim text-xs">{plan.listTitle}</p>{/if}
 					<ul class="flex flex-col gap-2">

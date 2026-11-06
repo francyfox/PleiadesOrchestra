@@ -16,6 +16,7 @@ export interface LlmStateFields {
 	provider: string;
 	model: string;
 	inputTokens?: number;
+	cacheReadTokens?: number;
 	outputTokens?: number;
 	latencyMs: number;
 	ok: boolean;

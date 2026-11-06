@@ -13,10 +13,15 @@ import {
 } from "../http/http.testing.ts";
 import { balanceNano } from "../ledger/ledger.service.ts";
 import { RunBinding } from "../run-binding/run-binding.ts";
-import { orderData, subscriptionData } from "./billing.testing.ts";
+import {
+	orderData,
+	subscriptionData,
+	useFaceValueRates,
+} from "./billing.testing.ts";
 
 function setup() {
 	const db = testDb();
+	useFaceValueRates(db);
 	const directory = new ChannelDirectory(db, () => NOW);
 	const app = createApp({
 		agent,

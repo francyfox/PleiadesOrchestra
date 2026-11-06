@@ -74,6 +74,16 @@ const settingsContent = {
 				en: "Conversion, %",
 				kk: "Айырбастау, %",
 			}),
+			marginPercent: t({
+				ru: "Маржа с остатка, %",
+				en: "Margin on the net, %",
+				kk: "Таза соммадан маржа, %",
+			}),
+			preview: t({
+				ru: "Пополнение: оплачено, TR на баланс, чистыми вам",
+				en: "Top-up: paid, TR credited, net to you",
+				kk: "Толтыру: төленді, TR балансқа, сізге таза",
+			}),
 			taxBase: t({
 				ru: "Налог считается с",
 				en: "Tax is taken from",
@@ -82,7 +92,6 @@ const settingsContent = {
 			base: {
 				payout: t({ ru: "Выплаты", en: "Payout", kk: "Төлем" }),
 				revenue: t({ ru: "Выручки", en: "Revenue", kk: "Түсім" }),
-				profit: t({ ru: "Прибыли", en: "Profit", kk: "Пайда" }),
 			},
 			saved: t({
 				ru: "Ставки сохранены",

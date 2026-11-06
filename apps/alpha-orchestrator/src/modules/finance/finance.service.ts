@@ -19,6 +19,7 @@ export const DEFAULT_FINANCE_RATES: FinanceRatesValue = {
 	payoutPercent: 1.5,
 	taxPercent: 3,
 	conversionPercent: 2,
+	marginPercent: 0,
 	taxBase: "payout",
 };
 
@@ -34,11 +35,17 @@ export function ratesOf(p: FinanceRatesValue): Rates {
 	};
 }
 
-export function readFinanceRates(db: Db): FinanceRatesValue {
-	return (
-		db.select().from(financeSettings).where(eq(financeSettings.id, 1)).get()
-			?.rates ?? DEFAULT_FINANCE_RATES
-	);
+/** Defaults fill fields that older saved rates lack (`marginPercent`). */
+export function readFinanceRates(db: Pick<Db, "select">): FinanceRatesValue {
+	const saved = db
+		.select()
+		.from(financeSettings)
+		.where(eq(financeSettings.id, 1))
+		.get()?.rates;
+	const rates = { ...DEFAULT_FINANCE_RATES, ...saved };
+	// A removed base ("profit") saved earlier falls back to the default.
+	if (!["payout", "revenue"].includes(rates.taxBase)) rates.taxBase = "payout";
+	return rates;
 }
 
 export function saveFinanceRates(
@@ -66,7 +73,7 @@ export function financeOf(
 ) {
 	const usd = rows.filter((r) => r.currency.toLowerCase() === "usd");
 	const kept = usd.map((r) => (r.amount - r.refundedAmount) / 100);
-	// Unknown spend counts as 0 for the "profit" tax base; the profit itself stays null.
+	// Unknown spend counts as 0; the profit itself stays null.
 	const { revenue, losses, profit } = netProfit(
 		{ orders: kept, modelSpend: modelSpendUsd ?? 0 },
 		rates,

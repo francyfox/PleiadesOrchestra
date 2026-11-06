@@ -45,5 +45,24 @@
 		"text": "Open code under the GNU AGPLv3. Run it for yourself, change it, contribute. If you let people use a modified version over a network, you publish your changes.",
 		"title": "Community"
 	},
-	"heading": "Pricing"
+	"heading": "Pricing",
+	"live": {
+		"cached": "Cached input",
+		"close": "Close",
+		"credited": "TR you get",
+		"error": "Could not load the prices.",
+		"fees": "Fees and taxes",
+		"image": "Maids at a whiteboard: “I'm not a maid, but $20 is $20”",
+		"input": "Input",
+		"loading": "Loading prices…",
+		"model": "Model",
+		"modelsTitle": "Model prices, TR per 1M tokens",
+		"note": "1 TR = 1 USD of model usage.",
+		"open": "What do you get for your money?",
+		"output": "Output",
+		"paid": "You pay",
+		"retry": "Try again",
+		"service": "Service",
+		"title": "Top-ups and model prices"
+	}
 }
