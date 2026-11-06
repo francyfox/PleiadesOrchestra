@@ -5,7 +5,13 @@ import {
 } from "../channels/channels.service.ts";
 import { creditLedger, subscriptions } from "../database/database.schema.ts";
 import { testDb } from "../database/database.testing.ts";
-import { REQUEST_HOLD_NANO as HOLD } from "../ledger/ledger.service.ts";
+import {
+	balanceNano,
+	REQUEST_HOLD_NANO as HOLD,
+} from "../ledger/ledger.service.ts";
+import { RunBinding } from "../run-binding/run-binding.ts";
+import { SqliteUsageRecorder } from "../usage-recorder/usage-recorder.ts";
+import { upsertIdentifiedVisitor } from "../visitors/visitors.service.ts";
 import { ChannelDirectory } from "./channel-directory.ts";
 
 function setup() {
@@ -167,5 +173,105 @@ describe("ChannelDirectory.suspension", () => {
 		expect(directory.reserve(channel)).toBeNull();
 		expect(directory.suspension(channel)?.reason).toBe("no_plan");
 		expect(directory.reserve({ ownerId: null })).toBeFunction();
+	});
+});
+
+describe("reserve-then-settle with the real usage recorder", () => {
+	// 1 TR per 1e9 tokens x 1e6 tokens... simply: 1000 input tokens at $1e-6 = 1 HOLD (0.001 TR).
+	const prices = () =>
+		new Map([["paid/model", { input: 0.000001, output: 0, cacheRead: 0 }]]);
+	const TOKENS_PER_HOLD = 1000;
+
+	function setup(balance: number) {
+		const db = testDb();
+		db.$client
+			.query("UPDATE channels SET owner_id = 'acc_1' WHERE id = 'ch_telegram'")
+			.run();
+		const directory = new ChannelDirectory(db);
+		const visitor = upsertIdentifiedVisitor(
+			db,
+			"ch_telegram",
+			"42",
+			undefined,
+			1,
+		);
+		const recorder = new SqliteUsageRecorder(db, new RunBinding(), {
+			prices,
+			onDebited: (id) => directory.refreshStanding(id),
+		});
+		const credit = (amount: number) =>
+			db
+				.insert(creditLedger)
+				.values({
+					accountId: "acc_1",
+					amount,
+					reason: "adjustment" as const,
+					ref: `top-up-${amount}-${Math.random()}`,
+					createdAt: 1,
+				})
+				.run();
+		credit(balance);
+		/** One request as the routes run it: reserve, model call(s), debit by flush, then release. */
+		const request = async (holds: number, work = 0) => {
+			const release = directory.reserve({ ownerId: "acc_1" });
+			if (!release) return false;
+			await Bun.sleep(work);
+			recorder.record({
+				threadId: "t",
+				userId: visitor.id,
+				kind: "generate",
+				provider: "p",
+				model: "paid/model",
+				inputTokens: holds * TOKENS_PER_HOLD,
+				outputTokens: 0,
+				latencyMs: 1,
+				ok: true,
+				at: 1000,
+			});
+			recorder.flush();
+			release();
+			return true;
+		};
+		return { db, directory, credit, request };
+	}
+
+	test("staggered parallel requests never spend more than the balance", async () => {
+		const { db, request } = setup(3 * HOLD);
+		// A new request every millisecond for 40 ms, each running 3 ms: some always start while another is finishing.
+		const served = await Promise.all(
+			Array.from({ length: 40 }, async (_, i) => {
+				await Bun.sleep(i);
+				return request(1, 3);
+			}),
+		);
+		expect(served.filter(Boolean)).toHaveLength(3);
+		expect(balanceNano(db, "acc_1")).toBe(0);
+	});
+
+	test("requests started together share the balance: only as many as it covers pass", async () => {
+		const { db, request } = setup(2 * HOLD);
+		const served = await Promise.all(
+			Array.from({ length: 10 }, () => request(1, 5)),
+		);
+		expect(served.filter(Boolean)).toHaveLength(2);
+		expect(balanceNano(db, "acc_1")).toBe(0);
+	});
+
+	test("one request costing more than its hold overdraws; the next top-up pays the debt first", async () => {
+		const { db, directory, credit, request } = setup(HOLD);
+		expect(await request(3)).toBe(true);
+		expect(balanceNano(db, "acc_1")).toBe(-2 * HOLD);
+		// Refused while in debt, and the standing was refreshed by the debit.
+		expect(directory.suspension({ ownerId: "acc_1" })?.reason).toBe("no_plan");
+		expect(directory.reserve({ ownerId: "acc_1" })).toBeNull();
+		// A top-up smaller than the debt keeps it blocked.
+		credit(2 * HOLD);
+		directory.refreshStanding("acc_1");
+		expect(directory.reserve({ ownerId: "acc_1" })).toBeNull();
+		// Debt cleared plus one hold: it serves again, exactly once.
+		credit(HOLD);
+		const first = directory.reserve({ ownerId: "acc_1" });
+		expect(first).toBeFunction();
+		expect(directory.reserve({ ownerId: "acc_1" })).toBeNull();
 	});
 });

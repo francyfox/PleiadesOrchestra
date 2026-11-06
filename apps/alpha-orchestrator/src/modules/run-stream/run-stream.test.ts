@@ -6,7 +6,11 @@ import {
 	reportingTrouble,
 } from "@repo/core";
 import { testDb } from "../database/database.testing.ts";
+import { startPlanRun } from "../plan-runs/plan-runs.service.ts";
 import { RunBinding } from "../run-binding/run-binding.ts";
+import { releaseWhenDone } from "../streaming/streaming.service.ts";
+import { resolveThreadId } from "../threads/threads.service.ts";
+import { upsertIdentifiedVisitor } from "../visitors/visitors.service.ts";
 import {
 	doneEvent,
 	errorMessage,
@@ -224,5 +228,60 @@ describe("a model server in trouble", () => {
 
 	test("a healthy server says nothing", async () => {
 		expect(await lines([200, 200])).toEqual([]);
+	});
+});
+
+describe("a cancelled stream", () => {
+	test("keeps its hold until the run it left behind has been debited", async () => {
+		const order: string[] = [];
+		let finishRun!: () => void;
+		const running = new Promise<void>((resolve) => {
+			finishRun = resolve;
+		});
+		// finishPlanRun needs the run row; without it persistRun would stop before the debit.
+		const db = testDb();
+		const visitor = upsertIdentifiedVisitor(
+			db,
+			"ch_telegram",
+			"42",
+			undefined,
+			1,
+		);
+		const thread = resolveThreadId(db, "ch_telegram", visitor.id, "t1", 1);
+		startPlanRun(db, {
+			id: "r",
+			visitorId: visitor.id,
+			threadId: thread,
+			goal: {},
+			createdAt: 1,
+		});
+		const stream = releaseWhenDone(
+			streamPlanRun(
+				{
+					db,
+					runs: new RunBinding(),
+					worldStateStore: new InMemoryWorldStateStore(),
+					runLock: createRunLock(),
+					now: Date.now,
+					usageRecorder: { flush: () => order.push("debit") },
+				},
+				{
+					run: { planRunId: "r", threadId: thread },
+					signal: undefined,
+					prepare: async () => {
+						await running;
+						return { state: {}, goal: {}, actions: [] };
+					},
+				},
+			),
+			() => order.push("release"),
+		);
+		const cancelled = stream.cancel();
+		await Bun.sleep(5);
+		// The client is gone but the model call is still going: its cost is not in the ledger yet.
+		expect(order).toEqual([]);
+		finishRun();
+		await cancelled;
+		expect(order).toEqual(["debit", "release"]);
 	});
 });

@@ -21,10 +21,10 @@ export const usdToNano = (usd: number) =>
  * What one request holds while it runs (reserve-then-settle): a request starts
  * only when the balance minus the holds in flight covers it, and the hold goes
  * when its stream ends, after the usage is debited. Also the least balance that
- * counts as running. shortcut: one fixed 0.05 TR for every request; derive it
+ * counts as running. shortcut: one fixed 0.001 TR for every request; derive it
  * from recent request costs per channel when a request can cost more.
  */
-export const REQUEST_HOLD_NANO = 50_000_000;
+export const REQUEST_HOLD_NANO = 1_000_000;
 
 /** Balance in nano-USD; negative = overdraft carried to the next top-up. */
 export function balanceNano(db: Db, accountId: string): number {

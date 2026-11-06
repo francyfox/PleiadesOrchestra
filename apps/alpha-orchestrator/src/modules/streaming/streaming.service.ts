@@ -47,7 +47,7 @@ export function ndjsonResponse(
 
 /**
  * The same stream, calling `release` once when it ends: read to the end, failed,
- * or cancelled by the client. Pull-based, so it ends when the client has read it.
+ * or cancelled by the client (after the source has finished cancelling). Pull-based, so it ends when the client has read it.
  */
 export function releaseWhenDone(
 	stream: ReadableStream<Uint8Array>,
@@ -73,9 +73,14 @@ export function releaseWhenDone(
 				controller.error(error);
 			}
 		},
-		cancel(reason) {
-			once();
-			return reader.cancel(reason);
+		// Only once the source has stopped: its usage is debited before that, so the
+		// hold covers the cost until it is in the ledger.
+		async cancel(reason) {
+			try {
+				await reader.cancel(reason);
+			} finally {
+				once();
+			}
 		},
 	});
 }
