@@ -8,6 +8,9 @@ export const SLUG_PATTERN = "^[a-z0-9-]+$";
 /** A language code (`ru`, `en`, `pt-BR`), not a language name; the handler answers 400 `invalid_language`. */
 export const LANGUAGE_PATTERN = "^[a-z]{2}(-[A-Z]{2})?$";
 
+/** A site URL as the browser sends it in `Origin`: http(s), host, optional port; no path, query or trailing slash (the match is exact). */
+export const ORIGIN_PATTERN = "^https?://[^/\\s?#@]+$";
+
 // Not `Type.UnionEnum`: Elysia fills a missing `UnionEnum` field with its first value inside `Optional`.
 export const AccessMode = Type.Union([
 	Type.Literal("whitelist"),
@@ -22,7 +25,9 @@ export const CreateChannelInput = Type.Object({
 	slug: Type.String(),
 	name: Type.String(),
 	accessMode: Type.Optional(AccessMode),
-	allowedOrigins: Type.Optional(Type.Array(Type.String())),
+	allowedOrigins: Type.Optional(
+		Type.Array(Type.String({ pattern: ORIGIN_PATTERN })),
+	),
 	catalogLanguage: Type.Optional(Type.String()),
 	/** Ids of the intent sets, later ones win; left out or empty = none. */
 	intentSets: Type.Optional(Type.Array(Type.String())),
@@ -33,7 +38,9 @@ export const CreateChannelInput = Type.Object({
 export const UpdateChannelInput = Type.Object({
 	name: Type.Optional(Type.String()),
 	accessMode: Type.Optional(AccessMode),
-	allowedOrigins: Type.Optional(Type.Array(Type.String())),
+	allowedOrigins: Type.Optional(
+		Type.Array(Type.String({ pattern: ORIGIN_PATTERN })),
+	),
 	catalogLanguage: Type.Optional(Type.String()),
 	intentSets: Type.Optional(Type.Array(Type.String())),
 	/** Delta splits a message of several tasks even without intent sets. */

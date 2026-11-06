@@ -8,11 +8,11 @@ const channelsContent = {
 			channel: t({ ru: "Канал", en: "Channel", kk: "Арна" }),
 			kind: t({ ru: "Тип", en: "Type", kk: "Түрі" }),
 			access: t({ ru: "Доступ", en: "Access", kk: "Қолжетімділік" }),
-			origins: t({ ru: "Домены", en: "Origins", kk: "Домендер" }),
+			origins: t({ ru: "URL сайта", en: "Site URLs", kk: "Сайт URL-дары" }),
 			publishableKey: t({
-				ru: "Публичный ключ (pk_)",
-				en: "Public key (pk_)",
-				kk: "Жария кілт (pk_)",
+				ru: "Ключ (pk_)",
+				en: "Key (pk_)",
+				kk: "Кілт (pk_)",
 			}),
 			catalogLanguage: t({
 				ru: "Язык каталога",
@@ -34,7 +34,6 @@ const channelsContent = {
 			open: t({ ru: "Открытый", en: "Open", kk: "Ашық" }),
 		},
 		disabled: t({ ru: "отключён", en: "disabled", kk: "өшірілген" }),
-		paused: t({ ru: "приостановлен", en: "paused", kk: "тоқтатылған" }),
 		edit: t({ ru: "Изменить", en: "Edit", kk: "Өзгерту" }),
 		enable: t({ ru: "Включить", en: "Enable", kk: "Қосу" }),
 		disable: t({ ru: "Отключить", en: "Disable", kk: "Өшіру" }),
@@ -97,9 +96,9 @@ const channelsContent = {
 			}),
 			name: t({ ru: "Название", en: "Name", kk: "Атауы" }),
 			origins: t({
-				ru: "Разрешённые домены (по одному в строке)",
-				en: "Allowed origins (one per line)",
-				kk: "Рұқсат етілген домендер (әр жолға біреуден)",
+				ru: "Разрешённые URL сайта (каждый с новой строки)",
+				en: "Allowed site URLs (each on a new line)",
+				kk: "Рұқсат етілген сайт URL-дары (әрқайсысы жаңа жолдан)",
 			}),
 		},
 		embed: {
@@ -161,19 +160,19 @@ const channelsContent = {
 			}),
 			origins: t({
 				ru: insert(
-					"Разрешённые домены канала: {{origins}}. Сайт должен открываться с одного из них.",
+					"Разрешённые URL канала: {{origins}}. Сайт должен открываться с одного из них.",
 				),
 				en: insert(
-					"The channel's allowed origins: {{origins}}. The site must be served from one of them.",
+					"The channel's allowed URLs: {{origins}}. The site must be served from one of them.",
 				),
 				kk: insert(
-					"Арнаның рұқсат етілген домендері: {{origins}}. Сайт солардың бірінен ашылуы керек.",
+					"Арнаның рұқсат етілген URL-дары: {{origins}}. Сайт солардың бірінен ашылуы керек.",
 				),
 			}),
 			noOrigins: t({
-				ru: "У канала нет разрешённых доменов — виджет будет отклонён. Добавьте адрес сайта через «Изменить».",
-				en: "This channel has no allowed origins, so the widget will be refused. Add the site's address via “Edit”.",
-				kk: "Арнада рұқсат етілген домендер жоқ — виджет қабылданбайды. Сайт мекенжайын «Өзгерту» арқылы қосыңыз.",
+				ru: "У канала нет разрешённых URL — виджет будет отклонён. Добавьте адрес сайта через «Изменить».",
+				en: "This channel has no allowed URLs, so the widget will be refused. Add the site's address via “Edit”.",
+				kk: "Арнада рұқсат етілген URL-дар жоқ — виджет қабылданбайды. Сайт мекенжайын «Өзгерту» арқылы қосыңыз.",
 			}),
 		},
 		editTitle: t({
@@ -181,10 +180,15 @@ const channelsContent = {
 			en: insert("Channel “{{name}}”"),
 			kk: insert("«{{name}}» арнасы"),
 		}),
+		originsFormat: t({
+			ru: "Каждый URL с новой строки: схема, хост и порт, без пути и слэша в конце (https://shop.example.com)",
+			en: "One URL per line: scheme, host and port, no path or trailing slash (https://shop.example.com)",
+			kk: "Әр URL жаңа жолдан: схема, хост және порт, жолсыз және соңғы слэшсіз (https://shop.example.com)",
+		}),
 		allowedOrigins: t({
-			ru: "Разрешённые домены",
-			en: "Allowed origins",
-			kk: "Рұқсат етілген домендер",
+			ru: "Разрешённые URL сайта (каждый с новой строки)",
+			en: "Allowed site URLs (each on a new line)",
+			kk: "Рұқсат етілген сайт URL-дары (әрқайсысы жаңа жолдан)",
 		}),
 		catalogLanguage: t({
 			ru: "Язык каталога",

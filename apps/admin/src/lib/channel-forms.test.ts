@@ -44,6 +44,28 @@ test("create: origins typed as text become a list, slug and name are required", 
 	if (!bad.ok) expect(Object.keys(bad.errors).sort()).toEqual(["name", "slug"]);
 });
 
+test("origins must be site URLs (scheme, host, optional port), not paths or bare domains", () => {
+	const origins = (allowedOrigins: string) =>
+		parseForm(
+			UpdateChannelForm,
+			form({ id: "c1", allowedOrigins }),
+			channelOverrides,
+		);
+	expect(origins("http://localhost:5173\nhttps://shop.example.com").ok).toBe(
+		true,
+	);
+	for (const bad of [
+		"shop.example.com",
+		"https://shop.example.com/",
+		"https://shop.example.com/cart",
+		"ftp://shop.example.com",
+	]) {
+		const result = origins(bad);
+		expect(result.ok).toBe(false);
+		if (!result.ok) expect(result.errors.allowedOrigins?.code).toBe("pattern");
+	}
+});
+
 test("update: a form without the origins field leaves them out", () => {
 	const result = parseForm(
 		UpdateChannelForm,

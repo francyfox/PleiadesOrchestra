@@ -60,7 +60,8 @@
 			<IntentSetsField />
 			<div class="grid gap-2">
 				<Label for="allowedOrigins">{$content.create.origins.value}</Label>
-				<Textarea id="allowedOrigins" name="allowedOrigins" placeholder="https://example.com" />
+				<Textarea id="allowedOrigins" name="allowedOrigins" placeholder={"https://example.com\nhttp://localhost:5173"} aria-invalid={!!$errors?.allowedOrigins} />
+				{#if $errors?.allowedOrigins}<p class="text-xs text-destructive">{$content.originsFormat.value}</p>{/if}
 			</div>
 			<Dialog.Footer>
 				<Button variant="ghost" type="button" onclick={() => (open = false)}>{$common.cancel.value}</Button>
