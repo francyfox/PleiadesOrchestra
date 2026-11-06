@@ -61,3 +61,26 @@ jobs:
           gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes ${prev:+--notes-start-tag "$prev"}
           # A release made with GITHUB_TOKEN triggers no workflows: rebuild the docs (changelog page) by hand.
           gh workflow run docs.yml
+
+  # The albedo CLI as standalone binaries (no Bun needed on the target), attached to the release:
+  # Linux x64/arm64 (glibc and musl) and macOS x64/arm64, cross-compiled on one runner.
+  cli:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2.2.0
+        with:
+          bun-version: 1.4.3
+      # `--os/--cpu '*'`: the CLI's TUI dependency ships its native part per platform, and a plain install fetches only this runner's.
+      - run: bun install --frozen-lockfile --os='*' --cpu='*'
+      - name: Build and upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir dist
+          for target in linux-x64 linux-arm64 linux-x64-musl linux-arm64-musl darwin-x64 darwin-arm64; do
+            bun build apps/cli/src/index.ts --compile --target="bun-$target" --outfile "dist/albedo-$target"
+          done
+          (cd dist && sha256sum albedo-* > albedo-checksums.txt)
+          gh release upload "$GITHUB_REF_NAME" dist/* --clobber
