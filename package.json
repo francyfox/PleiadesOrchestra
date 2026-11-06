@@ -49,6 +49,8 @@
 			"drizzle-typebox": "^0.3.3",
 			"@t3-oss/env-core": "^0.13.11",
 			"zod": "^4.6.5",
+			"date-fns": "^4.1.0",
+			"@date-fns/tz": "^1.4.1",
 			"nodemailer": "^10.1.7",
 			"mjml": "^5.4.1",
 			"@types/mjml": "^4.7.4",

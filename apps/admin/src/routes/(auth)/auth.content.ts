@@ -12,6 +12,17 @@ const authContent = {
 				en: "New password",
 				kk: "Жаңа құпиясөз",
 			}),
+			timeZone: t({ ru: "Часовой пояс", en: "Time zone", kk: "Уақыт белдеуі" }),
+			timeZoneSearch: t({
+				ru: "Найти пояс",
+				en: "Find a zone",
+				kk: "Белдеуді іздеу",
+			}),
+			timeZoneEmpty: t({
+				ru: "Ничего не найдено",
+				en: "Nothing found",
+				kk: "Ештеңе табылмады",
+			}),
 			token: t({
 				ru: "Токен доступа",
 				en: "Access token",

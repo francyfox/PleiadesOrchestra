@@ -29,6 +29,8 @@ export const UserRegisterForm = Type.Object({
 	locale: Type.Optional(
 		Type.Union([Type.Literal("ru"), Type.Literal("en"), Type.Literal("kk")]),
 	),
+	/** IANA name from the browser; missing or invalid = "UTC" server-side. */
+	timeZone: Type.Optional(Type.String()),
 });
 
 /** Password reset request, `POST /user/forgot`. */

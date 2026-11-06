@@ -52,7 +52,7 @@ CREATE TABLE `user` (
 	`banned` integer DEFAULT false,
 	`ban_reason` text,
 	`ban_expires` integer
-, `level` integer DEFAULT 200 NOT NULL, `last_active_at` integer, `token_hash` text, `locale` text);
+, `level` integer DEFAULT 200 NOT NULL, `last_active_at` integer, `token_hash` text, `locale` text, `time_zone` text DEFAULT 'UTC' NOT NULL);
 CREATE UNIQUE INDEX `user_email_unique` ON `user` (`email`);
 CREATE TABLE `verification` (
 	`id` text PRIMARY KEY NOT NULL,
@@ -74,4 +74,5 @@ CREATE TABLE `account_notices` (
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'bd34583cbc4715aeffe1812674c8c5a2db0410527eb539ff8ea64694bf6cda06', 1790244509625);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '462cdeb893cc79ca966d6c0ec4fa9e4f6ccb81b009d5c056a84970466ccad430', 1792487364567);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '138a74cef7287b41d26cc6b1994a86cc8bca6f2769cf3db45f374ab2a9394594', 1792560211815);
+INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'b16070de0b0e1a02dcd25052e0f94b388e196ba9bd9550c446e32a9796fd37cf', 1793945496781);
 COMMIT;

@@ -1,5 +1,7 @@
+import { tz } from "@date-fns/tz";
+import { format } from "date-fns";
 import { Elysia } from "elysia";
-import { DAY_MS } from "../common/common.service.ts";
+import { addUtcDays } from "../common/common.service.ts";
 import { type AdminDb, schema } from "../database/database.ts";
 import { buildMail } from "../mail/mail.service.ts";
 import type { Mailer } from "../mail/mail.types.ts";
@@ -9,7 +11,7 @@ export type BillingKind = "plan" | "credits";
 export type NoticeKind = "low_balance" | "plan_ending";
 
 const LOW_BALANCE_USD = 1;
-const PLAN_ENDING_MS = 3 * DAY_MS;
+const PLAN_ENDING_DAYS = 3;
 
 export class PolarError extends Error {
 	override name = "PolarError";
@@ -154,7 +156,7 @@ export function warnings(billing: AccountBilling, now: number): NoticeKind[] {
 	if (
 		standing.ok &&
 		standing.until !== null &&
-		standing.until - now <= PLAN_ENDING_MS
+		standing.until <= addUtcDays(now, PLAN_ENDING_DAYS)
 	) {
 		due.push("plan_ending");
 	}
@@ -180,7 +182,7 @@ export function standingView(
 const periodOf = (kind: NoticeKind, billing: AccountBilling, now: number) =>
 	kind === "plan_ending" && billing.standing.ok
 		? String(billing.standing.until)
-		: new Date(now).toISOString().slice(0, 7);
+		: format(now, "yyyy-MM", { in: tz("UTC") });
 
 /** Mails each due warning once per period: the unique row is claimed first, so a repeat call sends nothing. */
 export async function sendDueNotices(

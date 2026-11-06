@@ -1,14 +1,17 @@
+import { tz } from "@date-fns/tz";
+import { format, type Locale } from "date-fns";
+import { enUS, kk, ru } from "date-fns/locale";
+
+const DATE_LOCALES: Record<string, Locale> = { ru, en: enUS, kk };
+
 /**
  * Locale-bound formatters. Units and separators come from Intl itself, so
  * ru/en/kk need no hand-written strings here; only the "no data" filler is
  * passed in by callers from their dictionaries.
  */
-export function createFormat(locale: string) {
+export function createFormat(locale: string, timeZone?: string | null) {
 	const integer = new Intl.NumberFormat(locale);
-	const dateTime = new Intl.DateTimeFormat(locale, {
-		dateStyle: "short",
-		timeStyle: "short",
-	});
+	const dateFnsLocale = DATE_LOCALES[locale] ?? enUS;
 	const unit = (u: "millisecond" | "second", digits: number) =>
 		new Intl.NumberFormat(locale, {
 			style: "unit",
@@ -75,6 +78,23 @@ export function createFormat(locale: string) {
 		/** The balance to the nano-TR, as the ledger holds it (for a tooltip). */
 		trExact: (value: number) => `${trExact.format(value)} TR`,
 		money,
+		/** Spend as dollars (staff) or trenni (customers; 1 TR = 1 USD): a short form and the exact one for a tooltip. */
+		spend: (unit: SpendUnit) =>
+			unit === "tr"
+				? {
+						short: (value: number | null | undefined) =>
+							value === null || value === undefined
+								? "—"
+								: `${tr.format(value)} TR`,
+						exact: (value: number) => `${trExact.format(value)} TR`,
+					}
+				: {
+						short: (value: number | null | undefined) =>
+							value === null || value === undefined
+								? "—"
+								: dollars.format(value),
+						exact: (value: number) => dollarsExact.format(value),
+					},
 		number: (value: number | null | undefined, missing = "—") =>
 			value === null || value === undefined ? missing : integer.format(value),
 		/** A probability 0..1 as "93.5%". */
@@ -91,7 +111,13 @@ export function createFormat(locale: string) {
 			const down = Math.floor(abs / 10 ** (3 * step - 1)) / 10;
 			return `${value < 0 ? "-" : ""}${scaled.format(down)}${SUFFIXES[step]}`;
 		},
-		date: (ms: number | null | undefined) => (ms ? dateTime.format(ms) : "—"),
+		date: (ms: number | null | undefined) =>
+			ms
+				? format(ms, "P p", {
+						locale: dateFnsLocale,
+						in: timeZone ? tz(timeZone) : undefined,
+					})
+				: "—",
 		/** Bytes as GB (binary GiB, labelled the way people say it). */
 		gb: (bytes: number | null | undefined) =>
 			bytes === null || bytes === undefined
@@ -120,3 +146,5 @@ export function createFormat(locale: string) {
 }
 
 export type Format = ReturnType<typeof createFormat>;
+
+export type SpendUnit = "usd" | "tr";

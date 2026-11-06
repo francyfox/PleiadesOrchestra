@@ -10,8 +10,11 @@
 	import FormField from "#lib/components/form-field.svelte";
 	import { Button } from "#lib/components/ui/button/index.js";
 	import * as Card from "#lib/components/ui/card/index.js";
+	import { Label } from "#lib/components/ui/label/index.js";
+	import { TimeZoneSelect } from "#lib/components/ui/time-zone-select/index.js";
 	import { useFieldErrorText } from "#lib/forms/use-field-error-text.js";
 	import { keepRedirect } from "#lib/guards.js";
+	import { browserTimeZone } from "#lib/i18n/time-zone.js";
 	import { resolve } from "$app/paths";
 	import { page } from "$app/state";
 
@@ -22,6 +25,7 @@
 		overrides: passwordAsTyped,
 	});
 	const errorText = useFieldErrorText();
+	let zone = $state(browserTimeZone());
 	const error = $derived(
 		form.failure ? authErrorText($content.errors, form.failure) : null,
 	);
@@ -42,6 +46,10 @@
 				<FormField id="name" label={$content.fields.name.value} autocomplete="name" />
 				<FormField id="email" label={$content.fields.email.value} type="email" autocomplete="email" required error={$errorText(form.errors?.email)} />
 				<FormField id="password" label={$content.fields.password.value} type="password" autocomplete="new-password" required error={$errorText(form.errors?.password)} />
+				<div class="grid gap-2">
+					<Label>{$content.fields.timeZone.value}</Label>
+					<TimeZoneSelect bind:value={zone} name="timeZone" ariaLabel={$content.fields.timeZone.value} searchPlaceholder={$content.fields.timeZoneSearch.value} emptyText={$content.fields.timeZoneEmpty.value} class="w-full" />
+				</div>
 				{#if error}
 					<p class="text-sm text-destructive">{error}</p>
 				{/if}

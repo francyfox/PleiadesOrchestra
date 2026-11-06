@@ -10,7 +10,7 @@ import { requireAdmin } from "../auth/auth.service.ts";
 import { AccountBilling } from "../billing/billing.schema.ts";
 import { polarErrors } from "../billing/billing.service.ts";
 import { ApiError } from "../common/common.schema.ts";
-import { DAY_MS } from "../common/common.service.ts";
+import { addUtcDays } from "../common/common.service.ts";
 import { Upstream } from "../orchestrator/orchestrator.schema.ts";
 import { orchestratorErrors } from "../orchestrator/orchestrator.service.ts";
 import { CustomersPage, CustomersQuery } from "./customers.schema.ts";
@@ -103,7 +103,7 @@ export function customersRoutes({
 						if (!(await findCustomer(db, params.id))) {
 							return status(404, { error: "not_found" });
 						}
-						const until = body.days === 0 ? null : now() + body.days * DAY_MS;
+						const until = body.days === 0 ? null : addUtcDays(now(), body.days);
 						return orchestrator.as(admin.id).setManualPlan(params.id, until);
 					},
 					{

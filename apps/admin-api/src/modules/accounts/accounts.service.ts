@@ -1,6 +1,6 @@
 import { and, eq, sql } from "drizzle-orm";
 import type { PolarClient } from "../billing/billing.service.ts";
-import { DAY_MS } from "../common/common.service.ts";
+import { addUtcDays } from "../common/common.service.ts";
 import { type AdminDb, schema } from "../database/database.ts";
 import type { OrchestratorClient } from "../orchestrator/orchestrator.ts";
 import { LEVEL } from "./accounts.schema.ts";
@@ -12,7 +12,7 @@ export const INACTIVE_DAYS = 180;
 export const needsTouch = (
 	lastActiveAt: Date | null | undefined,
 	now: number,
-) => !lastActiveAt || now - lastActiveAt.getTime() >= DAY_MS;
+) => !lastActiveAt || addUtcDays(lastActiveAt.getTime(), 1) <= now;
 
 export interface AccountsContext {
 	db: AdminDb;
@@ -62,7 +62,7 @@ export async function deleteInactiveUsers(
 	ctx: AccountsContext & { onError?: (id: string, cause: unknown) => void },
 	now: number,
 ): Promise<number> {
-	const cutoff = now - INACTIVE_DAYS * DAY_MS;
+	const cutoff = addUtcDays(now, -INACTIVE_DAYS);
 	const stale = await ctx.db
 		.select({ id: schema.user.id })
 		.from(schema.user)

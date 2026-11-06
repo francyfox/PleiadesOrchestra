@@ -13,6 +13,7 @@ import {
 	withCookies,
 } from "../common/common.service.ts";
 import { orchestratorErrors } from "../orchestrator/orchestrator.service.ts";
+import { isTimeZone } from "../time-zone/time-zone.service.ts";
 import {
 	ChangeEmailInput,
 	DeleteMeInput,
@@ -75,6 +76,10 @@ export function accountsRoutes({
 							email,
 							password: body.password,
 							locale: body.locale,
+							timeZone:
+								body.timeZone && isTimeZone(body.timeZone)
+									? body.timeZone
+									: "UTC",
 						},
 						headers: withTrustedIp(request.headers, ip),
 					});
@@ -267,19 +272,28 @@ export function accountsRoutes({
 						}
 						const name = body.name.trim();
 						if (!name) return status(400, { error: "invalid_name" });
+						if (body.timeZone && !isTimeZone(body.timeZone)) {
+							return status(400, { error: "invalid_time_zone" });
+						}
+						const timeZone = body.timeZone || account.timeZone;
 						await auth.api.updateUser({
 							headers: request.headers,
 							body: { name },
 						});
-						return toMe({ ...account, name });
+						// `auth.api.updateUser` takes only client-settable fields; the zone goes through the adapter.
+						if (body.timeZone) {
+							const { internalAdapter } = await auth.$context;
+							await internalAdapter.updateUser(account.id, { timeZone });
+						}
+						return toMe({ ...account, name, timeZone });
 					},
 					{
 						body: UpdateMeInput,
 						response: { 200: Me, 400: ApiError, 401: ApiError, 403: ApiError },
 						detail: {
-							summary: "Change the own display name (users)",
+							summary: "Change the own display name and time zone (users)",
 							description:
-								"Users only (staff: `forbidden`, 403). Blank name: `invalid_name` (400).",
+								"Users only (staff: `forbidden`, 403). Blank name: `invalid_name` (400); a name that is not IANA: `invalid_time_zone` (400).",
 						},
 					},
 				)
@@ -373,6 +387,7 @@ function toMe(account: {
 	email: string;
 	level: number;
 	lastActiveAt?: Date | null;
+	timeZone: string;
 }) {
 	return {
 		id: account.id,
@@ -380,5 +395,6 @@ function toMe(account: {
 		email: account.email,
 		level: account.level,
 		lastActiveAt: account.lastActiveAt?.getTime() ?? null,
+		timeZone: account.timeZone,
 	};
 }

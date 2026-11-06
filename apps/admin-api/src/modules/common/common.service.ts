@@ -1,4 +1,11 @@
+import { tz } from "@date-fns/tz";
+import { addDays } from "date-fns";
+
 export const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Epoch ms `days` after `from` (negative = before), counted in UTC days so a server zone's DST never shifts it. */
+export const addUtcDays = (from: number, days: number) =>
+	addDays(from, days, { in: tz("UTC") }).getTime();
 
 export interface ServerLike {
 	requestIP(request: Request): { address: string } | null;

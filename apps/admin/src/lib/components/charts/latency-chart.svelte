@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { parseISO } from "date-fns";
 	import { LineChart } from "layerchart";
 	import { useIntlayer } from "svelte-intlayer";
 	import * as Chart from "#lib/components/ui/chart/index.js";
@@ -21,7 +22,7 @@
 
 	// Dates (not strings) so the chart uses a time scale with honest gaps.
 	const data = $derived(
-		rows.map((row) => ({ ...row, date: new Date(`${row.day}T00:00:00Z`) })),
+		rows.map((row) => ({ ...row, date: parseISO(`${row.day}T00:00:00Z`) })),
 	);
 </script>
 

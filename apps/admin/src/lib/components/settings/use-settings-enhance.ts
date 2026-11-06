@@ -9,6 +9,7 @@ import {
 const CODES = [
 	"invalid_name",
 	"invalid_email",
+	"invalid_time_zone",
 	"same_email",
 	"confirm_mismatch",
 	"too_many_attempts",

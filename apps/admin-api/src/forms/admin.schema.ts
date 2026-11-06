@@ -8,7 +8,11 @@ export const CreateAdminInput = Type.Object({
 	email: Type.String(),
 });
 
-export const EditAdminInput = CreateAdminInput;
+/** `timeZone`: IANA name; absent = unchanged (checked server-side: `invalid_time_zone`). */
+export const EditAdminInput = Type.Object({
+	...CreateAdminInput.properties,
+	timeZone: Type.Optional(Type.String()),
+});
 
 /** The edit dialog: `EditAdminInput` plus the id that goes in the URL. */
 export const EditAdminForm = Type.Object({
@@ -17,7 +21,11 @@ export const EditAdminForm = Type.Object({
 });
 
 /** The signed-in customer's own account. A blank name is `invalid_name` server-side. */
-export const UpdateMeInput = Type.Object({ name: Type.String() });
+export const UpdateMeInput = Type.Object({
+	name: Type.String(),
+	/** IANA name; absent = unchanged (`invalid_time_zone` server-side). */
+	timeZone: Type.Optional(Type.String()),
+});
 export const ChangeEmailInput = Type.Object({ email: Type.String() });
 /** The server compares it with the account email (`confirm_mismatch`). */
 export const DeleteMeInput = Type.Object({ confirmEmail: Type.String() });

@@ -23,6 +23,7 @@
 		ariaLabel,
 		searchPlaceholder = "",
 		emptyText = "",
+		filter,
 		class: className,
 	}: {
 		value: string;
@@ -31,6 +32,8 @@
 		ariaLabel: string;
 		searchPlaceholder?: string;
 		emptyText?: string;
+		/** Own matching (e.g. fuzzy) from the typed text; default: the label contains it. */
+		filter?: (query: string) => SearchSelectOption[];
 		class?: string;
 	} = $props();
 
@@ -40,9 +43,11 @@
 
 	const selected = $derived(options.find((option) => option.value === value));
 	const shown = $derived(
-		options.filter((option) =>
-			option.label.toLowerCase().includes(search.trim().toLowerCase()),
-		),
+		filter
+			? filter(search.trim())
+			: options.filter((option) =>
+					option.label.toLowerCase().includes(search.trim().toLowerCase()),
+				),
 	);
 
 	function pick(option: SearchSelectOption) {

@@ -10,6 +10,7 @@ import {
 } from "../admin-policy/admin-policy.service.ts";
 import { requireAdmin } from "../auth/auth.service.ts";
 import { ApiError } from "../common/common.schema.ts";
+import { isTimeZone } from "../time-zone/time-zone.service.ts";
 import {
 	AdminsPage,
 	AdminsQuery,
@@ -118,6 +119,9 @@ export function adminsRoutes({ auth, db }: RouteDeps) {
 						if (!isEmail(body.email.trim())) {
 							return status(400, { error: "invalid_email" });
 						}
+						if (body.timeZone && !isTimeZone(body.timeZone)) {
+							return status(400, { error: "invalid_time_zone" });
+						}
 						try {
 							await editStaff(auth, params.id, body);
 							return { id: params.id };
@@ -140,9 +144,9 @@ export function adminsRoutes({ auth, db }: RouteDeps) {
 							409: ApiError,
 						},
 						detail: {
-							summary: "Edit an admin's name and email",
+							summary: "Edit an admin's name, email and time zone",
 							description:
-								"Your own account, or anyone's as a super admin (`not_super`, 403). Email is contact data, not a login.",
+								"Your own account, or anyone's as a super admin (`not_super`, 403). Email is contact data, not a login. `invalid_time_zone` (400) for a name that is not IANA.",
 						},
 					},
 				)

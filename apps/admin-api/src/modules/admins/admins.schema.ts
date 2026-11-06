@@ -7,14 +7,14 @@ const UserRow = createSelectSchema(user);
 
 /** The signed-in admin, as the panel needs to know them. */
 export const AdminSelf = t.Composite([
-	t.Pick(UserRow, ["id", "name", "email"]),
+	t.Pick(UserRow, ["id", "name", "email", "timeZone"]),
 	/** 0 super admin, 100 admin, 200 user. */
 	t.Object({ level: t.Number(), isSuper: t.Boolean() }),
 ]);
 
 /** One row of the /admins table. Timestamps are epoch ms, like every other DTO. */
 export const AdminAccount = t.Composite([
-	t.Pick(UserRow, ["id", "name", "email", "banReason"]),
+	t.Pick(UserRow, ["id", "name", "email", "banReason", "timeZone"]),
 	t.Object({
 		banned: t.Boolean(),
 		createdAt: t.Number(),

@@ -22,6 +22,13 @@
       "when": 1792560211815,
       "tag": "0002_account_notices",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1793945496781,
+      "tag": "0003_account_time_zone",
+      "breakpoints": true
     }
   ]
 }
