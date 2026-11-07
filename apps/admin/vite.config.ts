@@ -32,8 +32,13 @@ export default defineConfig({
 		intlayer(),
 		// Dev: one reload per dictionary rebuild instead of one per JSON file.
 		coalesceIntlayerReloads(),
-		// Before sveltekit(): wraps the load functions in spans. No source map upload (no auth token).
-		sentrySvelteKit({ autoUploadSourceMaps: false }),
+		// Before sveltekit(): wraps the load functions in spans. Source maps go to Sentry only where
+		// SENTRY_AUTH_TOKEN is set (CI); the plugin deletes them from build/ after the upload.
+		sentrySvelteKit({
+			autoUploadSourceMaps: Boolean(process.env.SENTRY_AUTH_TOKEN),
+			org: "hellizart",
+			project: "pleiades-admin",
+		}),
 		sveltekit({
 			compilerOptions: {
 				// Force runes mode for the project, except for libraries. Can be removed in svelte 6.

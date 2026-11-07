@@ -56,6 +56,8 @@ jobs:
         env:
           # Browser Sentry DSN: public by design (shipped to every visitor).
           VITE_SENTRY_DSN: https://1b3cd38e6690dc1c18560242c7683984@o450533.ingest.us.sentry.io/4512288711311360
+          # Uploads the panel's source maps (and strips them from build/) so Sentry shows unminified stacks.
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       - run: tar -czf panel.tar.gz -C apps/admin/build .
 
       # The VPS reaches GitHub downloads at ~50-250 KB/s but Cloudflare at ~10 MB/s, so the big

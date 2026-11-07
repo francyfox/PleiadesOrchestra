@@ -31,3 +31,15 @@ test("the picker finds a zone by its offset and by a misspelt name", () => {
 	expect(values("-3")).not.toContain("Asia/Almaty");
 	expect(search("")).toHaveLength(zoneOptions(winter).length);
 });
+
+// Firefox lists "UTC" itself in supportedValuesOf; a duplicate option value crashes the picker's keyed {#each}.
+test("zone values are unique even when the browser lists UTC", () => {
+	const real = Intl.supportedValuesOf;
+	Intl.supportedValuesOf = () => ["Asia/Almaty", "UTC"];
+	try {
+		const values = zoneOptions(winter).map((option) => option.value);
+		expect(new Set(values).size).toBe(values.length);
+	} finally {
+		Intl.supportedValuesOf = real;
+	}
+});
