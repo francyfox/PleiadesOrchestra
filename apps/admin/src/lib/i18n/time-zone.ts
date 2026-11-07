@@ -17,9 +17,9 @@ export function utcOffsetLabel(zone: string, at: Date = new Date()): string {
 	return `UTC${minutes < 0 ? "-" : "+"}${Math.floor(abs / 60)}${rest ? `:${String(rest).padStart(2, "0")}` : ""}`;
 }
 
-/** IANA zone names the browser knows (it omits "UTC"), labelled with the offset in effect on `at`. */
+/** IANA zone names the browser knows (Chrome omits "UTC", Firefox lists it: hence the Set), labelled with the offset in effect on `at`. */
 export const zoneOptions = (at: Date = new Date()) =>
-	["UTC", ...Intl.supportedValuesOf("timeZone")].map((zone) => ({
+	[...new Set(["UTC", ...Intl.supportedValuesOf("timeZone")])].map((zone) => ({
 		value: zone,
 		label: `${utcOffsetLabel(zone, at)} · ${zone}`,
 	}));
