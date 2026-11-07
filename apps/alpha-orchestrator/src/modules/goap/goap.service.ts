@@ -185,6 +185,28 @@ export function createRemovalReplyAction(
 	);
 }
 
+/** Name of the action that refuses a message the guardrails matched, from a template, without a model. */
+export const GUARDRAIL_REPLY_ACTION = "replyFromTemplate:guardrail";
+
+/** Fact set by `prepareNewMessage` when a guardrail rule matched; no other action produces it. */
+export const GUARDRAIL_BLOCKED_FACT = "guardrailBlocked";
+
+export function createGuardrailReplyAction(
+	history: HistoryStore | undefined,
+): GoapAction {
+	return templateReply(
+		GUARDRAIL_REPLY_ACTION,
+		{ [GUARDRAIL_BLOCKED_FACT]: true },
+		(state) =>
+			({
+				ru: "С этим запросом я помочь не могу.",
+				kk: "Бұл сұраныспен көмектесе алмаймын.",
+				en: "I can't help with that request.",
+			})[replyLanguage(state)],
+		history,
+	);
+}
+
 function templateReply(
 	name: string,
 	preconditions: Partial<WorldState>,
@@ -236,6 +258,7 @@ export function buildActions(
 	return [
 		createTemplateReplyAction(history),
 		createRemovalReplyAction(history),
+		createGuardrailReplyAction(history),
 		createTextAction({
 			name: REPLY_ACTION,
 			// The only action for now, so its cost doesn't compete with anything yet.

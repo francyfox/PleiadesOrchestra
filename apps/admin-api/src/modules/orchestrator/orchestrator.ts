@@ -30,6 +30,10 @@ import type {
 	LocalPrices,
 } from "../finance/finance.schema.ts";
 import type {
+	Guardrails,
+	GuardrailsInput,
+} from "../guardrails/guardrails.schema.ts";
+import type {
 	IntentExample,
 	IntentsPage,
 	IntentsQuery,
@@ -55,12 +59,22 @@ import type {
 	VisitorsPage,
 	VisitorsQuery,
 } from "../visitors/visitors.schema.ts";
+import type {
+	CreateWebhookInput,
+	UpdateWebhookInput,
+	Webhook,
+	WebhooksList,
+	WebhookTestResult,
+	WebhookWithSecret,
+} from "../webhooks/webhooks.schema.ts";
 
 export class OrchestratorError extends Error {
 	override name = "OrchestratorError";
 	constructor(
 		readonly status: number,
 		message: string,
+		/** The upstream's JSON body, kept only for a 422 (the per-line errors of a form). */
+		readonly body?: unknown,
 	) {
 		super(message);
 	}
@@ -144,6 +158,9 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 			throw new OrchestratorError(
 				response.status,
 				`${method} ${path} failed: ${response.status} ${response.statusText}`,
+				response.status === 422
+					? await response.json().catch(() => undefined)
+					: undefined,
 			);
 		}
 		if (response.status === 204) return undefined as T;
@@ -173,6 +190,7 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 		finance: (query: { from?: number; to?: number } = {}) =>
 			request<Finance>("GET", `/v1/admin/finance${toSearch(query)}`),
 		financeRates: () => request<FinanceRates>("GET", "/v1/admin/finance/rates"),
+		guardrails: () => request<Guardrails>("GET", "/v1/admin/guardrails"),
 		localPrices: () => request<LocalPrices>("GET", "/v1/admin/local-prices"),
 		stats: (ownerId?: string) =>
 			request<Stats>("GET", `/v1/admin/stats${toSearch({ ownerId })}`),
@@ -209,6 +227,11 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 			request<{ items: BlockedIp[]; total: number }>(
 				"GET",
 				`/v1/admin/blocked-ips${toSearch({ ...query })}`,
+			),
+		listWebhooks: (query: { ownerId?: string } = {}) =>
+			request<WebhooksList>(
+				"GET",
+				`/v1/admin/webhooks${toSearch({ ...query })}`,
 			),
 		listAgents: () => request<{ items: Agent[] }>("GET", "/v1/admin/agents"),
 		getAgentSettings: (id: string) =>
@@ -317,6 +340,8 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 					`/v1/admin/agents/${segment(id)}/model`,
 					pick,
 				),
+			saveGuardrails: (input: GuardrailsInput) =>
+				write<Guardrails>("PUT", "/v1/admin/guardrails", input),
 			saveFinanceRates: (rates: FinanceRates) =>
 				write<FinanceRates>("PUT", "/v1/admin/finance/rates", rates),
 			saveLocalPrice: (model: string, price: LocalPriceInput) =>
@@ -387,6 +412,33 @@ export function createOrchestratorClient(config: OrchestratorClientConfig) {
 					"PATCH",
 					`/v1/admin/intents/${segment(id)}`,
 					verdict,
+				),
+			createWebhook: (input: CreateWebhookInput & { ownerId?: string }) =>
+				write<WebhookWithSecret>("POST", "/v1/admin/webhooks", input),
+			updateWebhook: (
+				id: string,
+				input: UpdateWebhookInput,
+				query: { ownerId?: string },
+			) =>
+				write<{ item: Webhook }>(
+					"PATCH",
+					`/v1/admin/webhooks/${segment(id)}${toSearch({ ...query })}`,
+					input,
+				),
+			rotateWebhookSecret: (id: string, query: { ownerId?: string }) =>
+				write<WebhookWithSecret>(
+					"POST",
+					`/v1/admin/webhooks/${segment(id)}/secret${toSearch({ ...query })}`,
+				),
+			testWebhook: (id: string, query: { ownerId?: string }) =>
+				write<WebhookTestResult>(
+					"POST",
+					`/v1/admin/webhooks/${segment(id)}/test${toSearch({ ...query })}`,
+				),
+			deleteWebhook: (id: string, query: { ownerId?: string }) =>
+				write<void>(
+					"DELETE",
+					`/v1/admin/webhooks/${segment(id)}${toSearch({ ...query })}`,
 				),
 			deleteBlockedIp: (id: string) =>
 				write<void>("DELETE", `/v1/admin/blocked-ips/${segment(id)}`),

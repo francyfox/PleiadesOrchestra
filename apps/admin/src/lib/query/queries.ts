@@ -114,6 +114,12 @@ export const queries = {
 			queryFn: () => unwrap(api().system.get()),
 			...pushed,
 		}),
+	/** Webhooks and the event catalog; refetched after every action (`useActionEnhance` invalidates all). */
+	webhooks: () =>
+		queryOptions({
+			queryKey: ["webhooks"],
+			queryFn: () => unwrap(api().webhooks.get()),
+		}),
 	/** Every channel, unpaged: what the forms' selects list. Not pushed, so it follows the usual freshness rules. */
 	allChannels: () =>
 		queryOptions({
@@ -184,6 +190,12 @@ export const queries = {
 		queryOptions({
 			queryKey: ["providers"],
 			queryFn: () => unwrap(api().providers.get()),
+		}),
+	guardrails: () =>
+		queryOptions({
+			queryKey: ["guardrails"],
+			queryFn: () => unwrap(api().guardrails.get()),
+			staleTime: 0,
 		}),
 	/** The file for its editor; always fresh so a form edit since isn't overwritten. */
 	providersToml: () =>

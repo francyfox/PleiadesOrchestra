@@ -1,4 +1,4 @@
-/** Host hardware snapshot (`GET /api/system`) — shared by the header meter and /recommendations. */
+/** Host hardware snapshot (`GET /api/system`) — used by the header meter. */
 export type {
 	CpuInfo,
 	GpuInfo,

@@ -6,8 +6,10 @@ import {
 	CreateAdminInput,
 	CreateBlockedIpInput,
 	CreateChannelForm,
+	CreateWebhookInput,
 	DeleteMeInput,
 	EditAdminForm,
+	EditWebhookForm,
 	FinanceRates,
 	ForgotForm,
 	IntentVerdictInput,
@@ -203,6 +205,17 @@ export const financeActions = {
 	syncPolar: () => submitted(api().subscriptions.sync.post()),
 };
 
+/** Staff: the prompt-injection filter's switch and rules. */
+export const guardrailActions = {
+	save: (form: FormData) =>
+		submitted(
+			api().guardrails.put({
+				enabled: form.get("enabled") === "true",
+				rules: String(form.get("rules") ?? ""),
+			}),
+		),
+};
+
 /** Polar checkout and customer portal; both answer `{ url }` to go to. */
 export const billingActions = {
 	subscribe: () => submitted(api().billing.checkout.post({ kind: "plan" })),
@@ -371,6 +384,50 @@ export const blockedIpActions = {
 		submitted(
 			api()
 				["blocked-ips"]({ id: text(form, "id") })
+				.delete(),
+		),
+};
+
+export const webhookActions = {
+	create: (form: FormData) => {
+		const parsed = parseForm(CreateWebhookInput, form);
+		if (!parsed.ok) return invalidForm();
+		return submitted(api().webhooks.post(parsed.body));
+	},
+	edit: (form: FormData) => {
+		const parsed = parseForm(EditWebhookForm, form);
+		if (!parsed.ok) return invalidForm();
+		const { id, ...body } = parsed.body;
+		return submitted(api().webhooks({ id }).patch(body));
+	},
+	setEnabled: (form: FormData) =>
+		submitted(
+			api()
+				.webhooks({ id: text(form, "id") })
+				.patch({ enabled: text(form, "enabled") === "true" }),
+		),
+	rotate: (form: FormData) =>
+		submitted(
+			api()
+				.webhooks({ id: text(form, "id") })
+				.secret.post(),
+		),
+	/** A failed delivery is an error toast with the receiver's answer, not a success. */
+	test: async (form: FormData): Promise<ActionResult> => {
+		const result = await submitted(
+			api()
+				.webhooks({ id: text(form, "id") })
+				.test.post(),
+		);
+		const error = result.data.error;
+		return result.ok && typeof error === "string"
+			? { ok: false, data: { message: error } }
+			: result;
+	},
+	remove: (form: FormData) =>
+		submitted(
+			api()
+				.webhooks({ id: text(form, "id") })
 				.delete(),
 		),
 };

@@ -12,14 +12,20 @@ import {
 	watchServerTrouble,
 } from "@repo/core";
 import { ALL_SESSION_FACTS } from "@repo/intent-presets";
+import { eq } from "drizzle-orm";
 import type { ActiveRuns } from "../active-runs/active-runs.ts";
-import type { StoredStep } from "../database/database.schema.ts";
+import { type StoredStep, threads } from "../database/database.schema.ts";
 import type { Db } from "../database/database.ts";
-import { REPLY_ACTION, REPLY_GOAL } from "../goap/goap.service.ts";
+import {
+	GUARDRAIL_BLOCKED_FACT,
+	REPLY_ACTION,
+	REPLY_GOAL,
+} from "../goap/goap.service.ts";
 import { finishPlanRun } from "../plan-runs/plan-runs.service.ts";
 import type { RunBinding } from "../run-binding/run-binding.ts";
 import { encodeNdjsonLine } from "../streaming/streaming.service.ts";
 import { hasQueuedTasks, progressOf } from "../tasks/tasks.service.ts";
+import type { Emit } from "../webhooks/webhooks.types.ts";
 import {
 	AWAITED_ARGS_FACT,
 	AWAITED_TOOL_FACT,
@@ -51,6 +57,8 @@ export interface RunStreamDeps {
 	now: () => number;
 	/** Where persistence errors go; they never break the stream. */
 	onError?: (error: unknown) => void;
+	/** Webhook events (`run.failed`). */
+	emit?: Emit;
 }
 
 export interface RunStreamInput {
@@ -343,13 +351,29 @@ async function persistRun(
 	startedAt: number,
 ): Promise<void> {
 	try {
+		// A guardrail refusal answers the visitor but is an error in the flow.
+		const blocked = outcome.finalState[GUARDRAIL_BLOCKED_FACT] === true;
 		finishPlanRun(deps.db, run.planRunId, {
-			succeeded: outcome.succeeded,
+			succeeded: outcome.succeeded && !blocked,
 			durationMs: deps.now() - startedAt,
 			events: trace,
 			steps: [...outcome.steps.values()],
 		});
 		deps.usageRecorder?.flush();
+		// `guardrail.blocked` is already emitted for it.
+		if (!outcome.succeeded && !outcome.waiting && !blocked) {
+			const channelId =
+				deps.db
+					.select({ id: threads.channelId })
+					.from(threads)
+					.where(eq(threads.id, run.threadId))
+					.get()?.id ?? null;
+			deps.emit?.("run.failed", {
+				runId: run.planRunId,
+				threadId: run.threadId,
+				channelId,
+			});
+		}
 		await saveCheckpoint(deps.worldStateStore, run.threadId, outcome);
 	} catch (error) {
 		deps.onError?.(error);

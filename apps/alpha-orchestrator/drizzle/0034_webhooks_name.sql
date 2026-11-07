@@ -1,0 +1,1 @@
+ALTER TABLE `webhooks` ADD `name` text DEFAULT '' NOT NULL;

@@ -15,6 +15,8 @@ export interface ActionEnhanceOptions {
 	onSettled?: () => void;
 	/** Runs on success with the response data (e.g. to show one-time keys). */
 	onSuccess?: (data: Record<string, unknown>) => void;
+	/** Runs on a failed request with the failure's data (e.g. per-line `errors` to mark in an editor). */
+	onFailure?: (data: Record<string, unknown>) => void;
 	errorText?: (
 		code: string,
 		data: Record<string, unknown>,
@@ -75,6 +77,7 @@ export function useActionEnhance(options: ActionEnhanceOptions) {
 			const c = get(common);
 			const data = result.data;
 			if (!result.ok) {
+				options.onFailure?.(data);
 				const localized =
 					typeof data.error === "string"
 						? options.errorText?.(data.error, data)

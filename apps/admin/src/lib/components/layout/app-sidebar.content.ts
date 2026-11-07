@@ -17,15 +17,11 @@ const appSidebarContent = {
 			mcp: t({ ru: "MCP", en: "MCP", kk: "MCP" }),
 			agents: t({ ru: "Агенты", en: "Agents", kk: "Агенттер" }),
 			models: t({ ru: "Модели", en: "Models", kk: "Модельдер" }),
+			guardrails: t({ ru: "Защита", en: "Guardrails", kk: "Қорғаныс" }),
 			performance: t({
 				ru: "Производительность",
 				en: "Performance",
 				kk: "Өнімділік",
-			}),
-			recommendations: t({
-				ru: "Рекомендации",
-				en: "Recommendations",
-				kk: "Ұсыныстар",
 			}),
 			plans: t({ ru: "Тарифы", en: "Plans", kk: "Тарифтер" }),
 			channels: t({ ru: "Каналы", en: "Channels", kk: "Арналар" }),
@@ -34,6 +30,11 @@ const appSidebarContent = {
 				ru: "Блокировки IP",
 				en: "IP blocks",
 				kk: "IP бұғаттаулары",
+			}),
+			notifications: t({
+				ru: "Уведомления",
+				en: "Notifications",
+				kk: "Хабарламалар",
 			}),
 			admins: t({ ru: "Администраторы", en: "Admins", kk: "Әкімшілер" }),
 			faq: t({ ru: "FAQ", en: "FAQ", kk: "FAQ" }),

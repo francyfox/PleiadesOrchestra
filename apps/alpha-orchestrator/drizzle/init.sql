@@ -243,6 +243,25 @@ CREATE TABLE `local_model_prices` (
 	`output_per_million_usd` real NOT NULL,
 	`cache_read_per_million_usd` real
 );
+CREATE TABLE `guardrail_settings` (
+	`id` integer PRIMARY KEY NOT NULL,
+	`enabled` integer NOT NULL,
+	`rules` text NOT NULL,
+	`updated_by` text NOT NULL,
+	`updated_at` integer NOT NULL
+);
+CREATE TABLE `webhooks` (
+	`id` text PRIMARY KEY NOT NULL,
+	`url` text NOT NULL,
+	`secret` text NOT NULL,
+	`owner_id` text,
+	`events` text NOT NULL,
+	`enabled` integer NOT NULL,
+	`last_status` integer,
+	`last_error` text,
+	`last_at` integer,
+	`created_at` integer NOT NULL
+, `format` text DEFAULT 'json' NOT NULL, `name` text DEFAULT '' NOT NULL);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'bdcb798cc72df040fe7ab496925f0e8c88132b905ac04cc8813006debb64f096', 1790244167287);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '18fd9f1b24512d674e4f6017463dec4418b32e8c7e134ed0e5b62399ac042d07', 1790244167777);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'ad4ae2f758bf5af433c6ae25117ef6dd2e3c7f7e7209d36c91ffb2a3f5bd24cf', 1790251963003);
@@ -274,6 +293,10 @@ INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '7
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '2bd12acadf733892dffde197aceea13e437525296ad0fd930e2d1f062528db70', 1793793666624);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'df62d237ed0bd7c207492b0ae55cce2eea8838705709cd6f9cc8dfdb1dcdc452', 1793867201214);
 INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '161f56c886e56270e36c6c601e9a2dc458bc16f65f73b4f71fa11b7ee45c73ba', 1793867501923);
+INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '1270a0ca2d42356f48e88940a662a397e89b61ee970ccae1d74da89f4762a8ad', 1794043857216);
+INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, 'fd802ca9d7d5210930bba93ec0835b8a72a5f7c74b0a58fa2c3fd327c8493f1a', 1794044702672);
+INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '39b465eeb095974d2b525dea53f6894202f6be16ffe63a9d3b755e908bfd11bc', 1794046180627);
+INSERT INTO "__drizzle_migrations" ("id", "hash", "created_at") VALUES (NULL, '3d0f6296a83685c61f1bffc7fb3939b6ee31f34c7131ba56b8011de8af6993d4', 1794047753493);
 INSERT INTO "channels" ("id", "slug", "kind", "name", "access_mode", "publishable_key", "secret_key_hash", "allowed_origins", "disabled_at", "created_at", "catalog_language", "owner_id", "intent_sets", "several_tasks") VALUES ('ch_telegram', 'telegram', 'telegram', 'Telegram', 'whitelist', NULL, NULL, '[]', NULL, CAST(strftime('%s', 'now') AS INTEGER) * 1000, 'en', NULL, '["shop"]', 0);
 INSERT INTO "channels" ("id", "slug", "kind", "name", "access_mode", "publishable_key", "secret_key_hash", "allowed_origins", "disabled_at", "created_at", "catalog_language", "owner_id", "intent_sets", "several_tasks") VALUES ('ch_cli', 'cli', 'cli', 'CLI', 'open', NULL, NULL, '[]', NULL, CAST(strftime('%s', 'now') AS INTEGER) * 1000, 'en', NULL, '["shop"]', 0);
 COMMIT;

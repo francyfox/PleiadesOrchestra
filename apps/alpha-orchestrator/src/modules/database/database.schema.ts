@@ -11,6 +11,10 @@ import {
 	uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 import type { FinanceRatesValue } from "../finance/finance.schema.ts";
+import type {
+	WebhookEvent,
+	WebhookFormat,
+} from "../webhooks/webhooks.types.ts";
 
 // All timestamps are epoch ms stored as plain integers — the HTTP contract
 // (apps/docs/content/en/drafts/admin-api.md) speaks epoch ms, so no Date round-trips.
@@ -415,6 +419,16 @@ export const financeSettings = sqliteTable("finance_settings", {
 	updatedAt: integer("updated_at").notNull(),
 });
 
+/** The one row (id 1) of the prompt-injection guardrails; no row = off, with the built-in rules. */
+export const guardrailSettings = sqliteTable("guardrail_settings", {
+	id: integer("id").primaryKey(),
+	enabled: integer("enabled", { mode: "boolean" }).notNull(),
+	/** One JS regex per line, `#` comments. */
+	rules: text("rules").notNull(),
+	updatedBy: text("updated_by").notNull(),
+	updatedAt: integer("updated_at").notNull(),
+});
+
 /** Staff-set prices (USD per 1M tokens) of models OpenRouter does not list (local ones); an entry here wins over OpenRouter's. */
 export const localModelPrices = sqliteTable("local_model_prices", {
 	model: text("model").primaryKey(),
@@ -496,6 +510,24 @@ export const billingWebhooks = sqliteTable("billing_webhooks", {
 	receivedAt: integer("received_at").notNull(),
 });
 
+/** Admin-registered notification endpoints; `secret` signs each delivery (HMAC), so it is stored readable. */
+export const webhooks = sqliteTable("webhooks", {
+	id: text("id").primaryKey(),
+	// Shown in the panel; "" on rows made before names existed.
+	name: text("name").notNull().default(""),
+	url: text("url").notNull(),
+	secret: text("secret").notNull(),
+	// Admin-api account id (no FK: another database). NULL = staff/system, gets every event.
+	ownerId: text("owner_id"),
+	events: text("events", { mode: "json" }).$type<WebhookEvent[]>().notNull(),
+	format: text("format").$type<WebhookFormat>().notNull().default("json"),
+	enabled: integer("enabled", { mode: "boolean" }).notNull(),
+	lastStatus: integer("last_status"),
+	lastError: text("last_error"),
+	lastAt: integer("last_at"),
+	createdAt: integer("created_at").notNull(),
+});
+
 export const schema = {
 	channels,
 	channelPersona,
@@ -511,9 +543,11 @@ export const schema = {
 	threadWorldState,
 	agentSettings,
 	financeSettings,
+	guardrailSettings,
 	localModelPrices,
 	subscriptions,
 	orders,
 	creditLedger,
 	billingWebhooks,
+	webhooks,
 };

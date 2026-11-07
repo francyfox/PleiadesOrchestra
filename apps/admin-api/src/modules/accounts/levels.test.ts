@@ -42,6 +42,8 @@ describe("levels on the routes", () => {
 			/^\/api\/dashboard$/,
 			// scoped to the user's channels: channels/owned-pages.test.ts
 			/^\/api\/(visitors|requests|blocked-ips)(\/|$)/,
+			// scoped to the user's own webhooks: webhooks/webhooks.test.ts
+			/^\/api\/webhooks(\/|$)/,
 			// a user's own billing (staff get 403 inside; see billing.test.ts)
 			/^\/api\/billing(\/|$)/,
 			/^\/api\/live$/,

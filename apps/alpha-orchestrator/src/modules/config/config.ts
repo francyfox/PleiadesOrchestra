@@ -93,6 +93,15 @@ export function buildConfig(env: Record<string, string | undefined>) {
 			// separately (visitors.last_ip, blocked_ips.ip) for the admin view only.
 			IP_HASH_SALT: z.string().min(1),
 
+			// `balance.low` webhook: fires when a debit takes an account's balance below this many TR (matches the panel's low-balance warning).
+			BALANCE_LOW_THRESHOLD_TR: z.coerce.number().nonnegative().default(1),
+
+			// Dev only: lets notification webhooks point at http and private/local addresses.
+			WEBHOOKS_ALLOW_PRIVATE: z
+				.enum(["true", "false"])
+				.default("false")
+				.transform((v) => v === "true"),
+
 			// Anonymous chat visitors inactive longer than this are deleted.
 			ANON_RETENTION_HOURS: z.coerce.number().positive().default(24),
 
