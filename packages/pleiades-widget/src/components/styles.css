@@ -225,6 +225,7 @@
 	}
 
 	.user {
+		box-sizing: border-box;
 		align-self: flex-end;
 		background: var(--accent);
 		background-image: var(--accent-gradient);
