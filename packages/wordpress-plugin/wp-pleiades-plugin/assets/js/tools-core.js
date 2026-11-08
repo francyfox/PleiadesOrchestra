@@ -1,16 +1,84 @@
 // Pure helpers of the WebMCP tools (no DOM, no fetch): tested with `bun test`.
 // A classic script (WordPress prints it as is), so it publishes a global.
 (() => {
-	const need = (args, key) => {
+	// Every failure leaves a tool as one code of this closed list (the same as TOOL_ERROR_CODES in
+	// packages/core/src/goap/tool-error.ts, a test keeps them equal), never as the shop's own message:
+	// the orchestrator tells the visitor by the code. `hint` is OUR text for a calling model.
+	const ERROR_CODES = [
+		"MISSING_ARGUMENT",
+		"NOT_FOUND",
+		"NOT_PURCHASABLE",
+		"OUT_OF_STOCK",
+		"VARIATION_REQUIRED",
+		"INVALID_QUANTITY",
+		"CART_ITEM_GONE",
+		"NOT_ALLOWED",
+		"NETWORK",
+		"NONCE_EXPIRED",
+		"UNKNOWN",
+	];
+	// The `code` of WooCommerce / WordPress REST errors (read from real responses, see the e2e specs).
+	const STORE_CODES = {
+		woocommerce_rest_cart_invalid_product: "NOT_FOUND",
+		woocommerce_rest_product_invalid_id: "NOT_FOUND",
+		rest_post_invalid_id: "NOT_FOUND",
+		woocommerce_rest_product_out_of_stock: "OUT_OF_STOCK",
+		woocommerce_rest_product_partially_out_of_stock: "OUT_OF_STOCK",
+		woocommerce_rest_product_not_purchasable: "NOT_PURCHASABLE",
+		woocommerce_rest_missing_attributes: "VARIATION_REQUIRED",
+		woocommerce_rest_missing_variation_data: "VARIATION_REQUIRED",
+		woocommerce_rest_invalid_variation_data: "VARIATION_REQUIRED",
+		woocommerce_rest_variation_id_from_variation_data: "VARIATION_REQUIRED",
+		woocommerce_rest_product_invalid_quantity: "INVALID_QUANTITY",
+		invalid_quantity: "INVALID_QUANTITY",
+		woocommerce_rest_cart_invalid_key: "CART_ITEM_GONE",
+		woocommerce_rest_missing_nonce: "NONCE_EXPIRED",
+		woocommerce_rest_invalid_nonce: "NONCE_EXPIRED",
+		rest_forbidden: "NOT_ALLOWED",
+	};
+	/** An Error that carries only a code (and our own safe fields), never a shop message. */
+	const toolError = (code, extra = {}) =>
+		Object.assign(new Error(code), { ...extra, code });
+	/** The code of a failed REST response: by its `code` field, else by status. The message is never read. */
+	function codeFromResponse(data, status) {
+		const code = STORE_CODES[data?.code];
+		if (code) return code;
+		if (data?.code === "rest_invalid_param")
+			return data.data?.params?.quantity
+				? "INVALID_QUANTITY"
+				: "MISSING_ARGUMENT";
+		if (status === 404) return "NOT_FOUND";
+		if (status === 401 || status === 403) return "NOT_ALLOWED";
+		return "UNKNOWN";
+	}
+	/** The error result a tool returns: `{error_code, status?, hint?}`; a fetch that never got an answer is NETWORK. */
+	function errorPayload(e) {
+		const code = ERROR_CODES.includes(e?.code)
+			? e.code
+			: e instanceof TypeError
+				? "NETWORK"
+				: "UNKNOWN";
+		return { error_code: code, status: e?.status, hint: e?.hint };
+	}
+
+	const need = (args, key, hint = "") => {
 		if (args[key] === undefined || args[key] === "")
-			throw new Error(`missing argument: ${key}`);
+			throw toolError("MISSING_ARGUMENT", {
+				argument: key,
+				hint: hint || `missing argument: ${key}`,
+			});
 		return args[key];
 	};
+	const NEED_ID =
+		"id is required: find it with search_products or get_current_product";
+	const NEED_KEY = "key is required: take it from get_cart";
 	const minor = (value, env) =>
 		String(Math.round(Number(value) * 10 ** (env.minorUnit ?? 2)));
 
 	/** Tool → request description. `env`: { minorUnit, post } (post: get_page asks /posts). */
-	function buildRequest(name, args, env = {}) {
+	function buildRequest(name, rawArgs, env = {}) {
+		// Callers name the id differently (the schema says `id`, models write product_id).
+		const args = { id: rawArgs.product_id ?? rawArgs.productId, ...rawArgs };
 		switch (name) {
 			case "search_products": {
 				const query = { per_page: "10" };
@@ -28,7 +96,7 @@
 				return {
 					api: "store",
 					method: "GET",
-					path: `products/${Number(need(args, "id"))}`,
+					path: `products/${Number(need(args, "id", NEED_ID))}`,
 					query: {},
 				};
 			case "list_categories":
@@ -47,7 +115,7 @@
 					path: "cart/add-item",
 					query: {},
 					body: {
-						id: Number(need(args, "id")),
+						id: Number(need(args, "id", NEED_ID)),
 						quantity: Number(args.quantity ?? 1),
 						variation: Object.entries(args.variation ?? {}).map(
 							([attribute, value]) => ({ attribute, value: String(value) }),
@@ -55,13 +123,16 @@
 					},
 				};
 			case "update_cart_item":
+				// The Store API rejects quantity 0: that means "remove".
+				if (Number(args.quantity) === 0)
+					return buildRequest("remove_cart_item", args, env);
 				return {
 					api: "store",
 					method: "POST",
 					path: "cart/update-item",
 					query: {},
 					body: {
-						key: need(args, "key"),
+						key: need(args, "key", NEED_KEY),
 						quantity: Number(need(args, "quantity")),
 					},
 				};
@@ -71,7 +142,7 @@
 					method: "POST",
 					path: "cart/remove-item",
 					query: {},
-					body: { key: need(args, "key") },
+					body: { key: need(args, "key", NEED_KEY) },
 				};
 			case "search_site":
 				return {
@@ -92,14 +163,51 @@
 					query: { _fields: "id,title,link,content" },
 				};
 			default:
-				throw new Error(`unknown tool: ${name}`);
+				throw toolError("UNKNOWN");
 		}
+	}
+
+	/**
+	 * Store API `search` needs every word in one product, and `category` narrows to it: a long phrase
+	 * or a wrong category returns nothing for a product the visitor can see. Retry looser, in order:
+	 * without category, then each word alone (results merged by id).
+	 */
+	function searchFallbacks(args) {
+		const out = [];
+		const loose = { ...args, category: undefined };
+		if (args.category) out.push([loose]);
+		const words = [
+			...new Set(
+				String(args.query ?? "")
+					.split(/\s+/)
+					.filter((w) => w.length > 2),
+			),
+		];
+		if (words.length > 1) out.push(words.map((query) => ({ ...loose, query })));
+		return out;
 	}
 
 	/** The Store API sends a fresh nonce with each response. */
 	const nextNonce = (current, headers) => headers.get("Nonce") || current;
 
 	/** Absolute URL if `url` stays on `origin` (http/https), else null. */
+	/**
+	 * The shop's own results page for a search_products call (a classic site shows a page, not JSON).
+	 * `slug`: the category slug when `args.category` is an id. shortcut: no on_sale (WooCommerce has no URL
+	 * parameter for it), the price filter works only if the theme honours min_price/max_price.
+	 */
+	function searchPageUrl(origin, args, slug) {
+		const u = new URL("/", origin);
+		if (args.query) u.searchParams.set("s", String(args.query));
+		u.searchParams.set("post_type", "product");
+		const cat = slug ?? args.category;
+		if (cat) u.searchParams.set("product_cat", String(cat));
+		for (const k of ["min_price", "max_price"])
+			if (args[k] !== undefined) u.searchParams.set(k, String(args[k]));
+		if (args.page > 1) u.searchParams.set("paged", String(args.page));
+		return u.href;
+	}
+
 	function sameOrigin(url, origin) {
 		try {
 			const u = new URL(String(url), origin);
@@ -269,7 +377,7 @@
 			woo: true,
 			annotations: READ,
 			description:
-				"Search the shop's catalog by keywords, with optional category, price range and sale filter. Returns up to 10 products per page.",
+				"Search the shop's catalog by keywords, with optional category, price range and sale filter. Returns up to 10 products per page, with their ids, and opens the shop's results page in the visitor's browser (the page reloads). Prefer one or two keywords and no category unless asked; if nothing is found it retries with looser terms.",
 			inputSchema: obj({
 				query: str("Keywords"),
 				category: str("Category id or slug from list_categories"),
@@ -360,7 +468,7 @@
 			woo: false,
 			annotations: WRITE,
 			description:
-				"Open a page of this site in the visitor's browser (product, cart, checkout, article). Same site only. Call it as the very last step: the page reloads.",
+				"Open a page of this site in the visitor's browser (product, cart, checkout, article). Same site only. Call it as the very last step: the page reloads. Use this instead of telling the visitor where to click or which page to open.",
 			inputSchema: obj({ url: str("Address on this site") }, ["url"]),
 		},
 	];
@@ -370,7 +478,7 @@
 		const found = list?.find(
 			(b) => b.name.toLowerCase() === String(name ?? "").toLowerCase(),
 		);
-		if (!found) throw new Error(`unknown: ${name}`);
+		if (!found) throw toolError("NOT_FOUND");
 		return found;
 	};
 
@@ -392,7 +500,10 @@
 				out.cart = await addOne(item);
 				out.added.push({ name: item.name, quantity: item.quantity });
 			} catch (e) {
-				out.missing.push({ name: item.name, reason: e.message });
+				out.missing.push({
+					name: item.name,
+					reason: errorPayload(e).error_code,
+				});
 			}
 		}
 		return out;
@@ -402,7 +513,7 @@
 		const n = added.length;
 		let text = `Added ${n} item${n === 1 ? "" : "s"}.`;
 		if (missing.length)
-			text += ` Could not add: ${missing.map((m) => `${m.name} (${m.reason})`).join(", ")}.`;
+			text += ` Could not add: ${missing.map((m) => `${m.name} (${m.reason.toLowerCase().replace(/_/g, " ")})`).join(", ")}.`;
 		return text;
 	}
 
@@ -457,10 +568,38 @@
 		return tools;
 	}
 
+	/** open_page names the shop's cart, checkout and account addresses (cfg.pages, from PHP) so the model need not guess them. */
+	function withPages(tools, cfg) {
+		const known = Object.entries(cfg.pages ?? {}).filter(([, url]) => url);
+		if (!known.length) return tools;
+		const list = known.map(([name, url]) => `${name}: ${url}`).join("; ");
+		return tools.map((t) =>
+			t.name === "open_page"
+				? {
+						...t,
+						description: `${t.description} Addresses: ${list}.`,
+						inputSchema: obj(
+							{
+								url: str(`Address on this site, e.g. ${known[0][1]}`),
+							},
+							["url"],
+						),
+					}
+				: t,
+		);
+	}
+
 	globalThis.PleiadesWpCore = {
+		ERROR_CODES,
+		toolError,
+		codeFromResponse,
+		errorPayload,
+		withPages,
 		buildRequest,
 		nextNonce,
+		searchFallbacks,
 		sameOrigin,
+		searchPageUrl,
 		endpoint,
 		htmlToText,
 		shapeProduct,

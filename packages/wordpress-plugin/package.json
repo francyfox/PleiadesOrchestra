@@ -4,7 +4,7 @@
 	"license": "GPL-2.0-or-later",
 	"scripts": {
 		"build": "bun scripts/build.ts",
-		"test": "bun test pleiades-assistant",
+		"test": "bun test wp-pleiades-plugin",
 		"lint": "biome check .",
 		"check-types": "bun check"
 	},

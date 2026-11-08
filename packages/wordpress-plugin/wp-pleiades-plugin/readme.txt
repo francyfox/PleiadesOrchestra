@@ -1,10 +1,11 @@
 === Pleiades Assistant ===
+Plugin URI: https://pleiades.shalotts.site/
 Contributors: francyfox
 Tags: chatbot, assistant, woocommerce, ai, chat
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 0.3.0
+Stable tag: 0.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -16,6 +17,10 @@ Paste the publishable key of your Pleiades channel and the chat widget appears o
 
 Without WooCommerce it answers from your pages and posts.
 
+= Links =
+Website: https://pleiades.shalotts.site/
+Panel: https://pleiades-panel.shalotts.site/user/login
+
 = External service =
 Visitor messages and the current page address are sent to the agent URL set in Settings (by default the hosted Pleiades orchestrator) and to the language model providers it uses. Mention this in your privacy policy.
 
@@ -24,10 +29,15 @@ The chat widget (BSD-3-Clause) is bundled in this plugin; no scripts are loaded 
 == Installation ==
 
 1. Upload the plugin and activate it.
-2. Settings > Pleiades Assistant: paste the publishable key (pk_...).
-3. The channel must allow your site's address.
+2. Get a publishable key (pk_...) in the panel: https://pleiades-panel.shalotts.site/user/login
+3. Settings > Pleiades Assistant: paste the key.
+4. Settings > Pleiades Assistant > Localization: pick a language and override the widget texts (optional).
+5. The channel must allow your site's address.
 
 == Changelog ==
+
+= 0.4.0 =
+* Plugin renamed to wp-pleiades-plugin (deactivate the old copy), split into classes, settings tabs with Localization, open_page knows the cart, checkout and account addresses.
 
 = 0.2.0 =
 * Recipes (custom post type, "add all ingredients" button), kits (grouped products with quantities) and the matching assistant tools.

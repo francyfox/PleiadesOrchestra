@@ -1,4 +1,5 @@
 import { beforeAll, expect, test } from "bun:test";
+import { TOOL_ERROR_CODES } from "../../../../core/src/goap/tool-error.ts";
 
 // biome-ignore lint/suspicious/noExplicitAny: the core is a classic script that sets a global
 let core: any;
@@ -190,7 +191,7 @@ test("bundle tools exist only for the lists the page printed; the enum is the na
 
 test("findBundle ignores case and rejects unknown names", () => {
 	expect(core.findBundle([recipe], "fruit salad")).toBe(recipe);
-	expect(() => core.findBundle([recipe], "Soup")).toThrow("unknown: Soup");
+	expect(() => core.findBundle([recipe], "Soup")).toThrow("NOT_FOUND");
 });
 
 test("servings scale quantities up (rounded up) and never below 1", () => {
@@ -210,16 +211,14 @@ test("servings scale quantities up (rounded up) and never below 1", () => {
 
 test("addAll keeps going after a failure and lists what could not be added", async () => {
 	const out = await core.addAll(recipe.items, async (item: { id: number }) => {
-		if (item.id === 2) throw new Error("Sorry, out of stock");
+		if (item.id === 2) throw core.toolError("OUT_OF_STOCK");
 		return { items_count: 2 };
 	});
 	expect(out.added).toEqual([{ name: "Apple", quantity: 2 }]);
-	expect(out.missing).toEqual([
-		{ name: "Kiwi", reason: "Sorry, out of stock" },
-	]);
+	expect(out.missing).toEqual([{ name: "Kiwi", reason: "OUT_OF_STOCK" }]);
 	expect(out.cart).toEqual({ items_count: 2 });
 	expect(core.summarize(out)).toBe(
-		"Added 1 item. Could not add: Kiwi (Sorry, out of stock).",
+		"Added 1 item. Could not add: Kiwi (out of stock).",
 	);
 });
 
@@ -234,5 +233,165 @@ test("list_recipes shape: names, servings, time, ingredient count", () => {
 				url: "u",
 			},
 		],
+	);
+});
+
+test("open_page tells the model to use it and lists the shop's page addresses", () => {
+	const plain = core.TOOLS.find(
+		(t: { name: string }) => t.name === "open_page",
+	);
+	expect(plain.description).toContain("instead of telling the visitor");
+	expect(core.withPages(core.TOOLS, {})).toBe(core.TOOLS);
+	const tools = core.withPages(core.TOOLS, {
+		pages: {
+			cart: "https://s.test/cart/",
+			checkout: "",
+			account: "https://s.test/my/",
+		},
+	});
+	const open = tools.find((t: { name: string }) => t.name === "open_page");
+	expect(open.description).toContain(
+		"cart: https://s.test/cart/; account: https://s.test/my/",
+	);
+	expect(open.description).not.toContain("checkout:");
+	expect(open.inputSchema.properties.url.description).toContain(
+		"https://s.test/cart/",
+	);
+});
+
+test("searchFallbacks: drop category, then one request per word", () => {
+	expect(
+		core.searchFallbacks({ query: "red wool scarf", category: "7" }),
+	).toEqual([
+		[{ query: "red wool scarf", category: undefined }],
+		[
+			{ query: "red", category: undefined },
+			{ query: "wool", category: undefined },
+			{ query: "scarf", category: undefined },
+		],
+	]);
+	expect(core.searchFallbacks({ query: "scarf" })).toEqual([]);
+});
+
+test("searchPageUrl builds the shop results page", () => {
+	expect(
+		core.searchPageUrl("http://x.test", {
+			query: "red shoe",
+			category: "boots",
+			min_price: 5,
+			page: 2,
+		}),
+	).toBe(
+		"http://x.test/?s=red+shoe&post_type=product&product_cat=boots&min_price=5&paged=2",
+	);
+	expect(core.searchPageUrl("http://x.test", { category: "7" }, "hats")).toBe(
+		"http://x.test/?post_type=product&product_cat=hats",
+	);
+});
+
+const hintOf = (fn: () => void) => {
+	try {
+		fn();
+	} catch (e) {
+		return (e as { code: string; hint: string }).code === "MISSING_ARGUMENT"
+			? (e as { hint: string }).hint
+			: undefined;
+	}
+};
+
+test("add_to_cart without id says where to get one", () => {
+	expect(hintOf(() => core.buildRequest("add_to_cart", {}, env))).toMatch(
+		/search_products/,
+	);
+});
+
+test("add_to_cart accepts product_id / productId as the id", () => {
+	for (const args of [{ product_id: "5" }, { productId: 5 }])
+		expect(core.buildRequest("add_to_cart", args, env).body.id).toBe(5);
+});
+
+test("cart item tools say where the key comes from", () => {
+	for (const name of ["update_cart_item", "remove_cart_item"])
+		expect(hintOf(() => core.buildRequest(name, { quantity: 1 }))).toMatch(
+			/key is required.*get_cart/,
+		);
+});
+
+test("update_cart_item with quantity 0 removes the item", () => {
+	const r = core.buildRequest("update_cart_item", { key: "k1", quantity: 0 });
+	expect(r.path).toBe("cart/remove-item");
+	expect(r.body).toEqual({ key: "k1" });
+});
+
+test("the plugin's codes are exactly core's closed list", () => {
+	expect(core.ERROR_CODES).toEqual([...TOOL_ERROR_CODES]);
+});
+
+// Real answers of the Store API (apps/e2e/tests/wordpress/tools/*.spec.ts), keyed by their `code`.
+test("a REST error becomes a code from its `code` field; the message is never read", () => {
+	const shop = (code: string, status = 400) => ({
+		code,
+		message: 'You cannot add "Secret" to the cart',
+		data: { status },
+	});
+	for (const [code, status, expected] of [
+		["woocommerce_rest_cart_invalid_product", 400, "NOT_FOUND"],
+		["woocommerce_rest_product_invalid_id", 404, "NOT_FOUND"],
+		["woocommerce_rest_product_out_of_stock", 400, "OUT_OF_STOCK"],
+		["woocommerce_rest_product_not_purchasable", 400, "NOT_PURCHASABLE"],
+		["woocommerce_rest_missing_attributes", 400, "VARIATION_REQUIRED"],
+		["woocommerce_rest_product_invalid_quantity", 400, "INVALID_QUANTITY"],
+		["invalid_quantity", 400, "INVALID_QUANTITY"],
+		["woocommerce_rest_cart_invalid_key", 409, "CART_ITEM_GONE"],
+		["woocommerce_rest_invalid_nonce", 403, "NONCE_EXPIRED"],
+		["woocommerce_rest_missing_nonce", 401, "NONCE_EXPIRED"],
+		["something_new", 500, "UNKNOWN"],
+		["something_new", 404, "NOT_FOUND"],
+		["something_new", 403, "NOT_ALLOWED"],
+	] as const)
+		expect(core.codeFromResponse(shop(code, status), status)).toBe(expected);
+	expect(core.codeFromResponse({}, 502)).toBe("UNKNOWN");
+	expect(
+		core.codeFromResponse(
+			{ code: "rest_invalid_param", data: { params: { quantity: "x" } } },
+			400,
+		),
+	).toBe("INVALID_QUANTITY");
+	expect(
+		core.codeFromResponse(
+			{ code: "rest_invalid_param", data: { params: { id: "x" } } },
+			400,
+		),
+	).toBe("MISSING_ARGUMENT");
+});
+
+test("an error result holds the code and our own safe fields, nothing else", () => {
+	const missing = (() => {
+		try {
+			core.buildRequest("get_product", {}, env);
+		} catch (e) {
+			return e;
+		}
+	})();
+	expect(core.errorPayload(missing)).toEqual({
+		error_code: "MISSING_ARGUMENT",
+		status: undefined,
+		hint: expect.stringContaining("search_products"),
+	});
+	expect(
+		core.errorPayload(core.toolError("OUT_OF_STOCK", { status: 400 })),
+	).toEqual({ error_code: "OUT_OF_STOCK", status: 400, hint: undefined });
+	// A fetch that got no answer; a foreign error; a DOMException's numeric `code`.
+	expect(core.errorPayload(new TypeError("Failed to fetch")).error_code).toBe(
+		"NETWORK",
+	);
+	expect(core.errorPayload(new Error("boom <b>raw</b>")).error_code).toBe(
+		"UNKNOWN",
+	);
+	expect(
+		core.errorPayload(Object.assign(new Error("x"), { code: 20 })).error_code,
+	).toBe("UNKNOWN");
+	expect(JSON.stringify(core.errorPayload(new Error("boom")))).not.toContain(
+		"boom",
 	);
 });

@@ -47,7 +47,7 @@
 		}
 		const data = await res.json().catch(() => ({}));
 		if (!res.ok)
-			throw Object.assign(new Error(data.message || `HTTP ${res.status}`), {
+			throw core.toolError(core.codeFromResponse(data, res.status), {
 				status: res.status,
 			});
 		return data;
@@ -91,18 +91,42 @@
 			?.invalidateResolutionForStore?.();
 	}
 
+	// The reload kills this page and the server's next step goes to it, so during a widget turn navigate when
+	// it has ended (events `pleiades:turn-start/-end`; the timer is the way out). Outside a turn: at once. Last call wins.
+	let target;
+	let inTurn = false;
+	let fallback;
+	function navigateSoon(href) {
+		try {
+			sessionStorage.setItem("pleiades-wp-open", "1");
+		} catch {}
+		target = href;
+		clearTimeout(fallback);
+		if (inTurn) fallback = setTimeout(go, 60000);
+		else go();
+	}
+	function go() {
+		clearTimeout(fallback);
+		const href = target;
+		target = undefined;
+		if (href) setTimeout(() => location.assign(href), 50);
+	}
+	document.addEventListener("pleiades:turn-start", () => {
+		inTurn = true;
+	});
+	document.addEventListener("pleiades:turn-end", () => {
+		inTurn = false;
+		go();
+	});
+
 	const run = {
 		get_current_product: async () =>
 			cfg.product ?? { note: "not a product page" },
 		open_page: async ({ url }) => {
 			const href = core.sameOrigin(url, location.origin);
-			if (!href) throw new Error("only pages of this site can be opened");
-			// The reload kills this page: leave the panel open next time, navigate after the result is returned.
-			try {
-				sessionStorage.setItem("pleiades-wp-open", "1");
-			} catch {}
-			setTimeout(() => location.assign(href), 50);
-			return { opening: href };
+			if (!href) throw core.toolError("NOT_ALLOWED");
+			navigateSoon(href);
+			return { opening: href, note: "navigating now" };
 		},
 		get_page: async (args) => {
 			try {
@@ -115,6 +139,34 @@
 				);
 			}
 		},
+	};
+
+	// Strict search first; on no hits try the looser variants (see searchFallbacks), merged by id.
+	// With hits the visitor's page moves to the shop's results page (after the result is returned).
+	run.search_products = async (args) => {
+		let found = await call("search_products", args);
+		let shown = args;
+		for (const variants of found.length ? [] : core.searchFallbacks(args)) {
+			const seen = new Map();
+			const each = await Promise.all(
+				variants.map((a) => call("search_products", a)),
+			);
+			for (const r of each) for (const p of r) seen.set(p.id, p);
+			found = [...seen.values()];
+			shown = variants[each.findIndex((r) => r.length)] ?? args;
+			if (found.length) break;
+		}
+		if (found.length) {
+			// The shop page filters by slug; the tool takes an id or a slug.
+			let slug;
+			if (/^\d+$/.test(String(shown.category ?? "")))
+				slug = (await call("list_categories", {}).catch(() => [])).find(
+					(c) => String(c.id) === String(shown.category),
+				)?.slug;
+			const href = core.searchPageUrl(location.origin, shown, slug);
+			if (href !== location.href) navigateSoon(href);
+		}
+		return core.shapeResult("search_products", found);
 	};
 
 	const addItem = (i) =>
@@ -146,22 +198,29 @@
 	function register() {
 		if (registered || !document.modelContext || !cfg.tools) return;
 		registered = true;
-		const tools = cfg.woo
-			? [...core.TOOLS, ...core.bundleTools(cfg)]
-			: core.TOOLS;
+		const tools = core.withPages(
+			cfg.woo ? [...core.TOOLS, ...core.bundleTools(cfg)] : core.TOOLS,
+			cfg,
+		);
 		for (const tool of tools) {
 			if (tool.woo && !cfg.woo) continue;
 			const { woo, ...def } = tool;
 			document.modelContext.registerTool({
 				...def,
 				execute: async (args) => {
-					const data = await (
-						run[tool.name] ??
-						(async (a) => core.shapeResult(tool.name, await call(tool.name, a)))
-					)(args ?? {});
-					if (!tool.annotations.readOnlyHint && tool.name !== "open_page")
-						await refreshCart().catch(() => {});
-					return reply(data);
+					try {
+						const data = await (
+							run[tool.name] ??
+							(async (a) =>
+								core.shapeResult(tool.name, await call(tool.name, a)))
+						)(args ?? {});
+						if (!tool.annotations.readOnlyHint && tool.name !== "open_page")
+							await refreshCart().catch(() => {});
+						return reply(data);
+					} catch (e) {
+						// Chrome's WebMCP replaces a thrown error with a generic "invocation failed": return the code as a result.
+						return { ...reply(core.errorPayload(e)), isError: true };
+					}
 				},
 			});
 		}
