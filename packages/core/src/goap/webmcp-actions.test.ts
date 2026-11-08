@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 import type {
 	DecisionAgent,
 	DecisionAnswer,
@@ -266,6 +266,17 @@ describe("navigation tools and the page the visitor is on", () => {
 		expect(action.preconditions).toEqual({});
 	});
 
+	test("open_page is a navigate tool by its name, without asking Laya", async () => {
+		const decisionAgent = fakeDecisionAgent("other");
+		const decide = spyOn(decisionAgent, "decide");
+		const [action] = await createWebMcpActions({
+			tools: [{ ...gotoTool, name: "open_page" }],
+			decisionAgent,
+		});
+		expect(action?.effects).toMatchObject({ pageOpened: true });
+		expect(decide).not.toHaveBeenCalled();
+	});
+
 	test("it asks the browser when the destination is another page", async () => {
 		const outcome = await (await navigateAction()).execute({
 			state: { path: "/cart", "page:path": "/ru/store/greenleaf?q=milk" },
@@ -450,6 +461,46 @@ describe("tool arguments written by the function-call model", () => {
 			"toolResult:search_products": false,
 			lastProduct: "",
 		});
+	});
+
+	test("a message that names no product makes no call: the step asks which one", async () => {
+		const agent = fakeFunctionCall({ query: "buy" });
+		const action = await searchAction(agent);
+		const outcome = await action.execute({
+			state: { noProductNamed: true, userMessageEn: "Buy it." },
+		});
+		expect(outcome).toMatchObject({ "toolResult:search_products": false });
+		expect(String((outcome as WorldState).missingParams)).toContain(
+			'"tool":"search_products"',
+		);
+		expect(agent.requests).toHaveLength(0);
+	});
+
+	test("an id that is a placeholder is never sent to the site", async () => {
+		const ADD_BY_ID: WebMcpToolDescriptor = {
+			name: "add_to_cart",
+			description: "Add a laptop to the cart",
+			inputSchema: {
+				type: "object",
+				properties: { product_id: { type: "integer" } },
+				required: ["product_id"],
+			},
+		};
+		for (const placeholder of [0, "0", ""]) {
+			const actions = await createWebMcpActions({
+				tools: [ADD_BY_ID],
+				decisionAgent: fakeDecisionAgent("addToCart"),
+				functionCallAgent: fakeFunctionCall({ product_id: placeholder }),
+			});
+			const outcome = await actions[0]?.execute({
+				state: { userMessageEn: "Buy it." },
+			});
+			expect(outcome).toMatchObject({ "toolResult:add_to_cart": false });
+			expect(outcome).not.toHaveProperty("waiting");
+			expect(String((outcome as WorldState).missingParams)).toContain(
+				"product_id",
+			);
+		}
 	});
 
 	test("the remembered product is not shown to the function-call model as a fact", async () => {

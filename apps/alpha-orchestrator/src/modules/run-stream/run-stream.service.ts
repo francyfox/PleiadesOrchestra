@@ -4,7 +4,12 @@ import type {
 	WebMcpToolCallPayload,
 	WorldState,
 } from "@repo/core";
-import { PAGE_LANG_FACT, stepLanguage } from "@repo/core";
+import {
+	lastToolError,
+	PAGE_LANG_FACT,
+	stepLanguage,
+	toolErrorText,
+} from "@repo/core";
 import type { StoredStep } from "../database/database.schema.ts";
 import type { StreamEvent } from "./run-stream.types.ts";
 
@@ -125,6 +130,16 @@ const HINT_CHARS = 400;
  * which beats any wording of ours.
  */
 function lastSiteAnswer(state: WorldState): string | undefined {
+	// An error is told by its code's wording, never by the site's own text.
+	const error = lastToolError(state);
+	if (error) {
+		const product = state.product;
+		return toolErrorText(
+			error.code,
+			stepLanguage(state),
+			typeof product === "string" ? product : undefined,
+		);
+	}
 	const keys = Object.keys(state).filter(
 		(key) => key.startsWith("webmcp:") && key.endsWith(":text"),
 	);

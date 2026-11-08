@@ -1,11 +1,20 @@
 import { describe, expect, test } from "bun:test";
-import type { RunPlanResult } from "@repo/core";
+import type {
+	ActionContext,
+	GoapAction,
+	RunPlanResult,
+	StreamingContext,
+} from "@repo/core";
 import {
 	createRunLock,
 	InMemoryWorldStateStore,
 	reportingTrouble,
 } from "@repo/core";
 import { testDb } from "../database/database.testing.ts";
+import {
+	createToolErrorReplyAction,
+	REPLY_ACTION,
+} from "../goap/goap.service.ts";
 import { startPlanRun } from "../plan-runs/plan-runs.service.ts";
 import { RunBinding } from "../run-binding/run-binding.ts";
 import { releaseWhenDone } from "../streaming/streaming.service.ts";
@@ -133,6 +142,32 @@ describe("outcomeEvent", () => {
 			message: "no plan reached the goal",
 			hint: 'No products matched "french baget". Try a broader word, or browse the Bakery department.',
 		});
+	});
+
+	test("a tool error is told by its code's wording, never the site's text", () => {
+		const hint = (text: string) => {
+			const event = outcomeEvent(
+				result({
+					succeeded: false,
+					finalState: {
+						"page:lang": "en",
+						product: "Desk Lamp",
+						"webmcp:add_to_cart:result": "error",
+						"webmcp:add_to_cart:text": text,
+					},
+				}),
+				1,
+			);
+			return event.type === "error" ? event.hint : undefined;
+		};
+		expect(hint('{"error_code":"OUT_OF_STOCK"}')).toBe(
+			"«Desk Lamp» is out of stock.",
+		);
+		expect(
+			hint('{"error":"Product with ID \\"0\\" not found","status":400}'),
+		).toBe(
+			"That didn't work on the site. Please try again or put it in other words.",
+		);
 	});
 
 	test("a long site answer is cut", () => {
@@ -283,5 +318,61 @@ describe("a cancelled stream", () => {
 		finishRun();
 		await cancelled;
 		expect(order).toEqual(["debit", "release"]);
+	});
+});
+
+describe("a task that failed on a tool error", () => {
+	const deltas = async (text: string) => {
+		const modelReply: GoapAction = {
+			name: REPLY_ACTION,
+			cost: 5,
+			preconditions: {},
+			effects: { replied: true },
+			async execute(ctx) {
+				(ctx as ActionContext & StreamingContext).onDelta?.("MODEL");
+				return { replied: true };
+			},
+		};
+		const stream = streamPlanRun(
+			{
+				db: testDb(),
+				runs: new RunBinding(),
+				worldStateStore: new InMemoryWorldStateStore(),
+				runLock: createRunLock(),
+				now: Date.now,
+			},
+			{
+				run: { planRunId: "r", threadId: "t" },
+				signal: undefined,
+				prepare: async () => ({
+					state: {
+						"page:lang": "en",
+						product: "Desk Lamp",
+						"webmcp:add_to_cart:result": "error",
+						"webmcp:add_to_cart:text": text,
+					},
+					goal: { inCart: true },
+					actions: [createToolErrorReplyAction(undefined), modelReply],
+				}),
+			},
+		);
+		return (await new Response(stream).text())
+			.trim()
+			.split("\n")
+			.map((line) => JSON.parse(line))
+			.filter((line) => line.type === "delta")
+			.map((line) => line.text);
+	};
+
+	test("is answered from the code's template, not by the model", async () => {
+		expect(await deltas('{"error_code":"OUT_OF_STOCK"}')).toEqual([
+			"«Desk Lamp» is out of stock.",
+		]);
+	});
+
+	test("raw site text gives the UNKNOWN template", async () => {
+		const [text] = await deltas('Product with ID "0" was not found');
+		expect(text).not.toContain("not found");
+		expect(text).toContain("didn't work");
 	});
 });

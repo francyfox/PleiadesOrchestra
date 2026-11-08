@@ -338,6 +338,22 @@ describe("prepareNewMessage: «now buy them» after a search", () => {
 		const prepared = await prepare({ storeOpen: true }, "купи их", "Buy them.");
 		expect(prepared.state.catalogSearched).toBeUndefined();
 	});
+
+	test("a bare purchase verb with nothing remembered names no product: ask, never search for the verb", async () => {
+		const prepared = await prepare({ storeOpen: true }, "купи", "Buy.");
+		expect(prepared.state).toMatchObject({ noProductNamed: true });
+		expect(prepared.state.query).toBeUndefined();
+	});
+
+	test("a remembered product is not replaced by the ask", async () => {
+		const prepared = await prepare(
+			{ storeOpen: true, lastProduct: "Desk Lamp" },
+			"купи",
+			"Buy.",
+		);
+		expect(prepared.state.noProductNamed).toBeUndefined();
+		expect(prepared.state.product).toBe("Desk Lamp");
+	});
 });
 
 describe("prepareNewMessage / prepareResume: a message that names a tool's option", () => {

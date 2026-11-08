@@ -1,15 +1,18 @@
 import { describe, expect, test } from "bun:test";
 import type { Agent, GoapAction, HistoryStore } from "@repo/core";
-import { plan } from "@repo/core";
+import { plan, TOOL_ERROR_CODES } from "@repo/core";
 import {
 	buildActions,
 	createRemovalReplyAction,
 	createTemplateReplyAction,
+	createToolErrorReplyAction,
 	customerFacts,
 	REMOVAL_REPLY_ACTION,
 	REPLY_ACTION,
 	replyChunks,
 	TEMPLATE_REPLY_ACTION,
+	TOOL_ERROR_REPLY_ACTION,
+	TOOL_ERROR_REPLY_FACT,
 } from "./goap.service.ts";
 
 describe("customerFacts", () => {
@@ -602,5 +605,76 @@ describe("replyChunks after a removal or checkout no tool carried out", () => {
 			1000,
 		);
 		expect(chunk).toBe("удали сыр");
+	});
+});
+
+describe("a failed site tool is answered by its error code", () => {
+	const RAW =
+		'You cannot add "Hidden Thing" to the cart: out of stock <b>!</b>';
+	const failed = (text: string, extra: Record<string, unknown> = {}) => ({
+		userMessage: "add it",
+		messageIntent: "addToCart",
+		product: "Desk Lamp",
+		"toolResult:add_to_cart": false,
+		"webmcp:add_to_cart:result": "error",
+		"webmcp:add_to_cart:text": text,
+		...extra,
+	});
+	const reply = async (state: Record<string, unknown>) =>
+		(
+			(await createToolErrorReplyAction(undefined).execute({
+				state,
+			} as never)) as Record<string, unknown>
+		).replyText;
+
+	test("only the run-stream fact makes the planner pick it", () => {
+		const action = createToolErrorReplyAction(undefined);
+		expect(action.name).toBe(TOOL_ERROR_REPLY_ACTION);
+		expect(action.preconditions).toEqual({ [TOOL_ERROR_REPLY_FACT]: true });
+	});
+
+	test("each code gives its own reply, in ru, en and kk", async () => {
+		for (const lang of ["en", "ru", "kk"]) {
+			const texts = new Set<unknown>();
+			for (const code of TOOL_ERROR_CODES) {
+				texts.add(
+					await reply(
+						failed(JSON.stringify({ error_code: code }), {
+							"ui:langChosen": true,
+							"page:lang": lang,
+						}),
+					),
+				);
+			}
+			expect(texts.size).toBe(TOOL_ERROR_CODES.length);
+		}
+	});
+
+	test("the product is the visitor's own", async () => {
+		expect(
+			await reply(
+				failed('{"error_code":"OUT_OF_STOCK"}', {
+					"ui:langChosen": true,
+					"page:lang": "en",
+				}),
+			),
+		).toBe("«Desk Lamp» is out of stock.");
+	});
+
+	test("raw or unparseable text is never in the reply: the UNKNOWN template", async () => {
+		const text = String(await reply(failed(RAW)));
+		expect(text).not.toContain("Hidden Thing");
+		expect(text).not.toContain("<b>");
+		expect(text).toBe(String(await reply(failed('{"error_code":"NOPE"}'))));
+	});
+
+	test("the reply model is never handed the raw error either", () => {
+		const [chunk] = replyChunks(failed(RAW, { "page:lang": "en" }), 1000);
+		expect(chunk).not.toContain("Hidden Thing");
+		const [coded] = replyChunks(
+			failed('{"error_code":"OUT_OF_STOCK"}', { "page:lang": "en" }),
+			1000,
+		);
+		expect(coded).toContain("out of stock");
 	});
 });

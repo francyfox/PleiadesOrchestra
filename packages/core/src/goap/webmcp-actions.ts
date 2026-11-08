@@ -77,6 +77,15 @@ export interface WebMcpToolDescriptor {
 
 /** Fact: JSON `{ tool, params: [{ name, description }] }` — required parameters nothing could fill. Nothing was sent to the site; the reply asks the visitor. */
 export const MISSING_PARAMS = "missingParams";
+/** Turn fact: a buy message that names no product and none is remembered (`planIntent`): the step asks, it never searches for the verb. */
+export const NO_PRODUCT_NAMED = "noProductNamed";
+
+/** An id the site cannot have issued (what a small model writes when no answer showed one). */
+const PLACEHOLDER_ID = /^(0|null|undefined|none|n\/a|nan)?$/i;
+const isPlaceholderId = (name: string, value: unknown) =>
+	/(^|_|-)id$|[a-z]Id$/.test(name) &&
+	(value === 0 ||
+		(typeof value === "string" && PLACEHOLDER_ID.test(value.trim())));
 
 /** The shape of `WaitingOn.payload` when `WaitingOn.kind === "webmcp_tool_call"`. */
 export interface WebMcpToolCallPayload {
@@ -770,6 +779,19 @@ export async function createWebMcpActions(
 							[resultKey]: undefined,
 						};
 					}
+					// «Buy» alone: nothing to search for or add, the reply asks which one.
+					if (
+						callState[NO_PRODUCT_NAMED] === true &&
+						(intent === "search" || intent === "addToCart")
+					) {
+						return {
+							[toolResultKey]: false,
+							[MISSING_PARAMS]: JSON.stringify({
+								tool: tool.name,
+								params: [{ name: "product", description: "which product" }],
+							}),
+						};
+					}
 					// A choice step found the visitor asked for a value this tool does
 					// not offer: no call, the reply offers what there is.
 					if (
@@ -854,6 +876,12 @@ export async function createWebMcpActions(
 						tool.inputSchema ?? { type: "object" },
 						args,
 					);
+					const placeholders = Object.entries(args)
+						.filter(([name, value]) => isPlaceholderId(name, value))
+						.map(([name]) => name);
+					for (const name of placeholders) {
+						problems.push(`${name} is a placeholder, not a real id`);
+					}
 					if (problems.length > 0) {
 						config.onError?.(
 							new Error(
@@ -871,7 +899,8 @@ export async function createWebMcpActions(
 								(name) =>
 									args[name] === undefined ||
 									args[name] === null ||
-									args[name] === "",
+									args[name] === "" ||
+									placeholders.includes(name),
 							)
 							.map((name) => ({
 								name,

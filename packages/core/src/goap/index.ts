@@ -97,6 +97,14 @@ export type {
 export { createTextAction } from "#core/goap/text-action";
 export type { ToolChoice, ToolOption } from "#core/goap/tool-choice";
 export { askedOptions, chooseTool } from "#core/goap/tool-choice";
+export type { ToolErrorCode, ToolErrorLanguage } from "#core/goap/tool-error";
+export {
+	lastToolError,
+	parseToolErrorCode,
+	TOOL_ERROR_CODES,
+	toolErrorCodeOf,
+	toolErrorText,
+} from "#core/goap/tool-error";
 export type {
 	McpCallToolResult,
 	McpClient,
@@ -143,6 +151,7 @@ export {
 	firstListedProductName,
 	MAX_TOOL_TEXT_CHARS,
 	MISSING_PARAMS,
+	NO_PRODUCT_NAMED,
 	parameterFlag,
 } from "#core/goap/webmcp-actions";
 export type {

@@ -12,12 +12,14 @@ import {
 	itemsText,
 	LIST_EMPTY,
 	LIST_READ,
+	lastToolError,
 	MISSING_ITEMS,
 	MISSING_PARAMS,
 	PAGE_LANG_FACT,
 	REMOVED_ITEMS,
 	readItems,
 	SCOPE_ALL,
+	toolErrorText,
 } from "@repo/core";
 import { outcomeLines, readOutcomes } from "../tasks/tasks.service.ts";
 import { chunkText } from "../text/text.service.ts";
@@ -207,6 +209,36 @@ export function createGuardrailReplyAction(
 	);
 }
 
+/** Name of the action that answers a failed site tool by its error code, from a template, without a model. */
+export const TOOL_ERROR_REPLY_ACTION = "replyFromTemplate:toolError";
+
+/** Fact set by `streamPlanRun` for the reply after a failed task whose newest tool answer was an error; no other action produces it. */
+export const TOOL_ERROR_REPLY_FACT = "toolErrorReply";
+
+/** The visitor's own product (our state, never the site's error text). */
+const productOf = (state: WorldState) =>
+	typeof state.product === "string" ? state.product : undefined;
+
+/** The wording of the newest tool error's code in the reply language (`replyLanguage`); `UNKNOWN` when there is none. */
+function toolErrorReplyText(state: WorldState): string {
+	return toolErrorText(
+		lastToolError(state)?.code ?? "UNKNOWN",
+		replyLanguage(state),
+		productOf(state),
+	);
+}
+
+export function createToolErrorReplyAction(
+	history: HistoryStore | undefined,
+): GoapAction {
+	return templateReply(
+		TOOL_ERROR_REPLY_ACTION,
+		{ [TOOL_ERROR_REPLY_FACT]: true },
+		toolErrorReplyText,
+		history,
+	);
+}
+
 function templateReply(
 	name: string,
 	preconditions: Partial<WorldState>,
@@ -259,6 +291,7 @@ export function buildActions(
 		createTemplateReplyAction(history),
 		createRemovalReplyAction(history),
 		createGuardrailReplyAction(history),
+		createToolErrorReplyAction(history),
 		createTextAction({
 			name: REPLY_ACTION,
 			// The only action for now, so its cost doesn't compete with anything yet.
@@ -310,6 +343,9 @@ const REPLY_TOOL_TEXT_CHARS = 800;
 
 /** The newest answer a site tool gave (`webmcp:<tool>:text`), if any — facts keep the order they were written in. */
 export function lastToolAnswer(state: WorldState): string | undefined {
+	// A failed call is told by its error code, never by the site's own text.
+	const error = lastToolError(state);
+	if (error) return toolErrorText(error.code, "en", productOf(state));
 	const keys = Object.keys(state).filter(
 		(key) => key.startsWith("webmcp:") && key.endsWith(":text"),
 	);

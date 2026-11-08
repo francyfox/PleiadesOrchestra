@@ -6,6 +6,7 @@ import type {
 	WorldStateStore,
 } from "@repo/core";
 import {
+	lastToolError,
 	MISSING_PARAMS,
 	parameterFlag,
 	runPlan,
@@ -20,6 +21,7 @@ import {
 	GUARDRAIL_BLOCKED_FACT,
 	REPLY_ACTION,
 	REPLY_GOAL,
+	TOOL_ERROR_REPLY_FACT,
 } from "../goap/goap.service.ts";
 import { finishPlanRun } from "../plan-runs/plan-runs.service.ts";
 import type { RunBinding } from "../run-binding/run-binding.ts";
@@ -284,7 +286,10 @@ async function executeRun(
 			// advice (`replyChunks` hands it the failure and the site's last answer).
 			try {
 				const reply = await runPlan({
-					state: result.finalState,
+					// A tool error is answered from its code's template (`replyFromTemplate:toolError`).
+					state: lastToolError(result.finalState)
+						? { ...result.finalState, [TOOL_ERROR_REPLY_FACT]: true }
+						: result.finalState,
 					goal: REPLY_GOAL,
 					actions: replyOnly(prepared.actions),
 					...runOptions,

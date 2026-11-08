@@ -25,6 +25,8 @@ import {
 	MAX_TOOL_TEXT_CHARS,
 	matchSpecialist,
 	mustAskOrder,
+	NO_PRODUCT_NAMED,
+	namesNoProduct,
 	needsTheWords,
 	PAGE_FACT,
 	PAGE_LANG_FACT,
@@ -512,7 +514,23 @@ function planIntent(
 		intent === "addToCart" ? reuseLastProduct(state) : undefined;
 	// A message that says one of a tool's own options («… Weeknight Beef Tacos»)
 	// asks for that tool: the value is its argument, the search is not needed.
-	const withIntent = { ...state, ...remembered, messageIntent: intent };
+	// Nothing remembered either: the message is only a verb, and the parsed
+	// «query» is that verb. Drop it so no step searches for or adds it.
+	const unnamed =
+		intent === "addToCart" && !remembered && namesNoProduct(state)
+			? {
+					[NO_PRODUCT_NAMED]: true,
+					query: undefined,
+					requestedItems: undefined,
+					requestParsed: true,
+				}
+			: undefined;
+	const withIntent = {
+		...state,
+		...remembered,
+		...unnamed,
+		messageIntent: intent,
+	};
 	const specialist = matchSpecialist(actions, withIntent);
 	// «Remove everything»: the list is read first, then each item removed.
 	const scope = scopeFacts(withIntent);
