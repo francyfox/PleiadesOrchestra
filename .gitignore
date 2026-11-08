@@ -47,3 +47,4 @@ sh.err.*
 # Intlayer cache when a command runs from the repo root
 /.intlayer/
 packages/wordpress-plugin/dev/demo-data.json
+/test-results/
