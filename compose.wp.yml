@@ -33,7 +33,7 @@ services:
       - "127.0.0.1:${WORDPRESS_PORT:-8088}:80"
     volumes:
       - wordpress-data:/var/www/html
-      - ./packages/wordpress-plugin/pleiades-assistant:/var/www/html/wp-content/plugins/pleiades-assistant:ro
+      - ./packages/wordpress-plugin/wp-pleiades-plugin:/var/www/html/wp-content/plugins/wp-pleiades-plugin:ro
     restart: unless-stopped
 
   wordpress-setup:
@@ -54,7 +54,7 @@ services:
       PLEIADES_AGENT_URL: ${WORDPRESS_PLEIADES_AGENT_URL:-}
     volumes:
       - wordpress-data:/var/www/html
-      - ./packages/wordpress-plugin/pleiades-assistant:/var/www/html/wp-content/plugins/pleiades-assistant:ro
+      - ./packages/wordpress-plugin/wp-pleiades-plugin:/var/www/html/wp-content/plugins/wp-pleiades-plugin:ro
       - ./packages/wordpress-plugin/dev/setup.sh:/setup.sh:ro
     entrypoint: ["sh", "/setup.sh"]
     restart: "no"

@@ -1,6 +1,6 @@
 <?php
 // wp eval-file: loads demo-data.json (see pull-demo.ts) into the local shop. Idempotent by SKU / recipe slug.
-// Images are not copied (the products keep no picture); kit quantities come from the "N × Name" lines of the description.
+// Product pictures are sideloaded from the source site's image URLs (capped, skipped on failure); kit quantities come from the "N × Name" lines of the description.
 $data = json_decode( file_get_contents( __DIR__ . '/demo-data.json' ), true );
 $dec  = fn( $s ) => html_entity_decode( (string) $s, ENT_QUOTES );
 $cents = fn( $s ) => (string) ( (int) $s / 100 );
@@ -48,6 +48,34 @@ foreach ( $data['products'] as $r ) {
 	}
 	$local[ $r['id'] ] = $p->save();
 }
+
+// Sideload each product's first picture once (variations show the parent's). Bounded: 8 s per file, 5 min total, stop after 5 failures in a row.
+require_once ABSPATH . 'wp-admin/includes/media.php';
+require_once ABSPATH . 'wp-admin/includes/file.php';
+require_once ABSPATH . 'wp-admin/includes/image.php';
+add_filter( 'http_request_timeout', fn() => 8 );
+$started = time();
+$fails   = 0;
+$pics    = 0;
+foreach ( $data['products'] as $r ) {
+	$p = wc_get_product( $local[ $r['id'] ] );
+	if ( empty( $r['images'][0]['src'] ) || $p->get_image_id() ) { continue; }
+	if ( time() - $started > 300 || $fails >= 5 ) { WP_CLI::warning( 'image import stopped early; rerun to continue' ); break; }
+	$att = media_sideload_image( $r['images'][0]['src'], $p->get_id(), $dec( $r['name'] ), 'id' );
+	if ( is_wp_error( $att ) ) { $fails++; continue; }
+	$fails = 0;
+	$p->set_image_id( $att );
+	$p->save();
+	$pics++;
+}
+// Category tiles borrow the first product picture (the source categories have none).
+foreach ( $data['products'] as $r ) {
+	$img = wc_get_product( $local[ $r['id'] ] )->get_image_id();
+	foreach ( $r['categories'] as $c ) {
+		if ( $img && ! get_term_meta( $cat[ $c['id'] ], 'thumbnail_id', true ) ) { update_term_meta( $cat[ $c['id'] ], 'thumbnail_id', $img ); }
+	}
+}
+WP_CLI::log( "$pics images sideloaded" );
 
 foreach ( $data['variations'] as $r ) {
 	if ( empty( $local[ $r['parent'] ] ) ) { continue; }
