@@ -102,7 +102,7 @@ test.describe("WordPress plugin", () => {
 
 // Settings page tests share the option with the test above, so they live in this serial file.
 const OPTION = "pleiades_assistant";
-const SETTINGS = `${WP}/wp-admin/options-general.php?page=wp-pleiades-plugin`;
+const SETTINGS = `${WP}/wp-admin/options-general.php?page=pleiades-chat`;
 let before = "";
 
 test.beforeAll(() => {

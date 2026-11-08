@@ -17,8 +17,14 @@ msgstr "Панель (получите ключ виджета)"
 msgid "Panel"
 msgstr "Панель"
 
-msgid "Messages go to the agent URL below and to the language model providers it uses. Mention it in your privacy policy."
-msgstr "Сообщения уходят на указанный ниже адрес агента и к провайдерам языковых моделей, которыми он пользуется. Укажите это в политике конфиденциальности."
+msgid "Once a visitor opens the chat, their messages, the page address and cart facts, and the list of assistant tools of this site go to the agent URL below (by default the hosted Pleiades service) and to the language model providers it uses. See the %1$s and the %2$s, and mention it in your own privacy policy."
+msgstr "Когда посетитель открывает чат, его сообщения, адрес страницы и сведения о корзине, а также список инструментов ассистента этого сайта уходят на указанный ниже адрес агента (по умолчанию — облачный сервис Pleiades) и к провайдерам языковых моделей, которыми он пользуется. См. %1$s и %2$s, и укажите это в собственной политике конфиденциальности."
+
+msgid "terms of service"
+msgstr "условия использования"
+
+msgid "privacy policy"
+msgstr "политику конфиденциальности"
 
 msgid "General"
 msgstr "Основные"

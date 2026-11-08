@@ -1,4 +1,4 @@
-// Copies the built widget into the plugin, regenerates the i18n files and zips it (dist/wp-pleiades-plugin.zip).
+// Copies the built widget into the plugin, regenerates the i18n files and zips it (dist/pleiades-chat.zip).
 import { cp, mkdir, rm } from "node:fs/promises";
 import {
 	mo,
@@ -13,7 +13,7 @@ import {
 } from "./i18n.ts";
 
 const widget = "../../packages/pleiades-widget";
-const assets = "wp-pleiades-plugin/assets/js";
+const assets = "pleiades-chat/assets/js";
 await cp(`${widget}/dist/pleiades-widget.js`, `${assets}/pleiades-widget.js`);
 await cp(`${widget}/LICENSE`, `${assets}/pleiades-widget.LICENSE.txt`);
 
@@ -28,5 +28,5 @@ await Bun.write(moPath, mo(ru));
 await rm("dist", { recursive: true, force: true });
 await mkdir("dist", { recursive: true });
 // `*.test.ts` stays out of the shipped plugin.
-await Bun.$`zip -qr dist/wp-pleiades-plugin.zip wp-pleiades-plugin -x "*.test.ts"`;
-console.log("dist/wp-pleiades-plugin.zip");
+await Bun.$`zip -qr dist/pleiades-chat.zip pleiades-chat -x "*.test.ts"`;
+console.log("dist/pleiades-chat.zip");

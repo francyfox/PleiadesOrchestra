@@ -1,3 +1,4 @@
 dist
-wp-pleiades-plugin/assets/js/pleiades-widget.js
-wp-pleiades-plugin/assets/js/pleiades-widget.LICENSE.txt
+pleiades-chat/assets/js/pleiades-widget.js
+pleiades-chat/assets/js/pleiades-widget.LICENSE.txt
+.stubs
