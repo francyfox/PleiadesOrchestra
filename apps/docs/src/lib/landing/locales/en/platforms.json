@@ -1,5 +1,6 @@
 {
 	"available": "Available",
+	"download": "Download plugin",
 	"heading": "Where you can use the widget",
 	"lead": "The widget is a framework-agnostic web component, so it can be installed on any site. Below is the status of ready-made integrations for store platforms.",
 	"soon": "Soon"

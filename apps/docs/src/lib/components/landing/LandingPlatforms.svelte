@@ -11,14 +11,21 @@
 	let c = $derived(landingContent(localeFromPath(page.url.pathname)));
 	let t = $derived(c.platforms);
 
-	// Add `href` when a platform has a page to open; `available` when the widget can be installed there.
+	// Add `href` when a platform has a page to open, `download` for a file button; `available` when the widget can be installed there.
 	const platforms: {
 		name: string;
 		icon: Component;
 		available: boolean;
 		href?: string;
+		download?: string;
 	}[] = [
-		{ name: "WooCommerce", icon: WooCommerceIcon, available: false },
+		{
+			name: "WooCommerce",
+			icon: WooCommerceIcon,
+			available: true,
+			download:
+				"https://github.com/francyfox/PleiadesOrchestra/releases/latest/download/pleiades-chat.zip",
+		},
 		{ name: "OpenCart", icon: OpenCartIcon, available: false },
 		{ name: "1C-Bitrix", icon: BitrixIcon, available: false },
 	];
@@ -47,6 +54,9 @@
 					<span class="chip border px-2 py-0.5 text-xs">
 						{platform.available ? t.available : t.soon}
 					</span>
+					{#if platform.download}
+						<a href={platform.download} download class="border border-accent px-3 py-1 text-sm font-bold text-accent hover:bg-accent hover:text-bg!">{t.download}</a>
+					{/if}
 					{#if platform.href}<span class="sr-only">{c.common.newTab}</span>{/if}
 				</svelte:element>
 			</li>

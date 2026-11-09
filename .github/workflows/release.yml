@@ -84,3 +84,21 @@ jobs:
           done
           (cd dist && sha256sum albedo-* > albedo-checksums.txt)
           gh release upload "$GITHUB_REF_NAME" dist/* --clobber
+
+  # The WordPress plugin zip, attached to the release under a fixed name so
+  # releases/latest/download/pleiades-chat.zip (linked from the landing) always serves the newest one.
+  wordpress:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2.2.0
+        with:
+          bun-version: 1.4.3
+      - run: bun install --frozen-lockfile
+      - run: cd packages/pleiades-widget && bun run build
+      - run: cd packages/wordpress-plugin && bun run build
+      - name: Upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$GITHUB_REF_NAME" packages/wordpress-plugin/dist/pleiades-chat.zip --clobber
