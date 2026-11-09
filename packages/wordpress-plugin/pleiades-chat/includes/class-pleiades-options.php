@@ -232,7 +232,7 @@ final class Pleiades_Options {
 	 * @return string URL.
 	 */
 	private static function sanitize_agent_url( $raw_url ) {
-		$url = esc_url_raw( trim( $raw_url ), array( 'http', 'https' ) );
+		$url = esc_url_raw( trim( is_string( $raw_url ) ? $raw_url : '' ), array( 'http', 'https' ) );
 		if ( '' === $url ) {
 			return PLEIADES_DEFAULT_AGENT_URL;
 		}

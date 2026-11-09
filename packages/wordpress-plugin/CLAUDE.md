@@ -20,7 +20,14 @@ WordPress plugin `pleiades-chat` (display name Pleiades Assistant; PHP 7.4+, GPL
 - CPT `pleiades_recipe` (public, REST, archive `/recipes/`, activation flushes rewrites). Meta, all `show_in_rest`: `servings` (int), `time_minutes` (int), `ingredients` (array of `{sku, quantity, note}`). Kit = WooCommerce **grouped** product in category `kits` with product meta `_pleiades_kit` = JSON text `[{"sku","quantity"}]` (the grouped children hold the products, the meta the quantities). SKUs resolve to products at render time; a deleted product drops out.
 - `the_content` filter on a single recipe/kit prints the ingredient list (recipes) and a hidden "Add all" button (`.pleiades-add-all`, `data-items`); `assets/js/tools.js` un-hides it and runs `addAll` (Store API, nonce retry). Without a widget key only core + tools load, on those pages, and `cfg.tools` is false so no WebMCP tool is registered.
 - `window.PleiadesWp.recipes` / `.kits` (`{name, url, servings, time_minutes, items:[{id, name, quantity}]}`) feed `bundleTools(cfg)` in `tools-core.js`: `list_recipes`, `add_recipe_to_cart({recipe, servings?})`, `list_kits`, `add_kit_to_cart({kit})`; `recipe`/`kit` are enums of the names (core's "named options" picks them over `add_to_cart`). Servings scale quantities up (ceil); one failed item (out of stock) does not stop the rest and is listed under `missing`.
-- Limit: all recipes/kits (max 100 each) are printed into every page; no caching of that query.
+- Limit: all recipes/kits (max 100 each) are printed into every page. `bundles()` was ~270 queries per page, so it is cached in transients `pleiades_bundles_<type>` (1 h), cleared on `save_post`/`delete_post` of recipes and products (`flush_cache`) and in `uninstall.php`; a meta-only write without `save_post` (wp-cli `post meta update`) leaves it stale up to the TTL.
+
+## Security notes
+
+- The inline `window.PleiadesWp` is encoded with `JSON_HEX_TAG|AMP|APOS|QUOT`. Titles are shop data an Author can write (CPT uses `post` capabilities); on WP 7.1 core already escapes `<script` in inline scripts and Authors' titles are kses-stripped, so the flags are defence in depth for older WP.
+- Password-protected recipes/kits are excluded from `bundles()` (`has_password => false`) and get no ingredient list (`post_password_required()`).
+- Recipe meta is validated by the REST schema (`servings`/`time_minutes` 0..9999 + `absint`, ingredients max 100 rows, `quantity` 1..9999, `sku`/`note` max 200). REST creates the post before it rejects bad meta, so a 400 can leave a post behind.
+- `Pleiades_Options::sanitize` takes untrusted POST values: every field must tolerate a non-string (PHP 8 `TypeError`). Tests: `apps/e2e/tests/wordpress/plugin/security.spec.ts`.
 
 `window.PleiadesWp.pages` (cart, checkout, account URLs, WooCommerce only) go into the `open_page` description via `withPages` in `tools-core.js`, so the model knows where to send the visitor.
 

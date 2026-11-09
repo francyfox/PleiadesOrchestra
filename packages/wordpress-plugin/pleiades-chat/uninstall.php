@@ -12,3 +12,5 @@
 defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 
 delete_option( 'pleiades_assistant' );
+delete_transient( 'pleiades_bundles_pleiades_recipe' );
+delete_transient( 'pleiades_bundles_product' );

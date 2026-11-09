@@ -67,6 +67,41 @@ final class Pleiades_Recipes {
 	 * @var string[]
 	 */
 	const BRIEF_FIELDS = array( 'id', 'name', 'quantity' );
+	/**
+	 * Transient prefix of the cached bundle lists (suffix: post type).
+	 *
+	 * @since 0.4.0
+	 * @var string
+	 */
+	const CACHE_PREFIX = 'pleiades_bundles_';
+	/**
+	 * Seconds a cached bundle list lives at most (saves and deletes clear it sooner).
+	 *
+	 * @since 0.4.0
+	 * @var int
+	 */
+	const CACHE_TTL = HOUR_IN_SECONDS;
+	/**
+	 * Most ingredient rows of a recipe, saved through REST.
+	 *
+	 * @since 0.4.0
+	 * @var int
+	 */
+	const MAX_INGREDIENTS = 100;
+	/**
+	 * Largest number a quantity, servings or minutes may hold.
+	 *
+	 * @since 0.4.0
+	 * @var int
+	 */
+	const MAX_NUMBER = 9999;
+	/**
+	 * Longest SKU or note text in an ingredient row.
+	 *
+	 * @since 0.4.0
+	 * @var int
+	 */
+	const MAX_TEXT = 200;
 
 	/**
 	 * Registers the recipe post type, its REST-visible meta and the kit meta of products.
@@ -117,7 +152,16 @@ final class Pleiades_Recipes {
 	 */
 	private static function register_recipe_meta() {
 		foreach ( self::NUMBER_METAS as $key ) {
-			register_post_meta( self::RECIPE, $key, array( 'type' => 'integer', 'single' => true, 'show_in_rest' => true ) );
+			register_post_meta(
+				self::RECIPE,
+				$key,
+				array(
+					'type'              => 'integer',
+					'single'            => true,
+					'sanitize_callback' => 'absint',
+					'show_in_rest'      => array( 'schema' => array( 'type' => 'integer', 'minimum' => 0, 'maximum' => self::MAX_NUMBER ) ),
+				)
+			);
 		}
 		register_post_meta(
 			self::RECIPE,
@@ -127,13 +171,14 @@ final class Pleiades_Recipes {
 				'single'       => true,
 				'show_in_rest' => array(
 					'schema' => array(
-						'type'  => 'array',
-						'items' => array(
+						'type'     => 'array',
+						'maxItems' => self::MAX_INGREDIENTS,
+						'items'    => array(
 							'type'                 => 'object',
 							'properties'           => array(
-								'sku'      => array( 'type' => 'string' ),
-								'quantity' => array( 'type' => 'integer' ),
-								'note'     => array( 'type' => 'string' ),
+								'sku'      => array( 'type' => 'string', 'maxLength' => self::MAX_TEXT ),
+								'quantity' => array( 'type' => 'integer', 'minimum' => 1, 'maximum' => self::MAX_NUMBER ),
+								'note'     => array( 'type' => 'string', 'maxLength' => self::MAX_TEXT ),
 							),
 							'additionalProperties' => false,
 						),
@@ -262,7 +307,10 @@ final class Pleiades_Recipes {
 	}
 
 	/**
-	 * Recipes (or kits, post type product) as the tools see them; at most 100, no caching.
+	 * Recipes (or kits, post type product) as the tools see them; at most 100, password-protected ones left out.
+	 *
+	 * Cached in a transient per type (the lookup costs about 10 queries per bundle on every page);
+	 * save_post and delete_post of recipes and products clear it, see flush_cache().
 	 *
 	 * @since 0.4.0
 	 *
@@ -270,15 +318,37 @@ final class Pleiades_Recipes {
 	 * @return array<int, array{name: string, url: string, servings: int, time_minutes: int, items: array}> Bundles.
 	 */
 	public static function bundles( $type ) {
+		$cached = get_transient( self::CACHE_PREFIX . $type );
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
 		$args = array(
 			'post_type'      => $type,
 			'post_status'    => 'publish',
+			'has_password'   => false,
 			'posts_per_page' => self::BUNDLE_LIMIT,
 		);
 		if ( self::KIT_TYPE === $type ) {
 			$args['meta_key'] = self::KIT_META; // phpcs:ignore WordPress.DB.SlowDBQuery
 		}
-		return array_map( array( __CLASS__, 'bundle' ), get_posts( $args ) );
+		$bundles = array_map( array( __CLASS__, 'bundle' ), get_posts( $args ) );
+		set_transient( self::CACHE_PREFIX . $type, $bundles, self::CACHE_TTL );
+		return $bundles;
+	}
+
+	/**
+	 * Clears the cached bundle list of a post's type; hooked to `save_post` and `delete_post`.
+	 *
+	 * @since 0.4.0
+	 *
+	 * @param int $post_id Post ID.
+	 * @return void
+	 */
+	public static function flush_cache( $post_id ) {
+		$type = get_post_type( $post_id );
+		if ( self::RECIPE === $type || self::KIT_TYPE === $type ) {
+			delete_transient( self::CACHE_PREFIX . $type );
+		}
 	}
 
 	/**
@@ -336,7 +406,7 @@ final class Pleiades_Recipes {
 	 * @return string Content, with the list and button in front on bundle pages.
 	 */
 	public static function content( $content ) {
-		if ( ! self::is_bundle_page() || ! in_the_loop() || ! is_main_query() ) {
+		if ( ! self::is_bundle_page() || ! in_the_loop() || ! is_main_query() || post_password_required() ) {
 			return $content;
 		}
 		$post_id = get_the_ID();

@@ -22,7 +22,7 @@ Website: https://pleiades.shalotts.site/
 Panel: https://pleiades-panel.shalotts.site/user/login
 
 = Source code =
-The bundled `assets/js/pleiades-widget.js` is minified. Its human-readable source (TypeScript/Svelte) is in the project repository: https://github.com/francyfox/PleiadesOrchestra/tree/master/packages/pleiades-widget
+The bundled `assets/js/pleiades-widget.js` is minified. Its human-readable source is in the project repository: https://github.com/francyfox/PleiadesOrchestra/tree/master/packages/pleiades-widget
 
 To rebuild it: clone the repository, run `bun install` in the root, then `bun run build` in `packages/pleiades-widget` (writes `dist/pleiades-widget.js`), then `bun run build` in `packages/wordpress-plugin`, which copies the widget into `assets/js/` and zips this plugin. The other scripts (`tools-core.js`, `tools.js`) are shipped unminified.
 

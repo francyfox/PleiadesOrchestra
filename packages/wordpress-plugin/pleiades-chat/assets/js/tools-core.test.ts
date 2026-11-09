@@ -84,6 +84,8 @@ test("same-origin check", () => {
 	expect(core.sameOrigin("https://evil.test/", o)).toBeNull();
 	expect(core.sameOrigin("javascript:alert(1)", o)).toBeNull();
 	expect(core.sameOrigin("//evil.test/", o)).toBeNull();
+	expect(core.sameOrigin(null, o)).toBeNull();
+	expect(core.sameOrigin(undefined, o)).toBeNull();
 });
 
 test("endpoint URL works with plain permalinks (rest_route)", () => {

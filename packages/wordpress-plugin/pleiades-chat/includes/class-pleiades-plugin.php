@@ -32,6 +32,8 @@ final class Pleiades_Plugin {
 		add_action( 'init', array( 'Pleiades_Recipes', 'register_types' ) );
 		add_action( 'wp_enqueue_scripts', array( 'Pleiades_Assets', 'enqueue' ) );
 		add_action( 'wp_footer', array( 'Pleiades_Context', 'print_widget' ) );
+		add_action( 'save_post', array( 'Pleiades_Recipes', 'flush_cache' ) );
+		add_action( 'delete_post', array( 'Pleiades_Recipes', 'flush_cache' ) );
 		add_filter( 'the_content', array( 'Pleiades_Recipes', 'content' ) );
 		add_filter( 'render_block_core/query-title', array( 'Pleiades_Recipes', 'archive_description' ) );
 		register_activation_hook( PLEIADES_FILE, array( __CLASS__, 'activate' ) );

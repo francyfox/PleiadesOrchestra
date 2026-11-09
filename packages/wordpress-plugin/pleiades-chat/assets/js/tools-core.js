@@ -209,8 +209,9 @@
 	}
 
 	function sameOrigin(url, origin) {
+		if (typeof url !== "string") return null;
 		try {
-			const u = new URL(String(url), origin);
+			const u = new URL(url, origin);
 			return /^https?:$/.test(u.protocol) && u.origin === origin
 				? u.href
 				: null;

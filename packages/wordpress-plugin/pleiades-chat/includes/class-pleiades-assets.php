@@ -69,7 +69,7 @@ final class Pleiades_Assets {
 			return;
 		}
 		self::enqueue_scripts( $has_key );
-		wp_add_inline_script( self::HANDLE_CORE, 'window.PleiadesWp=' . wp_json_encode( self::config( $has_key ) ) . ';', 'before' );
+		wp_add_inline_script( self::HANDLE_CORE, 'window.PleiadesWp=' . wp_json_encode( self::config( $has_key ), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ) . ';', 'before' );
 	}
 
 	/**
@@ -101,7 +101,19 @@ final class Pleiades_Assets {
 	 */
 	private static function asset_version() {
 		$dir = plugin_dir_path( PLEIADES_FILE ) . self::SCRIPT_DIR;
-		return PLEIADES_VERSION . '.' . filemtime( $dir . 'tools.js' ) . filemtime( $dir . 'pleiades-widget.js' );
+		return PLEIADES_VERSION . '.' . self::mtime( $dir . 'tools.js' ) . self::mtime( $dir . 'pleiades-widget.js' );
+	}
+
+	/**
+	 * Modification time of a file; 0 when it is missing (the widget bundle is git-ignored until built).
+	 *
+	 * @since 0.4.0
+	 *
+	 * @param string $file Absolute path.
+	 * @return int Unix time.
+	 */
+	private static function mtime( $file ) {
+		return file_exists( $file ) ? (int) filemtime( $file ) : 0;
 	}
 
 	/**
