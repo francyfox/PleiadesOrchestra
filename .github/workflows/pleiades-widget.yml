@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: 1.4.3
       - run: bun install
       # The polyfill is a private workspace bundled into the widget build; its tests live there.
       - name: Polyfill (types, lint, test)
@@ -42,7 +42,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: 1.4.3
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -70,7 +70,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: 1.4.3
       - run: bun install
       - name: Build
         run: cd packages/pleiades-widget && bun run build
