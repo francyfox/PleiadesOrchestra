@@ -1,0 +1,44 @@
+name: wordpress-plugin
+# Tag `wp-vX.Y.Z` (must equal `Stable tag` in readme.txt) → build pleiades-chat.zip and publish it
+# on a release of its own, apart from the stack's `v*` releases. The same zip also goes on the rolling
+# prerelease `wordpress`, so the landing links one stable URL: releases/download/wordpress/pleiades-chat.zip.
+on:
+  push:
+    tags: ["wp-v[0-9]*"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: wordpress-release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # Deploys come from master only: a tag on a develop/feature commit must not publish.
+      - name: Tag is on master
+        run: git merge-base --is-ancestor "$GITHUB_SHA" origin/master
+      - name: Tag matches the plugin version
+        run: grep -qx "Stable tag: ${GITHUB_REF_NAME#wp-v}" packages/wordpress-plugin/pleiades-chat/readme.txt
+      - uses: oven-sh/setup-bun@v2.2.0
+        with:
+          bun-version: 1.4.3
+      - run: bun install --frozen-lockfile
+      - run: cd packages/wordpress-plugin && bun run test
+      - run: cd packages/pleiades-widget && bun run build
+      - run: cd packages/wordpress-plugin && bun run build
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          zip=packages/wordpress-plugin/dist/pleiades-chat.zip
+          gh release create "$GITHUB_REF_NAME" "$zip" --verify-tag --latest=false \
+            --title "Pleiades Assistant ${GITHUB_REF_NAME#wp-v}" \
+            --notes "WordPress plugin \`pleiades-chat\` ${GITHUB_REF_NAME#wp-v}. Changes: CHANGELOG.md."
+          gh release delete wordpress --cleanup-tag --yes || true
+          gh release create wordpress "$zip" --target "$GITHUB_SHA" --prerelease --latest=false \
+            --title "Pleiades Assistant (latest zip)" --notes "Rolling copy of the newest wp-v* release."
