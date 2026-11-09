@@ -23,6 +23,12 @@ jobs:
     timeout-minutes: 20
     env:
       TURBO_TELEMETRY_DISABLED: "1"
+      # Turborepo Remote Cache (lint/types/test are deterministic). Absent on fork PRs (no secrets):
+      # turbo then falls back to the local cache below. Not set in docs.yml/orchestra.yml on purpose:
+      # a cache hit would skip the changelog fetch and the Sentry source map upload, and a PR branch
+      # could write entries those deploy builds would trust.
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: oven-sh/setup-bun@v2.2.0

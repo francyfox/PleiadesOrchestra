@@ -2,6 +2,7 @@ import { Elysia, t } from "elysia";
 import type { Db } from "../database/database.ts";
 import { PageQuery } from "../http/http.ts";
 import { OwnerQuery } from "../visitors/visitors.schema.ts";
+import type { Emit } from "../webhooks/webhooks.types.ts";
 import {
 	BlockedIpResult,
 	BlockedIpsPage,
@@ -18,10 +19,16 @@ export interface BlockedIpsDeps {
 	db: Db;
 	ipHashSalt: string;
 	now: () => number;
+	emit?: Emit;
 }
 
 /** Admin routes for blocked IPs. Auth is enforced by the app's `onRequest` guard. */
-export function blockedIpsRoutes({ db, ipHashSalt, now }: BlockedIpsDeps) {
+export function blockedIpsRoutes({
+	db,
+	ipHashSalt,
+	now,
+	emit,
+}: BlockedIpsDeps) {
 	return new Elysia({
 		prefix: "/v1/admin/blocked-ips",
 		tags: ["Admin: blocked IPs"],
@@ -39,7 +46,14 @@ export function blockedIpsRoutes({ db, ipHashSalt, now }: BlockedIpsDeps) {
 			"/",
 			({ body, status }) => {
 				try {
-					return { item: createBlockedIp(db, body, ipHashSalt, now()) };
+					const item = createBlockedIp(db, body, ipHashSalt, now());
+					emit?.("ip.blocked", {
+						ip: body.ip,
+						channelId: item.channelId,
+						reason: item.reason,
+						expiresAt: item.expiresAt,
+					});
+					return { item };
 				} catch (error) {
 					if (error instanceof UnknownChannelError) {
 						return status(404, "Unknown channel");

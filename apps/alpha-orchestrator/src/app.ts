@@ -41,6 +41,8 @@ import type { Db } from "./modules/database/database.ts";
 import { decisionsRoutes } from "./modules/decisions/decisions.ts";
 import { financeRoutes } from "./modules/finance/finance.ts";
 import { buildActions } from "./modules/goap/goap.service.ts";
+import { findGuardrailMatch } from "./modules/guardrails/guardrails.service.ts";
+import { guardrailsRoutes } from "./modules/guardrails/guardrails.ts";
 import { HOUR_MS } from "./modules/http/http.service.ts";
 import { identifyRoutes } from "./modules/identify/identify.ts";
 import { IntentMemory } from "./modules/intents/intents.service.ts";
@@ -62,6 +64,11 @@ import { subscriptionsRoutes } from "./modules/subscriptions/subscriptions.ts";
 import { threadsRoutes } from "./modules/threads/threads.ts";
 import { usageRoutes } from "./modules/usage/usage.ts";
 import { visitorsRoutes } from "./modules/visitors/visitors.ts";
+import {
+	createNotifier,
+	type NotifierDeps,
+} from "./modules/webhooks/webhooks.service.ts";
+import { webhooksRoutes } from "./modules/webhooks/webhooks.ts";
 import {
 	DEFAULT_WIDGET_OPTIONS,
 	type WidgetOptions,
@@ -125,6 +132,12 @@ export interface AppDeps {
 	polarDashboardUrl?: string;
 	/** Widget limits and settings; unset fields use `DEFAULT_WIDGET_OPTIONS`. */
 	widget?: Partial<WidgetOptions>;
+	/** Called when a guardrail blocked a visitor's message (e.g. to notify staff). */
+	onBlocked?: (info: { channelId?: string; ruleLine: number }) => void;
+	/** Webhook delivery; unset fields use the real fetch / DNS. `allowPrivate` is dev only (private addresses, http). */
+	webhooks?: Pick<NotifierDeps, "fetch" | "resolve" | "allowPrivate" | "sleep">;
+	/** Shared with other event sources (`webhooks.instance.ts`); unset = one built from `webhooks`. */
+	notifier?: ReturnType<typeof createNotifier>;
 	now?: () => number;
 	/** Where persistence errors after a response go; they never break the stream. */
 	onError?: (error: unknown) => void;
@@ -144,6 +157,8 @@ export function createApp(deps: AppDeps) {
 		deps.historyStore,
 		(channelId) => deps.channels.replyPrompt(channelId),
 	);
+	const notifier =
+		deps.notifier ?? createNotifier({ db: deps.db, now, ...deps.webhooks });
 	const activeRuns = deps.activeRuns ?? new ActiveRuns();
 	const intentMemory = new IntentMemory(deps.db);
 	const widgetOptions = { ...DEFAULT_WIDGET_OPTIONS, ...deps.widget };
@@ -170,6 +185,15 @@ export function createApp(deps: AppDeps) {
 					? (deps.channels.byId(channelId)?.intentSets ?? [])
 					: ["shop"],
 			),
+		guardrail: (text) => findGuardrailMatch(deps.db, text),
+		onBlocked: (info) => {
+			deps.onBlocked?.(info);
+			notifier.emit("guardrail.blocked", {
+				channelId: info.channelId ?? null,
+				rule: `line ${info.ruleLine}`,
+				reason: "prompt injection",
+			});
+		},
 		functionCallAgent: deps.functionCallAgent,
 		understandAgent: deps.understandAgent,
 		personaLang: (channelId) => getPersona(deps.db, channelId).defaultLang,
@@ -190,6 +214,7 @@ export function createApp(deps: AppDeps) {
 		usageRecorder: deps.usageRecorder,
 		now,
 		onError: deps.onError,
+		emit: notifier.emit,
 	});
 
 	const observability =
@@ -234,6 +259,10 @@ export function createApp(deps: AppDeps) {
 						description: "Channels and their persona (reply prompt).",
 					},
 					{ name: "Admin: blocked IPs" },
+					{
+						name: "Admin: guardrails",
+						description: "Prompt-injection filter: switch and regex rules.",
+					},
 					{
 						name: "Admin: intents",
 						description: "Laya's intent answers waiting for an admin verdict.",
@@ -301,7 +330,15 @@ export function createApp(deps: AppDeps) {
 			.use(
 				guarded((request) => authorizeTransport(request, authKeys))
 					.use(accessRoutes({ db, directory, now }))
-					.use(messagesRoutes({ db, directory, reply, now }))
+					.use(
+						messagesRoutes({
+							db,
+							directory,
+							reply,
+							now,
+							maxTextChars: widgetOptions.maxTextChars,
+						}),
+					)
 					.use(threadsRoutes({ db, directory, agent: deps.agent }))
 					.use(decisionsRoutes(deps.decisionAgent))
 					.use(
@@ -320,7 +357,16 @@ export function createApp(deps: AppDeps) {
 					.use(channelsRoutes({ db, directory, now }))
 					.use(ownerChannelsRoutes({ db, directory }))
 					.use(personaRoutes({ db, directory, now }))
-					.use(blockedIpsRoutes({ db, ipHashSalt: deps.ipHashSalt, now }))
+					.use(guardrailsRoutes({ db, now }))
+					.use(
+						blockedIpsRoutes({
+							db,
+							ipHashSalt: deps.ipHashSalt,
+							now,
+							emit: notifier.emit,
+						}),
+					)
+					.use(webhooksRoutes({ db, now, notifier, ...deps.webhooks }))
 					.use(intentsRoutes({ db, memory: intentMemory, now }))
 					.use(usageRoutes({ db, now, prices: deps.prices }))
 					.use(financeRoutes({ db, now, prices: deps.prices }))

@@ -132,8 +132,8 @@ services:
     volumes:
       - gamma-decision-models:/root/.cache/receptron-laya
 
-#  # Backend of the admin panel (Elysia): admin accounts (better-auth) and the
-#  # orchestrator's /v1/admin/* behind a session. Swagger UI: /api/docs.
+  #  # Backend of the admin panel (Elysia): admin accounts (better-auth) and the
+  #  # orchestrator's /v1/admin/* behind a session. Swagger UI: /api/docs.
   admin-api:
     build:
       context: .

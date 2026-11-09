@@ -3,6 +3,7 @@
 @media (min-width: 950px) {
 	.desktop-nav-items,
 	.desktop-locale-selector {
+		/* biome-ignore lint/complexity/noImportantStyles: must beat the theme's Uno `hidden` utilities on these elements */
 		display: flex !important;
 	}
 }

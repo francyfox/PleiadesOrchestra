@@ -1,4 +1,4 @@
-import { type Dictionary, insert, t } from "intlayer";
+import { type Dictionary, t } from "intlayer";
 
 const chartsContent = {
 	key: "charts",
@@ -24,11 +24,6 @@ const chartsContent = {
 			ru: "За период вызовов не было.",
 			en: "No calls in this period.",
 			kk: "Бұл кезеңде шақырулар болмады.",
-		}),
-		gaugeLabel: t({
-			ru: insert("{{label}}: {{score}} из 100"),
-			en: insert("{{label}}: {{score}} out of 100"),
-			kk: insert("{{label}}: 100-ден {{score}}"),
 		}),
 	},
 } satisfies Dictionary;

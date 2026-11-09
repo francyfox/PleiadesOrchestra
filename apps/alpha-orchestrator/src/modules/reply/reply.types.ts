@@ -13,6 +13,7 @@ import type { ActiveRuns } from "../active-runs/active-runs.ts";
 import type { Db } from "../database/database.ts";
 import type { IntentMemory } from "../intents/intents.service.ts";
 import type { RunBinding } from "../run-binding/run-binding.ts";
+import type { Emit } from "../webhooks/webhooks.types.ts";
 
 export interface ReplyDeps {
 	db: Db;
@@ -48,6 +49,10 @@ export interface ReplyDeps {
 	functionCallAgent?: FunctionCallAgent;
 	/** `alpha-understand`: message -> English + tasks with products and counts in one call; unset or failing = the message goes on as typed. */
 	understandAgent?: FunctionCallAgent;
+	/** The line of the guardrail rule that matches a message; `undefined` = none (or the guardrails are off). Unset = no guardrails. */
+	guardrail?: (text: string) => number | undefined;
+	/** Called when a guardrail blocked a message; nothing else happens. */
+	onBlocked?: (info: { channelId?: string; ruleLine: number }) => void;
 	/** The channel persona's fixed answer language (ISO code); "" or unset = the visitor's. */
 	personaLang?: (channelId: string) => string | undefined;
 	/** Where the visitor's message is stored when the run starts (so a reload mid-run still shows it). */
@@ -73,4 +78,6 @@ export interface ReplyDeps {
 	usageRecorder?: { flush(): void; record?: UsageRecorder["record"] };
 	now: () => number;
 	onError?: (error: unknown) => void;
+	/** Webhook events (`run.failed`). */
+	emit?: Emit;
 }

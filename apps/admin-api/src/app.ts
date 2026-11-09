@@ -11,6 +11,7 @@ import { channelsRoutes } from "./modules/channels/channels.ts";
 import { customersRoutes } from "./modules/customers/customers.ts";
 import { dashboardRoutes } from "./modules/dashboard/dashboard.ts";
 import { financeRoutes } from "./modules/finance/finance.ts";
+import { guardrailsRoutes } from "./modules/guardrails/guardrails.ts";
 import { intentsRoutes } from "./modules/intents/intents.ts";
 import { liveRoutes } from "./modules/live/live.ts";
 import { createLiveHub } from "./modules/live-hub/live-hub.ts";
@@ -26,6 +27,7 @@ import { subscriptionsRoutes } from "./modules/subscriptions/subscriptions.ts";
 import { systemRoutes } from "./modules/system/system.ts";
 import { createSystemFeed } from "./modules/system-feed/system-feed.ts";
 import { visitorsRoutes } from "./modules/visitors/visitors.ts";
+import { webhooksRoutes } from "./modules/webhooks/webhooks.ts";
 
 export type { AdminApiDeps, RouteDeps } from "./app.types.ts";
 
@@ -90,8 +92,10 @@ export function createApp(input: AdminApiDeps) {
 				.use(visitorsRoutes(deps))
 				.use(agentsRoutes(deps))
 				.use(financeRoutes(deps))
+				.use(guardrailsRoutes(deps))
 				.use(channelsRoutes(deps))
 				.use(blockedIpsRoutes(deps))
+				.use(webhooksRoutes(deps))
 				.use(intentsRoutes(deps))
 				.use(subscriptionsRoutes(deps))
 				.use(billingRoutes(deps))

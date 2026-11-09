@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 import type {
 	DecisionAgent,
 	DecisionAnswer,
@@ -8,10 +8,12 @@ import type {
 	FunctionCallAgent,
 	FunctionCallRequest,
 } from "#core/function-call-agent";
+import { lastToolError } from "#core/goap/tool-error";
 import type { WorldState } from "#core/goap/types";
 import {
 	createWebMcpActions,
 	firstListedProductName,
+	MAX_WRITE_CALLS_PER_RUN,
 	type WebMcpToolDescriptor,
 } from "#core/goap/webmcp-actions";
 import type { LlmCallRecord } from "#core/types";
@@ -123,6 +125,7 @@ describe("createWebMcpActions", () => {
 					arguments: { itemId: "sku-1", quantity: 2 },
 				},
 			},
+			facts: { writeCalls: 1 },
 		});
 	});
 
@@ -208,6 +211,50 @@ describe("createWebMcpActions", () => {
 		expect(outcome).toEqual({ "toolResult:add_to_cart": false });
 	});
 
+	test("a run may make MAX_WRITE_CALLS_PER_RUN cart writes; the next one is refused with LIMIT_EXCEEDED, no browser call", async () => {
+		const [action] = await createWebMcpActions({
+			tools: [{ name: "add_to_cart" }],
+			decisionAgent: fakeDecisionAgent("addToCart"),
+		});
+		if (!action) throw new Error("expected one action");
+
+		const last = await action.execute({
+			state: { writeCalls: MAX_WRITE_CALLS_PER_RUN - 1 },
+		});
+		expect(last).toMatchObject({
+			waiting: { payload: { tool: "add_to_cart" } },
+			facts: { writeCalls: MAX_WRITE_CALLS_PER_RUN },
+		});
+
+		const over = await action.execute({
+			state: { writeCalls: MAX_WRITE_CALLS_PER_RUN },
+		});
+		expect(over).not.toHaveProperty("waiting");
+		expect(over).toMatchObject({
+			"toolResult:add_to_cart": false,
+			"webmcp:add_to_cart:result": "error",
+		});
+		expect(
+			lastToolError({
+				"webmcp:add_to_cart:result": "error",
+				"webmcp:add_to_cart:text": String(
+					(over as WorldState)["webmcp:add_to_cart:text"],
+				),
+			}),
+		).toEqual({ tool: "add_to_cart", code: "LIMIT_EXCEEDED" });
+	});
+
+	test("reads do not count against the write cap", async () => {
+		const [action] = await createWebMcpActions({
+			tools: [{ name: "get_cart" }],
+			decisionAgent: fakeDecisionAgent("search"),
+		});
+		const outcome = await action?.execute({
+			state: { writeCalls: MAX_WRITE_CALLS_PER_RUN },
+		});
+		expect(outcome).toHaveProperty("waiting");
+	});
+
 	test('an unclassifiable answer falls back to "other": empty preconditions/effects but still classifies once', async () => {
 		const decisionAgent = fakeDecisionAgent("nonsense-outside-taxonomy");
 
@@ -264,6 +311,17 @@ describe("navigation tools and the page the visitor is on", () => {
 		const action = await navigateAction();
 		expect(action.effects).toMatchObject({ pageOpened: true });
 		expect(action.preconditions).toEqual({});
+	});
+
+	test("open_page is a navigate tool by its name, without asking Laya", async () => {
+		const decisionAgent = fakeDecisionAgent("other");
+		const decide = spyOn(decisionAgent, "decide");
+		const [action] = await createWebMcpActions({
+			tools: [{ ...gotoTool, name: "open_page" }],
+			decisionAgent,
+		});
+		expect(action?.effects).toMatchObject({ pageOpened: true });
+		expect(decide).not.toHaveBeenCalled();
 	});
 
 	test("it asks the browser when the destination is another page", async () => {
@@ -450,6 +508,46 @@ describe("tool arguments written by the function-call model", () => {
 			"toolResult:search_products": false,
 			lastProduct: "",
 		});
+	});
+
+	test("a message that names no product makes no call: the step asks which one", async () => {
+		const agent = fakeFunctionCall({ query: "buy" });
+		const action = await searchAction(agent);
+		const outcome = await action.execute({
+			state: { noProductNamed: true, userMessageEn: "Buy it." },
+		});
+		expect(outcome).toMatchObject({ "toolResult:search_products": false });
+		expect(String((outcome as WorldState).missingParams)).toContain(
+			'"tool":"search_products"',
+		);
+		expect(agent.requests).toHaveLength(0);
+	});
+
+	test("an id that is a placeholder is never sent to the site", async () => {
+		const ADD_BY_ID: WebMcpToolDescriptor = {
+			name: "add_to_cart",
+			description: "Add a laptop to the cart",
+			inputSchema: {
+				type: "object",
+				properties: { product_id: { type: "integer" } },
+				required: ["product_id"],
+			},
+		};
+		for (const placeholder of [0, "0", ""]) {
+			const actions = await createWebMcpActions({
+				tools: [ADD_BY_ID],
+				decisionAgent: fakeDecisionAgent("addToCart"),
+				functionCallAgent: fakeFunctionCall({ product_id: placeholder }),
+			});
+			const outcome = await actions[0]?.execute({
+				state: { userMessageEn: "Buy it." },
+			});
+			expect(outcome).toMatchObject({ "toolResult:add_to_cart": false });
+			expect(outcome).not.toHaveProperty("waiting");
+			expect(String((outcome as WorldState).missingParams)).toContain(
+				"product_id",
+			);
+		}
 	});
 
 	test("the remembered product is not shown to the function-call model as a fact", async () => {

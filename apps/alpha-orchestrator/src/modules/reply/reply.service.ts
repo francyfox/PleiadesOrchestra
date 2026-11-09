@@ -25,6 +25,8 @@ import {
 	MAX_TOOL_TEXT_CHARS,
 	matchSpecialist,
 	mustAskOrder,
+	NO_PRODUCT_NAMED,
+	namesNoProduct,
 	needsTheWords,
 	PAGE_FACT,
 	PAGE_LANG_FACT,
@@ -44,6 +46,8 @@ import { intentFromMessageCues, SHOP_TAXONOMY } from "@repo/intent-presets";
 import {
 	ASKED_OPTIONS_FACT,
 	customerFacts,
+	GUARDRAIL_BLOCKED_FACT,
+	GUARDRAIL_REPLY_ACTION,
 	lastToolAnswer,
 	REMOVAL_REPLY_ACTION,
 	REPLY_ACTION,
@@ -329,6 +333,38 @@ function reportIntent(
 	});
 }
 
+/** A message a guardrail matched: a fixed refusal; the text is neither stored nor sent to a model. */
+async function blockedRun(
+	deps: ReplyDeps,
+	visitor: VisitorRow,
+	threadId: string,
+	planRunId: string,
+	text: string,
+	options: ReplyOptions,
+	ruleLine: number,
+): Promise<PreparedRun> {
+	deps.onBlocked?.({ channelId: visitor.channelId, ruleLine });
+	const checkpoint = await deps.worldStateStore.load(threadId);
+	const personaLang = deps.personaLang?.(visitor.channelId);
+	return {
+		state: {
+			...(checkpoint ? sessionFacts(checkpoint.state) : {}),
+			userMessage: normalizeText.apply(text),
+			threadId,
+			userId: visitor.id,
+			channelId: visitor.channelId,
+			planRunId,
+			...pageFacts(options.page, options),
+			// The injected text is not stored, so the template does not store it either.
+			[USER_STORED_FACT]: true,
+			...(personaLang ? { [PERSONA_LANG_FACT]: personaLang } : {}),
+			[GUARDRAIL_BLOCKED_FACT]: true,
+		},
+		goal: REPLY_GOAL,
+		actions: deps.actions.filter((a) => a.name === GUARDRAIL_REPLY_ACTION),
+	};
+}
+
 /** Plan inputs for a brand-new user message. */
 export async function prepareNewMessage(
 	deps: ReplyDeps,
@@ -338,6 +374,10 @@ export async function prepareNewMessage(
 	text: string,
 	options: ReplyOptions,
 ): Promise<PreparedRun> {
+	// Before any model call and before the text reaches the history.
+	const early = deps.guardrail?.(text);
+	if (early !== undefined)
+		return blockedRun(deps, visitor, threadId, planRunId, text, options, early);
 	const { state, understood, resumedGoal } = await initialState(
 		deps,
 		visitor,
@@ -346,6 +386,19 @@ export async function prepareNewMessage(
 		text,
 		options,
 	);
+	// The English text alpha-understand returned (already stored with the turn: the model call and the history write happened).
+	const late =
+		typeof state.userMessageEn === "string"
+			? deps.guardrail?.(state.userMessageEn)
+			: undefined;
+	if (late !== undefined) {
+		deps.onBlocked?.({ channelId: visitor.channelId, ruleLine: late });
+		return {
+			state: { ...state, [GUARDRAIL_BLOCKED_FACT]: true },
+			goal: REPLY_GOAL,
+			actions: deps.actions.filter((a) => a.name === GUARDRAIL_REPLY_ACTION),
+		};
+	}
 	const dynamicActions = await resolveDynamicActions(deps, threadId);
 	const actions = [...deps.actions, ...dynamicActions];
 	// shortcut: only `missingParams` waits for the visitor; `clarifyOptions` and `conflictingTasks` could use the same fact, not built yet.
@@ -461,7 +514,23 @@ function planIntent(
 		intent === "addToCart" ? reuseLastProduct(state) : undefined;
 	// A message that says one of a tool's own options («… Weeknight Beef Tacos»)
 	// asks for that tool: the value is its argument, the search is not needed.
-	const withIntent = { ...state, ...remembered, messageIntent: intent };
+	// Nothing remembered either: the message is only a verb, and the parsed
+	// «query» is that verb. Drop it so no step searches for or adds it.
+	const unnamed =
+		intent === "addToCart" && !remembered && namesNoProduct(state)
+			? {
+					[NO_PRODUCT_NAMED]: true,
+					query: undefined,
+					requestedItems: undefined,
+					requestParsed: true,
+				}
+			: undefined;
+	const withIntent = {
+		...state,
+		...remembered,
+		...unnamed,
+		messageIntent: intent,
+	};
 	const specialist = matchSpecialist(actions, withIntent);
 	// «Remove everything»: the list is read first, then each item removed.
 	const scope = scopeFacts(withIntent);

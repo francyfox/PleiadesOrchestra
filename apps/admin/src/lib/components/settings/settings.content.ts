@@ -4,6 +4,23 @@ const settingsContent = {
 	key: "settings",
 	content: {
 		title: t({ ru: "Настройки", en: "Settings", kk: "Параметрлер" }),
+		headerStats: {
+			title: t({
+				ru: "Статистика в шапке",
+				en: "Header stats",
+				kk: "Тақырыптағы статистика",
+			}),
+			description: t({
+				ru: "Загрузка процессора, памяти и видеокарты сервера рядом с переключателем языка. Хранится в этом браузере.",
+				en: "The server's CPU, memory and GPU load next to the language switcher. Kept in this browser.",
+				kk: "Тіл ауыстырғыштың жанында сервердің процессор, жад және бейнекарта жүктемесі. Осы браузерде сақталады.",
+			}),
+			label: t({
+				ru: "Показывать статистику",
+				en: "Show the stats",
+				kk: "Статистиканы көрсету",
+			}),
+		},
 		polarSync: {
 			title: t({
 				ru: "Синхронизация с Polar",

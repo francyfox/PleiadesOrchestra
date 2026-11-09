@@ -5,6 +5,7 @@ import {
 	normalizePosition,
 	parseCustomerContext,
 	parseExamples,
+	parseLabels,
 	resolveConfig,
 } from "@/lib/config/config.ts";
 
@@ -242,5 +243,24 @@ describe("parseExamples", () => {
 
 	test("an explicit empty list switches the examples off", () => {
 		expect(parseExamples("[]")).toEqual([]);
+	});
+});
+
+describe("parseLabels", () => {
+	const base = { send: "Send", stop: "Stop", examples: ["a"] };
+
+	test("keeps text overrides of known text keys only", () => {
+		expect(
+			parseLabels(
+				'{"send":"Go","stop":" ","examples":"x","nope":"y","__proto__":"z"}',
+				base,
+			),
+		).toEqual({ send: "Go" });
+	});
+
+	test("unusable input gives no overrides", () => {
+		expect(parseLabels(undefined, base)).toEqual({});
+		expect(parseLabels("not json", base)).toEqual({});
+		expect(parseLabels('["send"]', base)).toEqual({});
 	});
 });

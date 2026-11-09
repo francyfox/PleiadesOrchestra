@@ -115,7 +115,7 @@
 			ctx.stroke();
 
 			const label =
-				node.label.length > 10 ? node.label.slice(0, 9) + "…" : node.label;
+				node.label.length > 10 ? `${node.label.slice(0, 9)}…` : node.label;
 			ctx.fillStyle = textColor;
 			ctx.font = "10px monospace";
 			ctx.textAlign = "center";
@@ -147,13 +147,13 @@
 			};
 		}
 
-		function resizeCanvas() {
-			el.width = wrapper!.clientWidth;
-			el.height = wrapper!.clientHeight;
+		const resizeCanvas = () => {
+			el.width = wrapper.clientWidth;
+			el.height = wrapper.clientHeight;
 			// Read current reactive state values at call time (outside reactive
 			// context, so no tracking — that is intentional here).
 			drawGraphImpl(el, nodes, edges);
-		}
+		};
 
 		const ro = new ResizeObserver(resizeCanvas);
 		ro.observe(wrapper);

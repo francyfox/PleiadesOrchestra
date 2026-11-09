@@ -4,7 +4,8 @@
 	"license": "GPL-2.0-or-later",
 	"scripts": {
 		"build": "bun scripts/build.ts",
-		"test": "bun test pleiades-assistant",
+		"stubs": "mkdir -p .stubs && curl -fsSL -o .stubs/wordpress-stubs.php https://raw.githubusercontent.com/php-stubs/wordpress-stubs/master/wordpress-stubs.php && curl -fsSL -o .stubs/woocommerce-stubs.php https://raw.githubusercontent.com/php-stubs/woocommerce-stubs/master/woocommerce-stubs.php",
+		"test": "bun test pleiades-chat",
 		"lint": "biome check .",
 		"check-types": "bun check"
 	},

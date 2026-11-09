@@ -286,7 +286,9 @@ describe("llms.txt (llmstxt.org)", () => {
 
 	test("clean Markdown: no frontmatter, the Svelte-only code escape back to backticks", () => {
 		const md =
+			// biome-ignore lint/suspicious/noTemplateCurlyInString: literal `${` is the test data
 			"---\ntitle: T\n---\n\n# T\n\nUse <code>{'${VAR}'}</code> here.\n";
+		// biome-ignore lint/suspicious/noTemplateCurlyInString: literal `${` is the test data
 		expect(cleanMarkdown(md)).toBe("# T\n\nUse `${VAR}` here.\n");
 	});
 

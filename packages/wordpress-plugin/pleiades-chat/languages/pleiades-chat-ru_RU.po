@@ -1,0 +1,102 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Pleiades Assistant\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: ru_RU\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+msgid "Settings"
+msgstr "Настройки"
+
+msgid "Website"
+msgstr "Сайт"
+
+msgid "Panel (get your widget key)"
+msgstr "Панель (получите ключ виджета)"
+
+msgid "Panel"
+msgstr "Панель"
+
+msgid "Once a visitor opens the chat, their messages, the page address and cart facts, and the list of assistant tools of this site go to the agent URL below (by default the hosted Pleiades service) and to the language model providers it uses. See the %1$s and the %2$s, and mention it in your own privacy policy."
+msgstr "Когда посетитель открывает чат, его сообщения, адрес страницы и сведения о корзине, а также список инструментов ассистента этого сайта уходят на указанный ниже адрес агента (по умолчанию — облачный сервис Pleiades) и к провайдерам языковых моделей, которыми он пользуется. См. %1$s и %2$s, и укажите это в собственной политике конфиденциальности."
+
+msgid "terms of service"
+msgstr "условия использования"
+
+msgid "privacy policy"
+msgstr "политику конфиденциальности"
+
+msgid "General"
+msgstr "Основные"
+
+msgid "Publishable key"
+msgstr "Публичный ключ"
+
+msgid "From your channel in the %1$s. The channel must allow %2$s."
+msgstr "Из вашего канала в %1$s. Канал должен разрешать %2$s."
+
+msgid "Pleiades panel"
+msgstr "панели Pleiades"
+
+msgid "Agent URL"
+msgstr "Адрес агента"
+
+msgid "Position"
+msgstr "Положение"
+
+msgid "Localization"
+msgstr "Локализация"
+
+msgid "Heading"
+msgstr "Заголовок"
+
+msgid "Greeting"
+msgstr "Приветствие"
+
+msgid "Input placeholder"
+msgstr "Подсказка в поле ввода"
+
+msgid "Example questions (one per line)"
+msgstr "Примеры вопросов (по одному в строке)"
+
+msgid "Widget language"
+msgstr "Язык виджета"
+
+msgid "Automatic (visitor / page language, no overrides)"
+msgstr "Автоматически (язык посетителя или страницы, без замен)"
+
+msgid "Only the texts of the selected language are printed. A field left empty keeps the widget default (shown as the placeholder)."
+msgstr "Выводятся только тексты выбранного языка. Пустое поле оставляет текст виджета по умолчанию (он показан подсказкой)."
+
+msgid "Heading and greeting saved by an earlier version are still used for the selected language while its own field is empty."
+msgstr "Заголовок и приветствие, сохранённые прежней версией, по-прежнему используются для выбранного языка, пока его собственное поле пусто."
+
+msgid "The key must be a publishable key (starts with pk_). Never paste a secret key."
+msgstr "Нужен публичный ключ (начинается с pk_). Никогда не вставляйте секретный ключ."
+
+msgid "Recipes"
+msgstr "Рецепты"
+
+msgid "Recipe"
+msgstr "Рецепт"
+
+msgid "Simple recipes: add every ingredient to the cart in one click."
+msgstr "Простые рецепты: все ингредиенты в корзину одним нажатием."
+
+msgid "Serves %d"
+msgstr "Порций: %d"
+
+msgid "%d min"
+msgstr "%d мин"
+
+msgid "Ingredients"
+msgstr "Ингредиенты"
+
+msgid "out of stock"
+msgstr "нет в наличии"
+
+msgid "Add all ingredients to cart"
+msgstr "Добавить все ингредиенты в корзину"
+
+msgid "Add the whole kit to cart"
+msgstr "Добавить весь набор в корзину"

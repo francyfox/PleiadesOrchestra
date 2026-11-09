@@ -287,6 +287,7 @@ describe("the matched tool's call", () => {
 					arguments: { bundle: "Home Office Starter Kit" },
 				},
 			},
+			facts: { writeCalls: 1 },
 		});
 	});
 });

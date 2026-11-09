@@ -1,7 +1,7 @@
 import { type Static, t } from "elysia";
 import { nullable } from "../common/common.schema.ts";
 
-/** Host hardware snapshot — served by `GET /api/system`, used by the header meter and /recommendations. */
+/** Host hardware snapshot — served by `GET /api/system`, used by the header meter. */
 
 export const CpuInfo = t.Object({
 	model: t.String(),

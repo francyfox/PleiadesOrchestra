@@ -22,7 +22,9 @@ Follows the root "Code style" convention. Specific here: `src/app.types.ts` (`Ad
 
 `apps/admin` imports only two paths: `admin-api` (the `App` type from `src/app.ts`) and `admin-api/types` (`src/types.ts`, re-exports from modules) — keep both paths stable.
 
-Modules: `admin-policy`, `accounts`, `admins`, `agents`, `auth`, `billing`, `blocked-ips`, `channels`, `common`, `config`, `customers`, `dashboard`, `database`, `live`, `live-hub`, `live-topics`, `mail`, `mcp`, `orchestrator`, `origin-guard`, `performance`, `plan-runs`, `requests`, `sentry-tunnel`, `session`, `staff-token`, `stats`, `subscriptions`, `system`, `system-feed`, `usage`, `visitors`.
+Modules: `admin-policy`, `accounts`, `admins`, `agents`, `auth`, `billing`, `blocked-ips`, `channels`, `common`, `config`, `customers`, `dashboard`, `database`, `guardrails`, `live`, `live-hub`, `live-topics`, `mail`, `mcp`, `orchestrator`, `origin-guard`, `performance`, `plan-runs`, `requests`, `sentry-tunnel`, `session`, `staff-token`, `stats`, `subscriptions`, `system`, `system-feed`, `usage`, `visitors`, `webhooks`.
+
+`modules/webhooks`: `/api/webhooks` (list + event catalog, create, PATCH, `:id/secret`, `:id/test`, DELETE), `{ account: true }`, a thin proxy to the orchestrator's `/v1/admin/webhooks`. A customer's calls always carry `ownerId = ownerScope(account)` (a client value is ignored); staff send none and manage all. The secret is in the create/rotate response only. Body schemas in `forms/webhook.schema.ts`.
 
 ## Accounts, levels and sign-in
 
@@ -59,6 +61,8 @@ Intervals: dashboard/visitors/billing 5 s, visitor 3 s, channels/blocked-ips/adm
 Elysia gotcha: Elysia sends a `message` handler's **return value** to the client — never `return ws.send(...)`.
 
 ## Orchestrator proxy
+
+`modules/guardrails` (staff): `GET`/`PUT /api/guardrails` proxy. `OrchestratorError.body` keeps the upstream JSON of a 422 only, so the route can return the per-line `errors`.
 
 `modules/orchestrator` — typed HTTP client with `ADMIN_API_KEY`, `X-Admin-Id` on every mutation. `OrchestratorError` → status mapping (404/502/503 `{ message }`). Uses `retryFetch` from `packages/elysia-kit`.
 

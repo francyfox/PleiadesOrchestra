@@ -75,6 +75,7 @@
 	function pageText(): string {
 		const content = root.closest(".content") ?? document.body;
 		root.hidden = true;
+		// biome-ignore lint/performance/useDomNodeTextContent: the copied text must be what the reader sees (layout-aware, hidden parts and styles skipped)
 		const text = (content as HTMLElement).innerText;
 		root.hidden = false;
 		return text.trim();

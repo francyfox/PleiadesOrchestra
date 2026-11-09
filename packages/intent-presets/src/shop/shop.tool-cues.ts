@@ -66,7 +66,7 @@ export function intentFromToolCues(tool: {
 	}
 	if (has(words, "search", "find", "lookup", "query")) return "search";
 	if (has(words, "filter", "sort")) return "filter";
-	if (has(words, "navigate", "goto", "go")) return "navigate";
+	if (has(words, "navigate", "goto", "go", "open", "visit")) return "navigate";
 	// What only reads leaves the cart, the catalog and the order as they were;
 	// it is the tool that tells a request about «every item» what the items are
 	// (`list-removal.ts`). What only edits the shopper's own lists/settings is

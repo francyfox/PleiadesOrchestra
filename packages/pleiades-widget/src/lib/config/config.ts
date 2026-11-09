@@ -133,6 +133,35 @@ export function parseExamples(
 }
 
 /**
+ * The `labels` attribute: a JSON object `{key: text}` that overrides the
+ * interface texts of the active language. Only keys that are text in
+ * `base` are taken (no `examples`, which has its own attribute); anything
+ * else is dropped, an unusable value gives `{}`.
+ */
+export function parseLabels(
+	raw: string | null | undefined,
+	base: Record<string, unknown>,
+): Record<string, string> {
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(raw?.trim() || "{}");
+	} catch {
+		return {};
+	}
+	if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed))
+		return {};
+	return Object.fromEntries(
+		Object.entries(parsed).filter(
+			([key, value]) =>
+				Object.hasOwn(base, key) &&
+				typeof base[key] === "string" &&
+				typeof value === "string" &&
+				value.trim() !== "",
+		),
+	);
+}
+
+/**
  * Parses the `customer-context` attribute (raw JSON text). Unlike
  * `resolveConfig`'s required fields, a bad value here doesn't block the
  * widget from mounting — it's optional extra context, so this only warns

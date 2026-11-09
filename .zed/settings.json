@@ -1,0 +1,19 @@
+{
+	// No `php` binary on the host: Phpactor (the extension's default) cannot start, Intelephense (Node) can.
+	"languages": {
+		"PHP": {
+			"language_servers": ["intelephense", "!phpactor", "!phptools", "..."]
+		}
+	},
+	// WordPress/WooCommerce stubs live in packages/wordpress-plugin/.stubs (`bun run --cwd packages/wordpress-plugin stubs`);
+	// they are 5-6 MB and Intelephense skips files over 1 MB by default.
+	"lsp": {
+		"intelephense": {
+			"settings": {
+				"intelephense": {
+					"files": { "maxSize": 20000000 }
+				}
+			}
+		}
+	}
+}

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import ActivityIcon from "@lucide/svelte/icons/activity";
 	import BanIcon from "@lucide/svelte/icons/ban";
+	import BellIcon from "@lucide/svelte/icons/bell";
 	import BotIcon from "@lucide/svelte/icons/bot";
 	import BoxesIcon from "@lucide/svelte/icons/boxes";
 	import BrainIcon from "@lucide/svelte/icons/brain";
@@ -8,12 +9,12 @@
 	import CreditCardIcon from "@lucide/svelte/icons/credit-card";
 	import GaugeIcon from "@lucide/svelte/icons/gauge";
 	import GlobeIcon from "@lucide/svelte/icons/globe";
-	import LightbulbIcon from "@lucide/svelte/icons/lightbulb";
 	import LogOutIcon from "@lucide/svelte/icons/log-out";
 	import NetworkIcon from "@lucide/svelte/icons/network";
 	import PlugIcon from "@lucide/svelte/icons/plug";
 	import SettingsIcon from "@lucide/svelte/icons/settings";
 	import ShieldIcon from "@lucide/svelte/icons/shield";
+	import ShieldAlertIcon from "@lucide/svelte/icons/shield-alert";
 	import UserRoundIcon from "@lucide/svelte/icons/user-round";
 	import UsersIcon from "@lucide/svelte/icons/users";
 	import WalletIcon from "@lucide/svelte/icons/wallet";
@@ -70,15 +71,15 @@
 			audience: "staff",
 		},
 		{
-			href: resolve("performance"),
-			key: "performance",
-			icon: GaugeIcon,
+			href: resolve("guardrails"),
+			key: "guardrails",
+			icon: ShieldAlertIcon,
 			audience: "staff",
 		},
 		{
-			href: resolve("recommendations"),
-			key: "recommendations",
-			icon: LightbulbIcon,
+			href: resolve("performance"),
+			key: "performance",
+			icon: GaugeIcon,
 			audience: "staff",
 		},
 		{
@@ -115,6 +116,12 @@
 			href: resolve("blocked-ips"),
 			key: "blockedIps",
 			icon: BanIcon,
+			audience: "all",
+		},
+		{
+			href: resolve("notifications"),
+			key: "notifications",
+			icon: BellIcon,
 			audience: "all",
 		},
 		{

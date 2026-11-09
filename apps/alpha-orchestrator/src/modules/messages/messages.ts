@@ -16,15 +16,24 @@ export interface MessagesDeps {
 	directory: ChannelDirectory;
 	reply: ReplyService;
 	now: () => number;
+	/** Same cap as the widget's text: bounds what any model (and the guardrails) reads. */
+	maxTextChars: number;
 }
 
 const DEFAULT_CHANNEL = "cli";
 
 /** `POST /v1/messages` — a transport (Telegram, CLI, …) sends a user message and gets the reply as NDJSON. */
-export function messagesRoutes({ db, directory, reply, now }: MessagesDeps) {
+export function messagesRoutes({
+	db,
+	directory,
+	reply,
+	now,
+	maxTextChars,
+}: MessagesDeps) {
 	return new Elysia({ tags: ["Transport"] }).post(
 		"/v1/messages",
 		({ body, status, request }) => {
+			if (body.text.length > maxTextChars) return status(413, "Text too long");
 			const channel = directory.bySlug(body.channel ?? DEFAULT_CHANNEL);
 			if (!channel) return status(404, "Unknown channel");
 			// Same guard as the widget: an owner at zero TR gets no model calls.

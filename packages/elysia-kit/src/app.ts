@@ -2,6 +2,7 @@ import { Elysia } from "elysia";
 import { type DocsOptions, docs } from "./docs.ts";
 import type { ObservabilityEnv } from "./env.ts";
 import { createLogger, type Logger } from "./logger.ts";
+import { decodeSlashParams } from "./path-params.ts";
 import { requestLog } from "./request-log.ts";
 import { createMonitoring, type Monitoring } from "./sentry.ts";
 
@@ -36,8 +37,8 @@ export interface KitAppOptions {
 }
 
 /**
- * The Elysia app every service starts from: request logging, error
- * monitoring, `GET /health` and (optionally) API docs. Add auth hooks and
+ * The Elysia app every service starts from: request logging, `%2F` in path
+ * parameters decoded, error monitoring, `GET /health` and (optionally) API docs. Add auth hooks and
  * routes on top; anything registered after this sees the shared plugins.
  */
 export function createKitApp({
@@ -47,6 +48,7 @@ export function createKitApp({
 	const app = observability.monitoring
 		.instrument(new Elysia())
 		.use(requestLog({ logger: observability.logger }))
+		.use(decodeSlashParams())
 		.use(observability.monitoring.plugin);
 	if (docsOptions) app.use(docs(docsOptions));
 	return app.get("/health", () => "ok", { detail: { hide: true } });

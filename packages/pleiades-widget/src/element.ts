@@ -11,6 +11,7 @@ import {
 	normalizePosition,
 	parseCustomerContext,
 	parseExamples,
+	parseLabels,
 	resolveConfig,
 } from "@/lib/config/config.ts";
 import {
@@ -18,7 +19,7 @@ import {
 	keyShortcuts,
 	parseHotkey,
 } from "@/lib/hotkey/hotkey.ts";
-import { type Lang, pickLang, strings } from "@/lib/i18n/i18n.ts";
+import { type Lang, pickLang, type Strings, strings } from "@/lib/i18n/i18n.ts";
 import { currentPage } from "@/lib/page/page.ts";
 import { createDictation, speechLang } from "@/lib/speech/speech.ts";
 import {
@@ -52,6 +53,7 @@ const ATTRIBUTES = {
 	lang: "lang",
 	customerContext: "customer-context",
 	examples: "examples",
+	labels: "labels",
 	hotkey: "hotkey",
 	micHotkey: "mic-hotkey",
 	exposeToolsTo: "expose-tools-to",
@@ -78,6 +80,7 @@ export class PleiadesChat extends HTMLElement {
 	declare lang: string;
 	declare customerContext: string;
 	declare examples: string;
+	declare labels: string;
 	declare hotkey: string;
 	declare micHotkey: string;
 	declare exposeToolsTo: string;
@@ -278,7 +281,8 @@ export class PleiadesChat extends HTMLElement {
 		this.#off?.();
 		this.#ui?.destroy();
 		const lang = this.#lang();
-		const s = strings[lang];
+		const base = strings[lang];
+		const s: Strings = { ...base, ...parseLabels(attr("labels"), base) };
 		const toggleSpec = this.#hotkey("hotkey", DEFAULT_HOTKEY);
 		const ui = createWidget({
 			s,
@@ -314,7 +318,16 @@ export class PleiadesChat extends HTMLElement {
 			onRetry: () => void chat.retryPending(customerContext),
 		});
 		this.#ui = ui;
-		this.#off = chat.subscribe(ui.render);
+		let busy = chat.state.busy;
+		this.#off = chat.subscribe((state) => {
+			ui.render(state);
+			// Pages that navigate (WordPress) wait for these: a reload before the turn ends loses its next step.
+			if (busy !== state.busy)
+				document.dispatchEvent(
+					new Event(state.busy ? "pleiades:turn-start" : "pleiades:turn-end"),
+				);
+			busy = state.busy;
+		});
 		ui.render(chat.state);
 		const style = document.createElement("style");
 		style.textContent = css;

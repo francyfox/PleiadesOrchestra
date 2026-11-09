@@ -65,5 +65,8 @@ export type {
 	VisitorsPage,
 	VisitorsQuery,
 	VisitorsSort,
+	Webhook,
+	WebhookEventInfo,
+	WebhooksList,
 	WorldState,
 } from "admin-api/types";

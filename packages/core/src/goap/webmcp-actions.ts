@@ -77,6 +77,15 @@ export interface WebMcpToolDescriptor {
 
 /** Fact: JSON `{ tool, params: [{ name, description }] }` — required parameters nothing could fill. Nothing was sent to the site; the reply asks the visitor. */
 export const MISSING_PARAMS = "missingParams";
+/** Turn fact: a buy message that names no product and none is remembered (`planIntent`): the step asks, it never searches for the verb. */
+export const NO_PRODUCT_NAMED = "noProductNamed";
+
+/** An id the site cannot have issued (what a small model writes when no answer showed one). */
+const PLACEHOLDER_ID = /^(0|null|undefined|none|n\/a|nan)?$/i;
+const isPlaceholderId = (name: string, value: unknown) =>
+	/(^|_|-)id$|[a-z]Id$/.test(name) &&
+	(value === 0 ||
+		(typeof value === "string" && PLACEHOLDER_ID.test(value.trim())));
 
 /** The shape of `WaitingOn.payload` when `WaitingOn.kind === "webmcp_tool_call"`. */
 export interface WebMcpToolCallPayload {
@@ -111,6 +120,16 @@ const PARAM_CHOICE_COST = 1;
 
 /** Longest tool answer kept in the world state (`webmcp:<tool>:text`). */
 export const MAX_TOOL_TEXT_CHARS = 4000;
+
+/**
+ * Cart writes (add/remove tools) one run may ask the browser for. A hallucinating small model or a
+ * prompt injected through shop content must not loop `add_to_cart`; the rate limiter counts requests,
+ * and the site's tool layer limits units per call, this one limits calls per run. The count is the
+ * fact `writeCalls`, kept in the waiting checkpoint. shortcut: a shopping list of more than this many
+ * things is cut here; upgrade by making it a config option if a real list needs more.
+ */
+export const MAX_WRITE_CALLS_PER_RUN = 10;
+const WRITE_CALLS = "writeCalls";
 
 export const TOOL_INTENT_INSTRUCTIONS =
 	"Which online-shop action does this tool most likely perform?";
@@ -770,6 +789,19 @@ export async function createWebMcpActions(
 							[resultKey]: undefined,
 						};
 					}
+					// «Buy» alone: nothing to search for or add, the reply asks which one.
+					if (
+						callState[NO_PRODUCT_NAMED] === true &&
+						(intent === "search" || intent === "addToCart")
+					) {
+						return {
+							[toolResultKey]: false,
+							[MISSING_PARAMS]: JSON.stringify({
+								tool: tool.name,
+								params: [{ name: "product", description: "which product" }],
+							}),
+						};
+					}
 					// A choice step found the visitor asked for a value this tool does
 					// not offer: no call, the reply offers what there is.
 					if (
@@ -854,6 +886,12 @@ export async function createWebMcpActions(
 						tool.inputSchema ?? { type: "object" },
 						args,
 					);
+					const placeholders = Object.entries(args)
+						.filter(([name, value]) => isPlaceholderId(name, value))
+						.map(([name]) => name);
+					for (const name of placeholders) {
+						problems.push(`${name} is a placeholder, not a real id`);
+					}
 					if (problems.length > 0) {
 						config.onError?.(
 							new Error(
@@ -871,7 +909,8 @@ export async function createWebMcpActions(
 								(name) =>
 									args[name] === undefined ||
 									args[name] === null ||
-									args[name] === "",
+									args[name] === "" ||
+									placeholders.includes(name),
 							)
 							.map((name) => ({
 								name,
@@ -908,15 +947,28 @@ export async function createWebMcpActions(
 							pageAlreadyOpen: true,
 						};
 					}
+					const isWrite = intent === "addToCart" || intent === "removeFromCart";
+					const writes = Number(ctx.state[WRITE_CALLS] ?? 0);
+					if (isWrite && writes >= MAX_WRITE_CALLS_PER_RUN) {
+						// Told like any tool failure: the code's template, never the model's wording.
+						return {
+							[toolResultKey]: false,
+							[resultKey]: "error",
+							[textKey]: JSON.stringify({ error_code: "LIMIT_EXCEEDED" }),
+						};
+					}
 					const payload: WebMcpToolCallPayload = {
 						tool: tool.name,
 						arguments: args,
 					};
+					const facts = {
+						...carried,
+						...prefetched,
+						...(isWrite ? { [WRITE_CALLS]: writes + 1 } : {}),
+					};
 					return {
 						waiting: { kind: "webmcp_tool_call", payload },
-						...(carried || prefetched
-							? { facts: { ...carried, ...prefetched } }
-							: {}),
+						...(Object.keys(facts).length > 0 ? { facts } : {}),
 					};
 				},
 			};

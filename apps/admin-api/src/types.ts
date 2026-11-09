@@ -50,6 +50,11 @@ export type {
 	CustomersSort,
 } from "./modules/customers/customers.schema.ts";
 export type {
+	Guardrails,
+	GuardrailsErrors,
+	GuardrailsInput,
+} from "./modules/guardrails/guardrails.schema.ts";
+export type {
 	IntentExample,
 	IntentsPage,
 	IntentsQuery,
@@ -121,3 +126,10 @@ export type {
 	VisitorsQuery,
 	VisitorsSort,
 } from "./modules/visitors/visitors.schema.ts";
+export type {
+	Webhook,
+	WebhookEventInfo,
+	WebhooksList,
+	WebhookTestResult,
+	WebhookWithSecret,
+} from "./modules/webhooks/webhooks.schema.ts";

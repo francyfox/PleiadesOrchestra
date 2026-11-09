@@ -44,6 +44,13 @@ describe("intentFromToolCues", () => {
 		expect(intentFromToolCues({ name: "startCheckout" })).toBe("checkout");
 	});
 
+	test("opening or visiting a page navigates; opening a store still chooses it", () => {
+		for (const name of ["open_page", "open_url", "visit_page", "openPage"]) {
+			expect(intentFromToolCues({ name })).toBe("navigate");
+		}
+		expect(intentFromToolCues({ name: "open_store" })).toBe("chooseStore");
+	});
+
 	test("a name that says nothing is left to Laya", () => {
 		expect(intentFromToolCues({ name: "do_thing" })).toBeUndefined();
 		expect(intentFromToolCues({ name: "x" })).toBeUndefined();

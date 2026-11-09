@@ -4,6 +4,7 @@
 	import StandingAlert from "#lib/components/billing/standing-alert.svelte";
 	import SystemMeter from "#lib/components/layout/system-meter.svelte";
 	import * as Sidebar from "#lib/components/ui/sidebar/index.js";
+	import { headerStats } from "#lib/header-stats.js";
 	import LocaleSwitcher from "./locale-switcher.svelte";
 
 	/** The meter shows the host's CPU/RAM/GPU: staff only. */
@@ -14,7 +15,7 @@
 	<Sidebar.Trigger />
 	<div class="flex items-center gap-3">
 	    <LocaleSwitcher />
-	    {#if staff}<SystemMeter />{/if}
+	    {#if staff && headerStats.current}<SystemMeter />{/if}
     	{#if !staff}<LiveBilling /><StandingAlert /><NoBalanceDialog />{/if}
 	</div>
 </header>

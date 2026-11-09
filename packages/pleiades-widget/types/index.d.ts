@@ -56,6 +56,12 @@ export interface PleiadesChatAttributes {
 	 * absent = built-in examples.
 	 */
 	examples?: string;
+	/**
+	 * A JSON object that overrides interface texts of the active language by the
+	 * keys of the built-in dictionary, e.g. `'{"send":"Go","stop":"Halt"}'`.
+	 * Unknown keys and non-text values are ignored.
+	 */
+	labels?: string;
 	/** Boolean attribute: the panel starts open. */
 	open?: boolean;
 	/**
@@ -89,6 +95,7 @@ export interface PleiadesChatElement extends HTMLElement {
 	lang: string;
 	customerContext: string;
 	examples: string;
+	labels: string;
 	hotkey: string;
 	micHotkey: string;
 	exposeToolsTo: string;

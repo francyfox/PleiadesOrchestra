@@ -26,6 +26,7 @@ import { runs } from "./modules/run-binding/run-binding.instance.ts";
 import { usageRecorder } from "./modules/usage-recorder/usage-recorder.instance.ts";
 import { backfillVisitorNames } from "./modules/visitors/visitors.service.ts";
 import { startWaitingRunsJob } from "./modules/waiting-runs/waiting-runs.ts";
+import { notifier } from "./modules/webhooks/webhooks.instance.ts";
 import { SqliteWorldStateStore } from "./modules/world-state/world-state.ts";
 
 // Local evals (`albedo eval`) ask the models this service really uses; only reachable through `docker compose exec`.
@@ -90,6 +91,7 @@ const app = createApp({
 	historyStore,
 	worldStateStore: new SqliteWorldStateStore(db),
 	ipHashSalt: config.IP_HASH_SALT,
+	notifier,
 	agentSettings,
 	prices: priceBook,
 	billing: config.POLAR_WEBHOOK_SECRET

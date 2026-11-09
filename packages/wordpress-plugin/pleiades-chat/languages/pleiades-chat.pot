@@ -1,0 +1,101 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Pleiades Assistant\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: \n"
+
+msgid "Settings"
+msgstr ""
+
+msgid "Website"
+msgstr ""
+
+msgid "Panel (get your widget key)"
+msgstr ""
+
+msgid "Panel"
+msgstr ""
+
+msgid "Once a visitor opens the chat, their messages, the page address and cart facts, and the list of assistant tools of this site go to the agent URL below (by default the hosted Pleiades service) and to the language model providers it uses. See the %1$s and the %2$s, and mention it in your own privacy policy."
+msgstr ""
+
+msgid "terms of service"
+msgstr ""
+
+msgid "privacy policy"
+msgstr ""
+
+msgid "General"
+msgstr ""
+
+msgid "Agent URL"
+msgstr ""
+
+msgid "Publishable key"
+msgstr ""
+
+msgid "From your channel in the %1$s. The channel must allow %2$s."
+msgstr ""
+
+msgid "Pleiades panel"
+msgstr ""
+
+msgid "Position"
+msgstr ""
+
+msgid "Localization"
+msgstr ""
+
+msgid "Heading"
+msgstr ""
+
+msgid "Greeting"
+msgstr ""
+
+msgid "Input placeholder"
+msgstr ""
+
+msgid "Example questions (one per line)"
+msgstr ""
+
+msgid "Widget language"
+msgstr ""
+
+msgid "Automatic (visitor / page language, no overrides)"
+msgstr ""
+
+msgid "Only the texts of the selected language are printed. A field left empty keeps the widget default (shown as the placeholder)."
+msgstr ""
+
+msgid "Heading and greeting saved by an earlier version are still used for the selected language while its own field is empty."
+msgstr ""
+
+msgid "The key must be a publishable key (starts with pk_). Never paste a secret key."
+msgstr ""
+
+msgid "Recipes"
+msgstr ""
+
+msgid "Recipe"
+msgstr ""
+
+msgid "Simple recipes: add every ingredient to the cart in one click."
+msgstr ""
+
+msgid "Ingredients"
+msgstr ""
+
+msgid "Serves %d"
+msgstr ""
+
+msgid "%d min"
+msgstr ""
+
+msgid "out of stock"
+msgstr ""
+
+msgid "Add all ingredients to cart"
+msgstr ""
+
+msgid "Add the whole kit to cart"
+msgstr ""

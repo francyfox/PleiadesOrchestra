@@ -21,7 +21,7 @@ function bodyOf(value: unknown): Record<string, unknown> {
 function failureData(value: unknown): Record<string, unknown> {
 	const body = bodyOf(value);
 	const data: Record<string, unknown> = {};
-	for (const key of ["error", "message", "min", "detail"]) {
+	for (const key of ["error", "message", "min", "detail", "errors"]) {
 		if (body[key] !== undefined) data[key] = body[key];
 	}
 	return data;
