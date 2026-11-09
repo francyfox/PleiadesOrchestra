@@ -2,6 +2,11 @@
 
 Feature:
 
+- WordPress plugin 0.6.0 tools: `clear_cart` (one call), `apply_coupon` / `remove_coupon` (the cart lists its coupons), `get_product_reviews`, `list_tags`; the panel starts below the WordPress admin bar (widget custom property `--pleiades-offset-top`).
+- A product with variations: the failure reply lists the options to choose from (an attribute with more than four values is only named, the visitor writes it); the plugin matches a model's `{size: "m"}` to the product's own `Size` / `M` and adds it.
+- Landing: a download button for the WordPress plugin; the prices dialog opens by the hash `#prices` (and wipes it on close). The plugin is released on its own with a `wp-v*` tag (`wordpress-plugin.yml`).
+- Admin: a light/dark switch before the language select, and a boot splash with the logo on the admin background gradient (follows the theme, fades out) instead of a white screen.
+- Evals: `eval:answers` prints a line per case; `answersAssistant` asks the decision model whether a message answers the assistant's last reply.
 - Guardrails: an optional prompt-injection filter (regex rules, OWASP defaults, off by default) runs before any model call; a blocked message gets a fixed refusal and shows as a failed request in the flow. `/v1/messages` text is capped like the widget's. The admin has a page with a rules editor.
 - Notifications: webhooks with event subscriptions (`run.failed`, `guardrail.blocked`, `ip.blocked`, `balance.low`, `balance.depleted`), scoped to the owner for customers (balance events for owners only). Types: JSON (HMAC-signed), Discord, Slack and Telegram; SSRF guard; migrations 0031-0034.
 - Admin: the header stats are a setting (off by default); the recommendations page is gone.
@@ -13,11 +18,16 @@ Feature:
 
 Changed:
 
+- A typed message after an assistant reply is no longer quoted only when the reply has a `?` or a numbered list: the last reply is always a candidate and the decision model says whether the message answers it (a picked button always does), so «hi» is read alone and «size M» is read with the question.
 - Tools: `open_page` returns first and the page reloads only after the widget turn ends, so the next step of the run is no longer lost to the reload.
 - Plugin: the bundled widget and the plugin share one list of locales and strings (generated from the widget's `i18n.ts` at build time).
 
 Fixed:
 
+- «Clear the cart» on a JSON cart: the list was read as 0 items (only bulleted text was parsed), and the removal sent the product name where the site wants the line's `key`; JSON listings are read and `key` is used.
+- Plugin search: a name typed with `'` found nothing when the shop stores `’`, the word-by-word fallback listed every «black» thing first and sent the page to `?s=Black`, and the model then added the wrong product; the other apostrophe is tried first, the best match comes first and that merge no longer moves the page.
+- «Size M, color black» after the assistant listed the options was read as a new request and added a random product to the cart.
+- Docs landing: the Svelte inspector (Alt+X) works in dev, as in the admin.
 - Flow: a tool whose name says `open` or `visit` (`open_page`) is a navigation, so the assistant opens the page instead of telling the visitor to go there.
 - Flow: a bare buy verb ("buy", "купи") with nothing remembered asks which product instead of searching for the verb, and a placeholder id (`0`, empty, `undefined`) is never sent to a tool.
 - Plugin: a product shown on the home page was missed when the search was strict or filtered by a wrong category; it now retries without the category and by single words.
@@ -28,6 +38,7 @@ Fixed:
 
 Chore:
 
+- Tests: `real/variation.spec.ts` drives the real stack (widget, orchestrator with models, WooCommerce) through a whole conversation (`REAL_STACK=1`), plus specs for the new tools and the admin bar; the e2e helpers no longer reuse a connection Apache has closed.
 - WordPress: a Kadence demo shop with product pictures for local checks (`WORDPRESS_THEME=kadence`); WooCommerce's coming-soon mode is switched off by the setup.
 - Docs: CI pings IndexNow with the sitemap after each deploy; a Yandex verification meta.
 - Dependencies: Elysia 1.4.31 (not 2.0), Biome 2.6.6, Sentry 11.11 and the Svelte, Vite and Tailwind patches; TypeScript stays on 6 (SvelteKit's tooling needs `ts.sys`).

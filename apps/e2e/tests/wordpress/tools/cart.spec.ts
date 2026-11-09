@@ -41,6 +41,12 @@ test.describe("add_to_cart", () => {
 		const r = await tool(page, "add_to_cart", { id: VARIABLE });
 		expect(r.ok).toBe(false);
 		expectCode(r, "VARIATION_REQUIRED", 400);
+		// The reply can list what to choose from.
+		const { options } = JSON.parse((r as { error: string }).error) as {
+			options: Record<string, string[]>;
+		};
+		expect(options.Storage).toContain("256 GB");
+		expect(options.RAM).toContain("8 GB");
 		expect(await cartCount(page)).toBe(0);
 	});
 

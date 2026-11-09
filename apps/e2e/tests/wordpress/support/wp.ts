@@ -8,7 +8,10 @@ export const WP = process.env.WORDPRESS_URL ?? "http://localhost:8088";
 export function skipUnlessWordPress() {
 	let reachable = false;
 	test.beforeAll(async () => {
-		reachable = await fetch(WP, { signal: AbortSignal.timeout(3000) })
+		reachable = await fetch(WP, {
+			keepalive: false,
+			signal: AbortSignal.timeout(3000),
+		})
 			.then((r) => r.ok)
 			.catch(() => false);
 	});
@@ -77,10 +80,10 @@ export function expectCode(r: Reply, code: string, status?: number) {
 	const payload = JSON.parse(text) as { error_code: string; status?: number };
 	expect(payload.error_code).toBe(code);
 	if (status !== undefined) expect(payload.status).toBe(status);
-	// Only our fields: no shop message can ride along.
+	// Only our fields (`options` is catalog data, VARIATION_REQUIRED only): no shop message can ride along.
 	expect(
 		Object.keys(payload).every((k) =>
-			["error_code", "status", "hint"].includes(k),
+			["error_code", "status", "hint", "options"].includes(k),
 		),
 	).toBe(true);
 }

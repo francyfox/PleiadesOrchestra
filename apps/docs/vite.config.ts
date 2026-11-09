@@ -213,6 +213,8 @@ export default defineConfig(({ mode }) => ({
 						filename.split(/[/\\]/).includes("node_modules") ? undefined : true,
 				},
 				adapter: adapter({ pages: "build", assets: "build", strict: true }),
+				// Dev only: Alt+X, then hover a component to see its name and click to open it in the editor.
+				inspector: true,
 				// Small stylesheets go into the HTML: each was a render-blocking request on the
 				// landing (PageSpeed mobile). The big theme/site sheets stay files the browser caches.
 				inlineStyleThreshold: 13_000,

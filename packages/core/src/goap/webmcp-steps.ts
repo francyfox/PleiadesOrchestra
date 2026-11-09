@@ -11,7 +11,11 @@ import {
 	readItems,
 } from "#core/goap/shopping-list";
 import { fact, say, stepLanguage } from "#core/goap/step-text";
-import { toolErrorCodeOf, toolErrorText } from "#core/goap/tool-error";
+import {
+	parseToolErrorOptions,
+	toolErrorCodeOf,
+	toolErrorText,
+} from "#core/goap/tool-error";
 import type { GoapAction, WorldState } from "#core/goap/types";
 
 // What the user is told while a WebMCP tool is being used. Texts are written
@@ -214,7 +218,12 @@ export function describeTool(
 		if (phase === "done") return steps.done(state);
 		// A failed call is told by its error code, never by the site's own text (`tool-error.ts`).
 		const code = toolErrorCodeOf(state, tool.name);
-		if (code) return toolErrorText(code, stepLanguage(state), product(state));
+		if (code) {
+			const options = parseToolErrorOptions(
+				String(state[`webmcp:${tool.name}:text`] ?? ""),
+			);
+			return toolErrorText(code, stepLanguage(state), product(state), options);
+		}
 		return (
 			steps.failed?.(state) ??
 			say(state, { ru: `Не удалось: ${label}`, en: `Failed: ${label}` })

@@ -1,9 +1,9 @@
 <?php
 /**
- * Plugin Name: Pleiades Assistant
+ * Plugin Name: Pleiades Chat
  * Plugin URI: https://pleiades.shalotts.site/
  * Description: An AI shop and site assistant (Pleiades chat widget) with WooCommerce tools for search, product cards and the cart.
- * Version: 0.5.0
+ * Version: 0.6.0
  * Requires at least: 6.4
  * Requires PHP: 7.4
  * Author: Danil Golota
@@ -23,7 +23,7 @@
 defined( 'ABSPATH' ) || exit;
 
 /** @var string Plugin version; part of the asset cache-busting string. Keep equal to the Version header. */
-const PLEIADES_VERSION = '0.5.0';
+const PLEIADES_VERSION = '0.6.0';
 /** @var string Absolute path of this file: base for plugin_dir_path/url, activation hook and plugin_basename. */
 const PLEIADES_FILE    = __FILE__;
 /** @var string Hosted agent service used when the Agent URL setting is empty. */

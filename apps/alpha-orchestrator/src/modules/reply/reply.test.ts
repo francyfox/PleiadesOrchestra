@@ -283,6 +283,69 @@ describe("alpha-understand reads the assistant message the visitor answers", () 
 	});
 });
 
+describe("a typed message is read next to the assistant's last reply only when it answers it", () => {
+	async function run(probability: number, replyTo?: string) {
+		const requests: string[] = [];
+		const asked: unknown[] = [];
+		const store = new InMemoryHistoryStore(10);
+		await store.append({ threadId: "t1", userId: "u" }, [
+			{ role: "user", content: "add the gown" },
+			{ role: "assistant", content: "Tell me which size you want." },
+		]);
+		const deps = {
+			worldStateStore: new InMemoryWorldStateStore(),
+			webmcpCatalog: new Map([["t1", [action("add_to_cart")]]]),
+			actions: [],
+			history: store,
+			decisionAgent: {
+				decide: async (inputs: Record<string, unknown>) => {
+					// Only this question: the same agent also classifies intents.
+					if ("assistant" in inputs) asked.push(inputs);
+					return { answers: { type: "boolean", probability } };
+				},
+			},
+			understandAgent: {
+				fillArguments: async (call: { request: string }) => {
+					requests.push(call.request);
+					return { en: "size M", tasks: [] };
+				},
+			},
+			intentMemory: { classify: () => undefined },
+			now: () => 0,
+		} as unknown as ReplyDeps;
+		const visitor = { id: "u", channelId: "c" } as VisitorRow;
+		const { state } = await prepareNewMessage(
+			deps,
+			visitor,
+			"t1",
+			"run-1",
+			"M",
+			replyTo ? { replyTo } : {},
+		);
+		return { state, request: requests[0] ?? "", asked };
+	}
+
+	test("an answer: the quote goes to alpha-understand and into the facts", async () => {
+		const { state, request, asked } = await run(0.99);
+		expect(asked).toHaveLength(1);
+		expect(request).toContain("Tell me which size you want.");
+		expect(state.replyTo).toBe("Tell me which size you want.");
+	});
+
+	test("not an answer (a greeting, thanks, noise): alpha reads it alone, no quote in the facts", async () => {
+		const { state, request } = await run(0.02);
+		expect(request).not.toContain("Tell me which size you want.");
+		expect(request).not.toContain("add the gown");
+		expect(state.replyTo).toBeUndefined();
+	});
+
+	test("a picked button is an answer by definition: the decision model is not asked", async () => {
+		const { state, asked } = await run(0.02, "1. Small 2. Large");
+		expect(asked).toHaveLength(0);
+		expect(state.replyTo).toBe("1. Small 2. Large");
+	});
+});
+
 describe("prepareNewMessage: «now buy them» after a search", () => {
 	async function prepare(
 		session: Record<string, string | boolean>,

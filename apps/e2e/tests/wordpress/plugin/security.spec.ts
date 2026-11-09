@@ -30,7 +30,15 @@ const withIngredient = (id: string, note: string) =>
 		JSON.stringify([{ sku: SKU, quantity: 1, note }]),
 		"--format=json",
 	);
-const html = async (url: string) => (await fetch(url)).text();
+// Bun may reuse a pooled connection that Apache has already closed («other side closed»): no keep-alive, and a retry.
+const html = async (url: string, tries = 3): Promise<string> => {
+	try {
+		return await (await fetch(url, { keepalive: false })).text();
+	} catch (error) {
+		if (tries <= 1) throw error;
+		return html(url, tries - 1);
+	}
+};
 
 test.afterAll(() => {
 	// REST keeps a post whose meta it rejected, so those are found by title.

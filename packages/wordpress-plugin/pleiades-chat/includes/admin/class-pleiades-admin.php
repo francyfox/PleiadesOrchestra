@@ -28,7 +28,7 @@ final class Pleiades_Admin {
 	 * @since 0.4.0
 	 * @var string
 	 */
-	const TITLE = 'Pleiades Assistant';
+	const TITLE = 'Pleiades Chat';
 	/**
 	 * Capability needed to open and save the settings.
 	 *

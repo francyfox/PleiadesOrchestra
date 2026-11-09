@@ -1,6 +1,8 @@
 import { expect, test } from "bun:test";
+import type { DecisionAgent } from "#core/decision-types";
 import type { FunctionCallAgent } from "#core/function-call-agent";
 import {
+	answersAssistant,
 	conversationContext,
 	translateTexts,
 	understandingTool,
@@ -134,25 +136,43 @@ test("the earlier assistant message is quoted in the request only when given", a
 	expect(requests[1]).toBe("2");
 });
 
-test("conversationContext: a reply that asks nothing is not quoted (an action done, a hint): there is nothing to answer", () => {
-	const after = (reply: string) =>
-		conversationContext([
-			{ role: "user", content: "add chips" },
-			{ role: "assistant", content: reply },
-		]);
-	expect(after("Added 1 × Tortilla Chips to the cart.")).toEqual({});
-	expect(after("Попробуйте поискать «тортильи» или удалить фильтр.")).toEqual(
-		{},
-	);
-	// A question (any script), a choice list or a numbered pick are things a short message answers.
+test("conversationContext: the assistant's last message is quoted whatever its wording; alpha says whether the visitor answers it", () => {
+	// No punctuation test: «Tell me which one you want.» asks without a «?», «Added 1 × Chips.» asks nothing,
+	// and only the model reading both messages can tell (`isAnswer`).
 	for (const reply of [
-		"Anything else?",
-		"¿Algo más?",
-		"他に何かありますか？",
+		"Added 1 × Tortilla Chips to the cart.",
+		"Tell me which one you want.",
 		"Pick one:\n1. Small\n2. Large",
-		"Sizes: 1) S 2) M",
+		"Anything else?",
 	])
-		expect(after(reply)).toMatchObject({ replyTo: reply });
+		expect(
+			conversationContext([
+				{ role: "user", content: "add chips" },
+				{ role: "assistant", content: reply },
+			]),
+		).toMatchObject({ replyTo: reply });
+});
+
+test("answersAssistant: the decision model's yes/no, 0.5 and up is an answer; no answer is not a guess", async () => {
+	const asking = (probability: number) =>
+		({
+			decide: async () => ({ answers: { type: "boolean", probability } }),
+		}) as unknown as DecisionAgent;
+	expect(await answersAssistant(asking(0.998), "Which size?", "M")).toBe(true);
+	expect(await answersAssistant(asking(0.5), "Which size?", "M")).toBe(true);
+	expect(await answersAssistant(asking(0.03), "Added chips.", "хай")).toBe(
+		false,
+	);
+	const down = {
+		decide: async () => {
+			throw new Error("down");
+		},
+	} as unknown as DecisionAgent;
+	expect(await answersAssistant(down, "Which size?", "M")).toBeUndefined();
+	const odd = {
+		decide: async () => ({ answers: { type: "choice", choice: "x" } }),
+	} as unknown as DecisionAgent;
+	expect(await answersAssistant(odd, "Which size?", "M")).toBeUndefined();
 });
 
 test("conversationContext: the last assistant message is answered, what came before is the history", () => {

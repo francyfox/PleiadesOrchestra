@@ -47,7 +47,7 @@ beforeAll(async () => {
 		},
 		body: {},
 	};
-	g.fetch = async (url: string) => {
+	g.fetch = async (url: string, init?: { body?: string }) => {
 		fetched.push(url);
 		if (/products\/404/.test(url))
 			return new Response(
@@ -59,6 +59,46 @@ beforeAll(async () => {
 				{ status: 404 },
 			);
 		if (/products\/500/.test(url)) throw new TypeError("Failed to fetch");
+		// A shop that stores «Women’s» with the typographic apostrophe: only that spelling matches.
+		if (/search=Women(%27|')s/.test(url)) return new Response("[]");
+		if (/search=Women%E2%80%99s/.test(url))
+			return new Response(JSON.stringify([{ ...product, id: 88 }]));
+		// Word by word: «Black» matches many, «Gown» one.
+		if (/search=Black\b/.test(url) && !/Gown|Women/.test(url))
+			return new Response(
+				JSON.stringify([{ ...product, id: 1, name: "Black Cup" }]),
+			);
+		if (/search=Gown/.test(url))
+			return new Response(
+				JSON.stringify([{ ...product, id: 88, name: "Black Women’s Gown" }]),
+			);
+		if (/search=Black%20Women%27s%20Gown|search=Black\+Women/.test(url))
+			return new Response("[]");
+		// The shop takes only its own spelling: Size / M.
+		if (
+			/cart\/add-item/.test(url) &&
+			/"attribute":"Size","value":"M"/.test(init?.body ?? "")
+		)
+			return new Response(JSON.stringify({ items_count: 1, items: [] }));
+		if (/cart\/add-item/.test(url))
+			return new Response(
+				JSON.stringify({ code: "woocommerce_rest_missing_attributes" }),
+				{ status: 400 },
+			);
+		if (/products\/9\b/.test(url))
+			return new Response(
+				JSON.stringify({
+					id: 9,
+					type: "variable",
+					attributes: [
+						{
+							name: "Size",
+							has_variations: true,
+							terms: [{ name: "S" }, { name: "M" }],
+						},
+					],
+				}),
+			);
 		return new Response(
 			JSON.stringify(/category=nope|search=zzz/.test(url) ? [] : [product]),
 			{ headers: { "content-type": "application/json" } },
@@ -151,4 +191,44 @@ test("during a widget turn the navigation waits for the turn to end", async () =
 	fire("pleiades:turn-end");
 	await wait(120);
 	expect(assigned).toEqual(["http://shop.test/?s=lamp&post_type=product"]);
+});
+
+test("add_to_cart on a product that needs a variation says which options exist", async () => {
+	const out = await tool("add_to_cart").execute({ id: 9 });
+	expect(JSON.parse(out.content[0]?.text ?? "")).toEqual({
+		error_code: "VARIATION_REQUIRED",
+		status: 400,
+		options: { Size: ["S", "M"] },
+	});
+});
+
+test("a straight apostrophe still finds the product, and the page shows that search", async () => {
+	assigned.length = 0;
+	const out = await tool("search_products").execute({ query: "Women's" });
+	expect(JSON.parse(out.content[0]?.text ?? "")[0].id).toBe(88);
+	await wait(120);
+	expect(assigned).toEqual([
+		"http://shop.test/?s=Women%E2%80%99s&post_type=product",
+	]);
+});
+
+test("a search that only worked word by word ranks the best match first and does not move the visitor", async () => {
+	assigned.length = 0;
+	const out = await tool("search_products").execute({
+		query: "Black Women's Gown",
+	});
+	const ids = JSON.parse(out.content[0]?.text ?? "").map(
+		(p: { id: number }) => p.id,
+	);
+	expect(ids[0]).toBe(88);
+	await wait(120);
+	expect(assigned).toEqual([]);
+});
+
+test("a variation in the wrong case is matched to the product's own spelling and added", async () => {
+	const out = await tool("add_to_cart").execute({
+		id: 9,
+		variation: { size: "m" },
+	});
+	expect(JSON.parse(out.content[0]?.text ?? "").count).toBe(1);
 });

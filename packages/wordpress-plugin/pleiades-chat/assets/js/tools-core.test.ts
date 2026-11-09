@@ -494,3 +494,212 @@ test("one bundle call adds at most 100 units in total: 100 passes, 101 is refuse
 	expect(out.error_code).toBe("LIMIT_EXCEEDED");
 	expect(out.hint).toContain("100");
 });
+
+test("clear_cart is one DELETE of every cart line, no key needed", () => {
+	expect(core.buildRequest("clear_cart", {}, env)).toMatchObject({
+		api: "store",
+		method: "DELETE",
+		path: "cart/items",
+	});
+	expect(core.buildRequest("clear_cart", {}, env).body).toBeUndefined();
+});
+
+test("coupons: apply and remove post the code, a missing code names the argument", () => {
+	for (const [name, path] of [
+		["apply_coupon", "cart/apply-coupon"],
+		["remove_coupon", "cart/remove-coupon"],
+	])
+		expect(core.buildRequest(name, { code: " SAVE10 " }, env)).toMatchObject({
+			method: "POST",
+			path,
+			body: { code: "SAVE10" },
+		});
+	expect(hintOf(() => core.buildRequest("apply_coupon", {}, env))).toMatch(
+		/code/,
+	);
+});
+
+test("get_product_reviews and list_tags are reads; reviews need a product id", () => {
+	expect(
+		core.buildRequest("get_product_reviews", { id: 7 }, env),
+	).toMatchObject({
+		method: "GET",
+		path: "products/reviews",
+		query: { product_id: "7", per_page: "10" },
+	});
+	expect(
+		hintOf(() => core.buildRequest("get_product_reviews", {}, env)),
+	).toMatch(/search_products/);
+	expect(core.buildRequest("list_tags", {}, env)).toMatchObject({
+		method: "GET",
+		path: "products/tags",
+	});
+});
+
+test("the cart result lists the applied coupons; reviews and tags are shaped small", () => {
+	const cart = core.shapeResult("apply_coupon", {
+		items: [],
+		coupons: [{ code: "save10", totals: {} }],
+	});
+	expect(cart.coupons).toEqual(["save10"]);
+	expect(core.shapeResult("clear_cart", [])).toEqual({ cleared: true });
+	expect(
+		core.shapeResult("get_product_reviews", [
+			{
+				id: 1,
+				rating: 5,
+				reviewer: "Ann",
+				review: "<p>Great &amp; cheap</p>",
+				date_created: "2026-11-01T10:00:00",
+				extra: "x",
+			},
+		]),
+	).toEqual([
+		{
+			rating: 5,
+			author: "Ann",
+			text: "Great & cheap",
+			date: "2026-11-01T10:00:00",
+		},
+	]);
+	expect(
+		core.shapeResult("list_tags", [
+			{ id: 3, name: "Gift", slug: "gift", count: 4, link: "x" },
+		]),
+	).toEqual([{ id: 3, name: "Gift", slug: "gift", count: 4 }]);
+});
+
+test("the new tools are registered: shop-only, writes marked, descriptions generic", () => {
+	const byName = Object.fromEntries(
+		core.TOOLS.map((t: { name: string }) => [t.name, t]),
+	);
+	for (const name of [
+		"clear_cart",
+		"apply_coupon",
+		"remove_coupon",
+		"get_product_reviews",
+		"list_tags",
+	])
+		expect(byName[name].woo).toBe(true);
+	for (const name of ["clear_cart", "apply_coupon", "remove_coupon"])
+		expect(byName[name].annotations.readOnlyHint).toBe(false);
+	for (const name of ["get_product_reviews", "list_tags"])
+		expect(byName[name].annotations.readOnlyHint).toBe(true);
+	expect(byName.apply_coupon.inputSchema.required).toEqual(["code"]);
+});
+
+test("coupon refusals become codes, never the shop's message", () => {
+	expect(
+		core.codeFromResponse(
+			{ code: "woocommerce_rest_cart_coupon_error", message: "Coupon expired" },
+			400,
+		),
+	).toBe("NOT_ALLOWED");
+	expect(
+		core.codeFromResponse(
+			{ code: "woocommerce_rest_cart_coupon_invalid_code" },
+			400,
+		),
+	).toBe("NOT_FOUND");
+});
+
+test("variationOptions: attribute -> allowed values, only the attributes that vary", () => {
+	expect(
+		core.variationOptions({
+			attributes: [
+				{ name: "Color", has_variations: true, terms: [{ name: "Black" }] },
+				{
+					name: "Size",
+					has_variations: true,
+					terms: [{ name: "S" }, { name: "M" }],
+				},
+				{ name: "Material", has_variations: false, terms: [{ name: "Silk" }] },
+			],
+		}),
+	).toEqual({ Color: ["Black"], Size: ["S", "M"] });
+	expect(core.variationOptions({ attributes: [] })).toBeUndefined();
+	expect(core.variationOptions({})).toBeUndefined();
+});
+
+test("only VARIATION_REQUIRED carries the options it listed", () => {
+	const options = { Size: ["S", "M"] };
+	expect(
+		core.errorPayload(core.toolError("VARIATION_REQUIRED", { options }))
+			.options,
+	).toEqual(options);
+	expect(
+		core.errorPayload(core.toolError("OUT_OF_STOCK", { options })).options,
+	).toBeUndefined();
+});
+
+test("searchFallbacks: a straight apostrophe is tried as the typographic one first (and back)", () => {
+	expect(core.searchFallbacks({ query: "Black Women's Gown" })[0]).toEqual([
+		{ query: "Black Women’s Gown", category: undefined },
+	]);
+	expect(core.searchFallbacks({ query: "Black Women’s Gown" })[0]).toEqual([
+		{ query: "Black Women's Gown", category: undefined },
+	]);
+});
+
+test("rankByQuery: the product that holds the most query words comes first, ties keep their order", () => {
+	const names = (list: { name: string }[]) => list.map((p) => p.name);
+	const found = [
+		{ name: "Rolex Cellini Date Black Dial" },
+		{ name: "Women Handbag Black" },
+		{ name: "Black Women’s Gown" },
+		{ name: "Blue Women’s Handbag" },
+	];
+	expect(names(core.rankByQuery(found, "Black Women's Gown"))).toEqual([
+		"Black Women’s Gown",
+		"Rolex Cellini Date Black Dial",
+		"Women Handbag Black",
+		"Blue Women’s Handbag",
+	]);
+	expect(core.rankByQuery(found, "")).toEqual(found);
+});
+
+const GOWN = {
+	attributes: [
+		{
+			name: "Color",
+			has_variations: true,
+			terms: [
+				{ name: "Black", slug: "black" },
+				{ name: "White", slug: "white" },
+			],
+		},
+		{
+			name: "Size",
+			has_variations: true,
+			terms: [
+				{ name: "M", slug: "m" },
+				{ name: "L", slug: "l" },
+			],
+		},
+		{
+			name: "Material",
+			has_variations: false,
+			terms: [{ name: "Silk", slug: "silk" }],
+		},
+	],
+};
+
+test("matchVariation: names and values meet the product's own spelling, case and slugs aside", () => {
+	expect(core.matchVariation(GOWN, { size: "m", color: "BLACK" })).toEqual({
+		Color: "Black",
+		Size: "M",
+	});
+	expect(core.matchVariation(GOWN, { " Size ": "L", color: "white" })).toEqual({
+		Color: "White",
+		Size: "L",
+	});
+});
+
+test("matchVariation: undefined unless every varying attribute is matched to a real value", () => {
+	expect(core.matchVariation(GOWN, { size: "M" })).toBeUndefined();
+	expect(
+		core.matchVariation(GOWN, { size: "XXL", color: "black" }),
+	).toBeUndefined();
+	expect(core.matchVariation(GOWN, undefined)).toBeUndefined();
+	expect(core.matchVariation({}, { size: "M" })).toBeUndefined();
+});

@@ -24,6 +24,7 @@ import {
 	type ToolOption,
 } from "#core/goap/tool-choice";
 import {
+	answersAssistant,
 	conversationContext,
 	understandMessage,
 } from "#core/goap/understanding";
@@ -50,6 +51,11 @@ const understand = createFunctionCallAgent({
 	telemetry: { logLlmState() {}, logMessageEvent() {} } as never,
 });
 
+const started = Date.now();
+const seconds = () => `${Math.round((Date.now() - started) / 1000)}s`;
+console.log(
+	`classifying the tools of ${TOOL_CHOICE_SITES.length} demo sites (one decision call per tool)…`,
+);
 const toolsOf = new Map<string, ToolOption[]>();
 for (const site of TOOL_CHOICE_SITES) {
 	toolsOf.set(
@@ -78,16 +84,27 @@ const misses: string[] = [];
 const add = (map: Map<string, number>, key: string) =>
 	map.set(key, (map.get(key) ?? 0) + 1);
 
+console.log(
+	`${ANSWER_CASES.length} cases x ${MODES.length} ways, in order; one line per case (✓ right, ✗ wrong: no context / last exchange / whole chain)`,
+);
+let done = 0;
 for (const { kind, site, history, message, expected } of ANSWER_CASES) {
 	const tools = toolsOf.get(site) ?? [];
+	const marks: string[] = [];
 	for (const mode of MODES) {
 		// Same cut as production: the newest messages, the last one answered.
-		const context =
+		const quoted =
 			mode === "no context"
 				? {}
 				: conversationContext(
 						mode === "last exchange" ? history.slice(-2) : history,
 					);
+		// As production: a message that does not answer the quote is read alone.
+		const context =
+			quoted.replyTo &&
+			(await answersAssistant(decision, quoted.replyTo, message)) === false
+				? {}
+				: quoted;
 		const understood = await understandMessage(
 			understand,
 			intents,
@@ -118,15 +135,19 @@ for (const { kind, site, history, message, expected } of ANSWER_CASES) {
 					? `options:${choice.tool}`
 					: choice.tool;
 		add(total, `${mode}/${kind}`);
+		marks.push(got === expected ? "✓" : "✗");
 		if (got === expected) add(score, `${mode}/${kind}`);
 		else
 			misses.push(
 				`  [${mode}, ${kind}] ${site}: «${message}» → en «${en}» → ${got} (want ${expected})`,
 			);
 	}
+	console.log(
+		`[${++done}/${ANSWER_CASES.length}] ${marks.join(" ")}  ${kind} · ${site} · «${message}»  ${seconds()}`,
+	);
 }
 
-console.log(`${"".padEnd(14)} ${KINDS.map((k) => k.padEnd(8)).join(" ")}`);
+console.log(`\n${"".padEnd(14)} ${KINDS.map((k) => k.padEnd(8)).join(" ")}`);
 for (const mode of MODES) {
 	const cells = KINDS.map((kind) => {
 		const key = `${mode}/${kind}`;

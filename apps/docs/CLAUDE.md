@@ -46,3 +46,4 @@ Public, inlined into the bundle by `vite.config.ts` (`__PUBLIC_ENV__`; `$env/sta
 - A Markdown link to a static file (`[x](/benchmarks/a.txt)`) gets a trailing slash (`a.txt/`, a 404): write it as `<a href="/benchmarks/a.txt" rel="external">x</a>` (`rel="external"`: otherwise SvelteKit routes the click and shows its 404).
 - Prerender: 404s and missing `#id`s inside `/docs` are logged as `[docs]` warnings, not build failures (`handleHttpError`/`handleMissingId`). Read them after `build`.
 - The theme's TOC store leaks the last docs page's anchors into prerendered landing/playground HTML; the missing-id warnings for those paths are ignored.
+- The landing's prices dialog (`PricesDialog.svelte`) opens by the hash `#prices` (a link can point at it, e.g. from the WordPress plugin's readme) and wipes the hash on close (`replaceState`, no history entry); the button sets it too. Needs `PUBLIC_PLEIADES_AGENT_URL`, as the button does.

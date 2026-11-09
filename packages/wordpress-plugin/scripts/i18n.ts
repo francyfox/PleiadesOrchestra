@@ -31,7 +31,7 @@ const q = (s: string) => JSON.stringify(s);
 
 export function pot(ids: string[]) {
 	return `${[
-		`msgid ""\nmsgstr ""\n"Project-Id-Version: Pleiades Assistant\\n"\n"Content-Type: text/plain; charset=UTF-8\\n"\n"Language: \\n"`,
+		`msgid ""\nmsgstr ""\n"Project-Id-Version: Pleiades Chat\\n"\n"Content-Type: text/plain; charset=UTF-8\\n"\n"Language: \\n"`,
 		...ids.map((id) => `msgid ${q(id)}\nmsgstr ""`),
 	].join("\n\n")}\n`;
 }

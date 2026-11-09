@@ -1,3 +1,4 @@
+import type { DecisionAgent } from "#core/decision-types";
 import type { FunctionCallAgent } from "#core/function-call-agent";
 import type { CallContext } from "#core/types";
 
@@ -50,26 +51,17 @@ export interface ConversationMessage {
 }
 
 /**
- * Whether a reply gives the visitor something to answer: a question mark (also
- * `¿`/`？`) or a numbered choice ("1." and a later "2.", on lines or inline). A reply that reports an action or a hint asks
- * nothing, and quoting it made the model repeat that action for «hi».
- * shortcut: punctuation only, so an offer worded as a statement is not quoted; upgrade if one shows up.
- */
-const asksSomething = (reply: string) =>
-	/[?？¿]/.test(reply) || /\b1[.)]\s+\S[\s\S]*\b2[.)]\s+\S/.test(reply);
-
-/**
  * The thread's newest messages (oldest first) as alpha-understand's context:
- * the last one, when it is the assistant's and asks something, is what the
- * visitor answers; the text messages before it are the history. Nothing when
- * the visitor spoke last or the reply asked nothing.
+ * the last one, when it is the assistant's, is what the visitor may be answering;
+ * the text messages before it are the history. Nothing when the visitor spoke last.
+ * Whether it IS an answer is not decided by the wording here (a «?» test missed
+ * «Tell me which size you want.»): `answersAssistant` asks the decision model.
  */
 export function conversationContext(
 	messages: { role: string; content: unknown }[],
 ): { replyTo?: string; history?: ConversationMessage[] } {
 	const last = messages.at(-1);
 	if (last?.role !== "assistant" || typeof last.content !== "string") return {};
-	if (!asksSomething(last.content)) return {};
 	return {
 		replyTo: last.content,
 		history: messages
@@ -80,6 +72,31 @@ export function conversationContext(
 					typeof m.content === "string",
 			),
 	};
+}
+
+const ANSWERS_INSTRUCTIONS =
+	"Does the visitor's message answer a question or an offer in the assistant's previous message (picks an option, gives a detail, says yes or no to the offer)? false when the message is a greeting, thanks, noise, or a new request that makes sense on its own.";
+
+/**
+ * Whether the visitor's message answers the assistant's previous one, asked of the decision model as a
+ * yes/no (its probabilities are sharp: noise 0.00-0.07, real answers about 0.998). alpha-understand
+ * cannot be asked this in its own call: voxtral-small answered `true` for «hi» after «Added chips»
+ * (`eval:answers` noise/topic). `undefined` = no answer (the caller quotes, as without the question).
+ */
+export async function answersAssistant(
+	decisionAgent: DecisionAgent,
+	replyTo: string,
+	message: string,
+): Promise<boolean | undefined> {
+	try {
+		const { answers } = await decisionAgent.decide(
+			{ assistant: replyTo, visitor: message },
+			{ answers: { type: "boolean", instructions: ANSWERS_INSTRUCTIONS } },
+		);
+		return answers?.type === "boolean" ? answers.probability >= 0.5 : undefined;
+	} catch {
+		return undefined;
+	}
 }
 
 /** What alpha-understand is told besides the message; all of it is context, never instructions. */

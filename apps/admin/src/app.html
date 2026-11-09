@@ -5,9 +5,36 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
 		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+		<!-- Boot splash: the SPA is blank until its JS and the session request are in; the root layout removes #boot. -->
+		<!-- Same rule as mode-watcher (key mode-watcher-mode, default system), so the splash matches the chosen theme; ModeWatcher takes over once the app mounts. -->
+		<script>
+			try {
+				const m = localStorage.getItem("mode-watcher-mode");
+				if (m === "dark" || (m !== "light" && matchMedia("(prefers-color-scheme: dark)").matches)) document.documentElement.classList.add("dark");
+			} catch {}
+		</script>
+		<style>
+			/* The admin's page background (--page-background in packages/ui/src/tokens.css, photo left out): the CSS bundle is not in yet, so the values are copied here; keep them in step. */
+			#boot {
+				--bg: oklch(0.95 0 0); --primary: oklch(0.6 0.1467 290); --secondary: oklch(0.8835 0.0486 161.6932);
+				position: fixed; inset: 0; display: grid; place-items: center; z-index: 9999;
+				transition: opacity 0.4s ease;
+				background:
+					radial-gradient(ellipse at top left, color-mix(in oklch, var(--primary) 10%, transparent), transparent 55%),
+					radial-gradient(ellipse at bottom right, color-mix(in oklch, var(--secondary) 25%, transparent), transparent 55%),
+					var(--bg);
+			}
+			#boot.done { opacity: 0; pointer-events: none; }
+			#boot img { width: 72px; height: auto; animation: boot-pulse 1.4s ease-in-out infinite; }
+			.dark #boot img { filter: drop-shadow(0 0 6px rgb(255 255 255 / 0.45)); }
+			@keyframes boot-pulse { 50% { opacity: 0.35; transform: scale(0.94); } }
+			.dark #boot { --bg: oklch(0.2828 0.0232 78.3195); --primary: oklch(0.9754 0.0101 23.7027); --secondary: oklch(0.8359 0.1432 89.1327); }
+			@media (prefers-reduced-motion: reduce) { #boot { transition: none; } #boot img { animation: none; } }
+		</style>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
+		<div id="boot" role="status" aria-label="Loading"><img src="/logo.svg" alt="" /></div>
 		<div style="display: contents">%sveltekit.body%</div>
 	</body>
 </html>
