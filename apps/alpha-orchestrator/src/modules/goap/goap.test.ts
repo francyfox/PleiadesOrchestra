@@ -661,6 +661,23 @@ describe("a failed site tool is answered by its error code", () => {
 		).toBe("«Desk Lamp» is out of stock.");
 	});
 
+	test("a variable product: the reply lists up to four values, a longer attribute is only named", async () => {
+		const options = {
+			Color: ["Black", "White"],
+			Size: ["XS", "S", "M", "L", "XL"],
+		};
+		expect(
+			await reply(
+				failed(JSON.stringify({ error_code: "VARIATION_REQUIRED", options }), {
+					"ui:langChosen": true,
+					"page:lang": "en",
+				}),
+			),
+		).toBe(
+			"«Desk Lamp» comes in several options: Color: Black, White; Size. Which one do you want?",
+		);
+	});
+
 	test("a refused amount (LIMIT_EXCEEDED) asks for a smaller one, no product named", async () => {
 		expect(
 			await reply(
@@ -670,7 +687,7 @@ describe("a failed site tool is answered by its error code", () => {
 				}),
 			),
 		).toBe(
-			"That is more than I can add at once. Please choose a smaller amount.",
+			"That is more than I can add at once. What smaller amount would you like?",
 		);
 	});
 

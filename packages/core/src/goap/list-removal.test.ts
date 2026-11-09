@@ -47,8 +47,46 @@ describe("parseListedItems", () => {
 		]);
 	});
 
+	test("a JSON answer: the first array of objects with a name, quantity kept", () => {
+		const cart = JSON.stringify({
+			count: 3,
+			items: [
+				{ key: "a1", id: 1, name: "Amazon Echo Plus", quantity: 1 },
+				{ key: "b2", id: 2, name: "Cat Food", quantity: 2 },
+			],
+			total: "96",
+		});
+		const items = [
+			{ name: "Amazon Echo Plus", quantity: 1, ref: "a1" },
+			{ name: "Cat Food", quantity: 2, ref: "b2" },
+		];
+		expect(parseListedItems(cart)).toEqual(items);
+		// The MCP envelope around it.
+		const envelope = JSON.stringify({
+			content: [{ type: "text", text: cart }],
+		});
+		expect(parseListedItems(envelope)).toEqual(items);
+	});
+
 	test("an answer without a list has no items", () => {
 		expect(parseListedItems("The cart is empty.")).toEqual([]);
+	});
+});
+
+describe("removalArguments", () => {
+	const schema = {
+		type: "object" as const,
+		properties: { key: { type: "string" } },
+		required: ["key"],
+	};
+
+	test("an item with a ref is removed by it, not by its name", () => {
+		expect(
+			removalArguments(schema, [{ name: "Cat Food", quantity: 1, ref: "b2" }]),
+		).toEqual({ key: "b2" });
+		expect(
+			removalArguments(schema, [{ name: "Cat Food", quantity: 1 }]),
+		).toEqual({ key: "Cat Food" });
 	});
 });
 

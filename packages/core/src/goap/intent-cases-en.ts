@@ -41,6 +41,8 @@ const ENGLISH: Record<string, string> = {
 	"убери молоко": "remove the milk",
 	"не надо хлеб": "no bread needed",
 	"очисти корзину": "clear the cart",
+	"очистить корзину": "clear the cart",
+	"опустошить корзину": "empty the cart",
 	"удали все из корзины": "remove everything from the cart",
 	"оформи заказ": "place an order",
 	"оплатить заказ": "pay for the order",

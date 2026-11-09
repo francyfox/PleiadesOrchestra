@@ -38,8 +38,8 @@ jobs:
         run: |
           zip=packages/wordpress-plugin/dist/pleiades-chat.zip
           gh release create "$GITHUB_REF_NAME" "$zip" --verify-tag --latest=false \
-            --title "Pleiades Assistant ${GITHUB_REF_NAME#wp-v}" \
+            --title "Pleiades Chat ${GITHUB_REF_NAME#wp-v}" \
             --notes "WordPress plugin \`pleiades-chat\` ${GITHUB_REF_NAME#wp-v}. Changes: CHANGELOG.md."
           gh release delete wordpress --cleanup-tag --yes || true
           gh release create wordpress "$zip" --target "$GITHUB_SHA" --prerelease --latest=false \
-            --title "Pleiades Assistant (latest zip)" --notes "Rolling copy of the newest wp-v* release."
+            --title "Pleiades Chat (latest zip)" --notes "Rolling copy of the newest wp-v* release."

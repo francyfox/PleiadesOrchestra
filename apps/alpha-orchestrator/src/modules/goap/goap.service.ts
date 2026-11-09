@@ -221,10 +221,12 @@ const productOf = (state: WorldState) =>
 
 /** The wording of the newest tool error's code in the reply language (`replyLanguage`); `UNKNOWN` when there is none. */
 function toolErrorReplyText(state: WorldState): string {
+	const error = lastToolError(state);
 	return toolErrorText(
-		lastToolError(state)?.code ?? "UNKNOWN",
+		error?.code ?? "UNKNOWN",
 		replyLanguage(state),
 		productOf(state),
+		error?.options,
 	);
 }
 

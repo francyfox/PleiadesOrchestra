@@ -133,6 +133,7 @@ export type {
 	UnderstoodTask,
 } from "#core/goap/understanding";
 export {
+	answersAssistant,
 	attributeFacts,
 	conversationContext,
 	STATED_ATTRIBUTES,

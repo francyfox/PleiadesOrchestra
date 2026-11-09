@@ -16,6 +16,8 @@ export const MISSING_ITEMS = "missingItems";
 export interface ListItem {
 	name: string;
 	quantity: number;
+	/** What the site wants to be told to act on this entry (a cart line's `key`); the name when absent. */
+	ref?: string;
 }
 
 /** The list stored in fact `key`; empty when the fact is absent or not a list. */

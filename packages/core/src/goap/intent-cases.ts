@@ -90,9 +90,12 @@ export const INTENT_CASES: IntentCase[] = [
 		"remove the cheese from my cart",
 		"take out the apples",
 		"очисти корзину",
+		"очистить корзину",
+		"опустошить корзину",
 		"удали все из корзины",
 		"remove everything from my cart",
 		"empty my cart",
+		"clear the cart",
 	),
 	...cases(
 		"checkout",

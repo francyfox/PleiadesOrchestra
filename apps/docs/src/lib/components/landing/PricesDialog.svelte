@@ -1,7 +1,9 @@
 <script lang="ts">
 	import XIcon from "@lucide/svelte/icons/x";
+	import { onMount } from "svelte";
 	import { localeFromPath } from "#lib/i18n.js";
 	import { landingContent } from "#lib/landing/content.js";
+	import { replaceState } from "$app/navigation";
 	import { page } from "$app/state";
 	import PricesTable from "./PricesTable.svelte";
 
@@ -36,10 +38,26 @@
 	let dialog = $state<HTMLDialogElement>();
 	// Fetched on the first open and kept; a failed load is retried with the button in the dialog.
 	let pricing = $state.raw<Promise<LivePricing>>();
+	// `#prices` opens the dialog (a link can point at it, e.g. from the WordPress plugin's readme); closing it by any
+	// route (button, Esc, backdrop) wipes the hash again. replaceState: no history entry, no jump.
+	const HASH = "#prices";
 	function open() {
+		if (dialog?.open) return;
 		pricing ??= load();
 		dialog?.showModal();
+		if (location.hash !== HASH)
+			replaceState(`${location.pathname}${location.search}${HASH}`, {});
 	}
+	function onclose() {
+		if (location.hash === HASH)
+			replaceState(`${location.pathname}${location.search}`, {});
+	}
+	onMount(() => {
+		const sync = () => location.hash === HASH && open();
+		sync();
+		addEventListener("hashchange", sync);
+		return () => removeEventListener("hashchange", sync);
+	});
 </script>
 
 {#if base}
@@ -52,6 +70,7 @@
 		bind:this={dialog}
 		class="dlg m-auto max-h-[calc(100dvh-2rem)] w-[min(40rem,calc(100vw-2rem))] overflow-hidden border border-(--dlg-rule)! p-0 text-base leading-normal"
 		aria-labelledby="prices-title"
+		{onclose}
 		onclick={(event) => event.target === dialog && dialog.close()}
 	>
 		<div class="grid max-h-[calc(100dvh-2rem)] auto-rows-max overflow-y-auto overscroll-contain">

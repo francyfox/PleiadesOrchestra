@@ -2,7 +2,7 @@
 	import "./layout.css";
 	import { QueryClientProvider } from "@tanstack/svelte-query";
 	import { ModeWatcher } from "mode-watcher";
-	import { untrack } from "svelte";
+	import { onMount, untrack } from "svelte";
 	import { setupIntlayer, useIntlayer } from "svelte-intlayer";
 	import FeedbackWidget from "#lib/components/layout/feedback-widget.svelte";
 	import { Progress } from "#lib/components/ui/progress/index.js";
@@ -20,6 +20,13 @@
 	setupIntlayer(data.locale);
 
 	const common = useIntlayer("common");
+
+	// Fade the boot splash out (app.html: #boot.done), then drop it; the timeout matches its 0.4 s transition.
+	onMount(() => {
+		const boot = document.getElementById("boot");
+		boot?.classList.add("done");
+		setTimeout(() => boot?.remove(), 400);
+	});
 
 	// Navigation bar: creeps toward 90 while a page loads, fills when it is there.
 	let progress = $state(0);

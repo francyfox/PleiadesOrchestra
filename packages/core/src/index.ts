@@ -96,6 +96,7 @@ export type {
 	WorldStateStore,
 } from "#core/goap/index";
 export {
+	answersAssistant,
 	askedOptions,
 	attributeFacts,
 	bindListScope,

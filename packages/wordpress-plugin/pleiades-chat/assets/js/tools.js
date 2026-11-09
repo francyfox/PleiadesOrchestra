@@ -148,6 +148,8 @@
 	run.search_products = async (args) => {
 		let found = await call("search_products", args);
 		let shown = args;
+		// The shop page can show a search the visitor (or a spelling of it) made, not a merge of single words.
+		let showPage = true;
 		for (const variants of found.length ? [] : core.searchFallbacks(args)) {
 			const seen = new Map();
 			const each = await Promise.all(
@@ -156,9 +158,11 @@
 			for (const r of each) for (const p of r) seen.set(p.id, p);
 			found = [...seen.values()];
 			shown = variants[each.findIndex((r) => r.length)] ?? args;
+			showPage = variants.length === 1;
+			if (variants.length > 1) found = core.rankByQuery(found, args.query);
 			if (found.length) break;
 		}
-		if (found.length) {
+		if (found.length && showPage) {
 			// The shop page filters by slug; the tool takes an id or a slug.
 			let slug;
 			if (/^\d+$/.test(String(shown.category ?? "")))
@@ -169,6 +173,27 @@
 			if (href !== location.href) navigateSoon(href);
 		}
 		return core.shapeResult("search_products", found);
+	};
+
+	// A variable product without `variation`: the error carries the options, so the reply can list them.
+	run.add_to_cart = async (args) => {
+		try {
+			return core.shapeResult("add_to_cart", await call("add_to_cart", args));
+		} catch (e) {
+			if (e.code !== "VARIATION_REQUIRED") throw e;
+			const product = await call("get_product", args).catch(() => undefined);
+			// The model wrote the right choice in the wrong spelling: the product's own one is added once.
+			const variation = core.matchVariation(product, args.variation);
+			if (variation)
+				return core.shapeResult(
+					"add_to_cart",
+					await call("add_to_cart", { ...args, variation }),
+				);
+			throw core.toolError("VARIATION_REQUIRED", {
+				...e,
+				options: core.variationOptions(product),
+			});
+		}
 	};
 
 	const addItem = (i) =>

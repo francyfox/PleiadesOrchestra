@@ -54,6 +54,8 @@
 		sans-serif
 	);
 	--font-scale: var(--pleiades-font-scale, 1.5);
+	/* Room the host keeps free above the panel (a site's fixed top bar, e.g. WordPress's admin bar). */
+	--offset-top: var(--pleiades-offset-top, 0px);
 	--font-size: calc(14px * var(--font-scale));
 	--font-size-sm: calc(12px * var(--font-scale));
 	--font-size-xs: calc(11px * var(--font-scale));
@@ -112,7 +114,7 @@
 	.panel {
 		position: fixed;
 		z-index: 2147483000;
-		top: 0;
+		top: var(--offset-top);
 		bottom: 0;
 		display: flex;
 		flex-direction: column;

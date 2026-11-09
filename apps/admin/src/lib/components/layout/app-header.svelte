@@ -6,6 +6,7 @@
 	import * as Sidebar from "#lib/components/ui/sidebar/index.js";
 	import { headerStats } from "#lib/header-stats.js";
 	import LocaleSwitcher from "./locale-switcher.svelte";
+	import ThemeSwitcher from "./theme-switcher.svelte";
 
 	/** The meter shows the host's CPU/RAM/GPU: staff only. */
 	let { staff }: { staff: boolean } = $props();
@@ -14,6 +15,7 @@
 <header class="flex flex-wrap md:flex-nowrap min-h-12 items-center gap-3 border-b px-4 py-2">
 	<Sidebar.Trigger />
 	<div class="flex items-center gap-3">
+	    <ThemeSwitcher />
 	    <LocaleSwitcher />
 	    {#if staff && headerStats.current}<SystemMeter />{/if}
     	{#if !staff}<LiveBilling /><StandingAlert /><NoBalanceDialog />{/if}

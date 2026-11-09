@@ -11,6 +11,7 @@ import type {
 	WorldState,
 } from "@repo/core";
 import {
+	answersAssistant,
 	askedOptions,
 	attributeFacts,
 	bindListScope,
@@ -151,9 +152,16 @@ async function initialState(
 	const said = conversationContext(
 		(await deps.history?.get(threadId, CONTEXT_MESSAGES)) ?? [],
 	);
-	const replyTo = (
+	const candidate = (
 		options.replyTo ? typedText(options.replyTo) : (said.replyTo ?? "")
 	).slice(0, REPLY_TO_MAX);
+	// A picked button answers by definition; a typed message may be «hi» or a new request, which the
+	// decision model tells (`answersAssistant`): read next to the quote, the small model drags the earlier action in.
+	const answers =
+		candidate && !options.replyTo
+			? await answersAssistant(deps.decisionAgent, candidate, userMessage)
+			: undefined;
+	const replyTo = answers === false ? "" : candidate;
 	const history = replyTo ? said.history : undefined;
 	const personaLang = deps.personaLang?.(visitor.channelId);
 	// Stored now, not when the run ends: a reload mid-run (or a run that never

@@ -56,6 +56,8 @@
 		woocommerce_rest_product_invalid_quantity: "INVALID_QUANTITY",
 		invalid_quantity: "INVALID_QUANTITY",
 		woocommerce_rest_cart_invalid_key: "CART_ITEM_GONE",
+		woocommerce_rest_cart_coupon_error: "NOT_ALLOWED",
+		woocommerce_rest_cart_coupon_invalid_code: "NOT_FOUND",
 		woocommerce_rest_missing_nonce: "NONCE_EXPIRED",
 		woocommerce_rest_invalid_nonce: "NONCE_EXPIRED",
 		rest_forbidden: "NOT_ALLOWED",
@@ -82,7 +84,13 @@
 			: e instanceof TypeError
 				? "NETWORK"
 				: "UNKNOWN";
-		return { error_code: code, status: e?.status, hint: e?.hint };
+		return {
+			error_code: code,
+			status: e?.status,
+			hint: e?.hint,
+			// Which options a variable product has: catalog data for the reply, only with this code.
+			options: code === "VARIATION_REQUIRED" ? e.options : undefined,
+		};
 	}
 
 	const need = (args, key, hint = "") => {
@@ -175,6 +183,39 @@
 					query: {},
 					body: { key: need(args, "key", NEED_KEY) },
 				};
+			case "clear_cart":
+				return {
+					api: "store",
+					method: "DELETE",
+					path: "cart/items",
+					query: {},
+				};
+			case "apply_coupon":
+			case "remove_coupon":
+				return {
+					api: "store",
+					method: "POST",
+					path: `cart/${name === "apply_coupon" ? "apply" : "remove"}-coupon`,
+					query: {},
+					body: { code: String(need(args, "code")).trim() },
+				};
+			case "get_product_reviews":
+				return {
+					api: "store",
+					method: "GET",
+					path: "products/reviews",
+					query: {
+						product_id: String(Number(need(args, "id", NEED_ID))),
+						per_page: "10",
+					},
+				};
+			case "list_tags":
+				return {
+					api: "store",
+					method: "GET",
+					path: "products/tags",
+					query: { per_page: "100" },
+				};
 			case "search_site":
 				return {
 					api: "wp",
@@ -206,6 +247,12 @@
 	function searchFallbacks(args) {
 		const out = [];
 		const loose = { ...args, category: undefined };
+		// A shop stores «Women’s» with the typographic apostrophe, a visitor types the straight one: LIKE matches neither.
+		const query = String(args.query ?? "");
+		const swapped = /'/.test(query)
+			? query.replace(/'/g, "’")
+			: query.replace(/’/g, "'");
+		if (swapped !== query) out.push([{ ...loose, query: swapped }]);
 		if (args.category) out.push([loose]);
 		const words = [
 			...new Set(
@@ -216,6 +263,27 @@
 		];
 		if (words.length > 1) out.push(words.map((query) => ({ ...loose, query })));
 		return out;
+	}
+
+	const plain = (text) =>
+		String(text ?? "")
+			.toLowerCase()
+			.replace(/['’‘]/g, "");
+	/** Products that hold more of the query's words come first (a word-by-word search lists every «black» thing ahead of the one asked for); ties keep their order. */
+	function rankByQuery(products, query) {
+		const words = [
+			...new Set(
+				plain(query)
+					.split(/\s+/)
+					.filter((w) => w.length > 2),
+			),
+		];
+		if (!words.length) return products;
+		const score = (p) => words.filter((w) => plain(p.name).includes(w)).length;
+		return products
+			.map((p, i) => [p, i, score(p)])
+			.sort((a, b) => b[2] - a[2] || a[1] - b[1])
+			.map(([p]) => p);
 	}
 
 	/** The Store API sends a fresh nonce with each response. */
@@ -284,6 +352,42 @@
 		return p?.[key] ? (Number(p[key]) / 10 ** unit).toFixed(unit) : undefined;
 	};
 
+	/** Attribute name -> allowed values of the attributes a variable product varies by; undefined when there are none. */
+	function variationOptions(p) {
+		const out = Object.fromEntries(
+			(p?.attributes ?? [])
+				.filter((a) => a.has_variations)
+				.map((a) => [a.name, (a.terms ?? []).map((t) => t.name)]),
+		);
+		return Object.keys(out).length ? out : undefined;
+	}
+
+	const norm = (text) =>
+		String(text ?? "")
+			.trim()
+			.toLowerCase();
+	/**
+	 * The `variation` the product itself would accept: a small model writes {size: "m"} where the shop wants
+	 * {Size: "M"}. Every varying attribute must be matched (name, then value by name or slug, case aside);
+	 * otherwise undefined and the visitor is asked.
+	 */
+	function matchVariation(p, given) {
+		const attrs = (p?.attributes ?? []).filter((a) => a.has_variations);
+		if (!attrs.length || !given || typeof given !== "object") return undefined;
+		const out = {};
+		for (const a of attrs) {
+			const key = Object.keys(given).find((k) => norm(k) === norm(a.name));
+			const term = (a.terms ?? []).find(
+				(t) =>
+					key !== undefined &&
+					[t.name, t.slug].some((x) => norm(x) === norm(given[key])),
+			);
+			if (!term) return undefined;
+			out[a.name] = term.name;
+		}
+		return out;
+	}
+
 	function shapeProduct(p, full = false) {
 		const out = {
 			id: p.id,
@@ -341,6 +445,7 @@
 				price: price(i.prices),
 				variation: i.variation,
 			})),
+			coupons: (c.coupons ?? []).map((x) => x.code),
 			total: price(c.totals, "total_price"),
 			currency: c.totals?.currency_code,
 		};
@@ -364,7 +469,25 @@
 			case "add_to_cart":
 			case "update_cart_item":
 			case "remove_cart_item":
+			case "apply_coupon":
+			case "remove_coupon":
 				return shapeCart(data);
+			case "clear_cart":
+				return { cleared: true };
+			case "get_product_reviews":
+				return data.map((r) => ({
+					rating: r.rating,
+					author: r.reviewer,
+					text: htmlToText(r.review),
+					date: r.date_created,
+				}));
+			case "list_tags":
+				return data.map((t) => ({
+					id: t.id,
+					name: t.name,
+					slug: t.slug,
+					count: t.count,
+				}));
 			case "search_site":
 				return data.map((r) => ({
 					id: r.id,
@@ -478,6 +601,48 @@
 			annotations: WRITE,
 			description: "Remove an item from the cart (use the key from get_cart).",
 			inputSchema: obj({ key: str("Cart item key") }, ["key"]),
+		},
+		{
+			name: "clear_cart",
+			woo: true,
+			annotations: WRITE,
+			description: "Remove every item from the visitor's cart in one step.",
+			inputSchema: obj(),
+		},
+		{
+			name: "apply_coupon",
+			woo: true,
+			annotations: WRITE,
+			description:
+				"Apply a discount code the visitor gave to their cart. Returns the cart with its applied coupons and total.",
+			inputSchema: obj(
+				{ code: str("The coupon code, as the visitor wrote it") },
+				["code"],
+			),
+		},
+		{
+			name: "remove_coupon",
+			woo: true,
+			annotations: WRITE,
+			description:
+				"Take an applied discount code off the cart (the codes are listed by get_cart).",
+			inputSchema: obj({ code: str("The applied coupon code") }, ["code"]),
+		},
+		{
+			name: "get_product_reviews",
+			woo: true,
+			annotations: READ,
+			description:
+				"Up to 10 recent customer reviews of one product: rating, author, text, date.",
+			inputSchema: obj({ id: num("Product id") }, ["id"]),
+		},
+		{
+			name: "list_tags",
+			woo: true,
+			annotations: READ,
+			description:
+				"All product tags of the shop (id, name, slug, how many products).",
+			inputSchema: obj(),
 		},
 		{
 			name: "search_site",
@@ -634,6 +799,9 @@
 		toolError,
 		codeFromResponse,
 		errorPayload,
+		variationOptions,
+		matchVariation,
+		rankByQuery,
 		withPages,
 		buildRequest,
 		nextNonce,

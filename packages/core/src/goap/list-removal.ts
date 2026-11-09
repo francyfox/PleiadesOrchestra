@@ -56,6 +56,53 @@ export function outOfStockNamed(
 	return undefined;
 }
 
+/**
+ * A listing answered as JSON (`{"items":[{"name","quantity",…}]}`, bare or in
+ * an MCP `content` envelope): the first array of objects that have a name.
+ */
+function jsonItems(text: string): ListItem[] | undefined {
+	let data: unknown;
+	try {
+		data = JSON.parse(text);
+	} catch {
+		return undefined;
+	}
+	const record = (value: unknown): value is Record<string, unknown> =>
+		typeof value === "object" && value !== null;
+	if (record(data) && Array.isArray(data.content)) {
+		const inner = data.content.find(
+			(part) => record(part) && typeof part.text === "string",
+		);
+		return inner ? jsonItems(inner.text as string) : undefined;
+	}
+	const list = Array.isArray(data)
+		? data
+		: record(data)
+			? Object.values(data).find(Array.isArray)
+			: undefined;
+	const items = (list ?? []).filter(
+		(entry): entry is Record<string, unknown> =>
+			record(entry) &&
+			typeof entry.name === "string" &&
+			entry.name.trim() !== "",
+	);
+	return items.length === 0
+		? undefined
+		: items.map((entry) => ({
+				name: (entry.name as string).trim(),
+				...(typeof entry.key === "string" && entry.key
+					? { ref: entry.key }
+					: {}),
+				...(typeof entry.key === "string" && entry.key
+					? { ref: entry.key }
+					: {}),
+				quantity:
+					Number.isInteger(entry.quantity) && (entry.quantity as number) > 0
+						? (entry.quantity as number)
+						: 1,
+			}));
+}
+
 const LEADING_COUNT = /^(\d+)\s*[×xх*]\s+/iu;
 const LEADING_ID = /^#([\p{L}\p{N}][\p{L}\p{N}_-]*)/u;
 
@@ -66,6 +113,8 @@ const LEADING_ID = /^#([\p{L}\p{N}][\p{L}\p{N}_-]*)/u;
  * format this cannot read gives no items.
  */
 export function parseListedItems(text: string): ListItem[] {
+	const json = jsonItems(text);
+	if (json) return json;
 	const items: ListItem[] = [];
 	for (const line of text.split("\n")) {
 		const raw = line.match(LIST_ITEM);
@@ -201,7 +250,7 @@ export function removalArguments(
 	if (!field) return undefined;
 	const zero = findZeroField(schema);
 	return {
-		[field]: (items[0] as ListItem).name,
+		[field]: (items[0] as ListItem).ref ?? (items[0] as ListItem).name,
 		...(zero ? { [zero]: 0 } : {}),
 	};
 }

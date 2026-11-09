@@ -86,6 +86,10 @@ final class Pleiades_Assets {
 		$tools_deps = array( self::HANDLE_CORE );
 		if ( $has_key ) {
 			wp_enqueue_script( self::HANDLE_WIDGET, $url . 'pleiades-widget.js', array(), $version, true );
+			// The panel starts below WordPress's fixed admin bar (32px, 46px on narrow screens) instead of covering it.
+			wp_register_style( self::HANDLE_WIDGET, false, array(), $version );
+			wp_enqueue_style( self::HANDLE_WIDGET );
+			wp_add_inline_style( self::HANDLE_WIDGET, 'body.admin-bar pleiades-chat{--pleiades-offset-top:32px}@media screen and (max-width:782px){body.admin-bar pleiades-chat{--pleiades-offset-top:46px}}' );
 			$tools_deps[] = self::HANDLE_WIDGET;
 		}
 		wp_enqueue_script( self::HANDLE_CORE, $url . 'tools-core.js', array(), $version, true );

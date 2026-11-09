@@ -179,6 +179,55 @@ describe("«remove everything»: read the list, then remove each item", () => {
 		expect(succeeded).toBe(true);
 	});
 
+	// The WordPress plugin's shape: a JSON cart, lines told apart by `key`, a remover that takes that key.
+	const JSON_CART = JSON.stringify({
+		count: 3,
+		items: [
+			{ key: "k1", id: 1, name: "Amazon Echo Plus", quantity: 1 },
+			{ key: "k2", id: 2, name: "Cat Food", quantity: 2 },
+		],
+	});
+	const REMOVE_CART_ITEM = tool(
+		"remove_cart_item",
+		{ key: { type: "string" } },
+		["key"],
+	);
+	const REMOVE_COUPON = tool("remove_coupon", { code: { type: "string" } }, [
+		"code",
+	]);
+
+	test("a JSON cart is read and each line is removed by its key, not by its name", async () => {
+		const { calls, succeeded } = await turn(
+			[GET_CART, REMOVE_CART_ITEM, REMOVE_COUPON],
+			"очистить корзину",
+			(call) => (call.tool === "get_cart" ? JSON_CART : "{}"),
+			{},
+		);
+		expect(calls).toEqual([
+			{ tool: "get_cart", arguments: {} },
+			{ tool: "remove_cart_item", arguments: { key: "k1" } },
+			{ tool: "remove_cart_item", arguments: { key: "k2" } },
+		]);
+		expect(succeeded).toBe(true);
+	});
+
+	test("with a clear_cart tool next to the coupon and cart-line removers, clear_cart alone runs", async () => {
+		const { calls, succeeded } = await turn(
+			[
+				GET_CART,
+				REMOVE_CART_ITEM,
+				REMOVE_COUPON,
+				tool("clear_cart"),
+				tool("apply_coupon", { code: { type: "string" } }, ["code"]),
+			],
+			"очистить корзину",
+			() => "{}",
+			{},
+		);
+		expect(calls).toEqual([{ tool: "clear_cart", arguments: {} }]);
+		expect(succeeded).toBe(true);
+	});
+
 	test("another domain: bookings listed by #id, cancelled one by one by id", async () => {
 		const { calls, succeeded } = await turn(
 			[
