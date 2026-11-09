@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { ruleErrors } from "./guardrails-rules.ts";
 
 test("comments and blanks are skipped; each bad line is reported with its 1-based number", () => {
-	expect(ruleErrors("# note\n\nfoo\\s+bar\n(\n" + "a".repeat(501))).toEqual([
+	expect(ruleErrors(`# note\n\nfoo\\s+bar\n(\n${"a".repeat(501)}`)).toEqual([
 		{ line: 4, message: expect.any(String) },
 		{ line: 5, message: "Longer than 500 characters" },
 	]);

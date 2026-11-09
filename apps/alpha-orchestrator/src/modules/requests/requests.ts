@@ -54,7 +54,7 @@ function adminCors(origins: Set<string>) {
 				const origin = request.headers.get("origin") ?? "";
 				if (!origins.has(origin)) return;
 				set.headers["access-control-allow-origin"] = origin;
-				set.headers["vary"] = "Origin";
+				set.headers.vary = "Origin";
 			},
 		);
 }

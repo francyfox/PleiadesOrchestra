@@ -90,7 +90,7 @@ test("«купи 1 сыр» chooses a store, searches and adds cheese to the car
 		"panel:",
 		await page
 			.locator("pleiades-chat")
-			.innerText()
+			.textContent()
 			.catch(() => ""),
 	);
 

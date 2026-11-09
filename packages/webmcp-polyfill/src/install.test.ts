@@ -5,6 +5,10 @@ import { installWebMcpPolyfill } from "./install.ts";
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
+const registeredTools = () =>
+	(globalThis as { __webmcp_registered_tools?: Map<string, unknown> })
+		.__webmcp_registered_tools;
+
 type FakeIframe = { getAttribute: (attr: string) => string | null };
 
 function makeDocument(iframes: FakeIframe[] = []): Record<string, unknown> {
@@ -159,8 +163,7 @@ describe("getTools — origin filtering", () => {
 
 	test("excludes a cross-origin tool when no allow='tools' iframe is present", async () => {
 		// Inject a tool with a foreign origin directly (simulates what getRemoteTools returns).
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		(globalThis as any).__webmcp_registered_tools?.set("remote_tool", {
+		registeredTools()?.set("remote_tool", {
 			name: "remote_tool",
 			description: "remote",
 			origin: "https://demo.example.com",
@@ -179,8 +182,7 @@ describe("getTools — origin filtering", () => {
 	});
 
 	test("includes a cross-origin tool when fromOrigins is specified explicitly", async () => {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		(globalThis as any).__webmcp_registered_tools?.set("remote_tool", {
+		registeredTools()?.set("remote_tool", {
 			name: "remote_tool",
 			description: "remote",
 			origin: "https://demo.example.com",
@@ -221,8 +223,7 @@ describe("getTools — origin filtering", () => {
 		]);
 		installWebMcpPolyfill();
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		(globalThis as any).__webmcp_registered_tools?.set("remote_tool", {
+		registeredTools()?.set("remote_tool", {
 			name: "remote_tool",
 			description: "remote",
 			origin: "https://demo.example.com",
@@ -253,8 +254,7 @@ describe("getTools — origin filtering", () => {
 		]);
 		installWebMcpPolyfill();
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		(globalThis as any).__webmcp_registered_tools?.set("remote_tool", {
+		registeredTools()?.set("remote_tool", {
 			name: "remote_tool",
 			description: "remote",
 			origin: "https://demo.example.com",

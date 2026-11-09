@@ -42,11 +42,7 @@ export function adminsRoutes({ auth, db }: RouteDeps) {
 	const fromAuthError = (cause: unknown) => {
 		if (cause instanceof APIError) {
 			return {
-				code: (cause.statusCode >= 500 ? 500 : cause.statusCode) as
-					| 400
-					| 401
-					| 403
-					| 500,
+				code: Math.min(cause.statusCode, 500) as 400 | 401 | 403 | 500,
 				body: { message: cause.body?.message ?? cause.message },
 			};
 		}

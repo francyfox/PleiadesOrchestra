@@ -170,7 +170,9 @@
 	.po-site *,
 	.po-site *::before,
 	.po-site *::after {
+		/* biome-ignore lint/complexity/noImportantStyles: must beat Tailwind utilities and the theme's own durations for reduced-motion users */
 		animation-duration: 0.01ms !important;
+		/* biome-ignore lint/complexity/noImportantStyles: same as above */
 		transition-duration: 0.01ms !important;
 	}
 }

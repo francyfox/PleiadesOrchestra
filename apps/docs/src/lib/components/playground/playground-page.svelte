@@ -12,6 +12,9 @@
 	} from "#lib/components/playground/types.js";
 	import { demoChannel, demos } from "#lib/playground/demos.js";
 
+	// The slice of document.modelContext this page uses (the polyfill/native WebMCP object).
+	type ModelContext = EventTarget & { getTools(): Promise<McpTool[]> };
+
 	let selectedUrl = $state(demos[0].url);
 	let demo = $derived(demos.find((d) => d.url === selectedUrl) ?? demos[0]);
 	let channel = $derived(demoChannel(__PUBLIC_ENV__, demo));
@@ -41,21 +44,23 @@
 			await import("@shalotts/pleiades-widget");
 			await Promise.resolve();
 
-			const mc = (document as any).modelContext;
+			const mc = (document as unknown as { modelContext?: ModelContext })
+				.modelContext;
 			if (!mc) return;
 
-			async function refreshTools() {
+			const refreshTools = async () => {
 				try {
 					tools = await mc.getTools();
 				} catch {
 					/* not ready */
 				}
-			}
+			};
 			function handleToolChange() {
 				void refreshTools();
 			}
 			function handleToolActivated(e: Event) {
-				const name: string = (e as any).toolName ?? "tool";
+				const name: string =
+					(e as Event & { toolName?: string }).toolName ?? "tool";
 				const id = `n-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 				const prev = nodes.length > 0 ? nodes[nodes.length - 1] : null;
 				nodes = [
@@ -79,9 +84,13 @@
 				frameCleanup?.();
 				frameCleanup = null;
 				announceToolChange();
-				let fmc: any;
+				let fmc: ModelContext | undefined;
 				try {
-					fmc = (demoFrame?.contentWindow?.document as any)?.modelContext;
+					fmc = (
+						demoFrame?.contentWindow?.document as unknown as
+							| { modelContext?: ModelContext }
+							| undefined
+					)?.modelContext;
 				} catch {
 					/* cross-origin */
 				}
