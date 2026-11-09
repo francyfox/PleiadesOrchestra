@@ -397,3 +397,100 @@ test("an error result holds the code and our own safe fields, nothing else", () 
 		"boom",
 	);
 });
+
+// Limits: units, not requests. A hallucinating model or an injected page must not fill a cart in one turn.
+const refused = (fn: () => unknown) => {
+	try {
+		fn();
+	} catch (e) {
+		return core.errorPayload(e);
+	}
+	return undefined;
+};
+
+test("add_to_cart: 20 per call passes, 21 is refused with LIMIT_EXCEEDED and the allowed maximum", () => {
+	expect(
+		core.buildRequest("add_to_cart", { id: 5, quantity: 20 }).body.quantity,
+	).toBe(20);
+	const out = refused(() =>
+		core.buildRequest("add_to_cart", { id: 5, quantity: 21 }),
+	);
+	expect(out.error_code).toBe("LIMIT_EXCEEDED");
+	expect(out.hint).toContain("20");
+	expect(
+		refused(() => core.buildRequest("add_to_cart", { id: 5, quantity: "1000" }))
+			?.error_code,
+	).toBe("LIMIT_EXCEEDED");
+});
+
+test("update_cart_item: 99 passes, 100 is refused, 0 still removes", () => {
+	expect(
+		core.buildRequest("update_cart_item", { key: "k", quantity: 99 }).body
+			.quantity,
+	).toBe(99);
+	expect(
+		refused(() =>
+			core.buildRequest("update_cart_item", { key: "k", quantity: 100 }),
+		)?.error_code,
+	).toBe("LIMIT_EXCEEDED");
+	expect(
+		core.buildRequest("update_cart_item", { key: "k", quantity: 0 }).path,
+	).toBe("cart/remove-item");
+});
+
+test("limits come from the page config; a missing or broken value falls back to the default", () => {
+	const limits = { addQuantity: 5, cartQuantity: 7, servings: 3, callUnits: 9 };
+	expect(core.limitsOf({ limits })).toEqual(limits);
+	expect(core.limitsOf({})).toEqual({
+		addQuantity: 20,
+		cartQuantity: 99,
+		servings: 12,
+		callUnits: 100,
+	});
+	expect(
+		core.limitsOf({
+			limits: { addQuantity: 0, cartQuantity: "x", servings: -1 },
+		}),
+	).toEqual(core.limitsOf({}));
+	expect(
+		refused(() =>
+			core.buildRequest("add_to_cart", { id: 5, quantity: 6 }, { limits }),
+		)?.error_code,
+	).toBe("LIMIT_EXCEEDED");
+	expect(core.limitsOf({ limits: { addQuantity: 5 } }).cartQuantity).toBe(99);
+});
+
+test("servings: 12 passes, 13 is refused", () => {
+	const big = { servings: 1, items: [{ id: 1, name: "A", quantity: 1 }] };
+	expect(core.scaleItems(big, 12)[0].quantity).toBe(12);
+	expect(refused(() => core.scaleItems(big, 13))?.error_code).toBe(
+		"LIMIT_EXCEEDED",
+	);
+});
+
+test("one bundle call adds at most 100 units in total: 100 passes, 101 is refused as a whole", () => {
+	expect(
+		core.scaleItems(
+			{
+				items: [
+					{ id: 1, name: "A", quantity: 60 },
+					{ id: 2, name: "B", quantity: 40 },
+				],
+			},
+			undefined,
+		),
+	).toHaveLength(2);
+	const out = refused(() =>
+		core.scaleItems(
+			{
+				items: [
+					{ id: 1, name: "A", quantity: 60 },
+					{ id: 2, name: "B", quantity: 41 },
+				],
+			},
+			undefined,
+		),
+	);
+	expect(out.error_code).toBe("LIMIT_EXCEEDED");
+	expect(out.hint).toContain("100");
+});

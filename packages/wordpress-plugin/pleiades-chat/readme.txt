@@ -55,7 +55,7 @@ Please mention this service in your own site's privacy policy.
 == Changelog ==
 
 = 0.4.0 =
-* Plugin renamed to pleiades-chat (deactivate the old copy), split into classes, settings tabs with Localization, open_page knows the cart, checkout and account addresses.
+* Plugin renamed to pleiades-chat (deactivate the old copy), split into classes, settings tabs with Localization, open_page knows the cart, checkout and account addresses, limits on how much the assistant can add to a cart in one step (filter `pleiades_chat_limits`).
 
 = 0.2.0 =
 * Recipes (custom post type, "add all ingredients" button), kits (grouped products with quantities) and the matching assistant tools.

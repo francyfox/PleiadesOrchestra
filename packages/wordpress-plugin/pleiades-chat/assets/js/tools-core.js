@@ -15,8 +15,32 @@
 		"NOT_ALLOWED",
 		"NETWORK",
 		"NONCE_EXPIRED",
+		"LIMIT_EXCEEDED",
 		"UNKNOWN",
 	];
+	// Defaults of the per-call limits; PHP (Pleiades_Limits) is the source of truth and prints them as
+	// cfg.limits, these only stand in when a page prints none (a cached older page).
+	const LIMITS = {
+		addQuantity: 20,
+		cartQuantity: 99,
+		servings: 12,
+		callUnits: 100,
+	};
+	/** cfg.limits with every missing or non-positive value replaced by its default. */
+	const limitsOf = (cfg) =>
+		Object.fromEntries(
+			Object.entries(LIMITS).map(([k, d]) => {
+				const v = Number(cfg?.limits?.[k]);
+				return [k, v >= 1 ? Math.floor(v) : d];
+			}),
+		);
+	/** Refuses (never clamps) a number above `max`; `hint` is OUR text for the calling model. */
+	const within = (value, max, what) => {
+		if (Number(value) > max)
+			throw toolError("LIMIT_EXCEEDED", {
+				hint: `${what} is limited to ${max}; ask for ${max} or fewer`,
+			});
+	};
 	// The `code` of WooCommerce / WordPress REST errors (read from real responses, see the e2e specs).
 	const STORE_CODES = {
 		woocommerce_rest_cart_invalid_product: "NOT_FOUND",
@@ -75,8 +99,9 @@
 	const minor = (value, env) =>
 		String(Math.round(Number(value) * 10 ** (env.minorUnit ?? 2)));
 
-	/** Tool → request description. `env`: { minorUnit, post } (post: get_page asks /posts). */
+	/** Tool → request description. `env`: { minorUnit, post, limits } (post: get_page asks /posts). */
 	function buildRequest(name, rawArgs, env = {}) {
+		const limits = env.limits ?? LIMITS;
 		// Callers name the id differently (the schema says `id`, models write product_id).
 		const args = { id: rawArgs.product_id ?? rawArgs.productId, ...rawArgs };
 		switch (name) {
@@ -109,6 +134,11 @@
 			case "get_cart":
 				return { api: "store", method: "GET", path: "cart", query: {} };
 			case "add_to_cart":
+				within(
+					args.quantity ?? 1,
+					limits.addQuantity,
+					"quantity per add_to_cart call",
+				);
 				return {
 					api: "store",
 					method: "POST",
@@ -126,6 +156,7 @@
 				// The Store API rejects quantity 0: that means "remove".
 				if (Number(args.quantity) === 0)
 					return buildRequest("remove_cart_item", args, env);
+				within(args.quantity, limits.cartQuantity, "quantity of a cart item");
 				return {
 					api: "store",
 					method: "POST",
@@ -483,14 +514,21 @@
 		return found;
 	};
 
-	/** Item quantities for `servings` (the bundle's own when it has none). */
-	function scaleItems(bundle, servings) {
+	/** Item quantities for `servings` (the bundle's own when it has none); over the limits nothing is returned, the call is refused. */
+	function scaleItems(bundle, servings, limits = LIMITS) {
+		within(servings, limits.servings, "servings");
 		const factor =
 			bundle.servings && servings > 0 ? servings / bundle.servings : 1;
-		return bundle.items.map((i) => ({
+		const items = bundle.items.map((i) => ({
 			...i,
 			quantity: Math.max(1, Math.ceil(i.quantity * factor)),
 		}));
+		within(
+			items.reduce((sum, i) => sum + i.quantity, 0),
+			limits.callUnits,
+			"total units added by one call",
+		);
+		return items;
 	}
 
 	/** Adds every item with `addOne(item)`; one failure (e.g. out of stock) does not stop the rest. */
@@ -592,6 +630,7 @@
 
 	globalThis.PleiadesWpCore = {
 		ERROR_CODES,
+		limitsOf,
 		toolError,
 		codeFromResponse,
 		errorPayload,

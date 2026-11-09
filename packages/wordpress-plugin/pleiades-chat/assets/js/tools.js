@@ -3,6 +3,7 @@
 	const cfg = window.PleiadesWp;
 	const core = window.PleiadesWpCore;
 	if (!cfg || !core) return;
+	const limits = core.limitsOf(cfg);
 	let nonce = cfg.nonce;
 	let registered = false;
 
@@ -24,6 +25,7 @@
 	async function call(name, args, env = {}) {
 		const req = core.buildRequest(name, args, {
 			minorUnit: cfg.minorUnit,
+			limits,
 			...env,
 		});
 		const url = core.endpoint(
@@ -174,7 +176,7 @@
 	const addBundle = (list, key) => async (args) => {
 		const bundle = core.findBundle(list, args[key]);
 		const out = await core.addAll(
-			core.scaleItems(bundle, args.servings),
+			core.scaleItems(bundle, args.servings, limits),
 			addItem,
 		);
 		const cart = out.cart && core.shapeResult("add_to_cart", out.cart);

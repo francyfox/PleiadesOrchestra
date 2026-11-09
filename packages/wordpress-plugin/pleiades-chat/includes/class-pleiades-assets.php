@@ -56,7 +56,7 @@ final class Pleiades_Assets {
 	 *
 	 * Hooked to `wp_enqueue_scripts`. Without a widget key only recipe and kit pages get the scripts
 	 * (core + tools, no widget, `tools` = false), because they need the "add all" button.
-	 * Config keys: woo, tools, wpUrl, storeUrl, nonce (Store API), minorUnit, and with WooCommerce
+	 * Config keys: woo, tools, wpUrl, storeUrl, nonce (Store API), minorUnit, limits (Pleiades_Limits), and with WooCommerce
 	 * also recipes, kits, pages and (on a product page) product.
 	 *
 	 * @since 0.4.0
@@ -153,6 +153,7 @@ final class Pleiades_Assets {
 			'storeUrl'  => rest_url( 'wc/store/v1/' ),
 			'nonce'     => $has_woo ? wp_create_nonce( 'wc_store_api' ) : '',
 			'minorUnit' => $has_woo ? wc_get_price_decimals() : self::DEFAULT_MINOR_UNIT,
+			'limits'    => Pleiades_Limits::get(),
 		);
 	}
 

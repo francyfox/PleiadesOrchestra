@@ -26,6 +26,7 @@ final class Pleiades_Plugin {
 		// Literal paths: editors and static analysers follow them (a loop over names is invisible to them).
 		require_once __DIR__ . '/class-pleiades-options.php';
 		require_once __DIR__ . '/class-pleiades-context.php';
+		require_once __DIR__ . '/class-pleiades-limits.php';
 		require_once __DIR__ . '/class-pleiades-assets.php';
 		require_once __DIR__ . '/class-pleiades-recipes.php';
 
