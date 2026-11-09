@@ -11,6 +11,7 @@ export type { Rejection } from "./guard.ts";
 export { hasBearer, onRequestGuard } from "./guard.ts";
 export type { Logger, LoggerOptions, LogLevelName } from "./logger.ts";
 export { createLogger, jsonReporter } from "./logger.ts";
+export { decodeSlashParams } from "./path-params.ts";
 export { logRequest, REQUEST_ID_HEADER, requestLog } from "./request-log.ts";
 export type { RetryOptions } from "./retry.ts";
 export { retryFetch } from "./retry.ts";

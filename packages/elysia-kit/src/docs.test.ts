@@ -10,7 +10,11 @@ test("the Scalar page loads the spec by an absolute path, so a nested docs path 
 		await app.handle(new Request("http://localhost/api/docs"))
 	).text();
 	expect(page).toContain("@scalar/api-reference");
-	expect(page).toContain('"url":"/api/docs/json"');
+	// The plugin HTML-escapes the attribute (&quot;), the browser decodes it back.
+	const attribute = page.match(/data-configuration='([^']*)'/)?.[1] ?? "";
+	expect(JSON.parse(attribute.replaceAll("&quot;", '"')).url).toBe(
+		"/api/docs/json",
+	);
 	const spec = await app.handle(new Request("http://localhost/api/docs/json"));
 	expect(spec.status).toBe(200);
 });
