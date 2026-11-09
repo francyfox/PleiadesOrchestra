@@ -10,7 +10,7 @@ type-safe **data transfer graph** library: **transfers** are nodes (push/pull/su
 **bridges** are edges, **operators** are pure stateless transforms used inside transfers, and
 **builders** (`CompositeTransferBuilder`) wire it all together with compile-time-checked contracts.
 
-It is *not* a stream library like RxJS — there's no single `Observable` abstraction. Capabilities
+It is _not_ a stream library like RxJS — there's no single `Observable` abstraction. Capabilities
 (`isPushable`, `isPullable`, `isSubscribable`, `isGate`, `isPollingProxy`, ...) are composable flags;
 a transfer's TypeScript type is computed from which flags it declares.
 
@@ -33,7 +33,11 @@ compose a list of `MapOperator`/`GuardOperator`/`AsyncMapOperator` steps into on
 transfer graph, no lifecycle, no `destroy()` — just a function.
 
 ```typescript
-import { createPipelineOperator, createMapOperator, createGuardOperator } from "transferum";
+import {
+	createPipelineOperator,
+	createMapOperator,
+	createGuardOperator,
+} from "transferum";
 
 const normalizeText = createPipelineOperator<string, string>([
 	createMapOperator((text: string) => text.normalize("NFC")),
@@ -69,10 +73,17 @@ import {
 	createSinkTransfer,
 } from "transferum";
 
-const pipeline = CompositeTransferBuilder
-	.start(createPushStoredChannelTransfer<string>())
-	.to(createConvertTransfer<string, string>({ operator: createMapOperator((s) => s.trim()) }))
-	.finish(createSinkTransfer<string>({ callback: (s) => console.log(s) }), { owned: true });
+const pipeline = CompositeTransferBuilder.start(
+	createPushStoredChannelTransfer<string>(),
+)
+	.to(
+		createConvertTransfer<string, string>({
+			operator: createMapOperator((s) => s.trim()),
+		}),
+	)
+	.finish(createSinkTransfer<string>({ callback: (s) => console.log(s) }), {
+		owned: true,
+	});
 
 pipeline.push("  hi  "); // -> "hi"
 pipeline.destroy(); // clean up owned resources
@@ -91,19 +102,19 @@ Rules of thumb from the library's own design (see `references/api.md` for the fu
 
 ## Quick transfer cheat-sheet
 
-| Need                                                | Transfer                                                   |
-|------------------------------------------------------|--------------------------------------------------------------|
-| Reactive channel, fire-and-forget                    | `PushChannelTransfer`                                        |
-| Channel that also caches last value (push+pull+sub)  | `PushStoredChannelTransfer`                                  |
-| Debounce (last value after pause)                    | `DebounceTransfer`                                            |
-| Throttle (leading+trailing)                          | `ThrottleTransfer`                                             |
-| Transform via an `Operator`                          | `ConvertTransfer` (sync) / `AsyncConvertTransfer` (async)     |
-| Filter / conditional accept                          | `ConditionTransfer` / `AsyncConditionTransfer`                 |
-| Terminal callback sink                               | `SinkTransfer` / `AsyncSinkTransfer`                           |
-| Poll an external fetcher on a timer                  | `PollingSourceTransfer` / `AsyncPollingSourceTransfer`         |
-| Merge multiple sources                               | `MergeTransfer`                                                |
-| Broadcast to multiple targets                        | `SplitTransfer`                                                |
-| Runtime-switchable routing                           | `BridgeSelector` / `BridgeMultiSelector` + `PassBridge`         |
+| Need                                                | Transfer                                                  |
+| --------------------------------------------------- | --------------------------------------------------------- |
+| Reactive channel, fire-and-forget                   | `PushChannelTransfer`                                     |
+| Channel that also caches last value (push+pull+sub) | `PushStoredChannelTransfer`                               |
+| Debounce (last value after pause)                   | `DebounceTransfer`                                        |
+| Throttle (leading+trailing)                         | `ThrottleTransfer`                                        |
+| Transform via an `Operator`                         | `ConvertTransfer` (sync) / `AsyncConvertTransfer` (async) |
+| Filter / conditional accept                         | `ConditionTransfer` / `AsyncConditionTransfer`            |
+| Terminal callback sink                              | `SinkTransfer` / `AsyncSinkTransfer`                      |
+| Poll an external fetcher on a timer                 | `PollingSourceTransfer` / `AsyncPollingSourceTransfer`    |
+| Merge multiple sources                              | `MergeTransfer`                                           |
+| Broadcast to multiple targets                       | `SplitTransfer`                                           |
+| Runtime-switchable routing                          | `BridgeSelector` / `BridgeMultiSelector` + `PassBridge`   |
 
 Full comparison tables (all ~20 sync transfers, all ~10 async transfers, every capability flag) are
 in `references/api.md`.

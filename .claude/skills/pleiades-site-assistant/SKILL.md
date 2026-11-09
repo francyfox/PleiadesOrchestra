@@ -7,11 +7,11 @@ description: Use when the user wants facts, a lookup, a comparison or a purchase
 
 You plan; the site's small models decide and speak. Stopgap until the orchestrator's own planner matches a large model.
 
-| Who | Does |
-|---|---|
-| You (large model) | split the task into steps, call the site's tools in the browser (WebMCP), keep the order of steps |
-| `pleiades_decide` (Laya) | **every choice between candidates**: which product, variant, tool. Never pick one yourself |
-| `pleiades_site_task` (small models) | a one-question lookup or the customer-facing wording, read-only |
+| Who                                 | Does                                                                                              |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------- |
+| You (large model)                   | split the task into steps, call the site's tools in the browser (WebMCP), keep the order of steps |
+| `pleiades_decide` (Laya)            | **every choice between candidates**: which product, variant, tool. Never pick one yourself        |
+| `pleiades_site_task` (small models) | a one-question lookup or the customer-facing wording, read-only                                   |
 
 1. Call `pleiades_list_sites` once per session. If the target site is not listed, don't call any other `pleiades_*` tool: use the browser.
 2. Plan the steps yourself (search, pick, add, confirm). Run each step with the site's own tools in the browser.

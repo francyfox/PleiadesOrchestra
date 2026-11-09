@@ -76,20 +76,20 @@ albedo admin:create --email you@example.com   # first admin = super admin; print
 
 The agent services, each named after one of the Pleiades Six Stars
 
-| Service | Role |
-| --- | --- |
-| [`alpha-orchestrator`](apps/alpha-orchestrator/README.md) | Orchestrator: GOAP planner, users, access, history, token usage (SQLite) |
-| [`beta-text`](apps/beta-text/README.md) | Text model |
-| [`gamma-decision`](apps/gamma-decision/README.md) | Fast typed decisions |
-| [`delta-function-call`](apps/delta-function-call/README.md) | Function-call model: fills in tool-call arguments for the planner |
+| Service                                                     | Role                                                                     |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------ |
+| [`alpha-orchestrator`](apps/alpha-orchestrator/README.md)   | Orchestrator: GOAP planner, users, access, history, token usage (SQLite) |
+| [`beta-text`](apps/beta-text/README.md)                     | Text model                                                               |
+| [`gamma-decision`](apps/gamma-decision/README.md)           | Fast typed decisions                                                     |
+| [`delta-function-call`](apps/delta-function-call/README.md) | Function-call model: fills in tool-call arguments for the planner        |
 
 ### Everything else
 
-| Path | Role |
-| --- | --- |
-| `apps/telegram-bot`, `apps/cli` | Transports — thin clients of the orchestrator |
-| `apps/admin-api`, `apps/admin` | Admin panel: API with accounts, and a static Svelte SPA |
-| `packages/core`, `packages/elysia-kit` | GOAP core and shared Elysia setup |
+| Path                                   | Role                                                    |
+| -------------------------------------- | ------------------------------------------------------- |
+| `apps/telegram-bot`, `apps/cli`        | Transports — thin clients of the orchestrator           |
+| `apps/admin-api`, `apps/admin`         | Admin panel: API with accounts, and a static Svelte SPA |
+| `packages/core`, `packages/elysia-kit` | GOAP core and shared Elysia setup                       |
 
 ## Documentation
 

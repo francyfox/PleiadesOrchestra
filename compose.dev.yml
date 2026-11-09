@@ -132,8 +132,8 @@ services:
     volumes:
       - gamma-decision-models:/root/.cache/receptron-laya
 
-#  # Backend of the admin panel (Elysia): admin accounts (better-auth) and the
-#  # orchestrator's /v1/admin/* behind a session. Swagger UI: /api/docs.
+  #  # Backend of the admin panel (Elysia): admin accounts (better-auth) and the
+  #  # orchestrator's /v1/admin/* behind a session. Swagger UI: /api/docs.
   admin-api:
     build:
       context: .
@@ -202,11 +202,11 @@ services:
 #      - alpha-orchestrator
 #    # Webhook mode: TELEGRAM_WEBHOOK_URL must be a public URL forwarded to port 3001.
 
-  # Gemini web-API MCP server (apps/gemini-webapi-mcp, vendored + hardened).
-  # Opt-in: `docker compose --profile gemini up -d gemini-mcp`. Holds a
-  # whole-account Google session — use a separate Google account's cookies.
-  # MCP endpoint: http://127.0.0.1:8765/mcp with `Authorization: Bearer
-  # $GEMINI_MCP_API_KEY`; other services reach it as http://gemini-mcp:8000/mcp.
+# Gemini web-API MCP server (apps/gemini-webapi-mcp, vendored + hardened).
+# Opt-in: `docker compose --profile gemini up -d gemini-mcp`. Holds a
+# whole-account Google session — use a separate Google account's cookies.
+# MCP endpoint: http://127.0.0.1:8765/mcp with `Authorization: Bearer
+# $GEMINI_MCP_API_KEY`; other services reach it as http://gemini-mcp:8000/mcp.
 #  gemini-mcp:
 #    build:
 #      context: .
