@@ -15,7 +15,7 @@ defined( 'ABSPATH' ) || exit;
  * one turn, and the orchestrator's rate limit counts requests, not units. A call over a limit is
  * refused with the code LIMIT_EXCEEDED (never silently clamped), so the visitor hears about it.
  *
- * @since 0.4.0
+ * @since 0.5.0
  */
 final class Pleiades_Limits {
 
@@ -23,7 +23,7 @@ final class Pleiades_Limits {
 	 * Defaults. Sized for a household shop: 20 of one product covers a party, 99 is the usual cart-line
 	 * ceiling, 12 servings a big dinner, 100 units one basket of a recipe or kit.
 	 *
-	 * @since 0.4.0
+	 * @since 0.5.0
 	 * @var int[]
 	 */
 	const DEFAULTS = array(
@@ -36,7 +36,7 @@ final class Pleiades_Limits {
 	/**
 	 * The limits printed as `window.PleiadesWp.limits`.
 	 *
-	 * @since 0.4.0
+	 * @since 0.5.0
 	 *
 	 * @return int[] Map of limit name to a positive integer.
 	 */
@@ -49,7 +49,7 @@ final class Pleiades_Limits {
 		 * (total units one tool call may add, recipes and kits summed). Values below 1 or not numeric
 		 * fall back to the default.
 		 *
-		 * @since 0.4.0
+		 * @since 0.5.0
 		 *
 		 * @param int[] $limits Map of limit name to maximum.
 		 */

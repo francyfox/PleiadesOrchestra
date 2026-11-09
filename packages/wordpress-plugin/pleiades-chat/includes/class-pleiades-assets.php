@@ -107,7 +107,7 @@ final class Pleiades_Assets {
 	/**
 	 * Modification time of a file; 0 when it is missing (the widget bundle is git-ignored until built).
 	 *
-	 * @since 0.4.0
+	 * @since 0.5.0
 	 *
 	 * @param string $file Absolute path.
 	 * @return int Unix time.

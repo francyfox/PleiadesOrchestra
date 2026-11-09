@@ -5,7 +5,7 @@ Tags: chatbot, assistant, woocommerce, ai, chat
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.4.0
+Stable tag: 0.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -54,8 +54,15 @@ Please mention this service in your own site's privacy policy.
 
 == Changelog ==
 
+= 0.5.0 =
+* External services disclosure with terms and privacy links; the hosted Pleiades service is the default agent URL.
+* Limits on how much the assistant can add to a cart in one step (filter `pleiades_chat_limits`); tool failures are reported as codes, not the shop's text.
+* `search_products` opens the shop's results page; `update_cart_item` with quantity 0 removes the item.
+* Security: password-protected recipes and kits stay hidden, recipe fields have limits, the page config is escaped harder, the recipe and kit lists are cached.
+* Plugin Check reports no errors or warnings; the PHP code has PHPDoc and small named functions.
+
 = 0.4.0 =
-* Plugin renamed to pleiades-chat (deactivate the old copy), split into classes, settings tabs with Localization, open_page knows the cart, checkout and account addresses, limits on how much the assistant can add to a cart in one step (filter `pleiades_chat_limits`).
+* Plugin renamed to pleiades-chat (deactivate the old copy), split into classes, settings tabs with Localization, open_page knows the cart, checkout and account addresses.
 
 = 0.2.0 =
 * Recipes (custom post type, "add all ingredients" button), kits (grouped products with quantities) and the matching assistant tools.

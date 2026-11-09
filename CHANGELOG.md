@@ -1,3 +1,32 @@
+# 0.14.10 - 9 Nov 2026
+
+Feature:
+- Guardrails: an optional prompt-injection filter (regex rules, OWASP defaults, off by default) runs before any model call; a blocked message gets a fixed refusal and shows as a failed request in the flow. `/v1/messages` text is capped like the widget's. The admin has a page with a rules editor.
+- Notifications: webhooks with event subscriptions (`run.failed`, `guardrail.blocked`, `ip.blocked`, `balance.low`, `balance.depleted`), scoped to the owner for customers (balance events for owners only). Types: JSON (HMAC-signed), Discord, Slack and Telegram; SSRF guard; migrations 0031-0034.
+- Admin: the header stats are a setting (off by default); the recommendations page is gone.
+- WordPress plugin `pleiades-chat` 0.5.0 (renamed from `pleiades-assistant`; Plugin Check reports no errors or warnings): split into classes with PHPDoc, a settings page with General and Localization tabs (every locale and UI string of the widget, in English and Russian), an External services disclosure with terms and privacy links, the hosted agent as the default agent URL, `search_products` opens the shop's results page, every tool failure is a code from a closed list instead of the shop's text, and limits on how much one tool call can add to a cart (20 per add, 99 per cart line, 12 servings, 100 units per call; filter `pleiades_chat_limits`).
+- Widget 0.6.0: a `labels` attribute (JSON) overrides any UI string of the locale, and the widget dispatches `pleiades:turn-start` / `pleiades:turn-end` on `document`, so a host page can wait for a turn to end before it navigates.
+- Tool errors: a closed `ToolErrorCode` list (missing argument, not found, not purchasable, out of stock, variation required, invalid quantity, cart item gone, not allowed, network, nonce expired, limit exceeded, unknown) with a reply template per code in en, ru and kk; a tool's or a shop's own error text never reaches the chat.
+- Flow: at most 10 cart writes per run; the next one is not sent to the browser and the reply says it is more than can be added at once (`LIMIT_EXCEEDED`).
+- Tests: browser tests (Playwright) drive the real WordPress + WooCommerce shop: every tool of the plugin through `document.modelContext` (the polyfill and Chrome's own), prompts that cross page reloads, the settings page, the security cases and the cart limits (`bunx playwright test wordpress` in `apps/e2e`; skipped when no shop is running).
+
+Changed:
+- Tools: `open_page` returns first and the page reloads only after the widget turn ends, so the next step of the run is no longer lost to the reload.
+- Plugin: the bundled widget and the plugin share one list of locales and strings (generated from the widget's `i18n.ts` at build time).
+
+Fixed:
+- Flow: a tool whose name says `open` or `visit` (`open_page`) is a navigation, so the assistant opens the page instead of telling the visitor to go there.
+- Flow: a bare buy verb ("buy", "купи") with nothing remembered asks which product instead of searching for the verb, and a placeholder id (`0`, empty, `undefined`) is never sent to a tool.
+- Plugin: a product shown on the home page was missed when the search was strict or filtered by a wrong category; it now retries without the category and by single words.
+- Plugin: `update_cart_item` with quantity 0 removes the item; a failed tool returns its reason as a result (Chrome's WebMCP replaced a thrown message with "invocation failed").
+- Plugin: password-protected recipes and kits no longer leak into the page config or the recipe page; recipe meta has limits (servings, quantity, 100 ingredients); a non-string agent URL no longer throws; the recipe and kit lists are cached for an hour (267 queries per page before).
+- Admin: the time zone picker no longer crashes in Firefox, which lists "UTC" itself (a duplicate option broke the keyed list). The panel's source maps go to Sentry from CI.
+
+Chore:
+- WordPress: a Kadence demo shop with product pictures for local checks (`WORDPRESS_THEME=kadence`); WooCommerce's coming-soon mode is switched off by the setup.
+- Docs: CI pings IndexNow with the sitemap after each deploy; a Yandex verification meta.
+- Dev: `.zed/settings.json` makes Zed use Intelephense for PHP (no `php` on the host); `bun run --cwd packages/wordpress-plugin stubs` fetches the WordPress and WooCommerce stubs for editor hints.
+
 # 0.13.10 - 6 Nov 2026
 
 Feature:

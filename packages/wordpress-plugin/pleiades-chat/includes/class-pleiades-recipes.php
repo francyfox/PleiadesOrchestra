@@ -70,35 +70,35 @@ final class Pleiades_Recipes {
 	/**
 	 * Transient prefix of the cached bundle lists (suffix: post type).
 	 *
-	 * @since 0.4.0
+	 * @since 0.5.0
 	 * @var string
 	 */
 	const CACHE_PREFIX = 'pleiades_bundles_';
 	/**
 	 * Seconds a cached bundle list lives at most (saves and deletes clear it sooner).
 	 *
-	 * @since 0.4.0
+	 * @since 0.5.0
 	 * @var int
 	 */
 	const CACHE_TTL = HOUR_IN_SECONDS;
 	/**
 	 * Most ingredient rows of a recipe, saved through REST.
 	 *
-	 * @since 0.4.0
+	 * @since 0.5.0
 	 * @var int
 	 */
 	const MAX_INGREDIENTS = 100;
 	/**
 	 * Largest number a quantity, servings or minutes may hold.
 	 *
-	 * @since 0.4.0
+	 * @since 0.5.0
 	 * @var int
 	 */
 	const MAX_NUMBER = 9999;
 	/**
 	 * Longest SKU or note text in an ingredient row.
 	 *
-	 * @since 0.4.0
+	 * @since 0.5.0
 	 * @var int
 	 */
 	const MAX_TEXT = 200;
@@ -339,7 +339,7 @@ final class Pleiades_Recipes {
 	/**
 	 * Clears the cached bundle list of a post's type; hooked to `save_post` and `delete_post`.
 	 *
-	 * @since 0.4.0
+	 * @since 0.5.0
 	 *
 	 * @param int $post_id Post ID.
 	 * @return void
