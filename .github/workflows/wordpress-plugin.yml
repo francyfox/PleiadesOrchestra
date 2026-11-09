@@ -23,7 +23,8 @@ jobs:
       - name: Tag is on master
         run: git merge-base --is-ancestor "$GITHUB_SHA" origin/master
       - name: Tag matches the plugin version
-        run: grep -qx "Stable tag: ${GITHUB_REF_NAME#wp-v}" packages/wordpress-plugin/pleiades-chat/readme.txt
+        run: |
+          grep -qx "Stable tag: ${GITHUB_REF_NAME#wp-v}" packages/wordpress-plugin/pleiades-chat/readme.txt
       - uses: oven-sh/setup-bun@v2.2.0
         with:
           bun-version: 1.4.3
