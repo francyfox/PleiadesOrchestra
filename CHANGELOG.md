@@ -23,12 +23,16 @@ Fixed:
 - Plugin: a product shown on the home page was missed when the search was strict or filtered by a wrong category; it now retries without the category and by single words.
 - Plugin: `update_cart_item` with quantity 0 removes the item; a failed tool returns its reason as a result (Chrome's WebMCP replaced a thrown message with "invocation failed").
 - Plugin: password-protected recipes and kits no longer leak into the page config or the recipe page; recipe meta has limits (servings, quantity, 100 ingredients); a non-string agent URL no longer throws; the recipe and kit lists are cached for an hour (267 queries per page before).
+- Services: an id with a slash in a path (a local model's price `vendor/model`, a thread id) reaches the route whole again on Elysia 1.4.31, which no longer decodes `%2F`; `createKitApp` decodes it for every service.
 - Admin: the time zone picker no longer crashes in Firefox, which lists "UTC" itself (a duplicate option broke the keyed list). The panel's source maps go to Sentry from CI.
 
 Chore:
 
 - WordPress: a Kadence demo shop with product pictures for local checks (`WORDPRESS_THEME=kadence`); WooCommerce's coming-soon mode is switched off by the setup.
 - Docs: CI pings IndexNow with the sitemap after each deploy; a Yandex verification meta.
+- Dependencies: Elysia 1.4.31 (not 2.0), Biome 2.6.6, Sentry 11.11 and the Svelte, Vite and Tailwind patches; TypeScript stays on 6 (SvelteKit's tooling needs `ts.sys`).
+- Lint: Biome 2.6 with every warning fixed, Markdown frontmatter parsing on, `.md` and `.yml` formatted.
+- CI: Turborepo Remote Cache for lint, types and tests (`TURBO_TOKEN` secret, `TURBO_TEAM` variable); the deploy workflows stay without it.
 - Dev: `.zed/settings.json` makes Zed use Intelephense for PHP (no `php` on the host); `bun run --cwd packages/wordpress-plugin stubs` fetches the WordPress and WooCommerce stubs for editor hints.
 
 # 0.13.10 - 6 Nov 2026
