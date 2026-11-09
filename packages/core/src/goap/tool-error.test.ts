@@ -17,6 +17,13 @@ describe("parseToolErrorCode", () => {
 		).toBe("OUT_OF_STOCK");
 	});
 
+	test("LIMIT_EXCEEDED is in the closed list and has its own wording", () => {
+		expect(parseToolErrorCode('{"error_code":"LIMIT_EXCEEDED"}')).toBe(
+			"LIMIT_EXCEEDED",
+		);
+		expect(toolErrorText("LIMIT_EXCEEDED", "en")).toContain("smaller amount");
+	});
+
 	test("raw shop text, old payloads, unknown or non-string codes are UNKNOWN", () => {
 		for (const text of [
 			RAW,

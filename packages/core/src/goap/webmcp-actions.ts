@@ -121,6 +121,16 @@ const PARAM_CHOICE_COST = 1;
 /** Longest tool answer kept in the world state (`webmcp:<tool>:text`). */
 export const MAX_TOOL_TEXT_CHARS = 4000;
 
+/**
+ * Cart writes (add/remove tools) one run may ask the browser for. A hallucinating small model or a
+ * prompt injected through shop content must not loop `add_to_cart`; the rate limiter counts requests,
+ * and the site's tool layer limits units per call, this one limits calls per run. The count is the
+ * fact `writeCalls`, kept in the waiting checkpoint. shortcut: a shopping list of more than this many
+ * things is cut here; upgrade by making it a config option if a real list needs more.
+ */
+export const MAX_WRITE_CALLS_PER_RUN = 10;
+const WRITE_CALLS = "writeCalls";
+
 export const TOOL_INTENT_INSTRUCTIONS =
 	"Which online-shop action does this tool most likely perform?";
 
@@ -937,15 +947,28 @@ export async function createWebMcpActions(
 							pageAlreadyOpen: true,
 						};
 					}
+					const isWrite = intent === "addToCart" || intent === "removeFromCart";
+					const writes = Number(ctx.state[WRITE_CALLS] ?? 0);
+					if (isWrite && writes >= MAX_WRITE_CALLS_PER_RUN) {
+						// Told like any tool failure: the code's template, never the model's wording.
+						return {
+							[toolResultKey]: false,
+							[resultKey]: "error",
+							[textKey]: JSON.stringify({ error_code: "LIMIT_EXCEEDED" }),
+						};
+					}
 					const payload: WebMcpToolCallPayload = {
 						tool: tool.name,
 						arguments: args,
 					};
+					const facts = {
+						...carried,
+						...prefetched,
+						...(isWrite ? { [WRITE_CALLS]: writes + 1 } : {}),
+					};
 					return {
 						waiting: { kind: "webmcp_tool_call", payload },
-						...(carried || prefetched
-							? { facts: { ...carried, ...prefetched } }
-							: {}),
+						...(Object.keys(facts).length > 0 ? { facts } : {}),
 					};
 				},
 			};

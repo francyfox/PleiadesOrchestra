@@ -14,6 +14,7 @@ export const TOOL_ERROR_CODES = [
 	"NOT_ALLOWED",
 	"NETWORK",
 	"NONCE_EXPIRED",
+	"LIMIT_EXCEEDED",
 	"UNKNOWN",
 ] as const;
 
@@ -90,6 +91,11 @@ const TEMPLATES: Record<ToolErrorCode, Record<ToolErrorLanguage, string>> = {
 		en: "The session on the site has expired. Please reload the page and try again.",
 		ru: "Сессия на сайте истекла. Обновите страницу и попробуйте ещё раз.",
 		kk: "Сайттағы сессия аяқталды. Бетті жаңартып, қайталап көріңіз.",
+	},
+	LIMIT_EXCEEDED: {
+		en: "That is more than I can add at once. Please choose a smaller amount.",
+		ru: "Это больше, чем я могу добавить за один раз. Выберите, пожалуйста, меньшее количество.",
+		kk: "Бұл бір рет қоса алатыннан көп. Азырақ мөлшерді таңдаңыз.",
 	},
 	UNKNOWN: {
 		en: "That didn't work on the site. Please try again or put it in other words.",

@@ -661,6 +661,19 @@ describe("a failed site tool is answered by its error code", () => {
 		).toBe("«Desk Lamp» is out of stock.");
 	});
 
+	test("a refused amount (LIMIT_EXCEEDED) asks for a smaller one, no product named", async () => {
+		expect(
+			await reply(
+				failed('{"error_code":"LIMIT_EXCEEDED"}', {
+					"ui:langChosen": true,
+					"page:lang": "en",
+				}),
+			),
+		).toBe(
+			"That is more than I can add at once. Please choose a smaller amount.",
+		);
+	});
+
 	test("raw or unparseable text is never in the reply: the UNKNOWN template", async () => {
 		const text = String(await reply(failed(RAW)));
 		expect(text).not.toContain("Hidden Thing");

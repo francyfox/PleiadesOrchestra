@@ -8,10 +8,12 @@ import type {
 	FunctionCallAgent,
 	FunctionCallRequest,
 } from "#core/function-call-agent";
+import { lastToolError } from "#core/goap/tool-error";
 import type { WorldState } from "#core/goap/types";
 import {
 	createWebMcpActions,
 	firstListedProductName,
+	MAX_WRITE_CALLS_PER_RUN,
 	type WebMcpToolDescriptor,
 } from "#core/goap/webmcp-actions";
 import type { LlmCallRecord } from "#core/types";
@@ -123,6 +125,7 @@ describe("createWebMcpActions", () => {
 					arguments: { itemId: "sku-1", quantity: 2 },
 				},
 			},
+			facts: { writeCalls: 1 },
 		});
 	});
 
@@ -206,6 +209,50 @@ describe("createWebMcpActions", () => {
 		});
 
 		expect(outcome).toEqual({ "toolResult:add_to_cart": false });
+	});
+
+	test("a run may make MAX_WRITE_CALLS_PER_RUN cart writes; the next one is refused with LIMIT_EXCEEDED, no browser call", async () => {
+		const [action] = await createWebMcpActions({
+			tools: [{ name: "add_to_cart" }],
+			decisionAgent: fakeDecisionAgent("addToCart"),
+		});
+		if (!action) throw new Error("expected one action");
+
+		const last = await action.execute({
+			state: { writeCalls: MAX_WRITE_CALLS_PER_RUN - 1 },
+		});
+		expect(last).toMatchObject({
+			waiting: { payload: { tool: "add_to_cart" } },
+			facts: { writeCalls: MAX_WRITE_CALLS_PER_RUN },
+		});
+
+		const over = await action.execute({
+			state: { writeCalls: MAX_WRITE_CALLS_PER_RUN },
+		});
+		expect(over).not.toHaveProperty("waiting");
+		expect(over).toMatchObject({
+			"toolResult:add_to_cart": false,
+			"webmcp:add_to_cart:result": "error",
+		});
+		expect(
+			lastToolError({
+				"webmcp:add_to_cart:result": "error",
+				"webmcp:add_to_cart:text": String(
+					(over as WorldState)["webmcp:add_to_cart:text"],
+				),
+			}),
+		).toEqual({ tool: "add_to_cart", code: "LIMIT_EXCEEDED" });
+	});
+
+	test("reads do not count against the write cap", async () => {
+		const [action] = await createWebMcpActions({
+			tools: [{ name: "get_cart" }],
+			decisionAgent: fakeDecisionAgent("search"),
+		});
+		const outcome = await action?.execute({
+			state: { writeCalls: MAX_WRITE_CALLS_PER_RUN },
+		});
+		expect(outcome).toHaveProperty("waiting");
 	});
 
 	test('an unclassifiable answer falls back to "other": empty preconditions/effects but still classifies once', async () => {
