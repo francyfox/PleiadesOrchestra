@@ -91,7 +91,7 @@
 				</p>
 				<a
 					href={plan.href}
-					class="cta chip mt-[1.5rem] border px-3 py-2 text-center text-sm font-bold !hover:bg-white !hover:text-black"
+					class="cta chip mt-[1.5rem] border px-3 py-2 text-center text-sm font-bold !hover:bg-white hover:text-bg!"
 					class:filled={plan.filled}
 					{...plan.external
 						? { target: "_blank", rel: "noreferrer noopener" }

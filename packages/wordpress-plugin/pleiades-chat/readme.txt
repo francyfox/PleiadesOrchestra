@@ -52,6 +52,14 @@ Please mention this service in your own site's privacy policy.
 4. Settings > Pleiades Assistant > Localization: pick a language and override the widget texts (optional).
 5. The channel must allow your site's address.
 
+== Screenshots ==
+
+1. The chat panel opens on any page of the site, with a greeting and example questions.
+2. The assistant finds products and answers in the chat while the site shows the results.
+3. The assistant adds an item to the visitor's own cart.
+4. Settings: publishable key, agent URL and widget position.
+5. Localization: choose the widget language and override its texts.
+
 == Changelog ==
 
 = 0.5.0 =
