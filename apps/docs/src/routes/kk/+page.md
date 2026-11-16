@@ -2,7 +2,8 @@
 layout: false
 sidebar: false
 home: false
-description: Open-source GOAP orchestrator for tiny models - a website chatbot that works through MCP and WebMCP tools. Free under AGPLv3, commercial license for closed-source use.
+title: "Шағын модельдерге арналған GOAP оркестраторы"
+description: "Шағын модельдерге арналған ашық GOAP оркестраторы: MCP және WebMCP құралдары арқылы жұмыс істейтін сайт чат-боты. AGPLv3 бойынша тегін, жабық код үшін коммерциялық лицензия."
 ---
 
 <script>
