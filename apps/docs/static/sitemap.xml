@@ -145,6 +145,24 @@
     <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/changelog/overview/"/>
   </url>
   <url>
+    <loc>https://pleiades.shalotts.site/docs/cli/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/cli/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/cli/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/cli/"/>
+  </url>
+  <url>
+    <loc>https://pleiades.shalotts.site/ru/docs/cli/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/cli/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/cli/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/cli/"/>
+  </url>
+  <url>
+    <loc>https://pleiades.shalotts.site/kk/docs/cli/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/cli/"/>
+    <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/cli/"/>
+    <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/cli/"/>
+  </url>
+  <url>
     <loc>https://pleiades.shalotts.site/docs/intents/</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/intents/"/>
     <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/intents/"/>
@@ -233,6 +251,10 @@
     <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/docs/widget/"/>
     <xhtml:link rel="alternate" hreflang="ru" href="https://pleiades.shalotts.site/ru/docs/widget/"/>
     <xhtml:link rel="alternate" hreflang="kk" href="https://pleiades.shalotts.site/kk/docs/widget/"/>
+  </url>
+  <url>
+    <loc>https://pleiades.shalotts.site/movie/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://pleiades.shalotts.site/movie/"/>
   </url>
   <url>
     <loc>https://pleiades.shalotts.site/playground/</loc>
