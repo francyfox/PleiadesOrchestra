@@ -1,6 +1,11 @@
 <script lang="ts">
 	import { MetaTags } from "svelte-meta-tags";
-	import { ALL_LOCALES, LOCALES, localizeHref, type Locale } from "#lib/i18n.js";
+	import {
+		ALL_LOCALES,
+		LOCALES,
+		type Locale,
+		localizeHref,
+	} from "#lib/i18n.js";
 	import { OG_IMAGE, SITE, SITE_URL } from "#lib/site.js";
 	import { page } from "$app/state";
 
@@ -21,7 +26,9 @@
 
 	// Static build serves every page under a trailing slash: that is the canonical URL.
 	const path = $derived(
-		page.url.pathname.endsWith("/") ? page.url.pathname : `${page.url.pathname}/`,
+		page.url.pathname.endsWith("/")
+			? page.url.pathname
+			: `${page.url.pathname}/`,
 	);
 	const canonical = $derived(`${SITE_URL}${path}`);
 	// hreflang only for the landing, which exists in every locale; deeper pages are not
