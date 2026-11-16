@@ -27,16 +27,54 @@
 	let video: HTMLVideoElement;
 	let playing = $state(true);
 
+	// One cut per screen class: phones get 360p, tablets 480p, everything else 720p.
+	function pickSource() {
+		if (matchMedia("(max-width: 640px)").matches)
+			return "/media/draft-360.webm";
+		if (matchMedia("(max-width: 1024px)").matches)
+			return "/media/draft-480.webm";
+		return "/media/draft.webm";
+	}
+
+	/** The first call fetches the cut; until then the poster is all the page shows. */
+	function startVideo() {
+		if (!video.getAttribute("src")) video.src = pickSource();
+		void video.play().catch(() => (playing = false));
+	}
+
 	onMount(() => {
-		// Respect reduced motion: no autoplay, the viewer starts it themselves.
-		if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-			video.pause();
+		const connection = (
+			navigator as Navigator & { connection?: { saveData?: boolean } }
+		).connection;
+		// Reduced motion / data saver: no autoplay, the viewer starts it themselves.
+		if (
+			window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+			connection?.saveData
+		) {
 			playing = false;
+			return;
 		}
+
+		// The poster is the LCP element, the video is decoration: fetch it once the page
+		// has loaded and the browser is idle, not alongside the CSS and JS.
+		let cancelled = false;
+		const begin = () => {
+			const go = () => !cancelled && startVideo();
+			if ("requestIdleCallback" in window)
+				requestIdleCallback(go, { timeout: 2500 });
+			else setTimeout(go, 1200);
+		};
+		if (document.readyState === "complete") begin();
+		else window.addEventListener("load", begin, { once: true });
+
+		return () => {
+			cancelled = true;
+			window.removeEventListener("load", begin);
+		};
 	});
 
 	function togglePlay() {
-		if (video.paused) void video.play();
+		if (video.paused) startVideo();
 		else video.pause();
 	}
 </script>
@@ -59,24 +97,16 @@
         <video
                 bind:this={video}
                 class="absolute inset-0 h-full w-full object-cover"
-                autoplay
                 loop
                 muted
                 playsinline
-                preload="metadata"
+                preload="none"
                 poster="/media/draft-poster.webp"
                 onplay={() => (playing = true)}
                 onpause={() => (playing = false)}
                 aria-hidden="true"
                 tabindex="-1"
         >
-            <!-- The first matching source wins: phones get the 480p cut. -->
-            <source
-                    src="/media/draft-480.webm"
-                    type="video/webm; codecs=vp9"
-                    media="(max-width: 640px)"
-            />
-            <source src="/media/draft.webm" type="video/webm; codecs=vp9"/>
         </video>
 
         <div
