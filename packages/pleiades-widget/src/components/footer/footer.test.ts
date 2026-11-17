@@ -11,13 +11,13 @@ const text = (html: string) =>
 describe("footer", () => {
 	test("it names the project and the year it was made in", () => {
 		const html = footerTemplate(2031);
-		expect(text(html)).toContain("© 2031 PleiadesOrchestra");
+		expect(text(html)).toContain("© 2031 Shalotts");
 		expect(html).toStartWith("<footer>");
 	});
 
 	test("the project name is a link that opens in a new tab without handing over the opener", () => {
 		const link = footerTemplate().match(/<a\s[^>]*>([^<]*)<\/a>/);
-		expect(link?.[1]).toBe("PleiadesOrchestra");
+		expect(link?.[1]).toBe("Shalotts");
 		expect(link?.[0]).toMatch(/href="https:\/\/[^"]+"/);
 		expect(link?.[0]).toContain('target="_blank"');
 		expect(link?.[0]).toContain('rel="noopener noreferrer"');

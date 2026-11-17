@@ -9,7 +9,7 @@ export type PleiadesLang = "en" | "ru" | "kk";
 
 /** The attributes of `<pleiades-chat>`. Everything is configured through attributes. */
 export interface PleiadesChatAttributes {
-	/** Base URL of the Pleiades orchestrator. `https` only (plain `http` is accepted for localhost). */
+	/** Base URL of the Shalotts orchestrator. `https` only (plain `http` is accepted for localhost). */
 	"agent-url": string;
 	/** The channel's PUBLIC key (`pk_…`). Never the secret key (`sk_…`): the widget refuses to start with it. */
 	"publishable-key": string;

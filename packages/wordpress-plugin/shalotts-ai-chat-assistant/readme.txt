@@ -5,7 +5,7 @@ Tags: chatbot, assistant, woocommerce, ai, chat
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.6.1
+Stable tag: 0.6.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -72,6 +72,9 @@ Please mention this service in your own site's privacy policy.
 5. Localization: choose the widget language and override its texts.
 
 == Changelog ==
+
+= 0.6.2 =
+* The chat footer and the widget's error text say Shalotts instead of Pleiades; internal code comments (@package) renamed.
 
 = 0.6.1 =
 * Plugin renamed to Shalotts AI Chat Assistant (slug `shalotts-ai-chat-assistant`, deactivate the old `pleiades-chat` copy). Settings and texts say Shalotts instead of Pleiades.

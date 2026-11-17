@@ -80,7 +80,7 @@ export function resolveConfig(input: {
 
 const ADVICE: Record<ConfigError, string> = {
 	missing_agent_url:
-		"set the agent-url attribute to the https URL of your Pleiades orchestrator.",
+		"set the agent-url attribute to the https URL of your Shalotts orchestrator.",
 	invalid_agent_url:
 		"agent-url must be a plain http(s) URL without a username or password.",
 	insecure_agent_url:

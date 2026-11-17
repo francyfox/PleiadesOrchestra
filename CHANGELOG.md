@@ -1,3 +1,9 @@
+# 0.14.12 - 17 Nov 2026
+
+Changed:
+
+- WordPress plugin 0.6.2: the widget footer (© year Shalotts) and the widget's `agent-url` error text no longer say Pleiades; `@package` tags renamed. Follow-up to the rename in 0.6.1.
+
 # 0.14.11 - 17 Nov 2026
 
 Changed:
