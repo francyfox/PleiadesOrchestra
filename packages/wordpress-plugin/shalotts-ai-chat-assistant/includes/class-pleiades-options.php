@@ -2,7 +2,7 @@
 /**
  * The plugin option: defaults, widget dictionary and sanitizing.
  *
- * @package Pleiades_Chat
+ * @package Shalotts_AI_Chat_Assistant
  * @since   0.4.0
  */
 

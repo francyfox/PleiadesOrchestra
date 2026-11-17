@@ -16,7 +16,7 @@
 /**
  * Plugin bootstrap: constants and the call to Pleiades_Plugin::init().
  *
- * @package Pleiades_Chat
+ * @package Shalotts_AI_Chat_Assistant
  * @since   0.4.0
  */
 
