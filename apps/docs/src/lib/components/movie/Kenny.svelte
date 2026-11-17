@@ -15,26 +15,28 @@
 		visible = true;
 
 		if (root) {
-		  const tl = createTimeline({
-				  id: "kenny",
-				  onComplete: () => {
-					tl.reset()	
-				  }
-				})
-				
-				tl.label('start')
-				  .add(root, { left: '100%', ease: steps(20), duration: 5000 })
-				  .label('rotate')
+			const tl = createTimeline({
+				id: "kenny",
+				onComplete: () => {
+					tl.reset();
+				},
+			});
+
+			tl.label("start")
+				.add(root, { left: "100%", ease: steps(20), duration: 5000 })
+				.label("rotate");
 		}
 
 		// One hop per step: 5000 ms / 20 steps = 250 ms per cycle (up 125 + down 125).
-		const hop = img && animate(img, {
-			top: ["0cqw", "-1.2cqw"],
-			duration: 125,
-			ease: "outQuad",
-			alternate: true,
-			loop: true,
-		});
+		const hop =
+			img &&
+			animate(img, {
+				top: ["0cqw", "-1.2cqw"],
+				duration: 125,
+				ease: "outQuad",
+				alternate: true,
+				loop: true,
+			});
 		return () => hop?.revert();
 	});
 </script>

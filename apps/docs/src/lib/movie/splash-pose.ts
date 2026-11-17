@@ -46,9 +46,17 @@ export type Cue = { at: number; kind: "slide" | "stamp"; length: number };
 export const CUES: Cue[] = [
 	{ at: 0, kind: "slide", length: s(0.6) },
 	{ at: STAMP_AT[0] as number, kind: "stamp", length: 0.3 },
-	{ at: (STAMP_AT[0] as number) + HALF + s(0.2), kind: "slide", length: s(1.05) },
+	{
+		at: (STAMP_AT[0] as number) + HALF + s(0.2),
+		kind: "slide",
+		length: s(1.05),
+	},
 	{ at: STAMP_AT[1] as number, kind: "stamp", length: 0.3 },
-	{ at: (STAMP_AT[1] as number) + HALF + s(0.2), kind: "slide", length: s(0.65) },
+	{
+		at: (STAMP_AT[1] as number) + HALF + s(0.2),
+		kind: "slide",
+		length: s(0.65),
+	},
 	{ at: STAMP_AT[2] as number, kind: "stamp", length: 0.3 },
 	{ at: LEAVE, kind: "slide", length: s(0.65) },
 ];

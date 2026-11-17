@@ -10,8 +10,8 @@
 		CAPTION_END,
 		CREDITS_AT,
 		INTRO_END,
-		movie,
 		MUSIC_AT,
+		movie,
 	} from "../../movie/movie.storyboard.ts";
 	import { useClock } from "../../movie/movie-clock.svelte.ts";
 	import { useFramePopups } from "../../movie/movie-popups.svelte.ts";

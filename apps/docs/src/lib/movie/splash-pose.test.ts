@@ -1,5 +1,12 @@
 import { expect, test } from "bun:test";
-import { END_X, INTRO_LENGTH, PRESS, poseAt, STAMP_AT, TRAY_X } from "./splash-pose.ts";
+import {
+	END_X,
+	INTRO_LENGTH,
+	PRESS,
+	poseAt,
+	STAMP_AT,
+	TRAY_X,
+} from "./splash-pose.ts";
 
 test("the head is over the tray and fully down at each stamp", () => {
 	STAMP_AT.forEach((s, i) => {

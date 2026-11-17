@@ -57,17 +57,19 @@ export const movie = new MovieWizard()
 	)
 	.add(new Scene([bar(5), bar(7)], pan(photo(2), "kb-up")))
 	.add(
-		new Scene([bar(7), bar(9)], pan(photo(3), "kb-up"))
-			.addFrame([bar(7), bar(11)], ({ m2aLoad }) =>
-				m2aLoad(m("07_dance"), wide(20, 40, 80)), { mode: "div" },
-			)
+		new Scene([bar(7), bar(9)], pan(photo(3), "kb-up")).addFrame(
+			[bar(7), bar(11)],
+			({ m2aLoad }) => m2aLoad(m("07_dance"), wide(20, 40, 80)),
+			{ mode: "div" },
+		),
 	)
 	.add(new Scene([bar(9), bar(11)], pan(photo(4), "kb-in-left")))
 	.add(
-		new Scene([bar(11), bar(13)], pan(photo(5), "kb-in-left"))
-			.addFrame([bar(11), bar(15)], ({ m2aLoad }) =>
-				m2aLoad(m("08_dance"), wide(20, 40, 40)), { mode: "div" },
-			)
+		new Scene([bar(11), bar(13)], pan(photo(5), "kb-in-left")).addFrame(
+			[bar(11), bar(15)],
+			({ m2aLoad }) => m2aLoad(m("08_dance"), wide(20, 40, 40)),
+			{ mode: "div" },
+		),
 	)
 	.add(new Scene([bar(13), bar(15)], pan(photo(6), "kb-in-right")))
 	.add(
@@ -86,7 +88,8 @@ export const movie = new MovieWizard()
 	.add(
 		new Scene([bar(19), bar(21)], pan(photo(9), "kb-up")).addFrame(
 			[bar(19), CREDITS_AT],
-			({ m2aLoad }) => m2aLoad(m("05_dance"), wide(0, 40, 100)), { mode: 'div' },
+			({ m2aLoad }) => m2aLoad(m("05_dance"), wide(0, 40, 100)),
+			{ mode: "div" },
 		),
 	)
 	.add(
@@ -99,7 +102,7 @@ export const movie = new MovieWizard()
 	.add(
 		new Scene([bar(23), bar(25)], pan(photo(11), "kb-in-right")).addFrame(
 			[bar(23), bar(25)],
-			({ m2aLoad }) => {},
+			() => {},
 			{ mode: "div" },
 		),
 	)

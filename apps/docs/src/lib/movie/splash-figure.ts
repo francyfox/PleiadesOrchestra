@@ -37,59 +37,6 @@ const S = (paths: k.SolidPaths, style?: k.SolidStyle) =>
 const L = (d: string, style?: k.LineStyle) => k.lineSvg(d, style);
 const at = (p: k.Point3) => k.iso(p, P);
 
-function plate() {
-	const out = [
-		`<path class="iso-halo" d="${k.haloOf(PLATE, -PLATE_H - FOOT_H, PLATE_H, P)}"/>`,
-	];
-	const feet = [...k.corners(PLATE, 22)].sort(
-		(a, b) => k.depthOf([a[0], a[1], 0], P) - k.depthOf([b[0], b[1], 0], P),
-	);
-	for (const [x, y] of feet) {
-		out.push(
-			S(k.cylinder(x, y, 7, -PLATE_H - FOOT_H, 1.6, P, 28), { tone: "lo" }),
-		);
-		out.push(
-			S(k.cylinder(x, y, 5.4, -PLATE_H - FOOT_H + 1.6, FOOT_H - 1.6, P, 28), {
-				tone: "mid",
-			}),
-		);
-	}
-	out.push(S(k.slabOf(PLATE, -PLATE_H, PLATE_H, P, 8, 1.6), { tone: "mid" }));
-	out.push(L(k.planOutline(k.insetPlan(PLATE, 5), 0, P), { tone: "lo" }));
-	const screws = k.corners(PLATE, 10);
-	out.push(
-		L(screws.map(([x, y]) => k.ring(x, y, 2.2, 0, P, 16)).join(""), {
-			tone: "lo",
-		}),
-	);
-	out.push(
-		k.dotsSvg(
-			screws.map(([x, y]) => at([x, y, 0])),
-			{ size: 0.5 },
-		),
-	);
-	const strip = { x: -96, y: 43, w: 230, d: 7, r: 1 };
-	out.push(S(k.slabOf(strip, 0, 0.6, P, 3), { tone: "lo", crease: "none" }));
-	const ticks = k.topTicks(
-		strip.x + 4,
-		strip.x + strip.w - 4,
-		4,
-		5,
-		strip.y + 0.8,
-		0.6,
-		[2, 3.6],
-		P,
-	);
-	out.push(L(ticks.minor, { tone: "lo" }), L(ticks.major, { tone: "mid" }));
-	out.push(
-		k.faceTextSvg(k.topMatrix([-138, 56], 0, P), "PLEIADES PRESS 01", {
-			size: 3,
-			tone: "lo",
-		}),
-	);
-	return out.join("");
-}
-
 function post(x: number) {
 	const y = -49;
 	return [
@@ -213,15 +160,7 @@ export const stamp = (() => {
 			...lamp,
 		}),
 		S(k.slabOf(PAD, PAD_Z, 3, P, 3, 0.5), lamp),
-		L(
-			k.planOutline(
-				k.insetPlan(PAD, 3),
-				PAD_Z + 3,
-				P,
-				3,
-			),
-			{ tone: "lit" },
-		),
+		L(k.planOutline(k.insetPlan(PAD, 3), PAD_Z + 3, P, 3), { tone: "lit" }),
 	].join("");
 })();
 
