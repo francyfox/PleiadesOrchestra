@@ -219,7 +219,7 @@ final class Pleiades_Options {
 		if ( '' === $key || preg_match( self::KEY_PATTERN, $key ) ) {
 			return $key;
 		}
-		add_settings_error( self::NAME, 'bad_key', __( 'The key must be a publishable key (starts with pk_). Never paste a secret key.', 'pleiades-chat' ) );
+		add_settings_error( self::NAME, 'bad_key', __( 'The key must be a publishable key (starts with pk_). Never paste a secret key.', 'shalotts-ai-chat-assistant' ) );
 		return '';
 	}
 

@@ -17,7 +17,7 @@ wp plugin is-installed woocommerce || wp plugin install woocommerce
 for old in wp-pleiades-plugin pleiades-assistant; do
 	wp plugin is-installed $old && { wp plugin deactivate $old; wp plugin delete $old; }
 done
-wp plugin activate woocommerce pleiades-chat
+wp plugin activate woocommerce shalotts-ai-chat-assistant
 # WooCommerce's "coming soon" mode hides shop, cart, checkout and product search from visitors (and from the e2e tests).
 wp option update woocommerce_coming_soon no
 

@@ -129,8 +129,8 @@ final class Pleiades_Settings {
 	private static function render_links() {
 		?>
 		<p class="pleiades-links">
-			<a class="button" href="<?php echo esc_url( PLEIADES_SITE_URL ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Website', 'pleiades-chat' ); ?></a>
-			<a class="button button-primary" href="<?php echo esc_url( PLEIADES_PANEL_URL ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Panel', 'pleiades-chat' ); ?></a>
+			<a class="button" href="<?php echo esc_url( PLEIADES_SITE_URL ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Website', 'shalotts-ai-chat-assistant' ); ?></a>
+			<a class="button button-primary" href="<?php echo esc_url( PLEIADES_PANEL_URL ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Panel', 'shalotts-ai-chat-assistant' ); ?></a>
 		</p>
 		<?php
 	}
@@ -146,9 +146,9 @@ final class Pleiades_Settings {
 		echo '<p>';
 		printf(
 			/* translators: 1: link to the terms of service, 2: link to the privacy policy */
-			wp_kses( __( 'Once a visitor opens the chat, their messages, the page address and cart facts, and the list of assistant tools of this site go to the agent URL below (by default the hosted Pleiades service) and to the language model providers it uses. See the %1$s and the %2$s, and mention it in your own privacy policy.', 'pleiades-chat' ), array() ),
-			Pleiades_Admin::link( PLEIADES_TERMS_URL, __( 'terms of service', 'pleiades-chat' ) ), // phpcs:ignore WordPress.Security.EscapeOutput -- link() escapes.
-			Pleiades_Admin::link( PLEIADES_PRIVACY_URL, __( 'privacy policy', 'pleiades-chat' ) ) // phpcs:ignore WordPress.Security.EscapeOutput -- link() escapes.
+			wp_kses( __( 'Once a visitor opens the chat, their messages, the page address and cart facts, and the list of assistant tools of this site go to the agent URL below (by default the hosted Shalotts service) and to the language model providers it uses. See the %1$s and the %2$s, and mention it in your own privacy policy.', 'shalotts-ai-chat-assistant' ), array() ),
+			Pleiades_Admin::link( PLEIADES_TERMS_URL, __( 'terms of service', 'shalotts-ai-chat-assistant' ) ), // phpcs:ignore WordPress.Security.EscapeOutput -- link() escapes.
+			Pleiades_Admin::link( PLEIADES_PRIVACY_URL, __( 'privacy policy', 'shalotts-ai-chat-assistant' ) ) // phpcs:ignore WordPress.Security.EscapeOutput -- link() escapes.
 		);
 		echo '</p>';
 	}
