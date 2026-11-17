@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="google" content="notranslate" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PleiadesOrchestra</title>
+<style>
+	html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+	ansi-player { display: block; width: 100%; height: 100%; }
+</style>
+<script type="module" src="/movie/ansi-player.js"></script>
+</head>
+<body>
+<ansi-player id="p" autoplay loop></ansi-player>
+<script>
+	// Static on purpose: a popup must show a video fast, without loading the whole docs app.
+	// Opened by MoviePlayer: ?src=/movie/NN.m2a.
+	const q = new URLSearchParams(location.search);
+	const src = q.get("src") ?? "";
+	const p = document.getElementById("p");
+	// only our own videos, the query string is untrusted
+	if (/^\/movie\/[\w-]+\.m2a$/.test(src)) {
+		p.setAttribute("src", src);
+		document.title = src.split("/").pop();
+	}
+</script>
+</body>
+</html>

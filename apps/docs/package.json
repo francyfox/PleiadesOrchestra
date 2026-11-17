@@ -6,10 +6,12 @@
 	"private": true,
 	"type": "module",
 	"devDependencies": {
+		"@fontsource/wdxl-lubrifont-sc": "^5.3.1",
 		"@lucide/svelte": "^1.48.0",
 		"@repo/ui": "workspace:*",
 		"@repo/webmcp-polyfill": "workspace:*",
 		"@shalotts/pleiades-widget": "workspace:*",
+		"animejs": "catalog:",
 		"@splidejs/splide": "catalog:",
 		"@sveltejs/adapter-static": "catalog:",
 		"@sveltejs/kit": "catalog:",
