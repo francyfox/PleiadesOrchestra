@@ -2,7 +2,7 @@
 /**
  * Recipes (custom post type) and kits (grouped products).
  *
- * @package Pleiades_Chat
+ * @package Shalotts_AI_Chat_Assistant
  * @since   0.4.0
  */
 
@@ -130,9 +130,9 @@ final class Pleiades_Recipes {
 		register_post_type(
 			self::RECIPE,
 			array(
-				'label'        => __( 'Recipes', 'pleiades-chat' ),
-				'labels'       => array( 'singular_name' => __( 'Recipe', 'pleiades-chat' ) ),
-				'description'  => __( 'Simple recipes: add every ingredient to the cart in one click.', 'pleiades-chat' ),
+				'label'        => __( 'Recipes', 'shalotts-ai-chat-assistant' ),
+				'labels'       => array( 'singular_name' => __( 'Recipe', 'shalotts-ai-chat-assistant' ) ),
+				'description'  => __( 'Simple recipes: add every ingredient to the cart in one click.', 'shalotts-ai-chat-assistant' ),
 				'public'       => true,
 				'has_archive'  => 'recipes',
 				'rewrite'      => array( 'slug' => 'recipes' ),
@@ -430,7 +430,7 @@ final class Pleiades_Recipes {
 	 */
 	private static function ingredients_html( $recipe_id, $items ) {
 		$html  = '<p class="pleiades-recipe-meta">' . esc_html( self::servings_and_time( $recipe_id ) ) . '</p>';
-		$html .= '<h2>' . esc_html__( 'Ingredients', 'pleiades-chat' ) . '</h2><ul class="pleiades-ingredients">';
+		$html .= '<h2>' . esc_html__( 'Ingredients', 'shalotts-ai-chat-assistant' ) . '</h2><ul class="pleiades-ingredients">';
 		foreach ( $items as $item ) {
 			$html .= self::ingredient_html( $item );
 		}
@@ -449,9 +449,9 @@ final class Pleiades_Recipes {
 		$servings = (int) get_post_meta( $recipe_id, 'servings', true );
 		$minutes  = (int) get_post_meta( $recipe_id, 'time_minutes', true );
 		/* translators: %d: number of servings */
-		$serves = $servings ? sprintf( __( 'Serves %d', 'pleiades-chat' ), $servings ) : '';
+		$serves = $servings ? sprintf( __( 'Serves %d', 'shalotts-ai-chat-assistant' ), $servings ) : '';
 		/* translators: %d: minutes */
-		$time = $minutes ? sprintf( __( '%d min', 'pleiades-chat' ), $minutes ) : '';
+		$time = $minutes ? sprintf( __( '%d min', 'shalotts-ai-chat-assistant' ), $minutes ) : '';
 		return implode( ' · ', array_filter( array( $serves, $time ) ) );
 	}
 
@@ -465,7 +465,7 @@ final class Pleiades_Recipes {
 	 */
 	private static function ingredient_html( $item ) {
 		$note       = $item['note'] ? ' (' . esc_html( $item['note'] ) . ')' : '';
-		$stock_mark = $item['in_stock'] ? '' : ' <em>' . esc_html__( 'out of stock', 'pleiades-chat' ) . '</em>';
+		$stock_mark = $item['in_stock'] ? '' : ' <em>' . esc_html__( 'out of stock', 'shalotts-ai-chat-assistant' ) . '</em>';
 		return sprintf(
 			'<li>%d × <a href="%s">%s</a>%s — %s%s</li>',
 			$item['quantity'],
@@ -487,7 +487,7 @@ final class Pleiades_Recipes {
 	 * @return string HTML.
 	 */
 	private static function add_all_html( $items, $is_recipe ) {
-		$label = $is_recipe ? esc_html__( 'Add all ingredients to cart', 'pleiades-chat' ) : esc_html__( 'Add the whole kit to cart', 'pleiades-chat' );
+		$label = $is_recipe ? esc_html__( 'Add all ingredients to cart', 'shalotts-ai-chat-assistant' ) : esc_html__( 'Add the whole kit to cart', 'shalotts-ai-chat-assistant' );
 		return sprintf(
 			'<p class="pleiades-add-all-row"><button type="button" class="pleiades-add-all button wp-element-button" data-items="%s" hidden>%s (%s)</button><span class="pleiades-add-status" role="status"></span></p>',
 			esc_attr( wp_json_encode( self::brief( $items ) ) ),

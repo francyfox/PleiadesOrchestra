@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Pleiades Chat\n"
+"Project-Id-Version: Shalotts AI Chat Assistant\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Language: \n"
 
@@ -16,7 +16,7 @@ msgstr ""
 msgid "Panel"
 msgstr ""
 
-msgid "Once a visitor opens the chat, their messages, the page address and cart facts, and the list of assistant tools of this site go to the agent URL below (by default the hosted Pleiades service) and to the language model providers it uses. See the %1$s and the %2$s, and mention it in your own privacy policy."
+msgid "Once a visitor opens the chat, their messages, the page address and cart facts, and the list of assistant tools of this site go to the agent URL below (by default the hosted Shalotts service) and to the language model providers it uses. See the %1$s and the %2$s, and mention it in your own privacy policy."
 msgstr ""
 
 msgid "terms of service"
@@ -37,7 +37,7 @@ msgstr ""
 msgid "From your channel in the %1$s. The channel must allow %2$s."
 msgstr ""
 
-msgid "Pleiades panel"
+msgid "Shalotts panel"
 msgstr ""
 
 msgid "Position"

@@ -2,7 +2,7 @@
 /**
  * Localization settings tab: per-language widget texts.
  *
- * @package Pleiades_Chat
+ * @package Shalotts_AI_Chat_Assistant
  * @since   0.4.0
  */
 
@@ -40,7 +40,7 @@ final class Pleiades_Tab_Localization extends Pleiades_Settings_Tab {
 	 * @return string
 	 */
 	public function label() {
-		return __( 'Localization', 'pleiades-chat' );
+		return __( 'Localization', 'shalotts-ai-chat-assistant' );
 	}
 
 	/**
@@ -52,10 +52,10 @@ final class Pleiades_Tab_Localization extends Pleiades_Settings_Tab {
 	 */
 	private function main_labels() {
 		return array(
-			'heading'     => __( 'Heading', 'pleiades-chat' ),
-			'greeting'    => __( 'Greeting', 'pleiades-chat' ),
-			'placeholder' => __( 'Input placeholder', 'pleiades-chat' ),
-			'examples'    => __( 'Example questions (one per line)', 'pleiades-chat' ),
+			'heading'     => __( 'Heading', 'shalotts-ai-chat-assistant' ),
+			'greeting'    => __( 'Greeting', 'shalotts-ai-chat-assistant' ),
+			'placeholder' => __( 'Input placeholder', 'shalotts-ai-chat-assistant' ),
+			'examples'    => __( 'Example questions (one per line)', 'shalotts-ai-chat-assistant' ),
 		);
 	}
 
@@ -91,16 +91,16 @@ final class Pleiades_Tab_Localization extends Pleiades_Settings_Tab {
 	 */
 	private function render_language_row( $settings ) {
 		?>
-		<tr><th><label for="pl-lang"><?php esc_html_e( 'Widget language', 'pleiades-chat' ); ?></label></th>
+		<tr><th><label for="pl-lang"><?php esc_html_e( 'Widget language', 'shalotts-ai-chat-assistant' ); ?></label></th>
 			<td><select id="pl-lang" name="<?php echo esc_attr( $this->name( 'lang' ) ); ?>">
-				<option value=""><?php esc_html_e( 'Automatic (visitor / page language, no overrides)', 'pleiades-chat' ); ?></option>
+				<option value=""><?php esc_html_e( 'Automatic (visitor / page language, no overrides)', 'shalotts-ai-chat-assistant' ); ?></option>
 				<?php foreach ( Pleiades_Options::languages() as $code => $language_name ) : ?>
 					<option value="<?php echo esc_attr( $code ); ?>" <?php selected( $settings['lang'], $code ); ?>><?php echo esc_html( $language_name ); ?></option>
 				<?php endforeach; ?>
 			</select>
-			<p class="description"><?php esc_html_e( 'Only the texts of the selected language are printed. A field left empty keeps the widget default (shown as the placeholder).', 'pleiades-chat' ); ?></p>
+			<p class="description"><?php esc_html_e( 'Only the texts of the selected language are printed. A field left empty keeps the widget default (shown as the placeholder).', 'shalotts-ai-chat-assistant' ); ?></p>
 			<?php if ( $this->has_legacy_texts( $settings ) ) : ?>
-				<p class="description"><?php esc_html_e( 'Heading and greeting saved by an earlier version are still used for the selected language while its own field is empty.', 'pleiades-chat' ); ?></p>
+				<p class="description"><?php esc_html_e( 'Heading and greeting saved by an earlier version are still used for the selected language while its own field is empty.', 'shalotts-ai-chat-assistant' ); ?></p>
 			<?php endif; ?></td></tr>
 		<?php
 	}

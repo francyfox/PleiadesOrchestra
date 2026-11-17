@@ -1,11 +1,11 @@
-=== Pleiades Chat ===
+=== Shalotts AI Chat Assistant ===
 Plugin URI: https://pleiades.shalotts.site/
 Contributors: francyfox
 Tags: chatbot, assistant, woocommerce, ai, chat
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.6.0
+Stable tag: 0.6.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -13,14 +13,14 @@ An AI assistant for your site and your WooCommerce shop: it searches products, a
 
 == Description ==
 
-Paste the publishable key of your Pleiades channel and the chat widget appears on every page. With WooCommerce active the assistant can search products, read product cards (including variations), and add items to the visitor's own cart. It never places an order: it can only open the checkout page.
+Paste the publishable key of your Shalotts channel and the chat widget appears on every page. With WooCommerce active the assistant can search products, read product cards (including variations), and add items to the visitor's own cart. It never places an order: it can only open the checkout page.
 
 Without WooCommerce it answers from your pages and posts.
 
 = Requirements =
-The plugin is a client: the assistant itself runs in the Pleiades agent service, so you need one of these:
+The plugin is a client: the assistant itself runs in the Shalotts agent service, so you need one of these:
 
-* **Your own server (self-hosted).** Run the open-source Pleiades stack yourself and set its address as the "Agent URL" in Settings. Nothing is paid to us. You pay for your own hosting and models. Instructions: https://github.com/francyfox/PleiadesOrchestra
+* **Your own server (self-hosted).** Run the open-source Shalotts stack yourself and set its address as the "Agent URL" in Settings. Nothing is paid to us. You pay for your own hosting and models. Instructions: https://github.com/francyfox/PleiadesOrchestra
 * **The hosted cloud service.** A paid service run by the plugin's author, used by default (https://albedo.shalotts.site). Prices: https://pleiades.shalotts.site/#prices (terms: https://pleiades.shalotts.site/terms/)
 
 = Links =
@@ -36,10 +36,10 @@ The chat widget is BSD-3-Clause, the rest of the plugin GPLv2 or later. No scrip
 
 == External services ==
 
-This plugin connects to the **Pleiades agent service**, a hosted service that runs the assistant (it uses language models to answer). Without a publishable key nothing is sent anywhere.
+This plugin connects to the **Shalotts agent service**, a hosted service that runs the assistant (it uses language models to answer). Without a publishable key nothing is sent anywhere.
 
-* Service: https://albedo.shalotts.site (the default "Agent URL" in Settings. You can point it to your own Pleiades server).
-* Key: the publishable key (pk_...) is issued in the Pleiades panel, https://pleiades-panel.shalotts.site/user/login . The panel is used by you, the site owner. The plugin itself never contacts it.
+* Service: https://albedo.shalotts.site (the default "Agent URL" in Settings. You can point it to your own Shalotts server).
+* Key: the publishable key (pk_...) is issued in the Shalotts panel, https://pleiades-panel.shalotts.site/user/login . The panel is used by you, the site owner. The plugin itself never contacts it.
 * When: only after a visitor opens the chat panel (also when the panel stays open across a page load). Nothing is sent while the panel is closed. The tool list is sent once when the panel opens and again if the site's tools change while it is open.
 * Data sent: the widget key (as a header, to identify your channel). Every chat message the visitor types and the earlier messages of the same conversation. The page path and query string the visitor is on. The visitor's language, local date and time zone. The "customer context" printed by the plugin: site locale, page type (product, category, cart, checkout, post or page), and on a WooCommerce shop the product ID, name, price and currency of the viewed product, the category name and the number of items in the cart. The tool list of your site (names, descriptions and parameter schemas of the assistant tools, plus the names of your recipes and kits, the cart/checkout/account page addresses). The results of the tools the assistant runs in the visitor's browser (for example product data from your public store API, the visitor's cart contents, page text), which are returned to the service so it can answer. The plugin never sends the visitor's name, email or payment data, and the assistant can't place orders.
 * The service passes message text to language model providers it uses to produce the answer.
@@ -59,8 +59,8 @@ Please mention this service in your own site's privacy policy.
 
 1. Upload the plugin and activate it.
 2. Get a publishable key (pk_...) in the panel: https://pleiades-panel.shalotts.site/user/login
-3. Settings > Pleiades Chat: paste the key.
-4. Settings > Pleiades Chat > Localization: pick a language and override the widget texts (optional).
+3. Settings > Shalotts AI Chat Assistant: paste the key.
+4. Settings > Shalotts AI Chat Assistant > Localization: pick a language and override the widget texts (optional).
 5. The channel must allow your site's address.
 
 == Screenshots ==
@@ -73,6 +73,12 @@ Please mention this service in your own site's privacy policy.
 
 == Changelog ==
 
+= 0.6.2 =
+* The chat footer and the widget's error text say Shalotts instead of Pleiades; internal code comments (@package) renamed.
+
+= 0.6.1 =
+* Plugin renamed to Shalotts AI Chat Assistant (slug `shalotts-ai-chat-assistant`, deactivate the old `pleiades-chat` copy). Settings and texts say Shalotts instead of Pleiades.
+
 = 0.6.0 =
 * New assistant tools: clear the cart in one step, apply and remove a coupon, product reviews, product tags.
 * A product with variations: the reply lists the options to choose from (up to four values each), and the choice is matched to the product's own spelling (size m = Size M).
@@ -81,7 +87,7 @@ Please mention this service in your own site's privacy policy.
 * The readme says what the plugin needs: your own server or the paid hosted service.
 
 = 0.5.0 =
-* External services disclosure with terms and privacy links. The hosted Pleiades service is the default agent URL.
+* External services disclosure with terms and privacy links. The hosted Shalotts service is the default agent URL.
 * Limits on how much the assistant can add to a cart in one step (filter `pleiades_chat_limits`). Tool failures are reported as codes, not the shop's text.
 * `search_products` opens the shop's results page. `update_cart_item` with quantity 0 removes the item.
 * Security: password-protected recipes and kits stay hidden, recipe fields have limits, the page config is escaped harder, the recipe and kit lists are cached.

@@ -24,7 +24,7 @@
 			icon: WooCommerceIcon,
 			available: true,
 			download:
-				"https://github.com/francyfox/PleiadesOrchestra/releases/download/wordpress/pleiades-chat.zip",
+				"https://github.com/francyfox/PleiadesOrchestra/releases/download/wordpress/shalotts-ai-chat-assistant.zip",
 		},
 		{ name: "OpenCart", icon: OpenCartIcon, available: false },
 		{ name: "1C-Bitrix", icon: BitrixIcon, available: false },

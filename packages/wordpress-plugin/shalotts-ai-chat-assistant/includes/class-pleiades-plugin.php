@@ -2,7 +2,7 @@
 /**
  * Plugin bootstrap: loads the classes and registers hooks.
  *
- * @package Pleiades_Chat
+ * @package Shalotts_AI_Chat_Assistant
  * @since   0.4.0
  */
 

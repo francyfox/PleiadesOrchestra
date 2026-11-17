@@ -2,7 +2,7 @@
 /**
  * General settings tab: key, agent URL, position.
  *
- * @package Pleiades_Chat
+ * @package Shalotts_AI_Chat_Assistant
  * @since   0.4.0
  */
 
@@ -30,7 +30,7 @@ final class Pleiades_Tab_General extends Pleiades_Settings_Tab {
 	 * @return string
 	 */
 	public function label() {
-		return __( 'General', 'pleiades-chat' );
+		return __( 'General', 'shalotts-ai-chat-assistant' );
 	}
 
 	/**
@@ -43,7 +43,7 @@ final class Pleiades_Tab_General extends Pleiades_Settings_Tab {
 	 */
 	public function render( $settings ) {
 		$this->render_key_row( $settings['key'] );
-		$this->text_row( 'pl-url', __( 'Agent URL', 'pleiades-chat' ), $this->name( 'agent_url' ), $settings['agent_url'], 'type="url"' );
+		$this->text_row( 'pl-url', __( 'Agent URL', 'shalotts-ai-chat-assistant' ), $this->name( 'agent_url' ), $settings['agent_url'], 'type="url"' );
 		$this->render_position_row( $settings['position'] );
 	}
 
@@ -58,14 +58,14 @@ final class Pleiades_Tab_General extends Pleiades_Settings_Tab {
 	private function render_key_row( $key ) {
 		$this->text_row(
 			'pl-key',
-			__( 'Publishable key', 'pleiades-chat' ),
+			__( 'Publishable key', 'shalotts-ai-chat-assistant' ),
 			$this->name( 'key' ),
 			$key,
 			'placeholder="pk_…" autocomplete="off"',
 			sprintf(
-				/* translators: 1: link to the Pleiades panel, 2: the site address */
-				__( 'From your channel in the %1$s. The channel must allow %2$s.', 'pleiades-chat' ),
-				Pleiades_Admin::link( PLEIADES_PANEL_URL, __( 'Pleiades panel', 'pleiades-chat' ) ),
+				/* translators: 1: link to the Shalotts panel, 2: the site address */
+				__( 'From your channel in the %1$s. The channel must allow %2$s.', 'shalotts-ai-chat-assistant' ),
+				Pleiades_Admin::link( PLEIADES_PANEL_URL, __( 'Shalotts panel', 'shalotts-ai-chat-assistant' ) ),
 				'<code>' . esc_html( home_url() ) . '</code>'
 			)
 		);
@@ -81,7 +81,7 @@ final class Pleiades_Tab_General extends Pleiades_Settings_Tab {
 	 */
 	private function render_position_row( $position ) {
 		?>
-		<tr><th><label for="pl-pos"><?php esc_html_e( 'Position', 'pleiades-chat' ); ?></label></th>
+		<tr><th><label for="pl-pos"><?php esc_html_e( 'Position', 'shalotts-ai-chat-assistant' ); ?></label></th>
 			<td><select id="pl-pos" name="<?php echo esc_attr( $this->name( 'position' ) ); ?>">
 				<?php foreach ( Pleiades_Options::POSITIONS as $position_option ) : ?>
 					<option value="<?php echo esc_attr( $position_option ); ?>" <?php selected( $position, $position_option ); ?>><?php echo esc_html( $position_option ); ?></option>

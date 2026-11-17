@@ -2,7 +2,7 @@
 /**
  * Admin menu entry and plugin-row links.
  *
- * @package Pleiades_Chat
+ * @package Shalotts_AI_Chat_Assistant
  * @since   0.4.0
  */
 
@@ -21,14 +21,14 @@ final class Pleiades_Admin {
 	 * @since 0.4.0
 	 * @var string
 	 */
-	const PAGE = 'pleiades-chat';
+	const PAGE = 'shalotts-ai-chat-assistant';
 	/**
 	 * Name of the plugin as shown in the menu and on the settings screen.
 	 *
 	 * @since 0.4.0
 	 * @var string
 	 */
-	const TITLE = 'Pleiades Chat';
+	const TITLE = 'Shalotts AI Chat Assistant';
 	/**
 	 * Capability needed to open and save the settings.
 	 *
@@ -97,7 +97,7 @@ final class Pleiades_Admin {
 	 * @return string[] Links with Settings in front.
 	 */
 	public static function action_links( $links ) {
-		array_unshift( $links, '<a href="' . esc_url( self::settings_url() ) . '">' . esc_html__( 'Settings', 'pleiades-chat' ) . '</a>' );
+		array_unshift( $links, '<a href="' . esc_url( self::settings_url() ) . '">' . esc_html__( 'Settings', 'shalotts-ai-chat-assistant' ) . '</a>' );
 		return $links;
 	}
 
@@ -114,8 +114,8 @@ final class Pleiades_Admin {
 		if ( plugin_basename( PLEIADES_FILE ) !== $file ) {
 			return $meta;
 		}
-		$meta[] = self::link( PLEIADES_SITE_URL, __( 'Website', 'pleiades-chat' ) );
-		$meta[] = self::link( PLEIADES_PANEL_URL, __( 'Panel (get your widget key)', 'pleiades-chat' ) );
+		$meta[] = self::link( PLEIADES_SITE_URL, __( 'Website', 'shalotts-ai-chat-assistant' ) );
+		$meta[] = self::link( PLEIADES_PANEL_URL, __( 'Panel (get your widget key)', 'shalotts-ai-chat-assistant' ) );
 		return $meta;
 	}
 }

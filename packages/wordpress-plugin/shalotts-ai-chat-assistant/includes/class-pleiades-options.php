@@ -2,7 +2,7 @@
 /**
  * The plugin option: defaults, widget dictionary and sanitizing.
  *
- * @package Pleiades_Chat
+ * @package Shalotts_AI_Chat_Assistant
  * @since   0.4.0
  */
 
@@ -219,7 +219,7 @@ final class Pleiades_Options {
 		if ( '' === $key || preg_match( self::KEY_PATTERN, $key ) ) {
 			return $key;
 		}
-		add_settings_error( self::NAME, 'bad_key', __( 'The key must be a publishable key (starts with pk_). Never paste a secret key.', 'pleiades-chat' ) );
+		add_settings_error( self::NAME, 'bad_key', __( 'The key must be a publishable key (starts with pk_). Never paste a secret key.', 'shalotts-ai-chat-assistant' ) );
 		return '';
 	}
 

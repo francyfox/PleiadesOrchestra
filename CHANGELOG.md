@@ -1,3 +1,15 @@
+# 0.14.12 - 17 Nov 2026
+
+Changed:
+
+- WordPress plugin 0.6.2: the widget footer (© year Shalotts) and the widget's `agent-url` error text no longer say Pleiades; `@package` tags renamed. Follow-up to the rename in 0.6.1.
+
+# 0.14.11 - 17 Nov 2026
+
+Changed:
+
+- WordPress plugin 0.6.1: renamed to Shalotts AI Chat Assistant (slug and folder `shalotts-ai-chat-assistant`, text domain, settings page, release zip `shalotts-ai-chat-assistant.zip`; the old `pleiades-chat` copy must be deactivated). The WordPress.org review rejected the name «Pleiades Chat» as too close to other AI chat products. The `<pleiades-chat>` widget element and the PHP class names are unchanged.
+
 # 0.14.10 - 9 Nov 2026
 
 Feature:
