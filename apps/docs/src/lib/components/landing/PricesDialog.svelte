@@ -148,7 +148,13 @@
 		--dlg-dim: #d4d4d8;
 		--dlg-rule: rgb(255 255 255 / 0.2);
 	}
+	/* The backdrop is no scroll container by default: without overflow it ignores overscroll-behavior and the page scrolls behind. */
+	.dlg:modal {
+		overscroll-behavior: contain;
+	}
 	.dlg::backdrop {
 		background: rgb(0 0 0 / 0.55);
+		overflow: hidden;
+		overscroll-behavior: contain;
 	}
 </style>

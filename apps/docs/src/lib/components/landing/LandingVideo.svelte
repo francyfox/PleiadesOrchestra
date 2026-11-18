@@ -88,7 +88,7 @@
 </svelte:head>
 
 <section
-        class="flex min-h-[calc(100vh-(var(--po-nav)+var(--po-landing-nav)))] w-full"
+        class="flex min-h-[calc(100svh-(var(--po-nav)+var(--po-landing-nav)))] w-full"
         aria-label={t.aria}
 >
     <!-- Text in flow, video behind it: the section grows on phones instead of cutting the text off. -->
