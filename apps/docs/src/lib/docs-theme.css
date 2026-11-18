@@ -4,6 +4,14 @@
  * `.header.svelte-…`), so these selectors are deliberately heavier; every value
  * is a token, so light/dark follow `.dark` on <html> by themselves.
  */
+/* Native scrollbars and form controls follow the `.dark` class on <html>. */
+:root:root {
+	color-scheme: light;
+}
+:root:root.dark {
+	color-scheme: dark;
+}
+
 :root:root:root:root {
 	--svp-text: var(--foreground);
 	--svp-c-heading: var(--heading);

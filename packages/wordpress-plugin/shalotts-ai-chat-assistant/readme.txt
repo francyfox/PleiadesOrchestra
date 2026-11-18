@@ -17,6 +17,8 @@ Paste the publishable key of your Shalotts channel and the chat widget appears o
 
 Without WooCommerce it answers from your pages and posts.
 
+https://vimeo.com/1241349081
+
 = Requirements =
 The plugin is a client: the assistant itself runs in the Shalotts agent service, so you need one of these:
 
