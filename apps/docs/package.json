@@ -32,7 +32,7 @@
 	},
 	"scripts": {
 		"dev": "bun run polyfill && bun run changelog && bun --bun vite dev --port 3004",
-		"build": "bun run polyfill && bun run changelog && bun --bun vite build",
+		"build": "bun run polyfill && bun run changelog && bun --bun vite build && bun scripts/sitemap-lastmod.ts",
 		"preview": "bun --bun vite preview --port 3004",
 		"prepare": "svelte-kit sync || echo ''",
 		"check-types": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --threshold error && svelte-check --tsconfig ./src/service-worker/tsconfig.json --threshold error",
