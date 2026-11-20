@@ -32,6 +32,8 @@ jobs:
     steps:
       - run: echo "CI_START=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # sitemap.xml <lastmod> comes from git history (apps/docs/scripts/sitemap-lastmod.ts)
       - uses: oven-sh/setup-bun@v2
         with:
           # Same Bun as root package.json devEngines (the version that writes bun.lock).

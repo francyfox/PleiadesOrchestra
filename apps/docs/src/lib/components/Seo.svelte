@@ -6,7 +6,7 @@
 		type Locale,
 		localizeHref,
 	} from "#lib/i18n.js";
-	import { OG_IMAGE, SITE, SITE_URL } from "#lib/site.js";
+	import { OG_IMAGE, PLEIADES_REPO_URL, SITE, SITE_URL } from "#lib/site.js";
 	import { page } from "$app/state";
 
 	// OpenGraph + Twitter card of a page. Only those: the SveltePress theme already
@@ -47,7 +47,51 @@
 				]
 			: undefined,
 	);
+
+	// schema.org: the landing describes the product, every other page is a documentation article.
+	const jsonLd = $derived(
+		isLanding
+			? [
+					{
+						"@context": "https://schema.org",
+						"@type": "SoftwareApplication",
+						"@id": `${SITE_URL}/#software`,
+						name: SITE.title,
+						description: SITE.description,
+						url: `${SITE_URL}/`,
+						image: image.url,
+						applicationCategory: "DeveloperApplication",
+						operatingSystem: "Linux, macOS, Windows",
+						license: "https://www.gnu.org/licenses/agpl-3.0.html",
+						sameAs: [PLEIADES_REPO_URL],
+						inLanguage: [...ALL_LOCALES],
+					},
+					{
+						"@context": "https://schema.org",
+						"@type": "WebSite",
+						"@id": `${SITE_URL}/#website`,
+						name: SITE.title,
+						url: `${SITE_URL}/`,
+					},
+				]
+			: {
+					"@context": "https://schema.org",
+					"@type": "TechArticle",
+					headline: title,
+					description,
+					url: canonical,
+					inLanguage: locale,
+					image: image.url,
+					isPartOf: { "@id": `${SITE_URL}/#website` },
+				},
+	);
+	// `<` is escaped so a value can never close the script element early.
+	const jsonLdHtml = $derived(
+		`<script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, "\\u003c")}</${"script"}>`,
+	);
 </script>
+
+<svelte:head>{@html jsonLdHtml}</svelte:head>
 
 <MetaTags
 	{canonical}
