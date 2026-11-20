@@ -1,4 +1,5 @@
 User-agent: *
+Allow: /
 # Sveltia CMS sign-in page, nothing to index.
 Disallow: /admin/
 
